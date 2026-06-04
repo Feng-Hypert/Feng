@@ -462,29 +462,23 @@
             }
         }
 
-        // 导航切换卡片弹框
-        function handleCardClick(name) {
-            playAmbientPluck();
-            const alertModal = document.getElementById('portalAlert');
-            const alertTitle = document.getElementById('alertTitle');
-            const alertBody = document.getElementById('alertBody');
+// 导航切换卡片：延时拨弦跳转
+function handleCardClick(name) {
+    playAmbientPluck(); // 触发忧郁木吉他拨弦声
 
-            if (name === 'Archive') {
-                alertTitle.textContent = 'THE ARCHIVE';
-                alertBody.textContent = '这里将连接您的博文列表。从深度的技术探究到日记琐碎，都在这荒废寂静的林地里等待抽芽。';
-            } else if (name === 'Radio') {
-                alertTitle.textContent = 'SEATTLE FM';
-                alertBody.textContent = '这是您未来的声音驿站。将集成流媒体播放器，播放您弹奏的木吉他音轨与西雅图朦胧的白噪声。';
-            } else if (name === 'Gallery') {
-                alertTitle.textContent = 'SPORES & APERTURE';
-                alertBody.textContent = '未来的视觉艺廊。展示您拍摄的照片，用滤镜渲染废墟城市与绿色生命蓬勃生长的张力。';
-            } else if (name === 'Remnants') {
-                alertTitle.textContent = 'REMNANTS DECK';
-                alertBody.textContent = '实验室和创意互动产品发布板。您的各类API探索、小型游戏与数字工具未来都将收纳于此。';
-            }
-
-            alertModal.classList.remove('opacity-0', 'pointer-events-none');
+    // 延迟 200 毫秒跳转，给吉他声留出一点共鸣消散的时间
+    setTimeout(() => {
+        if (name === 'Archive') {
+            window.location.href = './archive.html';
+        } else if (name === 'Radio') {
+            window.location.href = './radio.html';
+        } else if (name === 'Gallery') {
+            window.location.href = './gallery.html';
+        } else if (name === 'Remnants') {
+            window.location.href = './remnants.html';
         }
+    }, 200);
+}
 
         function closeAlert() {
             const alertModal = document.getElementById('portalAlert');
