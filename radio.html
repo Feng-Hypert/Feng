@@ -237,6 +237,18 @@
                             <span class="font-mono text-[10px] text-tlou-moss border border-tlou-moss/30 bg-tlou-moss/5 px-1.5 py-0.5 rounded font-bold">HI-RES</span>
                         </div>
 
+                        <div id="trackTLOU" class="flex items-center justify-between p-3 rounded-xl border border-[var(--card-border)] bg-tlou-glass cursor-pointer hover:bg-tlou-rust/10 transition-all group" 
+         onclick="selectTrack('trackTLOU', './The Last of Us - Gustavo Santaolalla.mp3', 'The Last of Us', 'Gustavo Santaolalla', 'MP3_STREAM', '44.1 kHz // 320kbps')">
+        <div class="flex items-center space-x-3 overflow-hidden">
+            <span class="font-mono text-[10px] text-tlou-ash/40 group-hover:text-tlou-rust transition-colors">● RESONANCE</span>
+            <div class="overflow-hidden">
+                <p class="font-cinzel text-xs font-bold text-[var(--text-white)] truncate">The Last of Us</p>
+                <p class="font-mono text-[9px] text-tlou-ash/50 truncate">Gustavo Santaolalla // MASTER THEME</p>
+            </div>
+        </div>
+        <span class="font-mono text-[10px] text-tlou-rust border border-tlou-rust/30 bg-tlou-rust/5 px-1.5 py-0.5 rounded font-bold">THEME</span>
+    </div>
+                        
                     </div>
                 </div>
 
@@ -340,42 +352,62 @@ themeToggleBtn.addEventListener('click', () => {
             }
         }
 
-        // 升级版：动态参数切歌路由系统
-        function selectTrack(elementId, fileUrl, title, artist, format, rate) {
-            stopTrack();
-            
-            document.querySelectorAll('#playlistTracks > div').forEach(el => {
-                el.classList.remove('border-tlou-rust/30', 'bg-tlou-rust/5');
-                el.classList.add('border-[var(--card-border)]');
-            });
-            const activeTrack = document.getElementById(elementId);
-            if (activeTrack) {
-                activeTrack.classList.remove('border-[var(--card-border)]');
-                activeTrack.classList.add('border-tlou-rust/30', 'bg-tlou-rust/5');
-            }
+// 优化升级版：万能动态切歌路由系统（彻底修复切歌死机/失效问题）
+function selectTrack(elementId, fileUrl, title, artist, format, rate) {
+    stopTrack(); // 先彻底断开当前正在播放的音频流
 
-            audioElement.src = fileUrl;
-            
-            trackSourceLabel.textContent = "Built-in Frequency";
-            trackTitle.textContent = title;
-            trackArtist.textContent = artist;
-            specFormat.textContent = format;
-            specRate.textContent = rate;
-            
-            audioElement.oncanplaythrough = () => {
-                formatAndSetProgress(0, audioElement.duration);
-            };
-            playTrack();
-        }
+    // 1. 排他性高亮当前点击的信号歌曲方块
+    document.querySelectorAll('#playlistTracks > div').forEach(el => {
+        el.classList.remove('border-tlou-rust/30', 'bg-tlou-rust/5');
+        el.classList.add('border-[var(--card-border)]');
+    });
+    const activeTrack = document.getElementById(elementId);
+    if (activeTrack) {
+        activeTrack.classList.remove('border-[var(--card-border)]');
+        activeTrack.classList.add('border-tlou-rust/30', 'bg-tlou-rust/5');
+    }
 
-        function playTrack() {
-            if(!audioElement.src) return;
-            initAudioPipeline();
+    // 2. 【核心修复】更换 src 后，必须强制调用 .load()，命令浏览器撕毁旧缓存并重组新管道
+    audioElement.src = fileUrl;
+    audioElement.load(); 
+
+    // 3. 动态刷新控制面板文字规格
+    trackSourceLabel.textContent = "Built-in Frequency";
+    trackTitle.textContent = title;
+    trackArtist.textContent = artist;
+    specFormat.textContent = format;
+    specRate.textContent = rate;
+
+    // 4. 【核心修复】改用精度更高的元数据加载监听，防止快速切歌时总时间轴卡死在 00:00
+    audioElement.onloadedmetadata = () => {
+        formatAndSetProgress(0, audioElement.duration);
+    };
+    
+    // 清理可能残留的旧事件
+    audioElement.oncanplaythrough = null;
+
+    playTrack();
+}
+
+// 优化版：具备异步安全锁的播放驱动
+function playTrack() {
+    if(!audioElement.src) return;
+    initAudioPipeline();
+
+    audioElement.volume = sliderVolume.value;
+
+    // 采用 Promise 监听机制，确保浏览器真正顺利解密播放后，才激活 UI 旋转和唱针状态
+    audioElement.play()
+        .then(() => {
             isPlaying = true;
             updatePlayerUI();
-            audioElement.volume = sliderVolume.value;
-            audioElement.play().catch(e => console.log("Playback interrupted"));
-        }
+        })
+        .catch(e => {
+            console.log("音频管道重置或播放被浏览器异步策略拦截，已安全释放资源:", e);
+            isPlaying = false;
+            updatePlayerUI();
+        });
+}
 
         function pauseTrack() {
             isPlaying = false;
