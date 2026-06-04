@@ -183,7 +183,12 @@
                                     <path d="M6 6h12v12H6z"/>
                                 </svg>
                             </button>
+                            
+                            <button id="btnMode" class="text-tlou-ash/50 hover:text-white border border-[var(--card-border)] bg-black/20 hover:bg-black/40 px-3 py-1.5 rounded-full focus:outline-none font-mono text-[10px] tracking-widest transition-all uppercase">
+                                MODE: LIST LOOP
+                            </button>
                         </div>
+                        
                         <div class="flex items-center space-x-2 text-tlou-ash/60 text-xs font-mono w-full sm:w-auto max-w-[200px]">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/>
@@ -302,14 +307,21 @@ themeToggleBtn.addEventListener('click', () => {
     }
 });
 
+// --- 播放器核心状态机变量组 ---
 let audioCtx = null;
 let analyser = null;
 let localSource = null;
 let audioElement = null; 
 let isPlaying = false;
 
+// 🌟 新增播放模式控制变量 🌟
+// 'LIST_LOOP' (列表循环) | 'SINGLE_LOOP' (单曲循环) | 'RANDOM' (随机播放)
+let playMode = 'LIST_LOOP'; 
+let currentTrackId = ''; // 实时锚定当前播放歌曲的 DOM 元素 ID
+
 const btnPlay = document.getElementById('btnPlay');
 const btnStop = document.getElementById('btnStop');
+const btnMode = document.getElementById('btnMode'); // 抓取新添加的模式控制按钮
 const svgPlay = document.getElementById('svgPlay');
 const svgPause = document.getElementById('svgPause');
 const vinylDisc = document.getElementById('vinylDisc');
@@ -344,6 +356,7 @@ function initAudioPipeline() {
     }
 }
 
+// 核心控制枢纽：动态重构音频管线系统
 function selectTrack(elementId, fileUrl, title, artist, format, rate) {
     if (audioElement) {
         audioElement.pause();
@@ -357,6 +370,9 @@ function selectTrack(elementId, fileUrl, title, artist, format, rate) {
     
     isPlaying = false;
     updatePlayerUI();
+
+    // 锚定当前歌曲的 ID 供循环切歌调度
+    currentTrackId = elementId;
 
     document.querySelectorAll('#playlistTracks > div').forEach(el => {
         el.classList.remove('border-tlou-rust/30', 'bg-tlou-rust/5');
@@ -377,7 +393,6 @@ function selectTrack(elementId, fileUrl, title, artist, format, rate) {
     localSource = audioCtx.createMediaElementSource(audioElement);
     localSource.connect(analyser);
 
-    // 智能识别轨道标签类型
     if (fileUrl.startsWith('blob:') || elementId.startsWith('local_')) {
         trackSourceLabel.textContent = "Temporary Node";
     } else {
@@ -399,9 +414,42 @@ function selectTrack(elementId, fileUrl, title, artist, format, rate) {
         }
     });
 
-    audioElement.addEventListener('ended', stopTrack);
+    // 🌟 将原本冰冷的 stopTrack 升级为智能播放模式决策路由器 🌟
+    audioElement.addEventListener('ended', handleTrackPlaybackEnded);
 
     playTrack();
+}
+
+// 🌟 新增：智能切歌路由器 🌟
+function handleTrackPlaybackEnded() {
+    // 动态抓取当前发射仓内的所有可用音频节点
+    const tracks = Array.from(document.querySelectorAll('#playlistTracks > div'));
+    if (tracks.length === 0) {
+        stopTrack();
+        return;
+    }
+
+    if (playMode === 'SINGLE_LOOP') {
+        // 单曲循环模式：直接时间归零，无声重新起航
+        if (audioElement) {
+            audioElement.currentTime = 0;
+            playTrack();
+        }
+    } else if (playMode === 'LIST_LOOP') {
+        // 列表循环模式：寻找当前位置，利落切到下一个节点
+        let currentIndex = tracks.findIndex(el => el.id === currentTrackId);
+        if (currentIndex === -1) currentIndex = 0;
+        let nextIndex = (currentIndex + 1) % tracks.length;
+        tracks[nextIndex].click(); // 触发对应 DOM 的点击切歌事件
+    } else if (playMode === 'RANDOM') {
+        // 随机播放模式：利用伪随机数学期望，跳向不可预知的下一音频节点
+        let nextIndex = Math.floor(Math.random() * tracks.length);
+        // 如果信号仓里有多首歌，尽量不选到同一首歌播放
+        if (tracks.length > 1 && tracks[nextIndex].id === currentTrackId) {
+            nextIndex = (nextIndex + 1) % tracks.length;
+        }
+        tracks[nextIndex].click();
+    }
 }
 
 function playTrack() {
@@ -451,6 +499,28 @@ function updatePlayerUI() {
     }
 }
 
+// 🌟 新增：模式控制切换监听器 🌟
+btnMode.addEventListener('click', () => {
+    if (playMode === 'LIST_LOOP') {
+        playMode = 'SINGLE_LOOP';
+        btnMode.textContent = 'MODE: SINGLE LOOP';
+        // 配合废土风，单曲循环时给按钮换上显眼的铁锈橘警告状态色
+        btnMode.classList.remove('text-tlou-ash/50');
+        btnMode.classList.add('text-tlou-rust', 'border-tlou-rust/40', 'bg-tlou-rust/5');
+    } else if (playMode === 'SINGLE_LOOP') {
+        playMode = 'RANDOM';
+        btnMode.textContent = 'MODE: RANDOM';
+        btnMode.classList.remove('text-tlou-rust', 'border-tlou-rust/40', 'bg-tlou-rust/5');
+        // 随机播放换上松针苔藓绿色彩调式
+        btnMode.classList.add('text-tlou-moss', 'border-tlou-moss/40', 'bg-tlou-moss/5');
+    } else if (playMode === 'RANDOM') {
+        playMode = 'LIST_LOOP';
+        btnMode.textContent = 'MODE: LIST LOOP';
+        btnMode.classList.remove('text-tlou-moss', 'border-tlou-moss/40', 'bg-tlou-moss/5');
+        btnMode.classList.add('text-tlou-ash/50');
+    }
+});
+
 btnPlay.addEventListener('click', () => {
     if (isPlaying) pauseTrack();
     else playTrack();
@@ -484,9 +554,8 @@ progressBarContainer.addEventListener('click', (e) => {
     formatAndSetProgress(audioElement.currentTime, audioElement.duration);
 });
 
-// 彻底修复并接通：本地拖拽/选择注入管理系统
 dropZone.addEventListener('click', () => fileInput.click());
-dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('border-tlou-rust'); });
+dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.add('border-tlou-rust'); });
 dropZone.addEventListener('dragleave', () => dropZone.classList.remove('border-tlou-rust'));
 dropZone.addEventListener('drop', (e) => {
     e.preventDefault();
@@ -519,16 +588,14 @@ function handleAudioFileLoad(file) {
     
     const formatStr = file.type.toUpperCase().split('/')[1] || 'RAW';
     
-    // 完美复用动态引擎，彻底粉碎切换失效死锁
     newTrackItem.onclick = () => {
         selectTrack(trackId, fileUrl, nameWithoutExt, 'Local Buffer', formatStr, 'DIRECT DECODE');
     };
 
     playlistTracks.appendChild(newTrackItem);
-    newTrackItem.click(); // 上传后自动触发播放
+    newTrackItem.click(); 
 }
 
-// --- 实时高阶 Retina 频谱画布渲染器 ---
 const canvas = document.getElementById('visualizerCanvas');
 const canvasCtx = canvas.getContext('2d');
 
