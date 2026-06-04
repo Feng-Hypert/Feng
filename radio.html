@@ -78,7 +78,7 @@
     </style>
 </head>
 <body class="font-sans relative min-h-screen overflow-x-hidden selection:bg-[var(--moss-color)] selection:text-white">
-
+<div id="cinema-bg" class="fixed inset-0 bg-[url('./bg.png')] bg-cover bg-center bg-no-repeat pointer-events-none z-0 opacity-45 transition-opacity duration-1000"></div>
     <div class="fixed inset-0 scanlines opacity-25"></div>
     <div class="fixed top-0 left-0 w-full h-full bg-gradient-to-b from-transparent via-black/5 to-[var(--bg-color)] z-0 pointer-events-none"></div>
 
@@ -258,34 +258,41 @@
     </div>
 
     <script>
-        let isDarkMode = true;
-        const themeToggleBtn = document.getElementById('themeToggle');
-        const themeLabel = document.getElementById('themeLabel');
+let isDarkMode = true;
+const themeToggleBtn = document.getElementById('themeToggle');
+const themeLabel = document.getElementById('themeLabel');
+const cinemaBg = document.getElementById('cinema-bg'); // 新增：成功抓取第81行的全面屏背景节点
+
+themeToggleBtn.addEventListener('click', () => {
+    isDarkMode = !isDarkMode;
+    if (isDarkMode) {
+        document.body.classList.remove('theme-light');
+        themeLabel.textContent = 'MODE: DEEP NIGHT';
+        document.documentElement.style.setProperty('--bg-color', '#080a06');
+        document.documentElement.style.setProperty('--text-color', '#c3c7db');
+        document.documentElement.style.setProperty('--text-white', '#ffffff');
+        document.documentElement.style.setProperty('--card-bg', 'rgba(8, 10, 6, 0.75)');
+        document.documentElement.style.setProperty('--card-border', 'rgba(255, 255, 255, 0.05)');
+        document.documentElement.style.setProperty('--accent-color', '#d97736');
+        document.documentElement.style.setProperty('--moss-color', '#4a5d43');
         
-        themeToggleBtn.addEventListener('click', () => {
-            isDarkMode = !isDarkMode;
-            if (isDarkMode) {
-                document.body.classList.remove('theme-light');
-                themeLabel.textContent = 'MODE: DEEP NIGHT';
-                document.documentElement.style.setProperty('--bg-color', '#080a06');
-                document.documentElement.style.setProperty('--text-color', '#c3c7db');
-                document.documentElement.style.setProperty('--text-white', '#ffffff');
-                document.documentElement.style.setProperty('--card-bg', 'rgba(8, 10, 6, 0.75)');
-                document.documentElement.style.setProperty('--card-border', 'rgba(255, 255, 255, 0.05)');
-                document.documentElement.style.setProperty('--accent-color', '#d97736');
-                document.documentElement.style.setProperty('--moss-color', '#4a5d43');
-            } else {
-                document.body.classList.add('theme-light');
-                themeLabel.textContent = 'MODE: MISTY DAY';
-                document.documentElement.style.setProperty('--bg-color', '#d6dad0');
-                document.documentElement.style.setProperty('--text-color', '#232d1f');
-                document.documentElement.style.setProperty('--text-white', '#0a0d08');
-                document.documentElement.style.setProperty('--card-bg', 'rgba(255, 255, 255, 0.65)');
-                document.documentElement.style.setProperty('--card-border', 'rgba(0, 0, 0, 0.08)');
-                document.documentElement.style.setProperty('--accent-color', '#b3501a');
-                document.documentElement.style.setProperty('--moss-color', '#384833');
-            }
-        });
+        // 深夜模式：让燃烧的塞拉菲特先知岛全屏背景透出 45% 的火光
+        if (cinemaBg) cinemaBg.style.opacity = '0.45';
+    } else {
+        document.body.classList.add('theme-light');
+        themeLabel.textContent = 'MODE: MISTY DAY';
+        document.documentElement.style.setProperty('--bg-color', '#d6dad0');
+        document.documentElement.style.setProperty('--text-color', '#232d1f');
+        document.documentElement.style.setProperty('--text-white', '#0a0d08');
+        document.documentElement.style.setProperty('--card-bg', 'rgba(255, 255, 255, 0.65)');
+        document.documentElement.style.setProperty('--card-border', 'rgba(0, 0, 0, 0.08)');
+        document.documentElement.style.setProperty('--accent-color', '#b3501a');
+        document.documentElement.style.setProperty('--moss-color', '#384833');
+        
+        // 白天浓雾阴天模式：将火光虚化降到 15% 的淡墨感
+        if (cinemaBg) cinemaBg.style.opacity = '0.15';
+    }
+});
 
         let audioCtx = null;
         let analyser = null;
