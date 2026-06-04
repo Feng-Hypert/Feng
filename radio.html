@@ -78,7 +78,7 @@
     </style>
 </head>
 <body class="font-sans relative min-h-screen overflow-x-hidden selection:bg-[var(--moss-color)] selection:text-white">
-<div id="cinema-bg" class="fixed inset-0 bg-[url('./bg.png')] bg-cover bg-center bg-no-repeat pointer-events-none z-0 opacity-45 transition-opacity duration-1000"></div>
+    <div id="cinema-bg" class="fixed inset-0 bg-[url('./bg.png')] bg-cover bg-center bg-no-repeat pointer-events-none z-0 opacity-45 transition-opacity duration-1000"></div>
     <div class="fixed inset-0 scanlines opacity-25"></div>
     <div class="fixed top-0 left-0 w-full h-full bg-gradient-to-b from-transparent via-black/5 to-[var(--bg-color)] z-0 pointer-events-none"></div>
 
@@ -238,16 +238,16 @@
                         </div>
 
                         <div id="trackTLOU" class="flex items-center justify-between p-3 rounded-xl border border-[var(--card-border)] bg-tlou-glass cursor-pointer hover:bg-tlou-rust/10 transition-all group" 
-         onclick="selectTrack('trackTLOU', './The Last of Us - Gustavo Santaolalla.flac', 'The Last of Us', 'Gustavo Santaolalla', 'FLAC_STREAM', '48.0 kHz // 24-Bit Hi-Res')">
-        <div class="flex items-center space-x-3 overflow-hidden">
-            <span class="font-mono text-[10px] text-tlou-ash/40 group-hover:text-tlou-rust transition-colors">● RESONANCE</span>
-            <div class="overflow-hidden">
-                <p class="font-cinzel text-xs font-bold text-[var(--text-white)] truncate">The Last of Us</p>
-                <p class="font-mono text-[9px] text-tlou-ash/50 truncate">Gustavo Santaolalla // MASTER THEME</p>
-            </div>
-        </div>
-        <span class="font-mono text-[10px] text-tlou-rust border border-tlou-rust/30 bg-tlou-rust/5 px-1.5 py-0.5 rounded font-bold">THEME</span>
-    </div>
+                             onclick="selectTrack('trackTLOU', './The Last of Us - Gustavo Santaolalla.flac', 'The Last of Us', 'Gustavo Santaolalla', 'FLAC_STREAM', '48.0 kHz // 24-Bit Hi-Res')">
+                            <div class="flex items-center space-x-3 overflow-hidden">
+                                <span class="font-mono text-[10px] text-tlou-ash/40 group-hover:text-tlou-rust transition-colors">● RESONANCE</span>
+                                <div class="overflow-hidden">
+                                    <p class="font-cinzel text-xs font-bold text-[var(--text-white)] truncate">The Last of Us</p>
+                                    <p class="font-mono text-[9px] text-tlou-ash/50 truncate">Gustavo Santaolalla // MASTER THEME</p>
+                                </div>
+                            </div>
+                            <span class="font-mono text-[10px] text-tlou-rust border border-tlou-rust/30 bg-tlou-rust/5 px-1.5 py-0.5 rounded font-bold">THEME</span>
+                        </div>
                         
                     </div>
                 </div>
@@ -273,7 +273,7 @@
 let isDarkMode = true;
 const themeToggleBtn = document.getElementById('themeToggle');
 const themeLabel = document.getElementById('themeLabel');
-const cinemaBg = document.getElementById('cinema-bg'); // 新增：成功抓取第81行的全面屏背景节点
+const cinemaBg = document.getElementById('cinema-bg'); 
 
 themeToggleBtn.addEventListener('click', () => {
     isDarkMode = !isDarkMode;
@@ -287,8 +287,6 @@ themeToggleBtn.addEventListener('click', () => {
         document.documentElement.style.setProperty('--card-border', 'rgba(255, 255, 255, 0.05)');
         document.documentElement.style.setProperty('--accent-color', '#d97736');
         document.documentElement.style.setProperty('--moss-color', '#4a5d43');
-        
-        // 深夜模式：让燃烧的塞拉菲特先知岛全屏背景透出 45% 的火光
         if (cinemaBg) cinemaBg.style.opacity = '0.45';
     } else {
         document.body.classList.add('theme-light');
@@ -300,8 +298,6 @@ themeToggleBtn.addEventListener('click', () => {
         document.documentElement.style.setProperty('--card-border', 'rgba(0, 0, 0, 0.08)');
         document.documentElement.style.setProperty('--accent-color', '#b3501a');
         document.documentElement.style.setProperty('--moss-color', '#384833');
-        
-        // 白天浓雾阴天模式：将火光虚化降到 15% 的淡墨感
         if (cinemaBg) cinemaBg.style.opacity = '0.15';
     }
 });
@@ -309,7 +305,32 @@ themeToggleBtn.addEventListener('click', () => {
 let audioCtx = null;
 let analyser = null;
 let localSource = null;
-let audioElement = null; // 【核心改动】允许动态销毁与重建
+let audioElement = null; 
+let isPlaying = false;
+
+const btnPlay = document.getElementById('btnPlay');
+const btnStop = document.getElementById('btnStop');
+const svgPlay = document.getElementById('svgPlay');
+const svgPause = document.getElementById('svgPause');
+const vinylDisc = document.getElementById('vinylDisc');
+const audioArm = document.getElementById('audioArm');
+const sliderVolume = document.getElementById('sliderVolume');
+        
+const trackTitle = document.getElementById('trackTitle');
+const trackArtist = document.getElementById('trackArtist');
+const trackSourceLabel = document.getElementById('trackSourceLabel');
+const specFormat = document.getElementById('specFormat');
+const specRate = document.getElementById('specRate');
+        
+const timeCurrent = document.getElementById('timeCurrent');
+const timeTotal = document.getElementById('timeTotal');
+const progressBar = document.getElementById('progressBar');
+const progressBarContainer = document.getElementById('progressBarContainer');
+const progressHandle = document.getElementById('progressHandle');
+
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const playlistTracks = document.getElementById('playlistTracks');
 
 function initAudioPipeline() {
     if (!audioCtx) {
@@ -323,23 +344,20 @@ function initAudioPipeline() {
     }
 }
 
-// 核心控制枢纽：动态重构音频管线系统
 function selectTrack(elementId, fileUrl, title, artist, format, rate) {
-    // 1. 先彻底暂停并安全释放上一个旧 Audio 对象，斩断旧的 Web Audio 路由
     if (audioElement) {
         audioElement.pause();
         audioElement.src = "";
         audioElement.load();
     }
     if (localSource) {
-        localSource.disconnect(); // 拔掉旧绑点，释放内存
+        localSource.disconnect();
         localSource = null;
     }
     
     isPlaying = false;
     updatePlayerUI();
 
-    // 2. 排他性高亮当前点击的信号歌曲方块
     document.querySelectorAll('#playlistTracks > div').forEach(el => {
         el.classList.remove('border-tlou-rust/30', 'bg-tlou-rust/5');
         el.classList.add('border-[var(--card-border)]');
@@ -350,26 +368,27 @@ function selectTrack(elementId, fileUrl, title, artist, format, rate) {
         activeTrack.classList.add('border-tlou-rust/30', 'bg-tlou-rust/5');
     }
 
-    // 3. 实例化一个完全独立的全新 Audio 对象，彻底绕过内核换源假死 Bug
     audioElement = new Audio();
     audioElement.crossOrigin = "anonymous";
     audioElement.src = fileUrl;
 
-    // 4. 确保基础音频上下文处于激活状态
     initAudioPipeline();
 
-    // 5. 将这个新鲜出炉的全新 Audio 重新接回示波分析器上
     localSource = audioCtx.createMediaElementSource(audioElement);
     localSource.connect(analyser);
 
-    // 6. 动态刷新控制面板文字规格
-    trackSourceLabel.textContent = "Built-in Frequency";
+    // 智能识别轨道标签类型
+    if (fileUrl.startsWith('blob:') || elementId.startsWith('local_')) {
+        trackSourceLabel.textContent = "Temporary Node";
+    } else {
+        trackSourceLabel.textContent = "Built-in Frequency";
+    }
+    
     trackTitle.textContent = title;
     trackArtist.textContent = artist;
     specFormat.textContent = format;
     specRate.textContent = rate;
 
-    // 7. 由于每次都是全新的 Audio 对象，必须在其身上重新绑定时间轴刷新与结束状态机
     audioElement.onloadedmetadata = () => {
         formatAndSetProgress(0, audioElement.duration);
     };
@@ -382,16 +401,12 @@ function selectTrack(elementId, fileUrl, title, artist, format, rate) {
 
     audioElement.addEventListener('ended', stopTrack);
 
-    // 8. 满血启动
     playTrack();
 }
 
-// 具备异步流安全锁的播放驱动
 function playTrack() {
     if(!audioElement || !audioElement.src) return;
     initAudioPipeline();
-
-    // 每次播放时对齐当前调音台的音量滑块数值，防止切歌爆音
     audioElement.volume = sliderVolume.value;
 
     audioElement.play()
@@ -400,7 +415,7 @@ function playTrack() {
             updatePlayerUI();
         })
         .catch(e => {
-            console.log("播放流被内核安全拦截或中断，已自动复位资源:", e);
+            console.log("Playback blocked or interrupted safely:", e);
             isPlaying = false;
             updatePlayerUI();
         });
@@ -436,157 +451,141 @@ function updatePlayerUI() {
     }
 }
 
-        btnPlay.addEventListener('click', () => {
-            if (isPlaying) pauseTrack();
-            else playTrack();
-        });
+btnPlay.addEventListener('click', () => {
+    if (isPlaying) pauseTrack();
+    else playTrack();
+});
 
-        btnStop.addEventListener('click', stopTrack);
-        sliderVolume.addEventListener('input', (e) => { audioElement.volume = e.target.value; });
+btnStop.addEventListener('click', stopTrack);
+sliderVolume.addEventListener('input', (e) => { 
+    if (audioElement) audioElement.volume = e.target.value; 
+});
 
-        audioElement.addEventListener('timeupdate', () => {
-            if (isPlaying) {
-                formatAndSetProgress(audioElement.currentTime, audioElement.duration || 0);
-            }
-        });
+function formatAndSetProgress(current, total) {
+    if (isNaN(total) || total <= 0) return;
+    const pct = (current / total) * 100;
+    progressBar.style.width = `${pct}%`;
+    progressHandle.style.left = `${pct}%`;
 
-        audioElement.addEventListener('ended', stopTrack);
+    const formatTime = (secs) => {
+        const m = Math.floor(secs / 60).toString().padStart(2, '0');
+        const s = Math.floor(secs % 60).toString().padStart(2, '0');
+        return `${m}:${s}`;
+    };
+    timeCurrent.textContent = formatTime(current);
+    timeTotal.textContent = formatTime(total);
+}
 
-        function formatAndSetProgress(current, total) {
-            if (isNaN(total) || total <= 0) return;
-            const pct = (current / total) * 100;
-            progressBar.style.width = `${pct}%`;
-            progressHandle.style.left = `${pct}%`;
+progressBarContainer.addEventListener('click', (e) => {
+    if (!audioCtx || !audioElement || !audioElement.duration) return;
+    const rect = progressBarContainer.getBoundingClientRect();
+    const pct = (e.clientX - rect.left) / rect.width;
+    audioElement.currentTime = pct * audioElement.duration;
+    formatAndSetProgress(audioElement.currentTime, audioElement.duration);
+});
 
-            const formatTime = (secs) => {
-                const m = Math.floor(secs / 60).toString().padStart(2, '0');
-                const s = Math.floor(secs % 60).toString().padStart(2, '0');
-                return `${m}:${s}`;
-            };
-            timeCurrent.textContent = formatTime(current);
-            timeTotal.textContent = formatTime(total);
+// 彻底修复并接通：本地拖拽/选择注入管理系统
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('border-tlou-rust'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('border-tlou-rust'));
+dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('border-tlou-rust');
+    if (e.dataTransfer.files.length > 0) handleAudioFileLoad(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', (e) => {
+    if (e.target.files.length > 0) handleAudioFileLoad(e.target.files[0]);
+});
+
+function handleAudioFileLoad(file) {
+    stopTrack();
+    const fileUrl = URL.createObjectURL(file);
+    const nameWithoutExt = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+    
+    const trackId = 'local_' + Date.now();
+    const newTrackItem = document.createElement('div');
+    newTrackItem.id = trackId;
+    newTrackItem.className = "flex items-center justify-between p-3 rounded-xl border border-[var(--card-border)] bg-tlou-glass cursor-pointer hover:bg-[var(--moss-color)]/20 transition-all group";
+    newTrackItem.innerHTML = `
+        <div class="flex items-center space-x-3 overflow-hidden">
+            <span class="font-mono text-[10px] text-tlou-ash/40 group-hover:text-tlou-rust transition-colors">● INJECTED</span>
+            <div class="overflow-hidden">
+                <p class="font-cinzel text-xs font-bold text-[var(--text-white)] truncate">${nameWithoutExt}</p>
+                <p class="font-mono text-[9px] text-tlou-ash/40 truncate">LOCAL // FILE_NODE</p>
+            </div>
+        </div>
+        <span class="font-mono text-[10px] text-tlou-ash/40 border border-[var(--card-border)] px-1.5 py-0.5 rounded uppercase">${file.type.split('/')[1] || 'AUDIO'}</span>
+    `;
+    
+    const formatStr = file.type.toUpperCase().split('/')[1] || 'RAW';
+    
+    // 完美复用动态引擎，彻底粉碎切换失效死锁
+    newTrackItem.onclick = () => {
+        selectTrack(trackId, fileUrl, nameWithoutExt, 'Local Buffer', formatStr, 'DIRECT DECODE');
+    };
+
+    playlistTracks.appendChild(newTrackItem);
+    newTrackItem.click(); // 上传后自动触发播放
+}
+
+// --- 实时高阶 Retina 频谱画布渲染器 ---
+const canvas = document.getElementById('visualizerCanvas');
+const canvasCtx = canvas.getContext('2d');
+
+function renderVisualizerFrame() {
+    requestAnimationFrame(renderVisualizerFrame);
+    const width = canvas.width = canvas.clientWidth;
+    const height = canvas.height = canvas.clientHeight;
+    canvasCtx.clearRect(0, 0, width, height);
+
+    if (!analyser) {
+        canvasCtx.lineWidth = 1.5;
+        canvasCtx.strokeStyle = isDarkMode ? 'rgba(74, 93, 67, 0.25)' : 'rgba(56, 72, 51, 0.2)';
+        canvasCtx.beginPath(); canvasCtx.moveTo(0, height / 2); canvasCtx.lineTo(width, height / 2); canvasCtx.stroke();
+        return;
+    }
+
+    const bufferLength = analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+    analyser.getByteFrequencyData(dataArray);
+
+    const barWidth = (width / bufferLength) * 1.8;
+    let barHeight; let x = 0;
+
+    for (let i = 0; i < bufferLength; i++) {
+        barHeight = dataArray[i];
+        const scale = barHeight / 255;
+        const hCalculated = height * scale * 0.85;
+
+        let gradient = canvasCtx.createLinearGradient(x, height, x, height - hCalculated);
+        if (isDarkMode) {
+            gradient.addColorStop(0, 'rgba(74, 93, 67, 0.15)');
+            gradient.addColorStop(0.6, 'rgba(217, 119, 54, 0.45)');
+            gradient.addColorStop(1, 'rgba(255, 255, 255, 0.7)');
+        } else {
+            gradient.addColorStop(0, 'rgba(56, 72, 51, 0.1)');
+            gradient.addColorStop(0.7, 'rgba(179, 80, 26, 0.5)');
+            gradient.addColorStop(1, 'rgba(10, 13, 8, 0.8)');
         }
 
-        progressBarContainer.addEventListener('click', (e) => {
-            if (!audioCtx || !audioElement.duration) return;
-            const rect = progressBarContainer.getBoundingClientRect();
-            const pct = (e.clientX - rect.left) / rect.width;
-            audioElement.currentTime = pct * audioElement.duration;
-            formatAndSetProgress(audioElement.currentTime, audioElement.duration);
-        });
+        canvasCtx.fillStyle = gradient;
+        canvasCtx.fillRect(x, height - hCalculated, barWidth - 1.5, hCalculated);
+        x += barWidth;
+    }
 
-        // 临时注入外部音乐处理流程
-        dropZone.addEventListener('click', () => fileInput.click());
-        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('border-tlou-rust'); });
-        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('border-tlou-rust'));
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('border-tlou-rust');
-            if (e.dataTransfer.files.length > 0) handleAudioFileLoad(e.dataTransfer.files[0]);
-        });
-        fileInput.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) handleAudioFileLoad(e.target.files[0]);
-        });
-
-        function handleAudioFileLoad(file) {
-            stopTrack();
-            initAudioPipeline();
-            const fileUrl = URL.createObjectURL(file);
-            audioElement.src = fileUrl;
-            const nameWithoutExt = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
-            
-            const trackId = 'local_' + Date.now();
-            const newTrackItem = document.createElement('div');
-            newTrackItem.id = trackId;
-            newTrackItem.className = "flex items-center justify-between p-3 rounded-xl border border-[var(--card-border)] bg-tlou-glass cursor-pointer hover:bg-[var(--moss-color)]/20 transition-all group";
-            newTrackItem.innerHTML = `
-                <div class="flex items-center space-x-3 overflow-hidden">
-                    <span class="font-mono text-[10px] text-tlou-ash/40 group-hover:text-tlou-moss transition-colors">● INJECTED</span>
-                    <div class="overflow-hidden">
-                        <p class="font-cinzel text-xs font-bold text-[var(--text-white)] truncate">${nameWithoutExt}</p>
-                        <p class="font-mono text-[9px] text-tlou-ash/40 truncate">LOCAL // FILE_NODE</p>
-                    </div>
-                </div>
-                <span class="font-mono text-[10px] text-tlou-ash/40 border border-[var(--card-border)] px-1.5 py-0.5 rounded uppercase">${file.type.split('/')[1] || 'AUDIO'}</span>
-            `;
-            
-            newTrackItem.onclick = () => {
-                document.querySelectorAll('#playlistTracks > div').forEach(el => {
-                    el.classList.remove('border-tlou-rust/30', 'bg-tlou-rust/5');
-                    el.classList.add('border-[var(--card-border)]');
-                });
-                newTrackItem.classList.add('border-tlou-rust/30', 'bg-tlou-rust/5');
-                trackSourceLabel.textContent = "Temporary Node";
-                trackTitle.textContent = nameWithoutExt;
-                trackArtist.textContent = "Local Buffer";
-                specFormat.textContent = file.type.toUpperCase().split('/')[1] || 'RAW';
-                specRate.textContent = "DIRECT DECODE";
-                audioElement.oncanplaythrough = () => { formatAndSetProgress(0, audioElement.duration); };
-                playTrack();
-            };
-
-            playlistTracks.appendChild(newTrackItem);
-            newTrackItem.click();
-        }
-
-        // --- 实时高阶 Retina 频谱画布渲染器 ---
-        const canvas = document.getElementById('visualizerCanvas');
-        const canvasCtx = canvas.getContext('2d');
-        
-        function renderVisualizerFrame() {
-            requestAnimationFrame(renderVisualizerFrame);
-            const width = canvas.width = canvas.clientWidth;
-            const height = canvas.height = canvas.clientHeight;
-            canvasCtx.clearRect(0, 0, width, height);
-
-            if (!analyser) {
-                canvasCtx.lineWidth = 1.5;
-                canvasCtx.strokeStyle = isDarkMode ? 'rgba(74, 93, 67, 0.25)' : 'rgba(56, 72, 51, 0.2)';
-                canvasCtx.beginPath(); canvasCtx.moveTo(0, height / 2); canvasCtx.lineTo(width, height / 2); canvasCtx.stroke();
-                return;
-            }
-
-            const bufferLength = analyser.frequencyBinCount;
-            const dataArray = new Uint8Array(bufferLength);
-            analyser.getByteFrequencyData(dataArray);
-
-            const barWidth = (width / bufferLength) * 1.8;
-            let barHeight; let x = 0;
-
-            for (let i = 0; i < bufferLength; i++) {
-                barHeight = dataArray[i];
-                const scale = barHeight / 255;
-                const hCalculated = height * scale * 0.85;
-
-                let gradient = canvasCtx.createLinearGradient(x, height, x, height - hCalculated);
-                if (isDarkMode) {
-                    gradient.addColorStop(0, 'rgba(74, 93, 67, 0.15)');
-                    gradient.addColorStop(0.6, 'rgba(217, 119, 54, 0.45)');
-                    gradient.addColorStop(1, 'rgba(255, 255, 255, 0.7)');
-                } else {
-                    gradient.addColorStop(0, 'rgba(56, 72, 51, 0.1)');
-                    gradient.addColorStop(0.7, 'rgba(179, 80, 26, 0.5)');
-                    gradient.addColorStop(1, 'rgba(10, 13, 8, 0.8)');
-                }
-
-                canvasCtx.fillStyle = gradient;
-                canvasCtx.fillRect(x, height - hCalculated, barWidth - 1.5, hCalculated);
-                x += barWidth;
-            }
-
-            canvasCtx.lineWidth = 1.2;
-            canvasCtx.strokeStyle = isDarkMode ? 'rgba(217, 119, 54, 0.3)' : 'rgba(179, 80, 26, 0.25)';
-            canvasCtx.beginPath();
-            let sliceWidth = width * 1.0 / bufferLength; let lineX = 0;
-            for (let i = 0; i < bufferLength; i++) {
-                let v = dataArray[i] / 255.0;
-                let y = height - (v * height * 0.75) - 4;
-                if (i === 0) canvasCtx.moveTo(lineX, y); else canvasCtx.lineTo(lineX, y);
-                lineX += sliceWidth;
-            }
-            canvasCtx.stroke();
-        }
-        renderVisualizerFrame();
+    canvasCtx.lineWidth = 1.2;
+    canvasCtx.strokeStyle = isDarkMode ? 'rgba(217, 119, 54, 0.3)' : 'rgba(179, 80, 26, 0.25)';
+    canvasCtx.beginPath();
+    let sliceWidth = width * 1.0 / bufferLength; let lineX = 0;
+    for (let i = 0; i < bufferLength; i++) {
+        let v = dataArray[i] / 255.0;
+        let y = height - (v * height * 0.75) - 4;
+        if (i === 0) canvasCtx.moveTo(lineX, y); else canvasCtx.lineTo(lineX, y);
+        lineX += sliceWidth;
+    }
+    canvasCtx.stroke();
+}
+renderVisualizerFrame();
     </script>
 </body>
 </html>
