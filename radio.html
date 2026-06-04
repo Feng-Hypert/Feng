@@ -306,57 +306,40 @@ themeToggleBtn.addEventListener('click', () => {
     }
 });
 
-        let audioCtx = null;
-        let analyser = null;
-        let localSource = null;
-        const audioElement = new Audio();
-        audioElement.crossOrigin = "anonymous";
+let audioCtx = null;
+let analyser = null;
+let localSource = null;
+let audioElement = null; // 【核心改动】允许动态销毁与重建
 
-        let isPlaying = false;
+function initAudioPipeline() {
+    if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 256;
+        analyser.connect(audioCtx.destination);
+    }
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+}
 
-        const btnPlay = document.getElementById('btnPlay');
-        const btnStop = document.getElementById('btnStop');
-        const svgPlay = document.getElementById('svgPlay');
-        const svgPause = document.getElementById('svgPause');
-        const vinylDisc = document.getElementById('vinylDisc');
-        const audioArm = document.getElementById('audioArm');
-        const sliderVolume = document.getElementById('sliderVolume');
-        
-        const trackTitle = document.getElementById('trackTitle');
-        const trackArtist = document.getElementById('trackArtist');
-        const trackSourceLabel = document.getElementById('trackSourceLabel');
-        const specFormat = document.getElementById('specFormat');
-        const specRate = document.getElementById('specRate');
-        
-        const timeCurrent = document.getElementById('timeCurrent');
-        const timeTotal = document.getElementById('timeTotal');
-        const progressBar = document.getElementById('progressBar');
-        const progressBarContainer = document.getElementById('progressBarContainer');
-        const progressHandle = document.getElementById('progressHandle');
-
-        const dropZone = document.getElementById('dropZone');
-        const fileInput = document.getElementById('fileInput');
-        const playlistTracks = document.getElementById('playlistTracks');
-
-        function initAudioPipeline() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                analyser = audioCtx.createAnalyser();
-                analyser.fftSize = 256;
-                localSource = audioCtx.createMediaElementSource(audioElement);
-                localSource.connect(analyser);
-                analyser.connect(audioCtx.destination);
-            }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-        }
-
-// 优化升级版：万能动态切歌路由系统（彻底修复切歌死机/失效问题）
+// 核心控制枢纽：动态重构音频管线系统
 function selectTrack(elementId, fileUrl, title, artist, format, rate) {
-    stopTrack(); // 先彻底断开当前正在播放的音频流
+    // 1. 先彻底暂停并安全释放上一个旧 Audio 对象，斩断旧的 Web Audio 路由
+    if (audioElement) {
+        audioElement.pause();
+        audioElement.src = "";
+        audioElement.load();
+    }
+    if (localSource) {
+        localSource.disconnect(); // 拔掉旧绑点，释放内存
+        localSource = null;
+    }
+    
+    isPlaying = false;
+    updatePlayerUI();
 
-    // 1. 排他性高亮当前点击的信号歌曲方块
+    // 2. 排他性高亮当前点击的信号歌曲方块
     document.querySelectorAll('#playlistTracks > div').forEach(el => {
         el.classList.remove('border-tlou-rust/30', 'bg-tlou-rust/5');
         el.classList.add('border-[var(--card-border)]');
@@ -367,75 +350,91 @@ function selectTrack(elementId, fileUrl, title, artist, format, rate) {
         activeTrack.classList.add('border-tlou-rust/30', 'bg-tlou-rust/5');
     }
 
-    // 2. 【核心修复】更换 src 后，必须强制调用 .load()，命令浏览器撕毁旧缓存并重组新管道
+    // 3. 实例化一个完全独立的全新 Audio 对象，彻底绕过内核换源假死 Bug
+    audioElement = new Audio();
+    audioElement.crossOrigin = "anonymous";
     audioElement.src = fileUrl;
-    audioElement.load(); 
 
-    // 3. 动态刷新控制面板文字规格
+    // 4. 确保基础音频上下文处于激活状态
+    initAudioPipeline();
+
+    // 5. 将这个新鲜出炉的全新 Audio 重新接回示波分析器上
+    localSource = audioCtx.createMediaElementSource(audioElement);
+    localSource.connect(analyser);
+
+    // 6. 动态刷新控制面板文字规格
     trackSourceLabel.textContent = "Built-in Frequency";
     trackTitle.textContent = title;
     trackArtist.textContent = artist;
     specFormat.textContent = format;
     specRate.textContent = rate;
 
-    // 4. 【核心修复】改用精度更高的元数据加载监听，防止快速切歌时总时间轴卡死在 00:00
+    // 7. 由于每次都是全新的 Audio 对象，必须在其身上重新绑定时间轴刷新与结束状态机
     audioElement.onloadedmetadata = () => {
         formatAndSetProgress(0, audioElement.duration);
     };
-    
-    // 清理可能残留的旧事件
-    audioElement.oncanplaythrough = null;
 
+    audioElement.addEventListener('timeupdate', () => {
+        if (isPlaying) {
+            formatAndSetProgress(audioElement.currentTime, audioElement.duration || 0);
+        }
+    });
+
+    audioElement.addEventListener('ended', stopTrack);
+
+    // 8. 满血启动
     playTrack();
 }
 
-// 优化版：具备异步安全锁的播放驱动
+// 具备异步流安全锁的播放驱动
 function playTrack() {
-    if(!audioElement.src) return;
+    if(!audioElement || !audioElement.src) return;
     initAudioPipeline();
 
+    // 每次播放时对齐当前调音台的音量滑块数值，防止切歌爆音
     audioElement.volume = sliderVolume.value;
 
-    // 采用 Promise 监听机制，确保浏览器真正顺利解密播放后，才激活 UI 旋转和唱针状态
     audioElement.play()
         .then(() => {
             isPlaying = true;
             updatePlayerUI();
         })
         .catch(e => {
-            console.log("音频管道重置或播放被浏览器异步策略拦截，已安全释放资源:", e);
+            console.log("播放流被内核安全拦截或中断，已自动复位资源:", e);
             isPlaying = false;
             updatePlayerUI();
         });
 }
 
-        function pauseTrack() {
-            isPlaying = false;
-            updatePlayerUI();
-            audioElement.pause();
-        }
+function pauseTrack() {
+    isPlaying = false;
+    updatePlayerUI();
+    if (audioElement) audioElement.pause();
+}
 
-        function stopTrack() {
-            isPlaying = false;
-            updatePlayerUI();
-            audioElement.pause();
-            audioElement.currentTime = 0;
-            formatAndSetProgress(0, audioElement.duration || 0);
-        }
+function stopTrack() {
+    isPlaying = false;
+    updatePlayerUI();
+    if (audioElement) {
+        audioElement.pause();
+        audioElement.currentTime = 0;
+        formatAndSetProgress(0, audioElement.duration || 0);
+    }
+}
 
-        function updatePlayerUI() {
-            if (isPlaying) {
-                svgPlay.classList.add('hidden');
-                svgPause.classList.remove('hidden');
-                vinylDisc.classList.remove('spinning-paused');
-                audioArm.style.transform = 'rotate([5deg])';
-            } else {
-                svgPlay.classList.remove('hidden');
-                svgPause.classList.add('hidden');
-                vinylDisc.classList.add('spinning-paused');
-                audioArm.style.transform = 'rotate([-15deg])';
-            }
-        }
+function updatePlayerUI() {
+    if (isPlaying) {
+        svgPlay.classList.add('hidden');
+        svgPause.classList.remove('hidden');
+        vinylDisc.classList.remove('spinning-paused');
+        audioArm.style.transform = 'rotate(5deg)';
+    } else {
+        svgPlay.classList.remove('hidden');
+        svgPause.classList.add('hidden');
+        vinylDisc.classList.add('spinning-paused');
+        audioArm.style.transform = 'rotate(-15deg)';
+    }
+}
 
         btnPlay.addEventListener('click', () => {
             if (isPlaying) pauseTrack();
