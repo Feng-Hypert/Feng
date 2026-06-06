@@ -1,1 +1,343 @@
-<h1>Welcome to Archive</h1>
+<!DOCTYPE html>
+<html lang="zh-CN" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ERIS // Signal Router Matrix</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        cinzel: ['Cinzel', 'serif'],
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        tlou: {
+                            rust: 'var(--accent-color)',
+                            moss: 'var(--moss-color)',
+                            ash: 'var(--text-color)',
+                            dark: 'var(--bg-color)',
+                            glass: 'var(--card-bg)'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        :root {
+            --bg-color: #080a06;
+            --text-color: #c3c7db;
+            --text-white: #ffffff;
+            --card-bg: rgba(8, 10, 6, 0.75);
+            --card-border: rgba(255, 255, 255, 0.05);
+            --accent-color: #d97736;
+            --moss-color: #4a5d43;
+        }
+
+        .theme-light {
+            --bg-color: #d6dad0;
+            --text-color: #232d1f;
+            --text-white: #0a0d08;
+            --card-bg: rgba(255, 255, 255, 0.65);
+            --card-border: rgba(0, 0, 0, 0.08);
+            --accent-color: #b3501a;
+            --moss-color: #384833;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 1.2s cubic-bezier(0.25, 1, 0.5, 1), color 1.2s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        /* 环境胶片扫描线 */
+        .scanlines {
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%);
+            background-size: 100% 4px;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        /* 快捷搜索框占位符样式 */
+        input::placeholder {
+            color: var(--text-color);
+            opacity: 0.3;
+        }
+    </style>
+</head>
+<body class="font-sans relative min-h-screen overflow-x-hidden selection:bg-[var(--moss-color)] selection:text-white">
+
+    <!-- 扫描线层 -->
+    <div class="fixed inset-0 scanlines opacity-25"></div>
+    
+    <!-- 动态孢子/粒子背景画布 -->
+    <canvas id="routerCanvas" class="fixed inset-0 w-full h-full block z-10 touch-none pointer-events-none opacity-40"></canvas>
+
+    <!-- 核心排版容器 -->
+    <div class="relative min-h-screen flex flex-col justify-between z-20 px-6 py-8 md:px-16 md:py-12 max-w-7xl mx-auto w-full">
+        
+        <!-- 顶部导航栏 -->
+        <header class="w-full flex justify-between items-center border-b border-[var(--card-border)] pb-4 backdrop-blur-sm bg-black/5 px-4 rounded-lg">
+            <div class="flex items-center space-x-4">
+                <a href="./index.html" class="font-mono text-xs text-tlou-ash/60 hover:text-tlou-rust transition-colors flex items-center space-x-1 group">
+                    <span class="transform group-hover:-translate-x-1 transition-transform">←</span>
+                    <span>RETURN TO ARK</span>
+                </a>
+                <span class="h-4 w-px bg-white/10"></span>
+                <span class="font-cinzel text-md tracking-[0.2em] font-bold text-[var(--text-white)]">SIGNAL ROUTER PROTOCOL</span>
+            </div>
+            <div class="text-xs font-mono text-tlou-ash/30 hidden sm:block">STATUS: INTERCEPTING BROADCASTS</div>
+        </header>
+
+        <!-- 主体区域：矩阵切换器 -->
+        <main class="my-auto py-12 w-full flex flex-col items-center">
+            
+            <!-- 搜索过滤栏 / 终端输入模拟 -->
+            <div class="w-full max-w-xl mb-12 relative group">
+                <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                    <span class="font-mono text-xs text-tlou-rust animate-pulse mr-1">&gt;</span>
+                    <span class="font-mono text-[10px] text-tlou-ash/40">FILTER:</span>
+                </div>
+                <input type="text" id="matrixSearch" oninput="filterMatrix()" placeholder="输入网点关键字（如 AI, Video, GPT...）" 
+                       class="w-full bg-black/20 border border-[var(--card-border)] focus:border-tlou-rust/60 rounded-xl pl-20 pr-4 py-3 text-xs font-mono text-[var(--text-white)] focus:outline-none backdrop-blur-md transition-all shadow-inner">
+                <span class="absolute right-4 top-3.5 font-mono text-[9px] text-tlou-ash/30 tracking-widest hidden sm:inline">SYS_KEY_INDEX</span>
+            </div>
+
+            <!-- 分组矩阵容器 -->
+            <div class="w-full space-y-12">
+                
+                <!-- 板块 A: AI COGNITION CORE (AI 认知矩阵) -->
+                <div>
+                    <div class="flex items-center space-x-2 border-b border-dashed border-[var(--card-border)] pb-2 mb-6">
+                        <span class="w-1.5 h-1.5 rounded-full bg-tlou-rust animate-ping"></span>
+                        <h2 class="font-cinzel text-xs font-bold text-tlou-rust tracking-[0.2em] uppercase">MATRIX ALPHA // AI COGNITION NETWORKS</h2>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="aiMatrix">
+                        <!-- Gemini -->
+                        <a href="https://gemini.google.com" target="_blank" class="matrix-card group relative block border border-[var(--card-border)] bg-tlou-glass p-5 rounded-xl backdrop-blur-md hover:border-tlou-moss/50 hover:translate-y-[-2px] transition-all duration-300" data-tags="ai gemini google 智能">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="font-mono text-[9px] text-tlou-moss font-bold">[ FREQ_NODE: 01 ]</span>
+                                <span class="font-mono text-[9px] text-tlou-ash/30">PING: 18ms</span>
+                            </div>
+                            <h3 class="font-cinzel text-md font-bold text-[var(--text-white)] group-hover:text-tlou-rust transition-colors tracking-wide">GOOGLE GEMINI</h3>
+                            <p class="text-[11px] text-tlou-ash/70 font-light mt-1">原生多模态认知核心。捕获深空逻辑与直通语言架构。</p>
+                        </a>
+
+                        <!-- ChatGPT -->
+                        <a href="https://chatgpt.com" target="_blank" class="matrix-card group relative block border border-[var(--card-border)] bg-tlou-glass p-5 rounded-xl backdrop-blur-md hover:border-tlou-moss/50 hover:translate-y-[-2px] transition-all duration-300" data-tags="ai chatgpt openai gpt 智能">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="font-mono text-[9px] text-tlou-moss font-bold">[ FREQ_NODE: 02 ]</span>
+                                <span class="font-mono text-[9px] text-tlou-ash/30">PING: 24ms</span>
+                            </div>
+                            <h3 class="font-cinzel text-md font-bold text-[var(--text-white)] group-hover:text-tlou-rust transition-colors tracking-wide">OPENAI CHATGPT</h3>
+                            <p class="text-[11px] text-tlou-ash/70 font-light mt-1">大语言网格基石。解密混乱逻辑，输出高确定性协议。</p>
+                        </a>
+
+                        <!-- Claude -->
+                        <a href="https://claude.ai" target="_blank" class="matrix-card group relative block border border-[var(--card-border)] bg-tlou-glass p-5 rounded-xl backdrop-blur-md hover:border-tlou-moss/50 hover:translate-y-[-2px] transition-all duration-300" data-tags="ai claude anthropic 智能 写作">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="font-mono text-[9px] text-tlou-moss font-bold">[ FREQ_NODE: 03 ]</span>
+                                <span class="font-mono text-[9px] text-tlou-ash/30">PING: 15ms</span>
+                            </div>
+                            <h3 class="font-cinzel text-md font-bold text-[var(--text-white)] group-hover:text-tlou-rust transition-colors tracking-wide">ANTHROPIC CLAUDE</h3>
+                            <p class="text-[11px] text-tlou-ash/70 font-light mt-1">深度思维反思网络。针对长文本数据流的强力语义过滤器。</p>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 板块 B: STREAMING RESONANCE (流媒体与社群共振) -->
+                <div>
+                    <div class="flex items-center space-x-2 border-b border-dashed border-[var(--card-border)] pb-2 mb-6">
+                        <span class="w-1.5 h-1.5 rounded-full bg-stone-500"></span>
+                        <h2 class="font-cinzel text-xs font-bold text-tlou-ash/60 tracking-[0.2em] uppercase">MATRIX BETA // STREAMING RESONANCE BROADCASTS</h2>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="mediaMatrix">
+                        <!-- YouTube -->
+                        <a href="https://youtube.com" target="_blank" class="matrix-card group relative block border border-[var(--card-border)] bg-tlou-glass p-5 rounded-xl backdrop-blur-md hover:border-tlou-moss/50 hover:translate-y-[-2px] transition-all duration-300" data-tags="stream youtube video 视频 娱乐">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="font-mono text-[9px] text-tlou-rust font-bold">[ WAVE_LINK: 01 ]</span>
+                                <span class="font-mono text-[9px] text-tlou-ash/30">BANDWIDTH: 4K_RAW</span>
+                            </div>
+                            <h3 class="font-cinzel text-md font-bold text-[var(--text-white)] group-hover:text-tlou-rust transition-colors tracking-wide">YOUTUBE STATION</h3>
+                            <p class="text-[11px] text-tlou-ash/70 font-light mt-1">旧世界最大影像总线。汇集人类历史与流媒体微光音轨。</p>
+                        </a>
+
+                        <!-- TikTok -->
+                        <a href="https://tiktok.com" target="_blank" class="matrix-card group relative block border border-[var(--card-border)] bg-tlou-glass p-5 rounded-xl backdrop-blur-md hover:border-tlou-moss/50 hover:translate-y-[-2px] transition-all duration-300" data-tags="stream tiktok biotik 短视频 text">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="font-mono text-[9px] text-tlou-rust font-bold">[ WAVE_LINK: 02 ]</span>
+                                <span class="font-mono text-[9px] text-tlou-ash/30">STATUS: REVERBING</span>
+                            </div>
+                            <h3 class="font-cinzel text-md font-bold text-[var(--text-white)] group-hover:text-tlou-rust transition-colors tracking-wide">TIKTOK CASCADE</h3>
+                            <p class="text-[11px] text-tlou-ash/70 font-light mt-1">高频脉冲式视觉洪流。瞬间激发、不断更迭的意识碎片。</p>
+                        </a>
+
+                        <!-- Instagram -->
+                        <a href="https://instagram.com" target="_blank" class="matrix-card group relative block border border-[var(--card-border)] bg-tlou-glass p-5 rounded-xl backdrop-blur-md hover:border-tlou-moss/50 hover:translate-y-[-2px] transition-all duration-300" data-tags="stream ig instagram photo 社交 影像">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="font-mono text-[9px] text-tlou-rust font-bold">[ WAVE_LINK: 03 ]</span>
+                                <span class="font-mono text-[9px] text-tlou-ash/30">FORMAT: SNAPSHOT</span>
+                            </div>
+                            <h3 class="font-cinzel text-md font-bold text-[var(--text-white)] group-hover:text-tlou-rust transition-colors tracking-wide">INSTAGRAM MATRIX</h3>
+                            <p class="text-[11px] text-tlou-ash/70 font-light mt-1">静止图像与瞬间光影日志。捕捉荒原中残留的生活美学美感。</p>
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+
+        <!-- 页脚 -->
+        <footer class="mt-auto flex flex-col sm:flex-row justify-between items-center text-[10px] font-mono text-tlou-ash/40 border-t border-[var(--card-border)] pt-4 gap-4">
+            <p>© 2026 ERIS ROUTER. ROUTING FREQUENCIES.</p>
+            <button id="themeToggle" class="group flex items-center space-x-2 border border-[var(--card-border)] bg-black/5 px-4 py-1.5 rounded-full backdrop-blur-sm hover:text-[var(--text-white)] transition-colors">
+                <span id="themeLabel">MODE: DEEP NIGHT</span>
+                <span class="w-2 h-2 rounded-full bg-tlou-rust"></span>
+            </button>
+        </footer>
+    </div>
+
+    <!-- 粒子系统与交互控制 -->
+    <script>
+        let isDarkMode = true;
+        const themeToggleBtn = document.getElementById('themeToggle');
+        const themeLabel = document.getElementById('themeLabel');
+
+        // 昼夜平滑转换系统
+        themeToggleBtn.addEventListener('click', () => {
+            isDarkMode = !isDarkMode;
+            if (isDarkMode) {
+                document.body.classList.remove('theme-light');
+                themeLabel.textContent = 'MODE: DEEP NIGHT';
+                document.documentElement.style.setProperty('--bg-color', '#080a06');
+                document.documentElement.style.setProperty('--text-color', '#c3c7db');
+                document.documentElement.style.setProperty('--text-white', '#ffffff');
+                document.documentElement.style.setProperty('--card-bg', 'rgba(8, 10, 6, 0.75)');
+                document.documentElement.style.setProperty('--card-border', 'rgba(255, 255, 255, 0.05)');
+                document.documentElement.style.setProperty('--accent-color', '#d97736');
+                document.documentElement.style.setProperty('--moss-color', '#4a5d43');
+            } else {
+                document.body.classList.add('theme-light');
+                themeLabel.textContent = 'MODE: MISTY DAY';
+                document.documentElement.style.setProperty('--bg-color', '#d6dad0');
+                document.documentElement.style.setProperty('--text-color', '#232d1f');
+                document.documentElement.style.setProperty('--text-white', '#0a0d08');
+                document.documentElement.style.setProperty('--card-bg', 'rgba(255, 255, 255, 0.65)');
+                document.documentElement.style.setProperty('--card-border', 'rgba(0, 0, 0, 0.08)');
+                document.documentElement.style.setProperty('--accent-color', '#b3501a');
+                document.documentElement.style.setProperty('--moss-color', '#384833');
+            }
+            playPluck();
+        });
+
+        // 实时高能搜索框过滤算法
+        function filterMatrix() {
+            const query = document.getElementById('matrixSearch').value.toLowerCase().trim();
+            const cards = document.querySelectorAll('.matrix-card');
+            
+            cards.forEach(card => {
+                const tags = card.getAttribute('data-tags').toLowerCase();
+                const title = card.querySelector('h3').textContent.toLowerCase();
+                if (tags.includes(query) || title.includes(query)) {
+                    card.style.display = 'block';
+                    card.style.opacity = '1';
+                } else {
+                    card.style.opacity = '0';
+                    setTimeout(() => { if(card.style.opacity === '0') card.style.display = 'none'; }, 200);
+                }
+            });
+        }
+
+        // Web Audio 原生忧郁吉他拨弦效果器
+        let audioCtx = null;
+        function playPluck() {
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const now = audioCtx.currentTime;
+                // E 调忧郁根音
+                const freqs = [164.81, 220.00, 246.94, 329.63];
+                const freq = freqs[Math.floor(Math.random() * freqs.length)];
+
+                const osc = audioCtx.createOscillator();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(freq, now);
+
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(800, now);
+                filter.frequency.exponentialRampToValueAtTime(100, now + 1.2);
+
+                const gain = audioCtx.createGain();
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.start(now);
+                osc.stop(now + 1.3);
+            } catch(e) {}
+        }
+
+        // 给所有的切换卡片绑定轻微拨弦物理交互反馈
+        document.querySelectorAll('.matrix-card').forEach(card => {
+            card.addEventListener('mouseenter', playPluck);
+        });
+
+        // 简易轻量化环境悬浮孢子动画引擎
+        const canvas = document.getElementById('routerCanvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function initCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            particles = [];
+            for(let i=0; i<40; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    r: Math.random() * 2 + 0.5,
+                    vx: (Math.random() - 0.5) * 0.2,
+                    vy: -(Math.random() * 0.3 + 0.1),
+                    alpha: Math.random() * 0.5 + 0.2
+                });
+            }
+        }
+
+        function drawParticles() {
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            ctx.fillStyle = isDarkMode ? 'rgba(217, 119, 54, 0.3)' : 'rgba(56, 72, 51, 0.3)';
+            
+            particles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                if(p.y < -10) p.y = canvas.height + 10;
+                if(p.x < -10 || p.x > canvas.width + 10) p.x = Math.random() * canvas.width;
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+                ctx.fill();
+            });
+            requestAnimationFrame(drawParticles);
+        }
+
+        window.addEventListener('resize', initCanvas);
+        initCanvas();
+        drawParticles();
+    </script>
+</body>
+</html>
