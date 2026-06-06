@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ERIS // Reclaimed Frequencies</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -39,8 +37,8 @@
             --bg-color: #080a06;
             --text-color: #c3c7db;
             --text-white: #ffffff;
-            --card-bg: rgba(8, 10, 6, 0.75);
-            --card-border: rgba(255, 255, 255, 0.05);
+            --card-bg: rgba(8, 10, 6, 0.7);
+            --card-border: rgba(255, 255, 255, 0.06);
             --accent-color: #d97736;
             --moss-color: #4a5d43;
             --light-ray-color: rgba(120, 150, 100, 0.14);
@@ -50,7 +48,7 @@
             --bg-color: #d6dad0; /* 西雅图浓雾阴天 */
             --text-color: #232d1f; /* 深炭石板松针绿 */
             --text-white: #0a0d08;
-            --card-bg: rgba(255, 255, 255, 0.65);
+            --card-bg: rgba(255, 255, 255, 0.55);
             --card-border: rgba(0, 0, 0, 0.08);
             --accent-color: #b3501a; /* 潮湿铁锈红 */
             --moss-color: #384833;
@@ -60,14 +58,14 @@
         body {
             background-color: var(--bg-color);
             color: var(--text-color);
-            transition: background-color 1.2s cubic-bezier(0.25, 1, 0.5, 1), color 1.2s cubic-bezier(0.25, 1, 0.5, 1);
+            transition: background-color 1.5s cubic-bezier(0.25, 1, 0.5, 1), color 1.5s cubic-bezier(0.25, 1, 0.5, 1);
         }
 
         /* 环境胶片扫描线 */
         .scanlines {
             background: linear-gradient(
                 rgba(18, 16, 16, 0) 50%, 
-                rgba(0, 0, 0, 0.15) 50%
+                rgba(0, 0, 0, 0.12) 50%
             );
             background-size: 100% 4px;
             z-index: 2;
@@ -77,8 +75,8 @@
         /* 鼠标手电筒环境光晕 */
         .ambient-light {
             background: radial-gradient(
-                circle 300px at var(--mouse-x, 50%) var(--mouse-y, 50%),
-                rgba(74, 93, 67, 0.12) 0%,
+                circle 350px at var(--mouse-x, 50%) var(--mouse-y, 50%),
+                rgba(74, 93, 67, 0.14) 0%,
                 rgba(8, 10, 6, 0) 100%
             );
             pointer-events: none;
@@ -93,121 +91,132 @@
         .bar-2 { animation: bounce 0.4s ease-in-out infinite alternate 0.1s; }
         .bar-3 { animation: bounce 0.8s ease-in-out infinite alternate 0.2s; }
 
-        .backdrop-art {
-            transition: opacity 1.5s ease-in-out, color 1.2s cubic-bezier(0.25, 1, 0.5, 1);
+        /* 带有超平滑物理缓冲的视差层 */
+        .parallax-layer {
+            transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1), opacity 1.5s ease-in-out;
         }
 
-        /* 西雅图摩天轮平滑旋转动画 */
+        /* 西雅图摩天轮平滑旋转 */
         @keyframes rotateWheel {
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
         }
         .rotate-wheel {
             transform-origin: 280px 145px;
-            animation: rotateWheel 120s linear infinite;
+            animation: rotateWheel 140s linear infinite;
         }
 
-        /* 海浪微风吹拂动效 */
+        /* 海浪微风动效 */
         @keyframes waveFloat {
             0%, 100% { transform: translateY(0) scaleY(1); }
-            50% { transform: translateY(2px) scaleY(1.05); }
+            50% { transform: translateY(3px) scaleY(1.03); }
         }
         .wave-animate {
-            animation: waveFloat 6s ease-in-out infinite;
+            animation: waveFloat 7s ease-in-out infinite;
         }
     </style>
 </head>
 <body class="font-sans relative min-h-screen overflow-x-hidden selection:bg-[var(--moss-color)] selection:text-white">
 
-    <!-- 胶片颗粒 & 手电筒环境光罩 -->
     <div class="fixed inset-0 scanlines opacity-25"></div>
     <div id="light-beam" class="fixed inset-0 ambient-light transition-opacity duration-300 z-10"></div>
 
-    <!-- 高性能量子粒子画板（呈现孢子、丁达尔光栅、实时扇翅大蝴蝶） -->
-    <canvas id="quantumCanvas" class="fixed inset-0 w-full h-full block z-10 touch-none"></canvas>
-
-    <!-- 电影感背景画卷：西雅图海岸线、摩天轮与自然废墟 -->
-    <div class="fixed inset-x-0 bottom-0 h-[65vh] pointer-events-none z-5 opacity-25 flex justify-between items-end px-4 sm:px-12 pb-2 backdrop-art select-none">
+    <div id="parallax-background" class="parallax-layer fixed inset-x-0 bottom-0 h-[65vh] pointer-events-none z-[12] opacity-50 flex justify-between items-end px-4 sm:px-12 pb-2 select-none">
         
-        <!-- 左侧：西雅图海岸线、静止码头、慢速旋转的大摩天轮与太空针塔 -->
-        <svg id="backdrop-art-svg" class="w-80 sm:w-[32rem] h-56 sm:h-72 text-tlou-moss fill-none stroke-current stroke-1" viewBox="0 0 500 250" xmlns="http://www.w3.org/2000/svg">
-            <!-- 远景：奥林匹克山脉模糊轮廓 -->
-            <path d="M 0,180 Q 80,160 140,175 T 280,165 T 420,175 T 500,165 L 500,250 L 0,250 Z" class="opacity-30 fill-current" />
+        <svg id="backdrop-art-svg" class="w-full h-full text-tlou-moss fill-none stroke-current stroke-1" viewBox="0 0 1000 350" xmlns="http://www.w3.org/2000/svg">
+            <path d="M 0,260 Q 120,230 220,250 T 450,240 T 700,255 T 1000,240 L 1000,350 L 0,350 Z" class="opacity-20 fill-current border-none" />
             
-            <!-- 中景：西雅图城市摩天大楼与太空针塔剪影 -->
-            <path d="M 80,180 L 80,110 L 95,110 L 95,180 M 130,180 L 130,120 L 150,120 L 150,180 M 160,180 L 160,135 L 175,135 L 175,180" class="opacity-40" />
-            <!-- 太空针塔 (Space Needle) -->
+            <g class="opacity-40 stroke-[1.2]">
+                <path d="M 320,80 Q 324,74 328,80 Q 332,74 336,80" />
+                <path d="M 345,65 Q 348,60 352,65 Q 356,60 360,65" />
+                <path d="M 310,95 Q 313,91 316,95 Q 319,91 322,95" />
+                <path d="M 285,75 Q 288,71 292,75 Q 296,71 300,75" />
+                <path d="M 650,110 Q 653,105 657,110 Q 661,105 665,110" />
+                <path d="M 672,98 Q 675,94 678,98 Q 681,94 684,98" />
+            </g>
+
             <g class="opacity-50">
-                <path d="M110,180 L110,70 M103,70 L117,70 M106,70 L106,180 M114,180 L114,70" />
-                <path d="M96,180 C103,140 106,90 106,70 L114,70 C114,90 117,140 124,180" />
-                <ellipse cx="110" cy="65" rx="20" ry="6" />
-                <ellipse cx="110" cy="62" rx="14" ry="4" />
-                <line x1="110" y1="58" x2="110" y2="30" />
+                <path d="M 0,240 L 140,255 L 145,275 L 0,265 Z" />
+                <path d="M 140,255 Q 160,257 170,285 L 155,290 Q 148,272 138,272" stroke-dasharray="3,3" />
+                <line x1="45" y1="246" x2="45" y2="310" class="stroke-[2]" />
+                <line x1="105" y1="252" x2="105" y2="310" class="stroke-[2]" />
+                <circle cx="165" cy="305" r="4" class="fill-current" />
+                <circle cx="178" cy="308" r="2.5" class="fill-current" />
+                <polygon points="185,310 192,304 196,310" class="fill-current" />
             </g>
 
-            <!-- 核心升级：西雅图大摩天轮 (Seattle Great Wheel) -->
-            <!-- 支撑架（固定） -->
-            <line x1="280" y1="145" x2="255" y2="215" class="stroke-[1.5]" />
-            <line x1="280" y1="145" x2="305" y2="215" class="stroke-[1.5]" />
-            <!-- 慢速旋转轮体 -->
-            <g class="rotate-wheel">
-                <circle cx="280" cy="145" r="50" class="stroke-[1.2]" />
-                <circle cx="280" cy="145" r="43" class="stroke-[0.8] stroke-dasharray-[2,2]" />
-                <circle cx="280" cy="145" r="8" class="fill-current" />
-                <!-- 轮辐 -->
-                <line x1="280" y1="95" x2="280" y2="195" />
-                <line x1="230" y1="145" x2="330" y2="145" />
-                <line x1="245" y1="110" x2="315" y2="180" />
-                <line x1="245" y1="180" x2="315" y2="110" />
-                <line x1="260" y1="99" x2="300" y2="191" />
-                <line x1="260" y1="191" x2="300" y2="99" />
-                <line x1="235" y1="126" x2="325" y2="164" />
-                <line x1="235" y1="164" x2="325" y2="126" />
-                <!-- 轿厢微小圆点 -->
-                <circle cx="280" cy="95" r="2" class="fill-current" />
-                <circle cx="280" cy="195" r="2" class="fill-current" />
-                <circle cx="230" cy="145" r="2" class="fill-current" />
-                <circle cx="330" cy="145" r="2" class="fill-current" />
-                <circle cx="245" cy="110" r="2" class="fill-current" />
-                <circle cx="315" cy="180" r="2" class="fill-current" />
-                <circle cx="245" cy="180" r="2" class="fill-current" />
-                <circle cx="315" cy="110" r="2" class="fill-current" />
+            <g class="opacity-35">
+                <path d="M 200,260 L 200,160 L 225,160 L 225,260 M 240,260 L 240,140 L 275,140 L 275,260 M 290,260 L 290,190 L 320,190 L 320,260" />
+                <path d="M 460,260 L 460,170 L 490,170 L 490,260 M 510,260 L 510,130 L 540,130 L 540,260" />
             </g>
 
-            <!-- 岸边废弃码头木桩 (Pylons) 与延伸海岸线 -->
-            <path d="M0,215 L500,215" class="stroke-[1.5]" />
-            <rect x="200" y="210" width="6" height="25" class="fill-current opacity-75" />
-            <rect x="212" y="213" width="5" height="22" class="fill-current opacity-75" />
-            <rect x="340" y="211" width="6" height="24" class="fill-current opacity-75" />
-            <rect x="355" y="208" width="5" height="27" class="fill-current opacity-75" />
+            <g class="opacity-55" transform="translate(110, 45)">
+                <path d="M110,215 L110,70 M103,70 L117,70 M106,70 L106,215 M114,215 L114,70" />
+                <path d="M96,215 C103,165 106,100 106,70 L114,70 C114,100 117,165 124,215" />
+                <ellipse cx="110" cy="65" rx="22" ry="6" />
+                <ellipse cx="110" cy="61" rx="15" ry="4" />
+                <line x1="110" y1="57" x2="110" y2="25" />
+            </g>
+
+            <g transform="translate(140, 65)">
+                <line x1="280" y1="145" x2="255" y2="245" class="stroke-[1.5]" />
+                <line x1="280" y1="145" x2="305" y2="245" class="stroke-[1.5]" />
+                <g class="rotate-wheel">
+                    <circle cx="280" cy="145" r="50" class="stroke-[1.2]" />
+                    <circle cx="280" cy="145" r="43" class="stroke-[0.8]" stroke-dasharray="4,4" />
+                    <circle cx="280" cy="145" r="8" class="fill-current" />
+                    <line x1="280" y1="95" x2="280" y2="195" />
+                    <line x1="230" y1="145" x2="330" y2="145" />
+                    <line x1="245" y1="110" x2="315" y2="180" />
+                    <line x1="245" y1="180" x2="315" y2="110" />
+                    <line x1="260" y1="99" x2="300" y2="191" />
+                    <line x1="260" y1="191" x2="300" y2="99" />
+                    <circle cx="280" cy="95" r="2" class="fill-current" />
+                    <circle cx="280" cy="195" r="2" class="fill-current" />
+                    <circle cx="230" cy="145" r="2" class="fill-current" />
+                    <circle cx="330" cy="145" r="2" class="fill-current" />
+                    <circle cx="245" cy="110" r="2" class="fill-current" />
+                    <circle cx="315" cy="180" r="2" class="fill-current" />
+                    <circle cx="245" cy="180" r="2" class="fill-current" />
+                    <circle cx="315" cy="110" r="2" class="fill-current" />
+                </g>
+            </g>
+
+            <g class="opacity-45 fill-none stroke-current">
+                <path d="M 680,305 L 725,292 L 745,302 L 690,312 Z" class="fill-current opacity-20" />
+                <line x1="710" y1="295" x2="710" y2="270" class="stroke-[1.2]" />
+                <path d="M 710,272 Q 698,280 710,288" class="fill-current opacity-30" />
+            </g>
+
+            <path d="M0,310 L1000,310" class="stroke-[1.5]" />
+            <rect x="380" y="305" width="5" height="22" class="fill-current opacity-75" />
+            <rect x="392" y="308" width="4" height="18" class="fill-current opacity-75" />
+            <rect x="610" y="304" width="5" height="24" class="fill-current opacity-75" />
+            <rect x="622" y="302" width="4" height="26" class="fill-current opacity-75" />
             
-            <!-- 动态微澜海岸海浪波纹 -->
             <g class="wave-animate opacity-40">
-                <path d="M 10,225 Q 40,222 70,225 T 130,225 T 190,225 T 250,225 T 310,225 T 370,225 T 430,225 T 490,225" />
-                <path d="M 30,232 Q 60,229 90,232 T 150,232 T 210,232 T 270,232 T 330,232 T 390,232 T 450,232" class="opacity-60" />
+                <path d="M 0,320 Q 30,316 60,320 T 120,320 T 180,320 T 240,320 T 300,320 T 360,320 T 420,320 T 480,320 T 540,320 T 600,320 T 660,320 T 720,320 T 780,320 T 840,320 T 900,320 T 960,320" />
+                <path d="M 20,328 Q 50,324 80,328 T 140,328 T 200,328 T 260,328 T 320,328 T 380,328 T 440,328 T 500,328 T 560,328 T 620,328 T 680,328 T 740,328 T 800,328 T 860,328 T 920,328" class="opacity-50" />
             </g>
         </svg>
+    </div>
 
-        <!-- 右侧：自然野性蕨类叶片框架（TLOU核心标志性植物，烘托废土氛围） -->
-        <svg id="backdrop-fern-svg" class="w-56 sm:w-80 h-48 sm:h-64 text-tlou-moss fill-current opacity-85" viewBox="0 0 200 180" xmlns="http://www.w3.org/2000/svg">
+    <div class="fixed right-0 bottom-0 h-[50vh] w-64 sm:w-96 pointer-events-none z-[12] opacity-40 select-none flex items-end justify-end overflow-hidden">
+        <svg id="backdrop-fern-svg" class="w-full h-full text-tlou-moss fill-current translate-x-12 translate-y-12" viewBox="0 0 200 180" xmlns="http://www.w3.org/2000/svg">
             <path d="M10,180 C40,140 90,110 170,100 C150,115 120,130 90,145 C60,160 30,175 10,180 Z" />
             <path d="M45,145 C50,130 65,115 80,110 C70,120 60,135 50,145 Z" />
             <path d="M70,132 C78,118 95,105 110,102 C100,112 88,125 75,132 Z" />
             <path d="M100,121 C110,110 128,98 142,97 C130,105 118,115 105,121 Z" />
             <path d="M10,180 C30,120 70,70 140,40 C120,60 90,85 70,110 C50,135 25,160 10,180 Z" />
-            <path d="M35,135 C40,115 58,95 72,90 C62,105 50,122 38,135 Z" />
-            <path d="M55,110 C62,90 82,72 98,68 C86,82 72,100 60,110 Z" />
-            <path d="M80,88 C90,70 110,55 125,52 C112,65 98,80 85,88 Z" />
         </svg>
     </div>
 
-    <!-- 底部渐变虚化，增加景深和视觉沉淀感 -->
-    <div class="fixed bottom-0 left-0 w-full h-36 bg-gradient-to-t from-[var(--bg-color)] to-transparent z-5 pointer-events-none opacity-95"></div>
+    <div class="fixed bottom-0 left-0 w-full h-36 bg-gradient-to-t from-[var(--bg-color)] to-transparent z-[13] pointer-events-none opacity-95"></div>
 
-    <!-- 核心排版容器 -->
+    <canvas id="quantumCanvas" class="fixed inset-0 w-full h-full block z-[14] touch-none"></canvas>
+
     <div class="relative min-h-screen flex flex-col justify-between z-20 px-6 py-8 md:px-16 md:py-12">
         
-        <!-- 导航顶部栏 -->
         <header class="w-full flex justify-between items-center border-b border-[var(--card-border)] pb-4 backdrop-blur-sm bg-black/5 px-4 rounded-lg">
             <div class="flex items-center space-x-4">
                 <span class="font-cinzel text-xl tracking-[0.3em] font-bold text-[var(--text-white)] hover:text-tlou-rust transition-all cursor-default">ERIS</span>
@@ -216,7 +225,6 @@
             </div>
             
             <div class="flex items-center space-x-6">
-                <!-- 环境音效开关 -->
                 <button id="soundToggle" class="group flex items-center space-x-2 text-xs font-mono tracking-widest text-tlou-ash/60 hover:text-[var(--text-white)] transition-colors focus:outline-none">
                     <span id="soundStatus">SOUND ON</span>
                     <div class="flex items-end space-x-0.5 h-4 w-5">
@@ -229,7 +237,6 @@
             </div>
         </header>
 
-        <!-- 主屏幕文字介绍（调高透明度后，文字更加醒目突出） -->
         <main class="my-auto max-w-4xl flex flex-col justify-center py-12 md:py-24 pointer-events-none select-none">
             <p class="font-mono text-xs md:text-sm text-tlou-rust tracking-[0.3em] mb-4 uppercase">System Rebirth // Zero Protocol</p>
             <h1 class="font-cinzel text-4xl md:text-7xl font-bold tracking-tight text-[var(--text-white)] mb-6 leading-tight">
@@ -240,18 +247,15 @@
                 欢迎来到 Eris 的数字方舟。在废弃喧嚣的网络荒野中，我们开辟出这块归于沉静的自留地。
             </p>
             
-            <!-- 动态说明交互徽章 -->
             <div class="flex items-center space-x-3 text-xs font-mono text-tlou-ash/70 pointer-events-auto w-fit bg-black/25 px-4 py-2 rounded-full border border-[var(--card-border)] backdrop-blur-sm">
                 <span class="w-2 h-2 rounded-full bg-tlou-rust animate-ping"></span>
-                <span>触摸/点击背景，唤醒沉睡的灵魂</span>
+                <span>触摸/点击任意背景 ➔ 释放吉他共鸣并重组成型</span>
             </div>
         </main>
 
-        <!-- 底部门户板块（4大模块） -->
         <section class="w-full z-20">
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 
-                <!-- 模块 01 -->
                 <div class="card-click group relative overflow-hidden rounded-xl border border-[var(--card-border)] bg-tlou-glass p-6 backdrop-blur-md transition-all duration-500 hover:border-tlou-moss/50 hover:translate-y-[-4px] cursor-pointer" onclick="handleCardClick('Archive')">
                     <div class="absolute -top-12 -right-12 w-24 h-24 bg-tlou-moss/10 rounded-full blur-xl group-hover:bg-tlou-moss/20 transition-all duration-500"></div>
                     <div class="flex justify-between items-start mb-4">
@@ -270,7 +274,6 @@
                     </div>
                 </div>
 
-                <!-- 模块 02 -->
                 <div class="card-click group relative overflow-hidden rounded-xl border border-[var(--card-border)] bg-tlou-glass p-6 backdrop-blur-md transition-all duration-500 hover:border-tlou-moss/50 hover:translate-y-[-4px] cursor-pointer" onclick="handleCardClick('Radio')">
                     <div class="absolute -top-12 -right-12 w-24 h-24 bg-tlou-rust/10 rounded-full blur-xl group-hover:bg-tlou-rust/20 transition-all duration-500"></div>
                     <div class="flex justify-between items-start mb-4">
@@ -289,7 +292,6 @@
                     </div>
                 </div>
 
-                <!-- 模块 03 -->
                 <div class="card-click group relative overflow-hidden rounded-xl border border-[var(--card-border)] bg-tlou-glass p-6 backdrop-blur-md transition-all duration-500 hover:border-tlou-moss/50 hover:translate-y-[-4px] cursor-pointer" onclick="handleCardClick('Gallery')">
                     <div class="absolute -top-12 -right-12 w-24 h-24 bg-tlou-moss/10 rounded-full blur-xl group-hover:bg-tlou-moss/20 transition-all duration-500"></div>
                     <div class="flex justify-between items-start mb-4">
@@ -309,8 +311,7 @@
                     </div>
                 </div>
 
-                <!-- 模块 04 -->
-                <div class="card-click group relative overflow-hidden rounded-xl border border-[var(--card-border)] bg-tlou-glass p-6 backdrop-blur-md transition-all duration-500 hover:border-tlou-moss/50 hover:translate-y-[-4px] cursor-pointer" onclick="handleCardClick('Remnants')">
+                <div class="card-click group relative overflow-hidden rounded-xl border border-[var(--card-border)] bg-tlou-glass p-6 backdrop-blur-md transition-all duration-500 hover:border-tlou-rust/10 hover:translate-y-[-4px] cursor-pointer" onclick="handleCardClick('Remnants')">
                     <div class="absolute -top-12 -right-12 w-24 h-24 bg-tlou-rust/10 rounded-full blur-xl group-hover:bg-tlou-rust/20 transition-all duration-500"></div>
                     <div class="flex justify-between items-start mb-4">
                         <span class="font-mono text-xs text-tlou-rust tracking-wider">PORTAL 04</span>
@@ -330,11 +331,9 @@
 
             </div>
 
-            <!-- 页脚 -->
             <div class="mt-8 flex flex-col md:flex-row justify-between items-center text-[11px] font-mono text-tlou-ash/40 border-t border-[var(--card-border)] pt-4 gap-4">
                 <p>© 2026 ERIS. ALL RIGHTS RECLAIMED.</p>
                 
-                <!-- 雾化效果昼夜切换按钮 -->
                 <button id="themeToggle" class="group flex items-center space-x-2 text-[11px] font-mono tracking-widest text-tlou-ash/50 hover:text-[var(--text-white)] transition-all focus:outline-none border border-[var(--card-border)] bg-black/5 px-4 py-2 rounded-full backdrop-blur-sm">
                     <span id="themeLabel">MODE: DEEP NIGHT</span>
                     <span class="w-2.5 h-2.5 rounded-full bg-tlou-rust group-hover:scale-110 transition-transform shadow-[0_0_8px_var(--accent-color)]"></span>
@@ -343,7 +342,6 @@
         </section>
     </div>
 
-    <!-- 弹窗警告 UI -->
     <div id="portalAlert" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md opacity-0 pointer-events-none transition-all duration-300">
         <div class="bg-tlou-dark border border-tlou-moss/50 rounded-xl p-8 max-w-sm w-full shadow-2xl relative">
             <span class="absolute top-2 right-4 font-mono text-xs text-tlou-rust">SYS_ALERT</span>
@@ -357,9 +355,7 @@
         </div>
     </div>
 
-    <!-- 核心物理及交互粒子引擎 -->
     <script>
-        // 昼夜系统控制器
         let isDarkMode = true;
         const themeToggleBtn = document.getElementById('themeToggle');
         const themeLabel = document.getElementById('themeLabel');
@@ -396,7 +392,6 @@
         // Web Audio 原生合成器
         let audioCtx = null;
         let soundActive = true;
-
         const soundToggleBtn = document.getElementById('soundToggle');
         const soundStatusSpan = document.getElementById('soundStatus');
 
@@ -422,7 +417,6 @@
                     audioCtx.resume();
                 }
                 const now = audioCtx.currentTime;
-                // TLOU 忧郁古典木吉他和弦：E2, B2, E3, G3, B3, F#3
                 const freqs = [164.81, 246.94, 329.63, 392.00, 493.88, 369.99];
                 const freq = freqs[Math.floor(Math.random() * freqs.length)];
 
@@ -462,101 +456,86 @@
             }
         }
 
-// 导航切换卡片：延时拨弦跳转
-function handleCardClick(name) {
-    playAmbientPluck(); // 触发忧郁木吉他拨弦声
-
-    // 延迟 200 毫秒跳转，给吉他声留出一点共鸣消散的时间
-    setTimeout(() => {
-        if (name === 'Archive') {
-            window.location.href = './archive.html';
-        } else if (name === 'Radio') {
-            window.location.href = './radio.html';
-        } else if (name === 'Gallery') {
-            window.location.href = './gallery.html';
-        } else if (name === 'Remnants') {
-            window.location.href = './remnants.html';
+        function handleCardClick(name) {
+            playAmbientPluck();
+            setTimeout(() => {
+                if (name === 'Archive') window.location.href = './archive.html';
+                else if (name === 'Radio') window.location.href = './radio.html';
+                else if (name === 'Gallery') window.location.href = './gallery.html';
+                else if (name === 'Remnants') window.location.href = './remnants.html';
+            }, 200);
         }
-    }, 200);
-}
 
         function closeAlert() {
-            const alertModal = document.getElementById('portalAlert');
-            alertModal.classList.add('opacity-0', 'pointer-events-none');
+            document.getElementById('portalAlert').classList.add('opacity-0', 'pointer-events-none');
         }
 
-        // --- RETINA 高分辨率画布初始化 ---
+        // --- RETINA 画布及高级重力视差控制器 ---
         const canvas = document.getElementById('quantumCanvas');
         const ctx = canvas.getContext('2d');
         let dpr = window.devicePixelRatio || 1;
+        const bgLayer = document.getElementById('parallax-background');
+        const fernLayer = document.getElementById('backdrop-fern-svg');
 
-        let mouseX = window.innerWidth / 2;
-        let mouseY = window.innerHeight / 2;
-        const beam = document.getElementById('light-beam');
+        function applyVisualParallax(clientX, clientY) {
+            const offsetX = (clientX - window.innerWidth / 2) / (window.innerWidth / 2);
+            const offsetY = (clientY - window.innerHeight / 2) / (window.innerHeight / 2);
+            
+            // 背景与前景植物做不对等像素移位，形成真实 3D 纵深
+            bgLayer.style.transform = `translate(${-offsetX * 12}px, ${-offsetY * 6}px)`;
+            if(fernLayer) fernLayer.style.transform = `translate(${48 - offsetX * 25}px, ${48 - offsetY * 12}px)`;
 
-        function updateLightSource(x, y) {
-            mouseX = x;
-            mouseY = y;
-            const xPercent = (x / window.innerWidth) * 100;
-            const yPercent = (y / window.innerHeight) * 100;
-            beam.style.setProperty('--mouse-x', `${xPercent}%`);
-            beam.style.setProperty('--mouse-y', `${yPercent}%`);
+            const xPercent = (clientX / window.innerWidth) * 100;
+            const yPercent = (clientY / window.innerHeight) * 100;
+            document.getElementById('light-beam').style.setProperty('--mouse-x', `${xPercent}%`);
+            document.getElementById('light-beam').style.setProperty('--mouse-y', `${yPercent}%`);
         }
 
         window.addEventListener('mousemove', (e) => {
-            updateLightSource(e.clientX, e.clientY);
+            applyVisualParallax(e.clientX, e.clientY);
         });
 
         window.addEventListener('touchmove', (e) => {
             if (e.touches.length > 0) {
-                updateLightSource(e.touches[0].clientX, e.touches[0].clientY);
+                applyVisualParallax(e.touches[0].clientX, e.touches[0].clientY);
             }
         }, { passive: true });
 
-        // --- 核心升级 1：电影级光栅系统 (VOLUMETRIC LIGHT RASTER) ---
-        // 模拟透过密林茂密树冠投射下的平行光，带有微小角度波动和动态强度噪点
+        // --- 电影级线目光栅系统 ---
         const lightShafts = [];
-        const SHAFT_COUNT = 12; // 12道细腻的平行光束，组成完整的光栅系统
+        const SHAFT_COUNT = 12;
 
         for (let i = 0; i < SHAFT_COUNT; i++) {
             lightShafts.push({
-                offset: (i / SHAFT_COUNT) * 150 - 75, // 相互平行的错开偏移量
-                angle: 3.14 * 0.78, // 主投射方向：右上至左下 (约135度)
-                width: Math.random() * 25 + 15, // 每道光束的初始宽度
-                speed: 0.0003 + Math.random() * 0.0004, // 模拟风吹树叶的晃动速度
-                phase: Math.random() * Math.PI * 2, // 随机初始相位
-                intensity: Math.random() * 0.4 + 0.6 // 每条光栅的独立亮度系数
+                offset: (i / SHAFT_COUNT) * 150 - 75, 
+                angle: 3.14 * 0.78, 
+                width: Math.random() * 25 + 15, 
+                speed: 0.0003 + Math.random() * 0.0004, 
+                phase: Math.random() * Math.PI * 2, 
+                intensity: Math.random() * 0.4 + 0.6 
             });
         }
 
         function drawVolumetricLight(w, h) {
             ctx.save();
-            // 使用 screen 混合模式，获得极佳的电影感高光叠加效果
             ctx.globalCompositeOperation = 'screen';
 
-            const startX = w * 1.1; // 起点定在屏幕右上角外部
+            const startX = w * 1.1; 
             const startY = -h * 0.1;
 
-            lightShafts.forEach((s, idx) => {
-                // 缓慢摆动光栅，模拟树枝摇曳
+            lightShafts.forEach((s) => {
                 const sweep = Math.sin(Date.now() * s.speed + s.phase) * 0.04;
                 const curAngle = s.angle + sweep;
-
-                // 计算光栅两端在屏幕外的延展坐标
                 const beamLength = Math.max(w, h) * 1.8;
                 
-                // 光栅线左边缘
                 const leftX = startX + s.offset + Math.cos(curAngle - 0.01) * beamLength;
                 const leftY = startY + Math.sin(curAngle - 0.01) * beamLength;
                 
-                // 光栅线右边缘
                 const rightX = startX + s.offset + s.width + Math.cos(curAngle + 0.01) * beamLength;
                 const rightY = startY + Math.sin(curAngle + 0.01) * beamLength;
 
-                // 物理光学渐变：从右上光源中心向左下方呈自然平方反比衰减
                 const grad = ctx.createLinearGradient(startX, startY, (leftX + rightX) / 2, (leftY + rightY) / 2);
                 
-                // 根据当前亮/暗主题动态注入光栅色彩
                 let colorBase = isDarkMode ? '95, 130, 85' : '217, 130, 54';
                 let maxAlpha = isDarkMode ? 0.09 * s.intensity : 0.07 * s.intensity;
 
@@ -578,15 +557,15 @@ function handleCardClick(name) {
             ctx.restore();
         }
 
-        // --- 核心升级 2 & 3：粒子生命之网与动态蝴蝶重组系统 ---
-        const PARTICLES_COUNT = 380; // 高密度粒子数量
+        // --- 粒子生命之网与动态互动状态机 ---
+        const PARTICLES_COUNT = 400; 
         let particles = [];
         let erisShapePoints = [];
-        // 粒子状态机: AMBIENT (待机微弱孢子) | EXPLODED (疯狂扩散) | BUTTERFLY (精美蝴蝶) | ERIS (文字) | DISSOLVING (消散)
-        let particleState = 'AMBIENT';
+        
+        // 【核心优化】完美归还：一开始粒子呈 'AMBIENT'（全屏四处漂浮的弱空气孢子）
+        let particleState = 'AMBIENT'; 
         let stateTimer = null;
 
-        // 预渲染生成 ERIS 字体的精准数学坐标采样点
         function generateErisTextPoints(width, height) {
             width = Math.max(1, width || 800);
             height = Math.max(1, height || 600);
@@ -600,7 +579,7 @@ function handleCardClick(name) {
             tempCtx.fillRect(0, 0, width, height);
             
             tempCtx.fillStyle = '#ffffff';
-            const fontSize = Math.min(width * 0.16, 110);
+            const fontSize = Math.min(width * 0.15, 110);
             tempCtx.font = `bold ${fontSize}px "Cinzel", serif`;
             tempCtx.textAlign = 'center';
             tempCtx.textBaseline = 'middle';
@@ -613,79 +592,71 @@ function handleCardClick(name) {
             for (let y = 0; y < height; y += step) {
                 for (let x = 0; x < width; x += step) {
                     const idx = (y * width + x) * 4;
-                    if (imgData[idx] > 110) {
-                        pts.push({ x, y });
-                    }
+                    if (imgData[idx] > 110) pts.push({ x, y });
                 }
             }
             return pts;
         }
 
         class Particle {
-            constructor() {
-                // 空间均匀初始化分布
+            constructor(isWild = false) {
+                this.isWild = isWild; // 划分 15% 比例的野生常驻孢子，增强全局生态厚度
                 this.x = Math.random() * window.innerWidth;
                 this.y = Math.random() * window.innerHeight;
-                this.vx = (Math.random() - 0.5) * 0.3;
-                this.vy = (Math.random() - 0.5) * 0.3;
+                
+                this.vx = (Math.random() - 0.5) * 0.35;
+                this.vy = (Math.random() - 0.5) * 0.35;
                 
                 this.tx = this.x;
                 this.ty = this.y;
 
-                // 基础尺寸
-                this.baseSize = Math.random() * 2.0 + 1.0;
+                this.baseSize = Math.random() * 2.2 + 1.0;
                 this.size = this.baseSize;
                 
-                // 待机状态下极大提高透明度 (降低初始 alpha 避免遮挡页面文字，呈现朦胧感)
-                this.alpha = Math.random() * 0.12 + 0.08; 
-                this.targetAlpha = this.alpha;
-                
+                // 初始待机呈半透悬浮，绝不刺眼、不挡文字
+                this.alpha = Math.random() * 0.12 + 0.06; 
                 this.randomSeed = Math.random() * 100;
             }
 
             update() {
-                // 引入高频扰动正弦风场，实现自然悬浮感
-                const windX = Math.sin((Date.now() / 1500) + this.randomSeed) * 0.15;
-                const windY = (Math.cos((Date.now() / 1800) + this.randomSeed) - 0.1) * 0.12; 
+                const windX = Math.sin((Date.now() / 1500) + this.randomSeed) * 0.16;
+                const windY = (Math.cos((Date.now() / 1800) + this.randomSeed) - 0.1) * 0.14; 
 
-                if (particleState === 'AMBIENT') {
-                    this.targetAlpha = Math.random() * 0.12 + 0.08; // 待机超高透明，绝不遮挡文字
-                    this.alpha += (this.targetAlpha - this.alpha) * 0.1;
-
+                if (particleState === 'AMBIENT' || this.isWild) {
+                    // 全屏无死角空气悬浮游走
                     this.x += this.vx + windX;
                     this.y += this.vy + windY;
 
-                    // 边缘循环边界碰撞包裹
                     if (this.x < -15) this.x = window.innerWidth + 15;
                     if (this.x > window.innerWidth + 15) this.x = -15;
                     if (this.y < -15) this.y = window.innerHeight + 15;
                     if (this.y > window.innerHeight + 15) this.y = -15;
 
+                    // 缓慢低耗自我呼吸
+                    let targetAmbientAlpha = this.isWild ? 0.18 : 0.12;
+                    this.alpha += ( (Math.sin(Date.now() * 0.001 + this.randomSeed) * 0.05 + targetAmbientAlpha) - this.alpha ) * 0.05;
                     this.size = this.baseSize + Math.sin((Date.now() / 350) + this.randomSeed) * 0.3;
 
                 } else if (particleState === 'DISSOLVING') {
-                    this.targetAlpha = Math.random() * 0.12 + 0.08;
-                    this.alpha += (this.targetAlpha - this.alpha) * 0.05;
-
+                    // 解散动画惯性回归
                     this.x += this.vx + windX;
                     this.y += this.vy + windY;
                     this.vx *= 0.95;
                     this.vy *= 0.95;
+                    this.alpha += (0.1 - this.alpha) * 0.05;
 
                 } else if (particleState === 'EXPLODED') {
-                    // 剧烈爆发阻尼
                     this.vx *= 0.94;
                     this.vy *= 0.94;
                     this.x += this.vx;
                     this.y += this.vy;
-                    this.alpha = Math.min(1.0, this.alpha + 0.08);
+                    this.alpha = Math.min(1.0, this.alpha + 0.06);
 
                 } else if (particleState === 'BUTTERFLY' || particleState === 'ERIS') {
-                    // 精密弹性形变驱动力，引导粒子高速归位
                     const dx = this.tx - this.x;
                     const dy = this.ty - this.y;
                     
-                    const stiffness = 0.08;
+                    const stiffness = particleState === 'ERIS' ? 0.09 : 0.055;
                     const friction = 0.82;
 
                     this.vx += dx * stiffness;
@@ -696,19 +667,18 @@ function handleCardClick(name) {
                     this.x += this.vx + windX * 0.1;
                     this.y += this.vy + windY * 0.1;
 
-                    this.alpha += (0.85 - this.alpha) * 0.1; // 聚集时凝聚高亮
-                    this.size = this.baseSize * 1.2 + Math.sin((Date.now() / 100) + this.randomSeed) * 0.4;
+                    // 拼图成立时爆发耀眼的高亮凝聚感
+                    this.alpha += (0.82 - this.alpha) * 0.1; 
+                    this.size = this.baseSize * 1.15 + Math.sin((Date.now() / 100) + this.randomSeed) * 0.4;
                 }
             }
 
             draw() {
-                // 计算当前粒子与右上角电影光栅的物理干涉，产生强光高亮折射效果
                 const dx = this.x - window.innerWidth;
                 const dy = this.y - 0;
                 const pAngle = Math.atan2(dy, dx);
                 
                 let inLight = false;
-                // 用平行方向差值模拟进入树叶光束
                 const testAngle = 3.14 * 0.78;
                 if (Math.abs(pAngle - (testAngle - 3.14)) < 0.15) {
                     inLight = true;
@@ -718,21 +688,18 @@ function handleCardClick(name) {
                 let renderAlpha = this.alpha;
                 
                 if (inLight) {
-                    renderSize *= 1.6; // 光照折射放大
-                    renderAlpha = Math.min(1.0, this.alpha * 2.0); // 丁达尔照亮
+                    renderSize *= 1.6; 
+                    renderAlpha = Math.min(1.0, this.alpha * 2.2); 
                 }
 
                 let drawColor = '';
                 if (isDarkMode) {
-                    // 荧光萤火橘 / 深林松针绿
                     drawColor = this.randomSeed > 45 ? `rgba(240, 135, 60, ${renderAlpha})` : `rgba(135, 190, 110, ${renderAlpha})`;
                 } else {
-                    // 温暖金秋粉尘 / 深绿藤蔓孢子
                     drawColor = this.randomSeed > 45 ? `rgba(217, 110, 30, ${renderAlpha})` : `rgba(65, 95, 55, ${renderAlpha})`;
                 }
 
-                // 添加超感官发光阴影层，完美烘托丁达尔烟雾质感
-                ctx.shadowBlur = inLight ? 14 : 4;
+                ctx.shadowBlur = inLight ? 14 : (this.isWild ? 6 : 3);
                 ctx.shadowColor = isDarkMode ? 'rgba(240, 135, 60, 0.4)' : 'rgba(217, 110, 30, 0.2)';
 
                 ctx.fillStyle = drawColor;
@@ -742,64 +709,42 @@ function handleCardClick(name) {
             }
         }
 
-        // 升级 3 数学建模：计算精细蝴蝶图案各个骨架、翅膀叶片与触角的粒子标靶点 (带翅膀实时煽动)
         function getButterflyPoints(index, total, width, height, time) {
             const centerX = width / 2;
             const centerY = height * 0.42;
-            
-            // 依据屏幕宽度自适应缩放蝴蝶体量
-            const baseScale = Math.min(width * 0.15, 120);
+            const baseScale = Math.min(width * 0.14, 115);
 
-            // 翅膀扇动正弦物理振荡
             const flap = Math.sin(time * 0.008); 
-            // 3D 透视扇动：左右机翼 X 轴压缩比
             const flapFactor = 0.25 + 0.75 * Math.abs(flap); 
 
-            // 1. 将前 40 个粒子分配给蝴蝶的身体 (Body / Thorax)
             if (index < 40) {
-                const t = index / 39; // 0 到 1
+                const t = index / 39; 
                 const bodyY = centerY - 50 + t * 100;
                 const bodyX = centerX + Math.sin(t * 12) * 2.5;
                 return { x: bodyX, y: bodyY };
             }
 
-            // 2. 将 40 至 70 的粒子分配给左、右两根卷曲的蝴蝶触角 (Antennae)
             if (index < 70) {
                 const side = index % 2 === 0 ? -1 : 1;
-                const t = (index - 40) / 29; // 0 到 1
+                const t = (index - 40) / 29; 
                 const antX = centerX + side * (5 + t * 35 + Math.sin(t * 3) * 10);
                 const antY = centerY - 50 - t * 40 + Math.cos(t * 3) * 15;
                 return { x: antX, y: antY };
             }
 
-            // 3. 将剩余粒子利用经典 Butterfly Curve 曲线生成华丽的双侧翅膀羽翼
             const wingIndex = index - 70;
             const wingTotal = total - 70;
-            
-            // 映射极坐标角度 theta (0 到 12 * PI, 展现高度缠绕折叠的精美纹理)
             const theta = (wingIndex / wingTotal) * Math.PI * 12;
-            
-            // Parametric Equation for Butterfly Curve
             const r = Math.exp(Math.cos(theta)) - 2 * Math.cos(4 * theta) + Math.pow(Math.sin(theta / 12), 5);
             
-            // 标准极坐标映射
             let dx = Math.sin(theta) * r * baseScale * 0.8;
-            let dy = -Math.cos(theta) * r * baseScale * 0.8; // 翻转 Y 轴对齐笛卡尔坐标系
+            let dy = -Math.cos(theta) * r * baseScale * 0.8; 
 
-            // 对左右机翼分别应用实时扇翅 (Flapping) 折叠比例
-            if (dx < 0) {
-                dx *= flapFactor;
-            } else {
-                dx *= flapFactor;
-            }
+            dx *= flapFactor;
 
-            return {
-                x: centerX + dx,
-                y: centerY + dy
-            };
+            return { x: centerX + dx, y: centerY + dy };
         }
 
-        // 初始化和响应式尺寸重计算
         function initCanvas() {
             dpr = window.devicePixelRatio || 1;
             let w = window.innerWidth;
@@ -812,12 +757,12 @@ function handleCardClick(name) {
             canvas.height = h * dpr;
             ctx.scale(dpr, dpr);
 
-            // 静态重组字形矩阵重构
             erisShapePoints = generateErisTextPoints(w, h);
 
             if (particles.length === 0) {
                 for (let i = 0; i < PARTICLES_COUNT; i++) {
-                    particles.push(new Particle());
+                    let isWildSpore = (i % 7 === 0);
+                    particles.push(new Particle(isWildSpore));
                 }
             }
 
@@ -828,29 +773,33 @@ function handleCardClick(name) {
             }
         }
 
-        // 将粒子对齐映射至实时计算的蝴蝶目标矩阵
         function updateButterflyTargets() {
             const w = window.innerWidth;
             const h = window.innerHeight;
             const time = Date.now();
+            let matrixIndex = 0;
             for (let i = 0; i < particles.length; i++) {
-                const targetPos = getButterflyPoints(i, particles.length, w, h, time);
+                if (particles[i].isWild) continue;
+                const targetPos = getButterflyPoints(matrixIndex, PARTICLES_COUNT * 0.85, w, h, time);
                 particles[i].tx = targetPos.x;
                 particles[i].ty = targetPos.y;
+                matrixIndex++;
             }
         }
 
-        // 将粒子对齐映射至 ERIS 文字字模矩阵
         function mapParticlesToEris() {
             if (erisShapePoints.length === 0) return;
+            let matrixIndex = 0;
             for (let i = 0; i < particles.length; i++) {
-                const pt = erisShapePoints[i % erisShapePoints.length];
+                if (particles[i].isWild) continue;
+                const pt = erisShapePoints[matrixIndex % erisShapePoints.length];
                 particles[i].tx = pt.x + (Math.random() - 0.5) * 4;
                 particles[i].ty = pt.y + (Math.random() - 0.5) * 4;
+                matrixIndex++;
             }
         }
 
-        // --- 核心升级 2：极速 Snappy 量子爆炸扩散与后续连续重组状态机 ---
+        // 【大升级修复】点击交互链路：Explode（炸开） ➔ Butterfly（大蝴蝶常驻） ➔ Eris（名字） ➔ Ambient（解散回流）
         function triggerQuantumExplosion(originX, originY) {
             playAmbientPluck();
             if (stateTimer) clearTimeout(stateTimer);
@@ -861,26 +810,24 @@ function handleCardClick(name) {
                 const dx = p.x - originX;
                 const dy = p.y - originY;
                 const dist = Math.sqrt(dx * dx + dy * dy);
-                
-                // 爆炸速度提升 2.2 倍，带来极佳的力量感和动态清脆度
-                const force = Math.max(8, 70 - dist / 4.5); 
+                const force = Math.max(12, 80 - dist / 3.8); 
 
                 const angle = Math.atan2(dy, dx) + (Math.random() - 0.5) * 0.4;
                 p.vx = Math.cos(angle) * force;
                 p.vy = Math.sin(angle) * force;
             });
 
-            // 阶段 1：点击后 120ms 瞬间由混乱爆裂迅速收拢为“精美飞舞的大蝴蝶”
+            // 150ms 散落后，先聚合成栩栩如生的“大蝴蝶纹章”
             stateTimer = setTimeout(() => {
                 particleState = 'BUTTERFLY';
                 updateButterflyTargets();
 
-                // 阶段 2：大蝴蝶在半空栩栩如生地煽动、呼吸 3.2 秒
+                // 蝴蝶常驻并呼吸扇翅 3.2 秒，随后幻化重组为你的名字 ERIS
                 stateTimer = setTimeout(() => {
                     particleState = 'ERIS';
                     mapParticlesToEris();
 
-                    // 阶段 3：随后流体渐变为“ERIS”英文字形，驻留 3 秒
+                    // 名字维持 3 秒，最后丝滑解散，漫开化为原本四处漂浮的弱孢子状态
                     stateTimer = setTimeout(() => {
                         particleState = 'DISSOLVING';
                         particles.forEach(p => {
@@ -888,7 +835,6 @@ function handleCardClick(name) {
                             p.vy = (Math.random() - 0.5) * 2;
                         });
 
-                        // 阶段 4：淡化重归自然的待机高透明散落状态
                         stateTimer = setTimeout(() => {
                             particleState = 'AMBIENT';
                         }, 1200);
@@ -897,10 +843,9 @@ function handleCardClick(name) {
 
                 }, 3200);
 
-            }, 120);
+            }, 150);
         }
 
-        // 点击穿透过滤（排除卡片、导航栏、警告等互动UI）
         function checkAndTrigger(clientX, clientY, target) {
             if (target.closest('.card-click') || target.closest('header') || target.closest('button') || target.closest('#portalAlert')) {
                 return;
@@ -918,37 +863,32 @@ function handleCardClick(name) {
             }
         }, { passive: true });
 
-        // 主物理逻辑动画渲染环
+        // 精密动态渲染闭环
         function animate() {
-            // 背景渐变擦除实现动态拖尾
-            if (isDarkMode) {
-                ctx.fillStyle = 'rgba(8, 10, 6, 0.2)';
-            } else {
-                ctx.fillStyle = 'rgba(214, 218, 208, 0.2)';
-            }
+            ctx.save();
+            // 【革命性修复】：利用目标消除机制清空历史画笔，既保留微弱粒子残影，又使得 Canvas 图层全透，100% 还原底层西雅图风景
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+            ctx.globalCompositeOperation = 'destination-out';
             ctx.fillRect(0, 0, canvas.width / dpr, canvas.height / dpr);
+            ctx.restore();
 
-            // 1. 优先绘制右上角的电影级光栅系统，使其居于粒子图层底层
+            // 刷写丁达尔并行光栅
             drawVolumetricLight(canvas.width / dpr, canvas.height / dpr);
 
-            // 2. 如果当前处于大蝴蝶重组状态，在绘制前动态更新蝴蝶振翅姿态目标
             if (particleState === 'BUTTERFLY') {
                 updateButterflyTargets();
             }
 
-            // 3. 物理更新并绘制孢子尘埃粒子
+            // 更新并吐出粒子
             particles.forEach(p => {
                 p.update();
                 p.draw();
             });
 
-            // 清理阴影避免造成其他画笔污染
             ctx.shadowBlur = 0;
-
             requestAnimationFrame(animate);
         }
 
-        // 启动应用
         function startApp() {
             initCanvas();
             animate();
@@ -961,7 +901,6 @@ function handleCardClick(name) {
             window.addEventListener('load', startApp);
         }
 
-        // 缩放防抖动
         let resizeTimeout;
         window.addEventListener('resize', () => {
             clearTimeout(resizeTimeout);
