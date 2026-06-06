@@ -3,10 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ERIS // Signal Router Matrix</title>
-    <!-- Tailwind CSS -->
+    <title>ERIS // Integrated Routing Console</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -38,8 +36,8 @@
             --bg-color: #080a06;
             --text-color: #c3c7db;
             --text-white: #ffffff;
-            --card-bg: rgba(8, 10, 6, 0.75);
-            --card-border: rgba(255, 255, 255, 0.05);
+            --card-bg: rgba(7, 9, 6, 0.9);
+            --card-border: rgba(255, 255, 255, 0.04);
             --accent-color: #d97736;
             --moss-color: #4a5d43;
         }
@@ -48,7 +46,7 @@
             --bg-color: #d6dad0;
             --text-color: #232d1f;
             --text-white: #0a0d08;
-            --card-bg: rgba(255, 255, 255, 0.65);
+            --card-bg: rgba(255, 255, 255, 0.75);
             --card-border: rgba(0, 0, 0, 0.08);
             --accent-color: #b3501a;
             --moss-color: #384833;
@@ -60,34 +58,30 @@
             transition: background-color 1.2s cubic-bezier(0.25, 1, 0.5, 1), color 1.2s cubic-bezier(0.25, 1, 0.5, 1);
         }
 
-        /* 环境胶片扫描线 */
         .scanlines {
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%);
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.12) 50%);
             background-size: 100% 4px;
             z-index: 2;
             pointer-events: none;
         }
 
-        /* 快捷搜索框占位符样式 */
-        input::placeholder {
-            color: var(--text-color);
-            opacity: 0.3;
+        @keyframes panelSlide {
+            0% { opacity: 0.4; transform: translateX(3px); }
+            100% { opacity: 1; transform: translateX(0); }
+        }
+        .module-active-panel {
+            animation: panelSlide 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
     </style>
 </head>
 <body class="font-sans relative min-h-screen overflow-x-hidden selection:bg-[var(--moss-color)] selection:text-white">
 
-    <!-- 扫描线层 -->
     <div class="fixed inset-0 scanlines opacity-25"></div>
-    
-    <!-- 动态孢子/粒子背景画布 -->
-    <canvas id="routerCanvas" class="fixed inset-0 w-full h-full block z-10 touch-none pointer-events-none opacity-40"></canvas>
+    <canvas id="sporeCanvas" class="fixed inset-0 w-full h-full block z-10 touch-none pointer-events-none opacity-25"></canvas>
 
-    <!-- 核心排版容器 -->
-    <div class="relative min-h-screen flex flex-col justify-between z-20 px-6 py-8 md:px-16 md:py-12 max-w-7xl mx-auto w-full">
+    <div class="relative min-h-screen flex flex-col justify-between z-20 px-4 py-6 md:px-12 md:py-10 max-w-7xl mx-auto w-full">
         
-        <!-- 顶部导航栏 -->
-        <header class="w-full flex justify-between items-center border-b border-[var(--card-border)] pb-4 backdrop-blur-sm bg-black/5 px-4 rounded-lg">
+        <header class="w-full flex justify-between items-center border-b border-[var(--card-border)] pb-4 backdrop-blur-sm bg-black/5 px-4 rounded-lg select-none">
             <div class="flex items-center space-x-4">
                 <a href="./index.html" class="font-mono text-xs text-tlou-ash/60 hover:text-tlou-rust transition-colors flex items-center space-x-1 group">
                     <span class="transform group-hover:-translate-x-1 transition-transform">←</span>
@@ -96,112 +90,255 @@
                 <span class="h-4 w-px bg-white/10"></span>
                 <span class="font-cinzel text-md tracking-[0.2em] font-bold text-[var(--text-white)]">SIGNAL ROUTER PROTOCOL</span>
             </div>
-            <div class="text-xs font-mono text-tlou-ash/30 hidden sm:block">STATUS: INTERCEPTING BROADCASTS</div>
+            <div class="text-[10px] font-mono text-tlou-ash/30 hidden sm:block tracking-widest">CONSOLE // LINK_DECK_ACTIVE</div>
         </header>
 
-        <!-- 主体区域：矩阵切换器 -->
-        <main class="my-auto py-12 w-full flex flex-col items-center">
+        <main class="flex flex-col lg:flex-row gap-6 my-auto py-6 w-full items-start relative">
             
-            <!-- 搜索过滤栏 / 终端输入模拟 -->
-            <div class="w-full max-w-xl mb-12 relative group">
-                <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                    <span class="font-mono text-xs text-tlou-rust animate-pulse mr-1">&gt;</span>
-                    <span class="font-mono text-[10px] text-tlou-ash/40">FILTER:</span>
-                </div>
-                <input type="text" id="matrixSearch" oninput="filterMatrix()" placeholder="输入网点关键字（如 AI, Video, GPT...）" 
-                       class="w-full bg-black/20 border border-[var(--card-border)] focus:border-tlou-rust/60 rounded-xl pl-20 pr-4 py-3 text-xs font-mono text-[var(--text-white)] focus:outline-none backdrop-blur-md transition-all shadow-inner">
-                <span class="absolute right-4 top-3.5 font-mono text-[9px] text-tlou-ash/30 tracking-widest hidden sm:inline">SYS_KEY_INDEX</span>
-            </div>
-
-            <!-- 分组矩阵容器 -->
-            <div class="w-full space-y-12">
+            <section id="left-sidebar" class="w-full lg:w-72 flex flex-col gap-4 shrink-0 transition-all duration-300 ease-in-out">
                 
-                <!-- 板块 A: AI COGNITION CORE (AI 认知矩阵) -->
-                <div>
-                    <div class="flex items-center space-x-2 border-b border-dashed border-[var(--card-border)] pb-2 mb-6">
-                        <span class="w-1.5 h-1.5 rounded-full bg-tlou-rust animate-ping"></span>
-                        <h2 class="font-cinzel text-xs font-bold text-tlou-rust tracking-[0.2em] uppercase">MATRIX ALPHA // AI COGNITION NETWORKS</h2>
+                <div class="flex justify-between items-center px-1 font-mono text-[9px] text-tlou-ash/40 tracking-widest uppercase select-none">
+                    <div class="flex items-center space-x-1.5">
+                        <span class="w-1 h-1 rounded-full bg-tlou-rust" id="sidebar-pulse-dot"></span>
+                        <span>FREQ_MODULES</span>
                     </div>
-                    
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="aiMatrix">
-                        <!-- Gemini -->
-                        <a href="https://gemini.google.com" target="_blank" class="matrix-card group relative block border border-[var(--card-border)] bg-tlou-glass p-5 rounded-xl backdrop-blur-md hover:border-tlou-moss/50 hover:translate-y-[-2px] transition-all duration-300" data-tags="ai gemini google 智能">
-                            <div class="flex justify-between items-start mb-2">
-                                <span class="font-mono text-[9px] text-tlou-moss font-bold">[ FREQ_NODE: 01 ]</span>
-                                <span class="font-mono text-[9px] text-tlou-ash/30">PING: 18ms</span>
+                    <button onclick="toggleSidebar()" class="hover:text-tlou-rust text-tlou-ash/60 transition-colors cursor-pointer border border-[var(--card-border)] bg-black/20 hover:bg-black/40 px-2 py-0.5 rounded text-[8px] tracking-normal font-mono">
+                        [ <span id="toggle-label">COLLAPSE</span> ]
+                    </button>
+                </div>
+
+                <div id="sidebar-slots" class="flex flex-col gap-2.5 transition-all duration-300">
+                    <div id="slot-ai" onclick="switchModule('ai')" class="group relative overflow-hidden rounded-xl border p-4 bg-tlou-glass backdrop-blur-md cursor-pointer transition-all duration-300 border-tlou-rust/40 shadow-[0_0_15px_rgba(217,119,54,0.06)]">
+                        <div class="absolute top-0 left-0 h-full w-1 bg-tlou-rust" id="bar-ai"></div>
+                        <div class="flex justify-between items-start font-mono text-[9px] mb-1">
+                            <span class="text-tlou-rust tracking-wider font-bold">MODULE // 01</span>
+                            <span class="text-tlou-rust font-bold" id="status-ai">ACTIVE</span>
+                        </div>
+                        <h3 class="font-cinzel text-xs font-bold text-[var(--text-white)] group-hover:text-tlou-rust transition-colors">AI COGNITION MATRIX</h3>
+                        <p class="text-[10px] text-tlou-ash/50 font-light mt-1 leading-normal">智能网络。挂载多模态认知演进与强化深度思维链。</p>
+                    </div>
+
+                    <div id="slot-media" onclick="switchModule('media')" class="group relative overflow-hidden rounded-xl border p-4 bg-tlou-glass backdrop-blur-md cursor-pointer transition-all duration-300 border-[var(--card-border)] opacity-60 hover:opacity-90">
+                        <div class="absolute top-0 left-0 h-full w-1 bg-transparent" id="bar-media"></div>
+                        <div class="flex justify-between items-start font-mono text-[9px] mb-1">
+                            <span class="text-tlou-ash/40 tracking-wider">MODULE // 02</span>
+                            <span class="text-tlou-ash/40" id="status-media">STANDBY</span>
+                        </div>
+                        <h3 class="font-cinzel text-xs font-bold text-[var(--text-white)] group-hover:text-tlou-rust transition-colors">MEDIA RESONANCE COILS</h3>
+                        <p class="text-[10px] text-tlou-ash/50 font-light mt-1 leading-normal">影像广播。拦截并解码旧文明大范围高清视听社区网络。</p>
+                    </div>
+
+                    <div id="slot-tools" onclick="switchModule('tools')" class="group relative overflow-hidden rounded-xl border p-4 bg-tlou-glass backdrop-blur-md cursor-pointer transition-all duration-300 border-[var(--card-border)] opacity-60 hover:opacity-90">
+                        <div class="absolute top-0 left-0 h-full w-1 bg-transparent" id="bar-tools"></div>
+                        <div class="flex justify-between items-start font-mono text-[9px] mb-1">
+                            <span class="text-tlou-ash/40 tracking-wider">MODULE // 03</span>
+                            <span class="text-tlou-ash/40" id="status-tools">STANDBY</span>
+                        </div>
+                        <h3 class="font-cinzel text-xs font-bold text-[var(--text-white)] group-hover:text-tlou-rust transition-colors">INFRASTRUCTURE VAULT</h3>
+                        <p class="text-[10px] text-tlou-ash/50 font-light mt-1 leading-normal">基建仓库。收纳开源逻辑底座、防护障壁与域名解析路由。</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="main-display-bay" class="flex-1 w-full border border-[var(--card-border)] bg-tlou-glass backdrop-blur-md rounded-2xl p-6 min-h-[440px] relative transition-all duration-300">
+                <div class="absolute top-2 left-4 font-mono text-[8px] text-tlou-ash/20 tracking-widest select-none">DECRYPTED LINK DECK MAP</div>
+                <div class="absolute -top-1 -left-1 w-2 h-2 border-t border-l border-tlou-rust/40"></div>
+                <div class="absolute -bottom-1 -right-1 w-2 h-2 border-b border-r border-tlou-rust/40"></div>
+
+                <div id="panel-ai" class="module-active-panel">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        
+                        <a href="https://gemini.google.com" target="_blank" class="group relative flex items-center space-x-4 border border-[var(--card-border)] bg-black/10 p-4 rounded-xl transition-all duration-300 hover:border-tlou-rust/40 hover:bg-black/30">
+                            <div class="w-12 h-12 rounded-full bg-[#3e342f] flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-105 transition-transform">
+                                <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M12 3C12 8 14.2 10.2 19.2 10.2C14.2 10.2 12 12.4 12 17.4C12 12.4 9.8 10.2 4.8 10.2C9.8 10.2 12 8 12 3Z" fill="url(#geminiGlow)"/>
+                                    <defs><linearGradient id="geminiGlow" x1="4.8" y1="3" x2="19.2" y2="17.4"><stop offset="0%" stop-color="#5ea4ff"/><stop offset="50%" stop-color="#a64aff"/><stop offset="100%" stop-color="#ff8e75"/></linearGradient></defs>
+                                </svg>
                             </div>
-                            <h3 class="font-cinzel text-md font-bold text-[var(--text-white)] group-hover:text-tlou-rust transition-colors tracking-wide">GOOGLE GEMINI</h3>
-                            <p class="text-[11px] text-tlou-ash/70 font-light mt-1">原生多模态认知核心。捕获深空逻辑与直通语言架构。</p>
+                            <div class="overflow-hidden flex-1">
+                                <h4 class="font-cinzel text-xs font-bold text-[var(--text-white)] tracking-wide group-hover:text-tlou-rust transition-colors truncate">Gemini</h4>
+                                <p class="text-[11px] text-tlou-ash/60 font-light mt-0.5 leading-normal">原生多模态跨维度认知核心。对长跨度复杂数据、深空语境以及多模态流具有极强的归纳反思力。</p>
+                            </div>
                         </a>
 
-                        <!-- ChatGPT -->
-                        <a href="https://chatgpt.com" target="_blank" class="matrix-card group relative block border border-[var(--card-border)] bg-tlou-glass p-5 rounded-xl backdrop-blur-md hover:border-tlou-moss/50 hover:translate-y-[-2px] transition-all duration-300" data-tags="ai chatgpt openai gpt 智能">
-                            <div class="flex justify-between items-start mb-2">
-                                <span class="font-mono text-[9px] text-tlou-moss font-bold">[ FREQ_NODE: 02 ]</span>
-                                <span class="font-mono text-[9px] text-tlou-ash/30">PING: 24ms</span>
+                        <a href="https://chatgpt.com" target="_blank" class="group relative flex items-center space-x-4 border border-[var(--card-border)] bg-black/10 p-4 rounded-xl transition-all duration-300 hover:border-tlou-rust/40 hover:bg-black/30">
+                            <div class="w-12 h-12 rounded-full bg-[#3e342f] flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-105 transition-transform">
+                                <div class="w-6 h-6 rounded-md bg-white flex items-center justify-center overflow-hidden">
+                                    <svg class="w-4.5 h-4.5 text-[#10a37f] fill-none stroke-current stroke-[1.4]" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M12 4.75a3.25 3.25 0 0 1 3.25 3.25c0 .5-.11.96-.31 1.38l.12.07c.88-.34 1.86-.18 2.58.46a3.25 3.25 0 0 1-.64 5.16l-.04.03c.51.79.52 1.8 .02 2.6a3.25 3.25 0 0 1-4.23 1.48l-.1-.05c-.52.79-1.45 1.22-2.4.11a3.25 3.25 0 0 1-2.2-4.7l-.05-.03a3.25 3.25 0 0 1-1-4.22l.06-.1c-.6-.73-.72-1.74-.29-2.57a3.25 3.25 0 0 1 4.22-1.45l.1.06c.4-.64 1.1-.96 1.91-.45Z" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </div>
                             </div>
-                            <h3 class="font-cinzel text-md font-bold text-[var(--text-white)] group-hover:text-tlou-rust transition-colors tracking-wide">OPENAI CHATGPT</h3>
-                            <p class="text-[11px] text-tlou-ash/70 font-light mt-1">大语言网格基石。解密混乱逻辑，输出高确定性协议。</p>
+                            <div class="overflow-hidden flex-1">
+                                <h4 class="font-cinzel text-xs font-bold text-[var(--text-white)] tracking-wide group-hover:text-tlou-rust transition-colors truncate">ChatGPT</h4>
+                                <p class="text-[11px] text-tlou-ash/60 font-light mt-0.5 leading-normal">经典通用语义网格基石。针对代码开发、极端文本对齐与概念破译输出极高的确定性协议。</p>
+                            </div>
                         </a>
 
-                        <!-- Claude -->
-                        <a href="https://claude.ai" target="_blank" class="matrix-card group relative block border border-[var(--card-border)] bg-tlou-glass p-5 rounded-xl backdrop-blur-md hover:border-tlou-moss/50 hover:translate-y-[-2px] transition-all duration-300" data-tags="ai claude anthropic 智能 写作">
-                            <div class="flex justify-between items-start mb-2">
-                                <span class="font-mono text-[9px] text-tlou-moss font-bold">[ FREQ_NODE: 03 ]</span>
-                                <span class="font-mono text-[9px] text-tlou-ash/30">PING: 15ms</span>
+                        <a href="https://chat.deepseek.com" target="_blank" class="group relative flex items-center space-x-4 border border-[var(--card-border)] bg-black/10 p-4 rounded-xl transition-all duration-300 hover:border-tlou-rust/40 hover:bg-black/30">
+                            <div class="w-12 h-12 rounded-full bg-[#3e342f] flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-105 transition-transform">
+                                <div class="w-6 h-6 rounded-full bg-[#4d6bfe] flex items-center justify-center overflow-hidden">
+                                    <svg class="w-4 h-4 text-white fill-current" viewBox="0 0 24 24"><path d="M2 12c0 4.5 3.5 7.5 7.5 7.5 1.8.0 3.3-.6 4.5-1.5-.6-1-1.8-1.5-3-1.5-2 0-3.5-1.5-3.5-3.5S9 9.5 11 9.5c1.2.0 2.4.5 3 1.5 1.2-.9 2.7-1.5 4.5-1.5C19.5 6.5 16 3.5 11.5 3.5 6.2 3.5 2 7.3 2 12Z"/><circle cx="15.5" cy="13.5" r="1.2"/></svg>
+                                </div>
                             </div>
-                            <h3 class="font-cinzel text-md font-bold text-[var(--text-white)] group-hover:text-tlou-rust transition-colors tracking-wide">ANTHROPIC CLAUDE</h3>
-                            <p class="text-[11px] text-tlou-ash/70 font-light mt-1">深度思维反思网络。针对长文本数据流的强力语义过滤器。</p>
+                            <div class="overflow-hidden flex-1">
+                                <h4 class="font-cinzel text-xs font-bold text-[var(--text-white)] tracking-wide group-hover:text-tlou-rust transition-colors truncate">deepseek</h4>
+                                <p class="text-[11px] text-tlou-rust font-medium mt-0.5 leading-normal">开源强化推理巨擘。内置R1深度思维链，在高难度复杂数学与物理逻辑推演领域极为强悍。</p>
+                            </div>
+                        </a>
+
+                        <a href="https://claude.ai" target="_blank" class="group relative flex items-center space-x-4 border border-[var(--card-border)] bg-black/10 p-4 rounded-xl transition-all duration-300 hover:border-tlou-rust/40 hover:bg-black/30">
+                            <div class="w-12 h-12 rounded-full bg-[#3e342f] flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-105 transition-transform">
+                                <svg class="w-6 h-6 text-[#d97736] fill-none stroke-current stroke-[1.6]" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <circle cx="12" cy="12" r="9"/><path d="M8.5 10.5c1.2-1 2.5-1 3.7.3M9.5 14.5c1.8.8 3.5-.3 4-2" stroke-linecap="round"/>
+                                </svg>
+                            </div>
+                            <div class="overflow-hidden flex-1">
+                                <h4 class="font-cinzel text-xs font-bold text-[var(--text-white)] tracking-wide group-hover:text-tlou-rust transition-colors truncate">Claude</h4>
+                                <p class="text-[11px] text-tlou-ash/60 font-light mt-0.5 leading-normal">高克制语境反思链。在严谨的学术文本对齐、长代码文件架构组织领域具备绝佳审美与工艺。</p>
+                            </div>
+                        </a>
+
+                        <a href="https://perplexity.ai" target="_blank" class="group relative flex items-center space-x-4 border border-[var(--card-border)] bg-black/10 p-4 rounded-xl transition-all duration-300 hover:border-tlou-rust/40 hover:bg-black/30">
+                            <div class="w-12 h-12 rounded-full bg-[#3e342f] flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-105 transition-transform">
+                                <div class="w-6 h-6 text-[#10b981] fill-none stroke-current stroke-[1.5]" viewBox="0 0 24 24">
+                                    <circle cx="12" cy="12" r="8"/><path d="M12 8v8M8 12h8" stroke-linecap="round"/>
+                                </div>
+                            </div>
+                            <div class="overflow-hidden flex-1">
+                                <h4 class="font-cinzel text-xs font-bold text-[var(--text-white)] tracking-wide group-hover:text-tlou-rust transition-colors truncate">Perplexity</h4>
+                                <p class="text-[11px] text-tlou-ash/60 font-light mt-0.5 leading-normal">智能AI对话检索网络。实时过滤全网噪音，直击核心论据并提供权威的可信度信源追踪。</p>
+                            </div>
+                        </a>
+
+                        <a href="https://huggingface.co" target="_blank" class="group relative flex items-center space-x-4 border border-[var(--card-border)] bg-black/10 p-4 rounded-xl transition-all duration-300 hover:border-tlou-rust/40 hover:bg-black/30">
+                            <div class="w-12 h-12 rounded-full bg-[#3e342f] flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-105 transition-transform">
+                                <span class="text-lg select-none">🤗</span>
+                            </div>
+                            <div class="overflow-hidden flex-1">
+                                <h4 class="font-cinzel text-xs font-bold text-[var(--text-white)] tracking-wide group-hover:text-tlou-rust transition-colors truncate">Hugging Face</h4>
+                                <p class="text-[11px] text-tlou-ash/60 font-light mt-0.5 leading-normal">分布式开源模型母体。汇聚庞大的权重、算法与数据集，提供开箱即用的在线物理测试沙盒。</p>
+                            </div>
                         </a>
                     </div>
                 </div>
 
-                <!-- 板块 B: STREAMING RESONANCE (流媒体与社群共振) -->
-                <div>
-                    <div class="flex items-center space-x-2 border-b border-dashed border-[var(--card-border)] pb-2 mb-6">
-                        <span class="w-1.5 h-1.5 rounded-full bg-stone-500"></span>
-                        <h2 class="font-cinzel text-xs font-bold text-tlou-ash/60 tracking-[0.2em] uppercase">MATRIX BETA // STREAMING RESONANCE BROADCASTS</h2>
-                    </div>
-                    
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="mediaMatrix">
-                        <!-- YouTube -->
-                        <a href="https://youtube.com" target="_blank" class="matrix-card group relative block border border-[var(--card-border)] bg-tlou-glass p-5 rounded-xl backdrop-blur-md hover:border-tlou-moss/50 hover:translate-y-[-2px] transition-all duration-300" data-tags="stream youtube video 视频 娱乐">
-                            <div class="flex justify-between items-start mb-2">
-                                <span class="font-mono text-[9px] text-tlou-rust font-bold">[ WAVE_LINK: 01 ]</span>
-                                <span class="font-mono text-[9px] text-tlou-ash/30">BANDWIDTH: 4K_RAW</span>
+                <div id="panel-media" class="hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <a href="https://youtube.com" target="_blank" class="group relative flex items-center space-x-4 border border-[var(--card-border)] bg-black/10 p-4 rounded-xl transition-all duration-300 hover:border-tlou-rust/40 hover:bg-black/30">
+                            <div class="w-12 h-12 rounded-full bg-[#3e342f] flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-105 transition-transform">
+                                <svg class="w-6 h-6 text-[#FF0000] fill-current" viewBox="0 0 24 24"><path d="M21.5 7.3c-.2-1-.9-1.7-1.9-1.9C17.9 5 12 5 12 5s-5.9 0-7.6.4c-1 .2-1.7.9-1.9 1.9C2 9 2 12 2 12s0 3 .4 4.7c.2 1 .9 1.7 1.9 1.9 1.7.4 7.6.4 7.6.4s5.9 0 7.6-.4c1-.2 1.7-.9 1.9-1.9.4-1.7.4-4.7.4-4.7s0-3-.4-4.7Z"/><path d="M10 15l5.5-3-10-3v7Z" fill="white"/></svg>
                             </div>
-                            <h3 class="font-cinzel text-md font-bold text-[var(--text-white)] group-hover:text-tlou-rust transition-colors tracking-wide">YOUTUBE STATION</h3>
-                            <p class="text-[11px] text-tlou-ash/70 font-light mt-1">旧世界最大影像总线。汇集人类历史与流媒体微光音轨。</p>
+                            <div class="overflow-hidden flex-1">
+                                <h4 class="font-cinzel text-xs font-bold text-[var(--text-white)] tracking-wide group-hover:text-tlou-rust transition-colors truncate">YouTube</h4>
+                                <p class="text-[11px] text-tlou-ash/60 font-light mt-0.5 leading-normal">旧文明庞大的动态光影主线。封存着技术演化录像、自然声学波段与无尽的叙事空间。</p>
+                            </div>
                         </a>
 
-                        <!-- TikTok -->
-                        <a href="https://tiktok.com" target="_blank" class="matrix-card group relative block border border-[var(--card-border)] bg-tlou-glass p-5 rounded-xl backdrop-blur-md hover:border-tlou-moss/50 hover:translate-y-[-2px] transition-all duration-300" data-tags="stream tiktok biotik 短视频 text">
-                            <div class="flex justify-between items-start mb-2">
-                                <span class="font-mono text-[9px] text-tlou-rust font-bold">[ WAVE_LINK: 02 ]</span>
-                                <span class="font-mono text-[9px] text-tlou-ash/30">STATUS: REVERBING</span>
+                        <a href="https://tiktok.com" target="_blank" class="group relative flex items-center space-x-4 border border-[var(--card-border)] bg-black/10 p-4 rounded-xl transition-all duration-300 hover:border-tlou-rust/40 hover:bg-black/30">
+                            <div class="w-12 h-12 rounded-full bg-[#3e342f] flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-105 transition-transform">
+                                <svg class="w-5.5 h-5.5 text-white fill-current" viewBox="0 0 24 24"><path d="M16.5 10.5V4.5H13.5V15.5C13.5 17.1569 12.1569 18.5 10.5 18.5C8.84315 18.5 7.5 17.1569 7.5 15.5C7.5 13.8431 8.84315 12.5 10.5 12.5V9.5C7.18629 9.5 4.5 12.1863 4.5 15.5C4.5 18.8137 7.18629 21.5 10.5 21.5C13.8137 21.5 16.5 18.8137 16.5 15.5V10.5C18.1569 10.5 19.5 11.8431 19.5 13.5H22.5C22.5 10.1863 19.8137 7.5 16.5 7.5V10.5Z" /></svg>
                             </div>
-                            <h3 class="font-cinzel text-md font-bold text-[var(--text-white)] group-hover:text-tlou-rust transition-colors tracking-wide">TIKTOK CASCADE</h3>
-                            <p class="text-[11px] text-tlou-ash/70 font-light mt-1">高频脉冲式视觉洪流。瞬间激发、不断更迭的意识碎片。</p>
+                            <div class="overflow-hidden flex-1">
+                                <h4 class="font-cinzel text-xs font-bold text-[var(--text-white)] tracking-wide group-hover:text-tlou-rust transition-colors truncate">TikTok</h4>
+                                <p class="text-[11px] text-tlou-ash/60 font-light mt-0.5 leading-normal">极高频视听脉冲震荡网络。通过压缩的时间波段，捕获瞬时、高粘度的人类神经共鸣。</p>
+                            </div>
                         </a>
 
-                        <!-- Instagram -->
-                        <a href="https://instagram.com" target="_blank" class="matrix-card group relative block border border-[var(--card-border)] bg-tlou-glass p-5 rounded-xl backdrop-blur-md hover:border-tlou-moss/50 hover:translate-y-[-2px] transition-all duration-300" data-tags="stream ig instagram photo 社交 影像">
-                            <div class="flex justify-between items-start mb-2">
-                                <span class="font-mono text-[9px] text-tlou-rust font-bold">[ WAVE_LINK: 03 ]</span>
-                                <span class="font-mono text-[9px] text-tlou-ash/30">FORMAT: SNAPSHOT</span>
+                        <a href="https://instagram.com" target="_blank" class="group relative flex items-center space-x-4 border border-[var(--card-border)] bg-black/10 p-4 rounded-xl transition-all duration-300 hover:border-tlou-rust/40 hover:bg-black/30">
+                            <div class="w-12 h-12 rounded-full bg-[#3e342f] flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-105 transition-transform">
+                                <svg class="w-5.5 h-5.5 text-[#e1306c] fill-none stroke-current stroke-[1.5]" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5" stroke-linejoin="round"/><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>
                             </div>
-                            <h3 class="font-cinzel text-md font-bold text-[var(--text-white)] group-hover:text-tlou-rust transition-colors tracking-wide">INSTAGRAM MATRIX</h3>
-                            <p class="text-[11px] text-tlou-ash/70 font-light mt-1">静止图像与瞬间光影日志。捕捉荒原中残留的生活美学美感。</p>
+                            <div class="overflow-hidden flex-1">
+                                <h4 class="font-cinzel text-xs font-bold text-[var(--text-white)] tracking-wide group-hover:text-tlou-rust transition-colors truncate">Instagram</h4>
+                                <p class="text-[11px] text-tlou-ash/60 font-light mt-0.5 leading-normal">静止画面定格日志。在冰冷的网络铁锈区，收集并陈列尚存温存的生活美学图卷。</p>
+                            </div>
+                        </a>
+
+                        <a href="https://spotify.com" target="_blank" class="group relative flex items-center space-x-4 border border-[var(--card-border)] bg-black/10 p-4 rounded-xl transition-all duration-300 hover:border-tlou-rust/40 hover:bg-black/30">
+                            <div class="w-12 h-12 rounded-full bg-[#3e342f] flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-105 transition-transform">
+                                <svg class="w-6 h-6 text-[#1ed760] fill-current" viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm5.541 14.434c-.219.359-.684.473-1.042.254-2.871-1.753-6.486-2.15-10.741-1.176-.411.096-.821-.161-.917-.573-.096-.411.161-.821.573-.917 4.659-1.064 8.636-.615 11.874 1.362.358.219.472.684.253 1.05z"/></svg>
+                            </div>
+                            <div class="overflow-hidden flex-1">
+                                <h4 class="font-cinzel text-xs font-bold text-[var(--text-white)] tracking-wide group-hover:text-tlou-rust transition-colors truncate">Spotify</h4>
+                                <p class="text-[11px] text-tlou-ash/60 font-light mt-0.5 leading-normal">声波脉冲共振中继。无缝覆盖全球环境音轨与离散乐章，以出色的算法捕捉残留的心灵共鸣。</p>
+                            </div>
+                        </a>
+
+                        <a href="https://twitch.tv" target="_blank" class="group relative flex items-center space-x-4 border border-[var(--card-border)] bg-black/10 p-4 rounded-xl transition-all duration-300 hover:border-tlou-rust/40 hover:bg-black/30">
+                            <div class="w-12 h-12 rounded-full bg-[#3e342f] flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-105 transition-transform">
+                                <svg class="w-5.5 h-5.5 text-[#9146ff] fill-current" viewBox="0 0 24 24"><path d="M11.571 4.714h1.715v5.143H11.57zm4.715.0h1.714v5.143h-1.714zm-12.857-3L1.286 4.286v15h4.285V23.5l4.286-4.214h3.429l6.428-6.429V1.714H3.43zm14.572 10.286l-3.429 3.428h-3.429l-3 3v-3H4.714V3.428h13.286v11.572z"/></svg>
+                            </div>
+                            <div class="overflow-hidden flex-1">
+                                <h4 class="font-cinzel text-xs font-bold text-[var(--text-white)] tracking-wide group-hover:text-tlou-rust transition-colors truncate">Twitch</h4>
+                                <p class="text-[11px] text-tlou-ash/60 font-light mt-0.5 leading-normal">即时实况交互中枢。提供零延迟的广域流媒体广播，是废土中极客社区最活跃的互动频段。</p>
+                            </div>
                         </a>
                     </div>
                 </div>
 
-            </div>
+                <div id="panel-tools" class="hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <a href="https://github.com" target="_blank" class="group relative flex items-center space-x-4 border border-[var(--card-border)] bg-black/10 p-4 rounded-xl transition-all duration-300 hover:border-tlou-rust/40 hover:bg-black/30">
+                            <div class="w-12 h-12 rounded-full bg-[#3e342f] flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-105 transition-transform">
+                                <svg class="w-6 h-6 text-white fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.5 2 2 6.5 2 12c0 4.4 2.9 8.2 6.8 9.5.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.5 2.3 1.1 2.9.8.1-.6.4-1 .6-1.3-2.2-.3-4.5-1.1-4.5-4.9 0-1.1.4-2 1-2.7-.1-.3-.4-1.3.1-2.6 0 0 .8-.3 2.8 1A9.6 9.6 0 0112 6.8c.8.0 1.7.1 2.5.3 1.9-1.3 2.7-1 2.7-1 .5 1.4.2 2.4.1 2.6.6.7 1 1.6 1 2.7 0 3.8-2.3 4.7-4.6 4.9.4.3.7.9.7 1.9 0 1.3 0 2.4 0 2.7 0 .3.2.6.7.5C19.1 20.2 22 16.4 22 12c0-5.5-4.5-10-10-10z"/></svg>
+                            </div>
+                            <div class="overflow-hidden flex-1">
+                                <h4 class="font-cinzel text-xs font-bold text-[var(--text-white)] tracking-wide group-hover:text-tlou-rust transition-colors truncate">GitHub</h4>
+                                <p class="text-[11px] text-tlou-moss font-bold mt-0.5 leading-normal">代码母体与文明 logic 根节点。托管着重构整个数字废土社会所需的底层晶体管密钥和开源算法框架。</p>
+                            </div>
+                        </a>
+
+                        <a href="https://dash.cloudflare.com" target="_blank" class="group relative flex items-center space-x-4 border border-[var(--card-border)] bg-black/10 p-4 rounded-xl transition-all duration-300 hover:border-tlou-rust/40 hover:bg-black/30">
+                            <div class="w-12 h-12 rounded-full bg-[#3e342f] flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-105 transition-transform">
+                                <svg class="w-6 h-6 text-[#f38020] fill-current" viewBox="0 0 24 24"><path d="M22.95 14.53a3.52 3.52 0 0 0-1.87-2.61c.04-.3.06-.61.06-.92a4.46 4.46 0 0 0-6.19-4.11 5.92 5.92 0 0 0-11 2.48 4 4 0 0 0 .54 7.95h16.29a3.53 3.53 0 0 0 2.17-2.79zm-15.53 1.83a2.44 2.44 0 0 1-1-4.76 1 1 0 0 0 .63-.82 4.36 4.36 0 0 1 8.24-1.42 1 1 0 0 0 .89.65 2.92 2.92 0 0 1 2.82 2.65 1 1 0 0 0 .79.91 2 2 0 0 1-.22 4h-11.5z"/></svg>
+                            </div>
+                            <div class="overflow-hidden flex-1">
+                                <h4 class="font-cinzel text-xs font-bold text-[var(--text-white)] tracking-wide group-hover:text-tlou-rust transition-colors truncate">Cloudflare</h4>
+                                <p class="text-[11px] text-tlou-ash/60 font-light mt-0.5 leading-normal">网络防线与边缘中继器。铸造电磁装甲屏障，拦截并清洗来自暗网深渊的高频脉冲和恶意拒绝攻击流。</p>
+                            </div>
+                        </a>
+
+                        <a href="#" class="group relative flex items-center space-x-4 border border-[var(--card-border)] bg-black/10 p-4 rounded-xl transition-all duration-300 hover:border-tlou-rust/40 hover:bg-black/30">
+                            <div class="w-12 h-12 rounded-full bg-[#3e342f] flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-105 transition-transform">
+                                <div class="w-6 h-6 rounded bg-[#2040aa] flex items-center justify-center overflow-hidden">
+                                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="24" fill="#0c40c0" opacity="0.15"/><circle cx="12" cy="12" r="9" stroke="#1d4ed8" stroke-width="2"/><path d="M12 3a9 9 0 0 1 9 9" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/><path d="M6 12a6 6 0 0 1 6-6" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round"/><circle cx="12" cy="12" r="2.5" fill="#3b82f6"/></svg>
+                                </div>
+                            </div>
+                            <div class="overflow-hidden flex-1">
+                                <h4 class="font-cinzel text-xs font-bold text-[var(--text-white)] tracking-wide group-hover:text-tlou-rust transition-colors truncate">DNSHE</h4>
+                                <p class="text-[11px] text-tlou-ash/60 font-light mt-0.5 leading-normal">动态域名解密中枢。重塑寻址协议，在离散的局域网废土网格间构建稳定指向的无线骨干链路。</p>
+                            </div>
+                        </a>
+
+                        <a href="https://vercel.com" target="_blank" class="group relative flex items-center space-x-4 border border-[var(--card-border)] bg-black/10 p-4 rounded-xl transition-all duration-300 hover:border-tlou-rust/40 hover:bg-black/30">
+                            <div class="w-12 h-12 rounded-full bg-[#3e342f] flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-105 transition-transform">
+                                <svg class="w-5.5 h-5.5 text-white fill-current" viewBox="0 0 24 24"><path d="M24 22.525H0L12 1.475l12 21.05z"/></svg>
+                            </div>
+                            <div class="overflow-hidden flex-1">
+                                <h4 class="font-cinzel text-xs font-bold text-[var(--text-white)] tracking-wide group-hover:text-tlou-rust transition-colors truncate">Vercel</h4>
+                                <p class="text-[11px] text-tlou-ash/60 font-light mt-0.5 leading-normal">前端自动化托管云网。直连 Git 管线实现无感持续集成与全球边缘 Serverless 云端部署。</p>
+                            </div>
+                        </a>
+
+                        <a href="https://deepl.com" target="_blank" class="group relative flex items-center space-x-4 border border-[var(--card-border)] bg-black/10 p-4 rounded-xl transition-all duration-300 hover:border-tlou-rust/40 hover:bg-black/30">
+                            <div class="w-12 h-12 rounded-full bg-[#3e342f] flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-105 transition-transform">
+                                <div class="w-6 h-6 bg-[#0f2d37] border border-[#002e3b] flex items-center justify-center rounded font-mono font-bold text-xs text-[#0fcdff]">+</div>
+                            </div>
+                            <div class="overflow-hidden flex-1">
+                                <h4 class="font-cinzel text-xs font-bold text-[var(--text-white)] tracking-wide group-hover:text-tlou-rust transition-colors truncate">DeepL</h4>
+                                <p class="text-[11px] text-tlou-ash/60 font-light mt-0.5 leading-normal">神经网络语境编译器。对盲区语义的拟真度远超通用翻译，极大消解跨语种协议间的信息损耗。</p>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+
+            </section>
         </main>
 
-        <!-- 页脚 -->
-        <footer class="mt-auto flex flex-col sm:flex-row justify-between items-center text-[10px] font-mono text-tlou-ash/40 border-t border-[var(--card-border)] pt-4 gap-4">
-            <p>© 2026 ERIS ROUTER. ROUTING FREQUENCIES.</p>
+        <footer class="mt-auto flex flex-col sm:flex-row justify-between items-center text-[10px] font-mono text-tlou-ash/40 border-t border-[var(--card-border)] pt-4 gap-4 select-none">
+            <p>© 2026 ERIS CONSOLE. HARDWARE LEFT-SLOT INTEGRATED.</p>
             <button id="themeToggle" class="group flex items-center space-x-2 border border-[var(--card-border)] bg-black/5 px-4 py-1.5 rounded-full backdrop-blur-sm hover:text-[var(--text-white)] transition-colors">
                 <span id="themeLabel">MODE: DEEP NIGHT</span>
                 <span class="w-2 h-2 rounded-full bg-tlou-rust"></span>
@@ -209,13 +346,11 @@
         </footer>
     </div>
 
-    <!-- 粒子系统与交互控制 -->
     <script>
         let isDarkMode = true;
         const themeToggleBtn = document.getElementById('themeToggle');
         const themeLabel = document.getElementById('themeLabel');
 
-        // 昼夜平滑转换系统
         themeToggleBtn.addEventListener('click', () => {
             isDarkMode = !isDarkMode;
             if (isDarkMode) {
@@ -224,8 +359,8 @@
                 document.documentElement.style.setProperty('--bg-color', '#080a06');
                 document.documentElement.style.setProperty('--text-color', '#c3c7db');
                 document.documentElement.style.setProperty('--text-white', '#ffffff');
-                document.documentElement.style.setProperty('--card-bg', 'rgba(8, 10, 6, 0.75)');
-                document.documentElement.style.setProperty('--card-border', 'rgba(255, 255, 255, 0.05)');
+                document.documentElement.style.setProperty('--card-bg', 'rgba(7, 9, 6, 0.9)');
+                document.documentElement.style.setProperty('--card-border', 'rgba(255, 255, 255, 0.04)');
                 document.documentElement.style.setProperty('--accent-color', '#d97736');
                 document.documentElement.style.setProperty('--moss-color', '#4a5d43');
             } else {
@@ -234,110 +369,139 @@
                 document.documentElement.style.setProperty('--bg-color', '#d6dad0');
                 document.documentElement.style.setProperty('--text-color', '#232d1f');
                 document.documentElement.style.setProperty('--text-white', '#0a0d08');
-                document.documentElement.style.setProperty('--card-bg', 'rgba(255, 255, 255, 0.65)');
+                document.documentElement.style.setProperty('--card-bg', 'rgba(255, 255, 255, 0.75)');
                 document.documentElement.style.setProperty('--card-border', 'rgba(0, 0, 0, 0.08)');
                 document.documentElement.style.setProperty('--accent-color', '#b3501a');
                 document.documentElement.style.setProperty('--moss-color', '#384833');
             }
-            playPluck();
+            playRackPluck();
         });
 
-        // 实时高能搜索框过滤算法
-        function filterMatrix() {
-            const query = document.getElementById('matrixSearch').value.toLowerCase().trim();
-            const cards = document.querySelectorAll('.matrix-card');
+        function switchModule(targetModule) {
+            playRackPluck();
+            const modules = ['ai', 'media', 'tools'];
             
-            cards.forEach(card => {
-                const tags = card.getAttribute('data-tags').toLowerCase();
-                const title = card.querySelector('h3').textContent.toLowerCase();
-                if (tags.includes(query) || title.includes(query)) {
-                    card.style.display = 'block';
-                    card.style.opacity = '1';
+            modules.forEach(mod => {
+                const slot = document.getElementById(`slot-${mod}`);
+                const panel = document.getElementById(`panel-${mod}`);
+                const bar = document.getElementById(`bar-${mod}`);
+                const status = document.getElementById(`status-${mod}`);
+
+                if (mod === targetModule) {
+                    slot.classList.remove('opacity-60', 'border-[var(--card-border)]');
+                    slot.classList.add('opacity-100', 'border-tlou-rust/40', 'shadow-[0_0_15px_rgba(217,119,54,0.06)]');
+                    bar.classList.replace('bg-transparent', 'bg-tlou-rust');
+                    status.textContent = 'ACTIVE';
+                    status.classList.add('text-tlou-rust', 'font-bold');
+
+                    panel.classList.remove('hidden');
+                    panel.classList.add('module-active-panel');
                 } else {
-                    card.style.opacity = '0';
-                    setTimeout(() => { if(card.style.opacity === '0') card.style.display = 'none'; }, 200);
+                    slot.classList.remove('opacity-100', 'border-tlou-rust/40', 'shadow-[0_0_15px_rgba(217,119,54,0.06)]');
+                    slot.classList.add('opacity-60', 'border-[var(--card-border)]');
+                    bar.classList.replace('bg-tlou-rust', 'bg-transparent');
+                    status.textContent = 'STANDBY';
+                    status.className = 'text-tlou-ash/40';
+
+                    panel.classList.add('hidden');
+                    panel.classList.remove('module-active-panel');
                 }
             });
         }
 
-        // Web Audio 原生忧郁吉他拨弦效果器
+        let isSidebarOpen = true;
+        function toggleSidebar() {
+            playRackPluck();
+            isSidebarOpen = !isSidebarOpen;
+            
+            const sidebar = document.getElementById('left-sidebar');
+            const slots = document.getElementById('sidebar-slots');
+            const toggleLabel = document.getElementById('toggle-label');
+            const pulseDot = document.getElementById('sidebar-pulse-dot');
+
+            if (!isSidebarOpen) {
+                slots.style.maxHeight = '0px';
+                slots.style.opacity = '0';
+                setTimeout(() => { slots.classList.add('hidden'); }, 200);
+                sidebar.classList.remove('lg:w-72');
+                sidebar.classList.add('lg:w-24');
+                toggleLabel.textContent = 'EXPAND';
+                pulseDot.classList.replace('bg-tlou-rust', 'bg-stone-600');
+            } else {
+                slots.classList.remove('hidden');
+                setTimeout(() => {
+                    slots.style.maxHeight = '800px';
+                    slots.style.opacity = '1';
+                }, 10);
+                sidebar.classList.remove('lg:w-24');
+                sidebar.classList.add('lg:w-72');
+                toggleLabel.textContent = 'COLLAPSE';
+                pulseDot.classList.replace('bg-stone-600', 'bg-tlou-rust');
+            }
+        }
+
         let audioCtx = null;
-        function playPluck() {
+        function playRackPluck() {
             try {
                 if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 const now = audioCtx.currentTime;
-                // E 调忧郁根音
-                const freqs = [164.81, 220.00, 246.94, 329.63];
-                const freq = freqs[Math.floor(Math.random() * freqs.length)];
-
                 const osc = audioCtx.createOscillator();
                 osc.type = 'triangle';
-                osc.frequency.setValueAtTime(freq, now);
+                osc.frequency.setValueAtTime(164.81, now);
 
                 const filter = audioCtx.createBiquadFilter();
                 filter.type = 'lowpass';
                 filter.frequency.setValueAtTime(800, now);
-                filter.frequency.exponentialRampToValueAtTime(100, now + 1.2);
+                filter.frequency.exponentialRampToValueAtTime(100, now + 0.8);
 
                 const gain = audioCtx.createGain();
-                gain.gain.setValueAtTime(0.2, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+                gain.gain.setValueAtTime(0.18, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
 
                 osc.connect(filter);
                 filter.connect(gain);
                 gain.connect(audioCtx.destination);
 
                 osc.start(now);
-                osc.stop(now + 1.3);
+                osc.stop(now + 0.9);
             } catch(e) {}
         }
 
-        // 给所有的切换卡片绑定轻微拨弦物理交互反馈
-        document.querySelectorAll('.matrix-card').forEach(card => {
-            card.addEventListener('mouseenter', playPluck);
-        });
-
-        // 简易轻量化环境悬浮孢子动画引擎
-        const canvas = document.getElementById('routerCanvas');
+        const canvas = document.getElementById('sporeCanvas');
         const ctx = canvas.getContext('2d');
-        let particles = [];
+        let spores = [];
 
         function initCanvas() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            particles = [];
-            for(let i=0; i<40; i++) {
-                particles.push({
+            spores = [];
+            for(let i=0; i<25; i++) {
+                spores.push({
                     x: Math.random() * canvas.width,
                     y: Math.random() * canvas.height,
-                    r: Math.random() * 2 + 0.5,
-                    vx: (Math.random() - 0.5) * 0.2,
-                    vy: -(Math.random() * 0.3 + 0.1),
-                    alpha: Math.random() * 0.5 + 0.2
+                    r: Math.random() * 1.2 + 0.4,
+                    vx: (Math.random() - 0.5) * 0.08,
+                    vy: -(Math.random() * 0.18 + 0.04),
+                    alpha: Math.random() * 0.25 + 0.05
                 });
             }
         }
 
-        function drawParticles() {
-            ctx.clearRect(0,0,canvas.width,canvas.height);
-            ctx.fillStyle = isDarkMode ? 'rgba(217, 119, 54, 0.3)' : 'rgba(56, 72, 51, 0.3)';
-            
-            particles.forEach(p => {
-                p.x += p.vx;
-                p.y += p.vy;
-                if(p.y < -10) p.y = canvas.height + 10;
-                if(p.x < -10 || p.x > canvas.width + 10) p.x = Math.random() * canvas.width;
-
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
-                ctx.fill();
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = isDarkMode ? 'rgba(217, 119, 54, 0.18)' : 'rgba(56, 72, 51, 0.18)';
+            spores.forEach(s => {
+                s.x += s.vx; s.y += s.vy;
+                if(s.y < -10) s.y = canvas.height + 10;
+                if(s.x < -10 || s.x > canvas.width + 10) s.x = Math.random() * canvas.width;
+                ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fill();
             });
-            requestAnimationFrame(drawParticles);
+            requestAnimationFrame(animate);
         }
 
         window.addEventListener('resize', initCanvas);
         initCanvas();
-        drawParticles();
+        animate();
     </script>
 </body>
 </html>
