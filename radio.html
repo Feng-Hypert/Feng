@@ -109,7 +109,7 @@
 
                 <div class="flex flex-col sm:flex-row items-center gap-8 my-auto">
                     <div class="relative flex-shrink-0">
-                        <div id="vinylDisc" class="w-40 h-40 sm:w-48 sm:h-48 rounded-full bg-gradient-to-r from-stone-900 via-zinc-800遗 to-stone-900 p-1 shadow-2xl flex items-center justify-center border border-white/10 spinning spinning-paused">
+                        <div id="vinylDisc" class="w-40 h-40 sm:w-48 sm:h-48 rounded-full bg-gradient-to-r from-stone-900 via-zinc-800 to-stone-900 p-1 shadow-2xl flex items-center justify-center border border-white/10 spinning spinning-paused">
                             <div class="w-full h-full rounded-full border border-black/40 flex items-center justify-center relative bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-neutral-800 via-neutral-950 to-neutral-900">
                                 <div class="absolute inset-4 rounded-full border border-stone-800/60"></div>
                                 <div class="absolute inset-8 rounded-full border border-stone-800/40"></div>
@@ -245,14 +245,14 @@
 
             <div class="space-y-6">
                 <div id="dropZone" class="border-2 border-dashed border-[var(--card-border)] hover:border-tlou-moss/50 bg-tlou-glass backdrop-blur-md rounded-2xl p-6 transition-all duration-300 text-center cursor-pointer group relative overflow-hidden">
-                    <input type="file" id="fileInput" accept="audio/*" class="hidden">
+                    <input type="file" id="fileInput" accept="audio/*" class="hidden" multiple>
                     <div class="py-6 flex flex-col items-center">
                         <svg class="w-10 h-10 text-tlou-ash/30 group-hover:text-tlou-rust transition-colors mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
                         </svg>
                         <h4 class="font-cinzel text-sm font-bold text-[var(--text-white)] mb-1 tracking-wider">TEMPORARY INJECT</h4>
                         <p class="text-xs text-tlou-ash/60 max-w-[200px] leading-relaxed mx-auto">
-                            在此拖放或选择其他本地临时音频文件进行解密。
+                            在此拖放或选择多个本地临时音频文件进行解密。
                         </p>
                     </div>
                 </div>
@@ -260,45 +260,70 @@
                 <div class="border border-[var(--card-border)] bg-tlou-glass backdrop-blur-md rounded-2xl p-5">
                     <h3 class="font-cinzel text-xs font-bold text-tlou-rust tracking-[0.2em] mb-4 uppercase">AVAILABLE STATIONS // 信号队列</h3>
                     
-                    <div class="space-y-2" id="playlistTracks">
-                        
-                        <div id="trackFortnight" class="flex items-center justify-between p-3 rounded-xl border border-[var(--card-border)] bg-tlou-glass cursor-pointer hover:bg-tlou-rust/10 transition-all group" 
-                             onclick="selectTrack('trackFortnight', './Fortnight - Taylor Swift.mp3', 'Fortnight', 'Taylor Swift (feat. Post Malone)', 'MP3_STREAM', '44.1 kHz // 320kbps')">
-                            <div class="flex items-center space-x-3 overflow-hidden">
-                                <span class="font-mono text-[10px] text-tlou-ash/40 group-hover:text-tlou-rust transition-colors">● SIGNAL</span>
-                                <div class="overflow-hidden">
-                                    <p class="font-cinzel text-xs font-bold text-[var(--text-white)] truncate">Fortnight</p>
-                                    <p class="font-mono text-[9px] text-tlou-ash/50 truncate">Taylor Swift // LIVE NODE</p>
-                                </div>
-                            </div>
-                            <span class="font-mono text-[10px] text-tlou-ash/40 border border-[var(--card-border)] px-1.5 py-0.5 rounded">BUILT-IN</span>
-                        </div>
-
-                        <div id="trackStranger" class="flex items-center justify-between p-3 rounded-xl border border-[var(--card-border)] bg-tlou-glass cursor-pointer hover:bg-tlou-rust/10 transition-all group" 
-                             onclick="selectTrack('trackStranger', './Stranger to Me-Shirina.flac', 'Stranger to Me', 'Shirina', 'FLAC_LOSSLESS', '48.0 kHz // 24-Bit Hi-Res')">
-                            <div class="flex items-center space-x-3 overflow-hidden">
-                                <span class="font-mono text-[10px] text-tlou-ash/40 group-hover:text-tlou-rust transition-colors">● AMPLITUDE</span>
-                                <div class="overflow-hidden">
-                                    <p class="font-cinzel text-xs font-bold text-[var(--text-white)] truncate">Stranger to Me</p>
-                                    <p class="font-mono text-[9px] text-tlou-ash/50 truncate">Shirina // STUDIO MASTER</p>
-                                </div>
-                            </div>
-                            <span class="font-mono text-[10px] text-tlou-moss border border-tlou-moss/30 bg-tlou-moss/5 px-1.5 py-0.5 rounded font-bold">HI-RES</span>
-                        </div>
-
-                        <div id="trackTLOU" class="flex items-center justify-between p-3 rounded-xl border border-[var(--card-border)] bg-tlou-glass cursor-pointer hover:bg-tlou-rust/10 transition-all group" 
-                             onclick="selectTrack('trackTLOU', './The Last of Us - Gustavo Santaolalla.flac', 'The Last of Us', 'Gustavo Santaolalla', 'FLAC_STREAM', '48.0 kHz // 24-Bit Hi-Res')">
-                            <div class="flex items-center space-x-3 overflow-hidden">
-                                <span class="font-mono text-[10px] text-tlou-ash/40 group-hover:text-tlou-rust transition-colors">● RESONANCE</span>
-                                <div class="overflow-hidden">
-                                    <p class="font-cinzel text-xs font-bold text-[var(--text-white)] truncate">The Last of Us</p>
-                                    <p class="font-mono text-[9px] text-tlou-ash/50 truncate">Gustavo Santaolalla // MASTER THEME</p>
-                                </div>
-                            </div>
-                            <span class="font-mono text-[10px] text-tlou-rust border border-tlou-rust/30 bg-tlou-rust/5 px-1.5 py-0.5 rounded font-bold">THEME</span>
+                    <div class="mb-4">
+                        <div class="text-[9px] font-mono text-tlou-ash/40 tracking-widest uppercase mb-2 flex items-center justify-between cursor-pointer select-none group" id="btnToggleSystemTracks">
+                            <span class="text-tlou-rust font-bold">// SYSTEM FREQUENCY // 内置原生频段</span>
+                            <span id="lblSystemTracksToggle" class="text-tlou-ash/30 group-hover:text-white transition-colors">[ EXPAND + ]</span>
                         </div>
                         
+                        <div class="space-y-2 hidden transition-all duration-300" id="systemTracksContainer">
+                            <div id="trackFortnight" class="track-node flex items-center justify-between p-3 rounded-xl border border-[var(--card-border)] bg-tlou-glass cursor-pointer hover:bg-tlou-rust/10 transition-all group" 
+                                 onclick="selectTrack('trackFortnight', './Fortnight - Taylor Swift.mp3', 'Fortnight', 'Taylor Swift (feat. Post Malone)', 'MP3_STREAM', '44.1 kHz // 320kbps')">
+                                <div class="flex items-center space-x-3 overflow-hidden">
+                                    <span class="font-mono text-[10px] text-tlou-ash/40 group-hover:text-tlou-rust transition-colors">● SIGNAL</span>
+                                    <div class="overflow-hidden">
+                                        <p class="font-cinzel text-xs font-bold text-[var(--text-white)] truncate">Fortnight</p>
+                                        <p class="font-mono text-[9px] text-tlou-ash/50 truncate">Taylor Swift // LIVE NODE</p>
+                                    </div>
+                                </div>
+                                <span class="font-mono text-[10px] text-tlou-ash/40 border border-[var(--card-border)] px-1.5 py-0.5 rounded">BUILT-IN</span>
+                            </div>
+
+                            <div id="trackStranger" class="track-node flex items-center justify-between p-3 rounded-xl border border-[var(--card-border)] bg-tlou-glass cursor-pointer hover:bg-tlou-rust/10 transition-all group" 
+                                 onclick="selectTrack('trackStranger', './Stranger to Me-Shirina.flac', 'Stranger to Me', 'Shirina', 'FLAC_LOSSLESS', '48.0 kHz // 24-Bit Hi-Res')">
+                                <div class="flex items-center space-x-3 overflow-hidden">
+                                    <span class="font-mono text-[10px] text-tlou-ash/40 group-hover:text-tlou-rust transition-colors">● AMPLITUDE</span>
+                                    <div class="overflow-hidden">
+                                        <p class="font-cinzel text-xs font-bold text-[var(--text-white)] truncate">Stranger to Me</p>
+                                        <p class="font-mono text-[9px] text-tlou-ash/50 truncate">Shirina // STUDIO MASTER</p>
+                                    </div>
+                                </div>
+                                <span class="font-mono text-[10px] text-tlou-moss border border-tlou-moss/30 bg-tlou-moss/5 px-1.5 py-0.5 rounded font-bold">HI-RES</span>
+                            </div>
+
+                            <div id="trackTLOU" class="track-node flex items-center justify-between p-3 rounded-xl border border-[var(--card-border)] bg-tlou-glass cursor-pointer hover:bg-tlou-rust/10 transition-all group" 
+                                 onclick="selectTrack('trackTLOU', './The Last of Us - Gustavo Santaolalla.flac', 'The Last of Us', 'Gustavo Santaolalla', 'FLAC_STREAM', '48.0 kHz // 24-Bit Hi-Res')">
+                                <div class="flex items-center space-x-3 overflow-hidden">
+                                    <span class="font-mono text-[10px] text-tlou-ash/40 group-hover:text-tlou-rust transition-colors">● RESONANCE</span>
+                                    <div class="overflow-hidden">
+                                        <p class="font-cinzel text-xs font-bold text-[var(--text-white)] truncate">The Last of Us</p>
+                                        <p class="font-mono text-[9px] text-tlou-ash/50 truncate">Gustavo Santaolalla // MASTER THEME</p>
+                                    </div>
+                                </div>
+                                <span class="font-mono text-[10px] text-tlou-rust border border-tlou-rust/30 bg-tlou-rust/5 px-1.5 py-0.5 rounded font-bold">THEME</span>
+                            </div>
+                        </div>
                     </div>
+
+                    <div id="localTracksWrapper" class="hidden border-t border-white/5 pt-3 mt-3">
+                        <div class="text-[9px] font-mono tracking-widest uppercase mb-2 flex items-center justify-between cursor-pointer select-none group" id="btnToggleLocalTracks">
+                            <span class="text-tlou-moss font-bold flex items-center space-x-1.5">
+                                <span class="inline-block w-1.5 h-1.5 rounded-full bg-tlou-moss animate-pulse"></span>
+                                <span>PERSISTENT STORAGE // 外部缓存频段</span>
+                            </span>
+                            <span id="lblLocalTracksToggle" class="text-tlou-ash/30 group-hover:text-white transition-colors">[ COLLAPSE - ]</span>
+                        </div>
+                        
+                        <div class="space-y-2 transition-all duration-300 mb-3" id="localTracksContainer">
+                            </div>
+
+                        <div id="localPagination" class="hidden flex items-center justify-between pt-2 border-t border-white/5 font-mono text-[9px] select-none text-tlou-ash/40">
+                            <button id="btnPrevPage" class="hover:text-white disabled:opacity-20 disabled:hover:text-tlou-ash/40 transition-colors focus:outline-none font-bold">[ PREV PAGE ]</button>
+                            <span id="lblPageInfo">PAGE 1 / 1</span>
+                            <button id="btnNextPage" class="hover:text-white disabled:opacity-20 disabled:hover:text-tlou-ash/40 transition-colors focus:outline-none font-bold">[ NEXT PAGE ]</button>
+                        </div>
+                    </div>
+
                 </div>
 
                 <div class="border border-[var(--card-border)] bg-black/10 rounded-2xl p-4 font-mono text-[11px] text-tlou-ash/50 leading-relaxed space-y-2">
@@ -369,16 +394,73 @@ const pCanvas = document.getElementById('particleCanvas');
 const pCtx = pCanvas.getContext('2d');
 let embers = [];
 
-// 🌟 核心升级修复：在物理引擎外部建立高精度视口解密监听器（一举粉碎 300x150 锁死 Bug） 🌟
 function resizeParticleCanvas() {
     pCanvas.width = window.innerWidth;
     pCanvas.height = window.innerHeight;
 }
 window.addEventListener('resize', resizeParticleCanvas);
-resizeParticleCanvas(); // 初始化时利落锁定尺寸
+resizeParticleCanvas(); 
 
 let playMode = 'LIST_LOOP'; 
 let currentTrackId = ''; 
+
+// 外部注入缓存数据层状态管理
+let localTracksList = []; 
+let localCurrentPage = 1;  
+const PAGE_SIZE = 20;     
+
+// IndexedDB 二进制高速安全沙盒驱动系统
+let localDB = null;
+function initIndexedDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open("ErisRadioSandbox", 1);
+        request.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains("saved_tracks")) {
+                db.createObjectStore("saved_tracks", { keyPath: "id" });
+            }
+        };
+        request.onsuccess = (e) => {
+            localDB = e.target.result;
+            resolve(localDB);
+        };
+        request.onerror = (e) => reject(e.target.error);
+    });
+}
+
+function saveTrackToDB(trackId, fileBlob, name, format) {
+    if (!localDB) return;
+    const transaction = localDB.transaction("saved_tracks", "readwrite");
+    const store = transaction.objectStore("saved_tracks");
+    store.put({ id: trackId, file: fileBlob, name: name, format: format });
+}
+
+function deleteTrackFromDB(trackId) {
+    if (!localDB) return;
+    const transaction = localDB.transaction("saved_tracks", "readwrite");
+    const store = transaction.objectStore("saved_tracks");
+    store.delete(trackId);
+}
+
+function loadPersistedTracks() {
+    if (!localDB) return;
+    const transaction = localDB.transaction("saved_tracks", "readonly");
+    const store = transaction.objectStore("saved_tracks");
+    const request = store.getAll();
+    request.onsuccess = (e) => {
+        const records = e.target.result || [];
+        records.forEach(record => {
+            localTracksList.push({
+                id: record.id,
+                fileBlob: record.file,
+                name: record.name,
+                format: record.format,
+                fileUrl: URL.createObjectURL(record.file)
+            });
+        });
+        renderLocalTracksPage(); 
+    };
+}
 
 const btnPlay = document.getElementById('btnPlay');
 const btnStop = document.getElementById('btnStop');
@@ -413,7 +495,18 @@ const progressHandle = document.getElementById('progressHandle');
 
 const dropZone = document.getElementById('dropZone');
 const fileInput = document.getElementById('fileInput');
-const playlistTracks = document.getElementById('playlistTracks');
+
+// 抓取隔离/折叠与分页的相关 DOM 绑点
+const btnToggleSystemTracks = document.getElementById('btnToggleSystemTracks');
+const lblSystemTracksToggle = document.getElementById('lblSystemTracksToggle');
+const systemTracksContainer = document.getElementById('systemTracksContainer');
+let isSystemExpanded = false; 
+
+const localTracksWrapper = document.getElementById('localTracksWrapper');
+const localTracksContainer = document.getElementById('localTracksContainer');
+const btnToggleLocalTracks = document.getElementById('btnToggleLocalTracks');
+const lblLocalTracksToggle = document.getElementById('lblLocalTracksToggle');
+let isLocalExpanded = true; 
 
 function initAudioPipeline() {
     if (!audioCtx) {
@@ -461,7 +554,7 @@ function selectTrack(elementId, fileUrl, title, artist, format, rate) {
 
     currentTrackId = elementId;
 
-    document.querySelectorAll('#playlistTracks > div').forEach(el => {
+    document.querySelectorAll('.track-node').forEach(el => {
         el.classList.remove('border-tlou-rust/30', 'bg-tlou-rust/5');
         el.classList.add('border-[var(--card-border)]');
     });
@@ -514,8 +607,16 @@ function selectTrack(elementId, fileUrl, title, artist, format, rate) {
 }
 
 function handleTrackPlaybackEnded() {
-    const tracks = Array.from(document.querySelectorAll('#playlistTracks > div'));
-    if (tracks.length === 0) {
+    const allTracks = [
+        { id: 'trackFortnight', url: './Fortnight - Taylor Swift.mp3', name: 'Fortnight', artist: 'Taylor Swift (feat. Post Malone)', format: 'MP3_STREAM', rate: '44.1 kHz // 320kbps' },
+        { id: 'trackStranger', url: './Stranger to Me-Shirina.flac', name: 'Stranger to Me', artist: 'Shirina', format: 'FLAC_LOSSLESS', rate: '48.0 kHz // 24-Bit Hi-Res' },
+        { id: 'trackTLOU', url: './The Last of Us - Gustavo Santaolalla.flac', name: 'The Last of Us', artist: 'Gustavo Santaolalla', format: 'FLAC_STREAM', rate: '48.0 kHz // 24-Bit Hi-Res' }
+    ];
+    localTracksList.forEach(t => {
+        allTracks.push({ id: t.id, url: t.fileUrl, name: t.name, artist: 'Local Buffer', format: t.format, rate: 'DIRECT DECODE' });
+    });
+
+    if (allTracks.length === 0) {
         stopTrack();
         return;
     }
@@ -526,17 +627,28 @@ function handleTrackPlaybackEnded() {
             playTrack();
         }
     } else if (playMode === 'LIST_LOOP') {
-        let currentIndex = tracks.findIndex(el => el.id === currentTrackId);
+        let currentIndex = allTracks.findIndex(el => el.id === currentTrackId);
         if (currentIndex === -1) currentIndex = 0;
-        let nextIndex = (currentIndex + 1) % tracks.length;
-        tracks[nextIndex].click(); 
+        let nextIndex = (currentIndex + 1) % allTracks.length;
+        executeGlobalTrackSwitch(allTracks[nextIndex]);
     } else if (playMode === 'RANDOM') {
-        let nextIndex = Math.floor(Math.random() * tracks.length);
-        if (tracks.length > 1 && tracks[nextIndex].id === currentTrackId) {
-            nextIndex = (nextIndex + 1) % tracks.length;
+        let nextIndex = Math.floor(Math.random() * allTracks.length);
+        if (allTracks.length > 1 && allTracks[nextIndex].id === currentTrackId) {
+            nextIndex = (nextIndex + 1) % allTracks.length;
         }
-        tracks[nextIndex].click();
+        executeGlobalTrackSwitch(allTracks[nextIndex]);
     }
+}
+
+function executeGlobalTrackSwitch(track) {
+    if (track.id.startsWith('local_')) {
+        const idx = localTracksList.findIndex(t => t.id === track.id);
+        if (idx !== -1) {
+            localCurrentPage = Math.floor(idx / PAGE_SIZE) + 1;
+            renderLocalTracksPage();
+        }
+    }
+    selectTrack(track.id, track.url, track.name, track.artist, track.format, track.rate);
 }
 
 function playTrack() {
@@ -644,6 +756,31 @@ btnResetEQ.addEventListener('click', () => {
     setFilterGain(highShelf, 0, valHigh);
 });
 
+btnToggleSystemTracks.addEventListener('click', () => {
+    isSystemExpanded = !isSystemExpanded;
+    if (isSystemExpanded) {
+        systemTracksContainer.classList.remove('hidden');
+        lblSystemTracksToggle.textContent = '[ COLLAPSE - ]';
+    } else {
+        systemTracksContainer.classList.add('hidden');
+        lblSystemTracksToggle.textContent = '[ EXPAND + ]';
+    }
+});
+
+btnToggleLocalTracks.addEventListener('click', () => {
+    isLocalExpanded = !isLocalExpanded;
+    if (isLocalExpanded) {
+        localTracksContainer.classList.remove('hidden');
+        document.getElementById('localPagination').classList.remove('hidden');
+        lblLocalTracksToggle.textContent = '[ COLLAPSE - ]';
+        renderLocalTracksPage();
+    } else {
+        localTracksContainer.classList.add('hidden');
+        document.getElementById('localPagination').classList.add('hidden');
+        lblLocalTracksToggle.textContent = '[ EXPAND + ]';
+    }
+});
+
 btnMode.addEventListener('click', () => {
     if (playMode === 'LIST_LOOP') {
         playMode = 'SINGLE_LOOP';
@@ -702,60 +839,164 @@ progressBarContainer.addEventListener('click', (e) => {
 dropZone.addEventListener('click', () => fileInput.click());
 dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('border-tlou-rust'); });
 dropZone.addEventListener('dragleave', () => dropZone.classList.remove('border-tlou-rust'));
+
+// 🌟 核心拦截升级：同步改造拖拽上传触发点，使其完美支持批量多选文件 🌟
 dropZone.addEventListener('drop', (e) => {
     e.preventDefault();
     dropZone.classList.remove('border-tlou-rust');
-    if (e.dataTransfer.files.length > 0) handleAudioFileLoad(e.dataTransfer.files[0]);
+    if (e.dataTransfer.files.length > 0) handleMultipleAudioFiles(e.dataTransfer.files);
 });
 fileInput.addEventListener('change', (e) => {
-    if (e.target.files.length > 0) handleAudioFileLoad(e.target.files[0]);
+    if (e.target.files.length > 0) handleMultipleAudioFiles(e.target.files);
 });
 
-function handleAudioFileLoad(file) {
+// 🌟 新增：独立非阻塞流式多音乐多选注入管理矩阵 🌟
+function handleMultipleAudioFiles(files) {
     stopTrack();
-    const fileUrl = URL.createObjectURL(file);
-    const nameWithoutExt = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
-    
-    const trackId = 'local_' + Date.now();
-    const newTrackItem = document.createElement('div');
-    newTrackItem.id = trackId;
-    newTrackItem.className = "flex items-center justify-between p-3 rounded-xl border border-[var(--card-border)] bg-tlou-glass cursor-pointer hover:bg-[var(--moss-color)]/20 transition-all group";
-    newTrackItem.innerHTML = `
-        <div class="flex items-center space-x-3 overflow-hidden">
-            <span class="font-mono text-[10px] text-tlou-ash/40 group-hover:text-tlou-rust transition-colors">● INJECTED</span>
-            <div class="overflow-hidden">
-                <p class="font-cinzel text-xs font-bold text-[var(--text-white)] truncate">${nameWithoutExt}</p>
-                <p class="font-mono text-[9px] text-tlou-ash/40 truncate">LOCAL // FILE_NODE</p>
-            </div>
-        </div>
-        <span class="font-mono text-[10px] text-tlou-ash/40 border border-[var(--card-border)] px-1.5 py-0.5 rounded uppercase">${file.type.split('/')[1] || 'AUDIO'}</span>
-    `;
-    
-    const formatStr = file.type.toUpperCase().split('/')[1] || 'RAW';
-    
-    newTrackItem.onclick = () => {
-        selectTrack(trackId, fileUrl, nameWithoutExt, 'Local Buffer', formatStr, 'DIRECT DECODE');
-    };
+    let firstNewTrackId = null;
+    let validCount = 0;
 
-    playlistTracks.appendChild(newTrackItem);
-    
-    setTimeout(() => {
-        newTrackItem.click();
-    }, 150);
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        
+        // 鲁棒性检查：剔除可能不小心拽入的文本或图片，确保解码管线全数承接音频
+        if (!file.type.startsWith('audio/') && !file.name.endsWith('.flac') && !file.name.endsWith('.mp3')) continue;
+
+        // 【核心修复】引入时间戳 + 伪随机大期望字符串，彻底毁灭高并发产生的 ID 碰撞 Bug
+        const trackId = 'local_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+        const nameWithoutExt = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+        const formatStr = file.type.toUpperCase().split('/')[1] || file.name.split('.').pop().toUpperCase() || 'RAW';
+
+        // 封装数据存储实体
+        localTracksList.push({
+            id: trackId,
+            fileBlob: file,
+            name: nameWithoutExt,
+            format: formatStr,
+            fileUrl: URL.createObjectURL(file)
+        });
+
+        // 写入二进制物理数据库
+        saveTrackToDB(trackId, file, nameWithoutExt, formatStr);
+
+        // 锚定该批次多选中的第一首歌曲，供后续自动推针起弦
+        if (validCount === 0) {
+            firstNewTrackId = trackId;
+        }
+        validCount++;
+    }
+
+    if (validCount > 0) {
+        // 全自动翻页定位到最后一页，让最新加入的一批歌曲呈现在视野中
+        localCurrentPage = Math.ceil(localTracksList.length / PAGE_SIZE);
+        renderLocalTracksPage();
+
+        // 黄金延迟 150ms 避开 DOM 树解析死锁，自动鸣响第一首被多选装填的音频
+        setTimeout(() => {
+            const triggerNode = document.getElementById(`trigger_${firstNewTrackId}`);
+            if (triggerNode) triggerNode.click();
+        }, 150);
+    }
 }
 
-// 🌟 物理引擎深度调优：完全解放高频宽高重绘，改用极优读取，让火星全屏飞舞 🌟
+// 数据驱动的高性能外部缓存频段分页切片渲染引擎
+function renderLocalTracksPage() {
+    localTracksContainer.innerHTML = '';
+    const paginationEl = document.getElementById('localPagination');
+
+    if (localTracksList.length === 0) {
+        localTracksWrapper.classList.add('hidden');
+        paginationEl.classList.add('hidden');
+        return;
+    }
+
+    localTracksWrapper.classList.remove('hidden');
+
+    const totalPages = Math.ceil(localTracksList.length / PAGE_SIZE);
+    if (localCurrentPage > totalPages) localCurrentPage = Math.max(1, totalPages);
+
+    if (totalPages > 1 && isLocalExpanded) {
+        paginationEl.classList.remove('hidden');
+        document.getElementById('lblPageInfo').textContent = `PAGE ${localCurrentPage} / ${totalPages}`;
+        document.getElementById('btnPrevPage').disabled = (localCurrentPage === 1);
+        document.getElementById('btnNextPage').disabled = (localCurrentPage === totalPages);
+    } else {
+        paginationEl.classList.add('hidden');
+    }
+
+    if (!isLocalExpanded) return;
+
+    const startIndex = (localCurrentPage - 1) * PAGE_SIZE;
+    const endIndex = startIndex + PAGE_SIZE;
+    const currentPageData = localTracksList.slice(startIndex, endIndex);
+
+    currentPageData.forEach(track => {
+        const newTrackItem = document.createElement('div');
+        newTrackItem.id = track.id;
+        newTrackItem.className = "track-node flex items-center justify-between p-3 rounded-xl border border-[var(--card-border)] bg-tlou-glass cursor-pointer hover:bg-[var(--moss-color)]/20 transition-all group animate-fade-in";
+        
+        if (currentTrackId === track.id) {
+            newTrackItem.classList.remove('border-[var(--card-border)]');
+            newTrackItem.classList.add('border-tlou-rust/30', 'bg-tlou-rust/5');
+        }
+
+        newTrackItem.innerHTML = `
+            <div class="flex items-center space-x-3 overflow-hidden flex-1" id="trigger_${track.id}">
+                <span class="font-mono text-[10px] text-tlou-ash/40 group-hover:text-tlou-rust transition-colors">● INJECTED</span>
+                <div class="overflow-hidden">
+                    <p class="font-cinzel text-xs font-bold text-[var(--text-white)] truncate">${track.name}</p>
+                    <p class="font-mono text-[9px] text-tlou-ash/40 truncate">LOCAL // PERSIST_NODE</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2 flex-shrink-0 ml-2">
+                <span class="font-mono text-[10px] text-tlou-ash/40 border border-[var(--card-border)] px-1.5 py-0.5 rounded uppercase">${track.format}</span>
+                <button id="del_${track.id}" class="text-tlou-ash/30 hover:text-tlou-rust p-1 transition-colors font-mono text-[11px] font-bold" title="清除本地持久化缓存">✕</button>
+            </div>
+        `;
+
+        newTrackItem.querySelector(`#trigger_${track.id}`).onclick = () => {
+            selectTrack(track.id, track.fileUrl, track.name, 'Local Buffer', track.format, 'DIRECT DECODE');
+        };
+
+        newTrackItem.querySelector(`#del_${track.id}`).onclick = (e) => {
+            e.stopPropagation(); 
+            if (currentTrackId === track.id) {
+                stopTrack();
+            }
+            localTracksList = localTracksList.filter(t => t.id !== track.id);
+            deleteTrackFromDB(track.id); 
+            URL.revokeObjectURL(track.fileUrl); 
+            renderLocalTracksPage();
+        };
+
+        localTracksContainer.appendChild(newTrackItem);
+    });
+}
+
+document.getElementById('btnPrevPage').addEventListener('click', () => {
+    if (localCurrentPage > 1) {
+        localCurrentPage--;
+        renderLocalTracksPage();
+    }
+});
+document.getElementById('btnNextPage').addEventListener('click', () => {
+    const totalPages = Math.ceil(localTracksList.length / PAGE_SIZE);
+    if (localCurrentPage < totalPages) {
+        localCurrentPage++;
+        renderLocalTracksPage();
+    }
+});
+
 function updateAndDrawEmbers() {
     const width = pCanvas.width;
     const height = pCanvas.height;
     pCtx.clearRect(0, 0, width, height);
 
-    // 音乐播放时，在 120 颗粒子负载内，自全屏视口底部大范围涌入粒子
     if (isPlaying && embers.length < 120) {
-        if (Math.random() < 0.35) { 
+        if (Math.random() * 100 < 35) { 
             embers.push({
                 x: Math.random() * width,
-                y: height + 10, // 牢牢锚定在视口正底端外部建立源头
+                y: height + 10, 
                 size: Math.random() * 2.2 + 0.6,
                 speedX: (Math.random() - 0.5) * 1.2,
                 speedY: -(Math.random() * 1.6 + 0.6),
@@ -794,8 +1035,6 @@ const canvasCtx = canvas.getContext('2d');
 
 function renderVisualizerFrame() {
     requestAnimationFrame(renderVisualizerFrame);
-    
-    // 每帧高频推进全屏火星余烬动力链
     updateAndDrawEmbers();
 
     const width = canvas.width = canvas.clientWidth;
@@ -849,7 +1088,17 @@ function renderVisualizerFrame() {
     }
     canvasCtx.stroke();
 }
-renderVisualizerFrame();
+
+// 全站冷启动路由总线
+initIndexedDB()
+    .then(() => {
+        loadPersistedTracks(); 
+        renderVisualizerFrame(); 
+    })
+    .catch(err => {
+        console.error("数据避难所沙盒冷启动失败:", err);
+        renderVisualizerFrame();
+    });
     </script>
 </body>
 </html>
