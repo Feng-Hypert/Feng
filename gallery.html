@@ -1,1 +1,409 @@
-<h1>Welcome to Archive</h1>
+<!DOCTYPE html>
+<html lang="zh-CN" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ERIS // Creamy Pop Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Space+Grotesk:wght@700&family=Fira+Code:wght@600&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Fredoka', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"PingFang SC"', '"Microsoft YaHei"', 'sans-serif'],
+                        display: ['Space Grotesk', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        /* 全局动态自适应配色系统 */
+        :root {
+            --bg-color: #FFFDF6;       /* 香草奶糕底 */
+            --text-color: #1A1C23;     /* 炭黑粗线条色 */
+            --text-muted: #5A5E6D;     /* 描述文本色 */
+            --card-bg: #FFFFFF;        /* 动态卡片容器底 */
+            --shadow-color: #1A1C23;   /* 固体投影色 */
+            --accent-main: #A8E6CF;    /* 奶香抹茶 */
+            --accent-sub: #FFD3B6;     /* 蜜桃欧蕾 */
+            --accent-third: #DCE5F7;   /* 浅空燕麦 */
+            --solid-shadow: 5px 5px 0px 0px var(--shadow-color);
+            --solid-shadow-sm: 3px 3px 0px 0px var(--shadow-color);
+            --solid-shadow-lg: 10px 10px 0px 0px var(--shadow-color);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.35s ease, color 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+        }
+
+        /* 动态语境字族流 */
+        .lang-en { font-family: 'Fredoka', sans-serif; }
+        .lang-zh { font-family: 'Fredoka', 'system-ui', "-apple-system", "SimHei", "Microsoft YaHei", sans-serif; font-weight: 700; }
+
+        /* 手账动态底纹覆盖层 */
+        .pattern-dots { background-image: radial-gradient(var(--text-color) 1.5px, transparent 1.5px); background-size: 24px 24px; }
+        .pattern-grid { background-image: linear-gradient(var(--text-color) 1px, transparent 1px), linear-gradient(90deg, var(--text-color) 1px, transparent 1px); background-size: 20px 20px; }
+        .pattern-none { background-image: none; }
+
+        /* 赛璐璐双向触控主入口卡片 */
+        .cel-portal-card {
+            background-color: var(--card-bg);
+            border: 4px solid var(--text-color);
+            box-shadow: var(--solid-shadow);
+            transform: translate(0px, 0px);
+            transition: all 0.2s steps(4);
+        }
+        .cel-portal-card:hover {
+            transform: translate(-4px, -4px);
+            box-shadow: var(--solid-shadow-lg);
+        }
+
+        .cel-btn {
+            border: 3px solid var(--text-color);
+            box-shadow: var(--solid-shadow-sm);
+            transform: translate(0px, 0px);
+            transition: all 0.1s steps(2);
+        }
+        .cel-btn:hover { transform: translate(-1px, -1px); box-shadow: var(--solid-shadow); }
+        .cel-btn:active { transform: translate(3px, 3px); box-shadow: 0px 0px 0px 0px var(--text-color); }
+
+        /* DIY 工作室激活选项的高反差赛璐璐框 */
+        .active-option {
+            border-color: var(--text-color) !important;
+            transform: scale(1.04);
+            box-shadow: 3px 3px 0px 0px var(--text-color) !important;
+        }
+
+        @keyframes bleepBounce { 0%, 100% { height: 6px; } 50% { height: 22px; } }
+        .bar-1 { animation: bleepBounce 0.4s steps(3) infinite alternate; }
+        .bar-2 { animation: bleepBounce 0.3s steps(3) infinite alternate 0.05s; }
+        .bar-3 { animation: bleepBounce 0.5s steps(4) infinite alternate 0.1s; }
+    </style>
+</head>
+<body class="font-sans relative min-h-screen overflow-x-hidden p-4 sm:p-6 md:p-8 pattern-dots lang-zh" id="canvasBody">
+
+    <canvas id="popCanvas" class="fixed inset-0 w-full h-full block z-[14] pointer-events-none"></canvas>
+
+    <div class="relative min-h-screen flex flex-col justify-between z-20 max-w-5xl mx-auto pb-24 md:pb-32">
+        
+        <header class="w-full flex justify-between items-center bg-[var(--card-bg)] border-3 border-[var(--text-color)] shadow-[4px_4px_0px_0px_var(--shadow-color)] p-3 sm:p-4 rounded-2xl mb-8 md:mb-12 select-none">
+            <div class="flex items-center space-x-3 sm:space-x-4">
+                <a href="./index.html" id="btn-exit" data-i18n="exit_btn" class="cel-btn font-bold text-[11px] sm:text-xs bg-[var(--accent-sub)] text-[var(--text-color)] px-3 sm:px-4 py-2 rounded-xl tracking-wider sm:tracking-widest">
+                    ← 返回首页
+                </a>
+                <span id="txt-hub-title" data-i18n="hub_title" class="hidden md:inline-block font-display font-black text-sm tracking-wider uppercase">CREAMY_PORTAL // ARCH_03</span>
+            </div>
+            
+            <button id="soundToggle" class="cel-btn flex items-center space-x-2 font-mono text-[11px] sm:text-xs font-bold bg-[var(--accent-third)] text-[var(--text-color)] px-2.5 sm:px-3 py-1.5 rounded-xl">
+                <span id="soundStatus">BEEP: ON</span>
+                <div class="flex items-end space-x-0.5 h-3.5 w-3.5">
+                    <div class="w-0.5 bg-[var(--text-color)] bar-1"></div>
+                    <div class="w-0.5 bg-[var(--text-color)] bar-2"></div>
+                    <div class="w-0.5 bg-[var(--text-color)] bar-3"></div>
+                </div>
+            </button>
+        </header>
+
+        <main class="w-full grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 md:gap-10 items-center justify-center my-auto py-4">
+            
+            <div onclick="navigateToPage('notebook')" class="cel-portal-card rounded-3xl p-6 sm:p-8 flex flex-col justify-between min-h-[260px] md:h-[300px] cursor-pointer group select-none">
+                <div class="space-y-3 sm:space-y-4">
+                    <div class="flex justify-between items-center">
+                        <div class="w-14 h-14 flex items-center justify-center text-2xl sm:text-3xl bg-[var(--accent-sub)] border-3 border-[var(--text-color)] rounded-2xl shadow-[3px_3px_0px_0px_var(--shadow-color)]">
+                            <span>📓</span>
+                        </div>
+                        <span class="font-mono text-[10px] sm:text-xs font-black opacity-30">MODULE_01 // MEMO_JOURNAL</span>
+                    </div>
+                    <h3 id="card-notes-title" data-i18n="notes_title" class="text-xl sm:text-2xl font-display font-black tracking-wide">记事本</h3>
+                    <p id="card-notes-desc" data-i18n="notes_desc" class="text-xs font-medium leading-relaxed text-[var(--text-muted)] max-w-sm">随心所想，随事所记</p>
+                </div>
+                <div class="flex justify-end pt-4">
+                    <span id="card-notes-action" data-i18n="notes_action" class="font-mono text-[11px] sm:text-xs font-black bg-[var(--text-color)] text-[var(--card-bg)] px-3.5 sm:px-4 py-1.5 rounded-xl border-2 border-[var(--text-color)] group-hover:bg-[var(--accent-sub)] group-hover:text-[var(--text-color)] transition-colors">进入 →</span>
+                </div>
+            </div>
+
+            <div onclick="navigateToPage('checklist')" class="cel-portal-card rounded-3xl p-6 sm:p-8 flex flex-col justify-between min-h-[260px] md:h-[300px] cursor-pointer group select-none">
+                <div class="space-y-3 sm:space-y-4">
+                    <div class="flex justify-between items-center">
+                        <div class="w-14 h-14 flex items-center justify-center text-2xl sm:text-3xl bg-[var(--accent-main)] border-3 border-[var(--text-color)] rounded-2xl shadow-[3px_3px_0px_0px_var(--shadow-color)]">
+                            <span>☑</span>
+                        </div>
+                        <span class="font-mono text-[10px] sm:text-xs font-black opacity-30">MODULE_02 // REQUIREMENT</span>
+                    </div>
+                    <h3 id="card-todo-title" data-i18n="todo_title" class="text-xl sm:text-2xl font-display font-black tracking-wide">清单</h3>
+                    <p id="card-todo-desc" data-i18n="todo_desc" class="text-xs font-medium leading-relaxed text-[var(--text-muted)] max-w-sm">整理思绪，量化记忆</p>
+                </div>
+                <div class="flex justify-end pt-4">
+                    <span id="card-todo-action" data-i18n="todo_action" class="font-mono text-[11px] sm:text-xs font-black bg-[var(--text-color)] text-[var(--card-bg)] px-3.5 sm:px-4 py-1.5 rounded-xl border-2 border-[var(--text-color)] group-hover:bg-[var(--accent-main)] group-hover:text-[var(--text-color)] transition-colors">进入 →</span>
+                </div>
+            </div>
+
+        </main>
+
+        <section id="studioDrawer" class="w-full mt-8 md:mt-12 select-none">
+            <button onclick="toggleStudioDrawer()" class="w-full border-3 border-[var(--text-color)] bg-[var(--card-bg)] shadow-[3px_3px_0px_0px_var(--shadow-color)] p-3 rounded-2xl font-bold text-xs flex items-center justify-between hover:bg-slate-50/5 transition-colors">
+                <div class="flex items-center space-x-2">
+                    <span>🛠️</span>
+                    <span id="drawer-title" data-i18n="drawer_title">DIY 工作室面板 (点击-展开/折叠)</span>
+                </div>
+                <span id="drawerArrow" class="transform transition-transform duration-300">▲</span>
+            </button>
+            
+            <div id="drawerContent" class="hidden mt-4 bg-[var(--card-bg)] border-3 border-[var(--text-color)] shadow-[4px_4px_0px_0px_var(--shadow-color)] rounded-2xl p-4 sm:p-5 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <p id="drawer-p-color" data-i18n="drawer_p_color" class="text-[11px] font-mono font-bold text-[var(--text-muted)] mb-2">● 动态配置手账主配色盘 // PALETTE CONFIG</p>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <button id="palette-matcha" onclick="changePalette('matcha')" class="border-2 border-slate-300 px-2 py-2 bg-[#A8E6CF] text-[#1A1C23] rounded-xl text-xs font-bold transition-all">抹茶 🍵</button>
+                        <button id="palette-peach" onclick="changePalette('peach')" class="border-2 border-slate-300 px-2 py-2 bg-[#FFD3B6] text-[#231A1A] rounded-xl text-xs font-bold transition-all">蜜桃 🍑</button>
+                        <button id="palette-taro" onclick="changePalette('taro')" class="border-2 border-slate-300 px-2 py-2 bg-[#E8D7FF] text-[#1C1924] rounded-xl text-xs font-bold transition-all">芋泥 🧋</button>
+                        <button id="palette-monochrome" onclick="changePalette('monochrome')" class="border-2 border-slate-700 px-2 py-2 bg-[#2C3545] text-white rounded-xl text-xs font-bold transition-all">深空 🌌</button>
+                    </div>
+                </div>
+                <div>
+                    <p id="drawer-p-pattern" data-i18n="drawer_p_pattern" class="text-[11px] font-mono font-bold text-[var(--text-muted)] mb-2">● 切换底层全覆覆盖底纹 // BACKDROP PATTERN</p>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="changePattern('dots')" id="pattern-btn-dots" data-i18n="opt_dots" class="border-2 border-slate-300 py-2 bg-[var(--card-bg)] rounded-xl text-xs font-bold transition-all">波普圆点</button>
+                        <button onclick="changePattern('grid')" id="pattern-btn-grid" data-i18n="opt_grid" class="border-2 border-slate-300 py-2 bg-[var(--card-bg)] rounded-xl text-xs font-bold transition-all">复古方格</button>
+                        <button onclick="changePattern('none')" id="pattern-btn-none" data-i18n="opt_none" class="border-2 border-slate-300 py-2 bg-[var(--card-bg)] rounded-xl text-xs font-bold transition-all">极简空白</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer class="w-full border-t-3 border-[var(--text-color)] pt-4 mt-8 flex flex-col sm:flex-row justify-between items-center text-xs font-bold gap-4 select-none">
+            <p id="txt-footer" data-i18n="footer_text" class="bg-[var(--text-color)] text-[var(--card-bg)] px-3 py-1 rounded-md transform rotate-[-0.3deg]">© 2026 ERIS. PORTAL ARCHIVE COMPLETE.</p>
+        </footer>
+    </div>
+
+    <div class="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 select-none">
+        <button onclick="toggleLanguage()" class="cel-btn flex items-center space-x-1.5 sm:space-x-2 bg-[var(--card-bg)] border-3 border-[var(--text-color)] px-3 sm:px-4 py-2.5 sm:py-3 rounded-2xl font-mono text-[11px] sm:text-xs font-black shadow-[3px_3px_0px_0px_var(--shadow-color)]">
+            <span>🌐</span>
+            <span id="langBtnLabel">LANG: 中文</span>
+        </button>
+    </div>
+
+    <script>
+        const i18nTokens = {
+            zh: {
+                exit_btn: "← 返回首页", hub_title: "CREAMY_PORTAL // ARCH_03",
+                notes_title: "随笔记事本", notes_desc: "刻录荒原之中的所思所想、三维代码脚本资产以及突发的创作频率碎屑。", notes_action: "运载终端系统 →",
+                todo_title: "生存必做清单", todo_desc: "管理并追踪你每日的核心生存任务线程、滑板刷街微调计划与数字化指令需求。", todo_action: "运载自动化管道 →",
+                drawer_title: "DIY 工作室面板 (点击控制台抽屉展开/折叠)", drawer_p_color: "● 动态配置手账主配色盘 // PALETTE CONFIG", drawer_p_pattern: "● 切换底层全覆覆盖底纹 // BACKDROP PATTERN",
+                opt_dots: "波普圆点", opt_grid: "复古方格", opt_none: "极简空白", footer_text: "© 2026 ERIS. PORTAL ARCHIVE COMPLETE."
+            },
+            en: {
+                exit_btn: "← EXIT CORE", hub_title: "CREAMY_PORTAL // ARCH_03",
+                notes_title: "Memory Journal", notes_desc: "Record raw mental frequencies, fragmented daily notes, 3D modeling pipe assets and creative sparks.", notes_action: "LAUNCH TERMINAL →",
+                todo_title: "Survival Checklist", todo_desc: "Track and manage your running requirements, skateboarding log tunings, and critical workflows.", todo_action: "LAUNCH PIPELINE →",
+                drawer_title: "DIY STUDIO CUSTOMIZER (Click to expand/collapse console window)", drawer_p_color: "● DYNAMIC CORE PALETTE CONFIG // SELECTOR", drawer_p_pattern: "● CANVAS BACKGROUND OVERLAY PATTERN // STYLE",
+                opt_dots: "Pop Dots", opt_grid: "Retro Grid", opt_none: "Pure Minimal", footer_text: "© 2026 ERIS. PORTAL ARCHIVE COMPLETE."
+            }
+        };
+
+        // 配色方案与底纹状态恢复链（缺省值强锁定为 抹茶-波普圆点）
+        let currentLang = localStorage.getItem('eris_cel_lang') || 'zh';
+        let currentPalette = localStorage.getItem('eris_cel_palette') || 'matcha';
+        let currentPattern = localStorage.getItem('eris_cel_pattern') || 'dots';
+        let isDrawerOpen = false;
+
+        function applyLanguage(lang) {
+            currentLang = lang; localStorage.setItem('eris_cel_lang', lang);
+            const body = document.getElementById('canvasBody');
+            const label = document.getElementById('langBtnLabel');
+            
+            if (lang === 'zh') {
+                body.classList.remove('lang-en'); body.classList.add('lang-zh'); label.textContent = "LANG: 中文";
+            } else {
+                body.classList.remove('lang-zh'); body.classList.add('lang-en'); label.textContent = "LANG: EN";
+            }
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const token = el.getAttribute('data-i18n');
+                if (i18nTokens[lang][token]) el.textContent = i18nTokens[lang][token];
+            });
+        }
+
+        function toggleLanguage() { applyLanguage(currentLang === 'zh' ? 'en' : 'zh'); playCelBleep(true); }
+        function navigateToPage(target) { playCelBleep(true); setTimeout(() => { window.location.href = `./${target}.html`; }, 180); }
+
+        function toggleStudioDrawer() {
+            isDrawerOpen = !isDrawerOpen;
+            const content = document.getElementById('drawerContent'); const arrow = document.getElementById('drawerArrow');
+            if (isDrawerOpen) { content.classList.remove('hidden'); arrow.textContent = '▼'; } 
+            else { content.classList.add('hidden'); arrow.textContent = '▲'; }
+            playCelBleep();
+        }
+
+        function changePalette(type) {
+            currentPalette = type; localStorage.setItem('eris_cel_palette', type);
+            const root = document.documentElement;
+            
+            if(type === 'matcha') {
+                root.style.setProperty('--bg-color', '#FFFDF6'); root.style.setProperty('--text-color', '#1A1C23'); root.style.setProperty('--text-muted', '#5A5E6D');
+                root.style.setProperty('--card-bg', '#FFFFFF'); root.style.setProperty('--shadow-color', '#1A1C23');
+                root.style.setProperty('--accent-main', '#A8E6CF'); root.style.setProperty('--accent-sub', '#FFD3B6'); root.style.setProperty('--accent-third', '#DCE5F7');
+            } else if(type === 'peach') {
+                root.style.setProperty('--bg-color', '#FFF6F6'); root.style.setProperty('--text-color', '#231A1A'); root.style.setProperty('--text-muted', '#6B5B5B');
+                root.style.setProperty('--card-bg', '#FFFFFF'); root.style.setProperty('--shadow-color', '#231A1A');
+                root.style.setProperty('--accent-main', '#FFB7B2'); root.style.setProperty('--accent-sub', '#FFDAC1'); root.style.setProperty('--accent-third', '#E2F0CB');
+            } else if(type === 'taro') {
+                root.style.setProperty('--bg-color', '#FBF8FF'); root.style.setProperty('--text-color', '#1C1924'); root.style.setProperty('--text-muted', '#5E586E');
+                root.style.setProperty('--card-bg', '#FFFFFF'); root.style.setProperty('--shadow-color', '#1C1924');
+                root.style.setProperty('--accent-main', '#E8D7FF'); root.style.setProperty('--accent-sub', '#BFFCC6'); root.style.setProperty('--accent-third', '#FFC6FF');
+            } else if(type === 'monochrome') {
+                root.style.setProperty('--bg-color', '#131824'); root.style.setProperty('--text-color', '#FFFDF6'); root.style.setProperty('--text-muted', '#94A1B8');
+                root.style.setProperty('--card-bg', '#1E2638'); root.style.setProperty('--shadow-color', '#070A10');
+                root.style.setProperty('--accent-main', '#00F5D4'); root.style.setProperty('--accent-sub', '#FF5A5F'); root.style.setProperty('--accent-third', '#FFEE55');
+            }
+            
+            document.querySelectorAll('[id^="palette-"]').forEach(btn => btn.classList.remove('active-option'));
+            const activePaletteBtn = document.getElementById(`palette-${type}`);
+            if(activePaletteBtn) activePaletteBtn.classList.add('active-option');
+            playCelBleep();
+        }
+
+        // 刷新 DIY 激活项高亮边框
+        function changePattern(pattern) {
+            currentPattern = pattern; localStorage.setItem('eris_cel_pattern', pattern);
+            const body = document.getElementById('canvasBody');
+            body.classList.remove('pattern-dots', 'pattern-grid', 'pattern-none');
+            body.classList.add(`pattern-${pattern}`);
+            
+            document.querySelectorAll('[id^="pattern-btn-"]').forEach(btn => btn.classList.remove('active-option'));
+            const activePatternBtn = document.getElementById(`pattern-btn-${pattern}`);
+            if(activePatternBtn) activePatternBtn.classList.add('active-option');
+            playCelBleep();
+        }
+
+        // --- AUDIO SCENARIOS ---
+        let audioCtx = null; let soundActive = true;
+        const soundToggleBtn = document.getElementById('soundToggle'); const soundStatusSpan = document.getElementById('soundStatus');
+        
+        soundToggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); soundActive = !soundActive;
+            if (soundActive) { soundStatusSpan.textContent = 'BEEP: ON'; soundToggleBtn.style.opacity = '1'; } 
+            else { soundStatusSpan.textContent = 'BEEP: OFF'; soundToggleBtn.style.opacity = '0.5'; }
+        });
+
+        function playCelBleep(isSpecial = false) {
+            if (!soundActive) return;
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const now = audioCtx.currentTime; const osc = audioCtx.createOscillator();
+                osc.type = isSpecial ? 'square' : 'triangle';
+                const creamyNotes = isSpecial ? [659.25, 783.99, 1046.50] : [523.25, 597.33, 783.99];
+                osc.frequency.setValueAtTime(creamyNotes[Math.floor(Math.random() * creamyNotes.length)], now);
+                if(isSpecial) osc.frequency.setValueAtTime(creamyNotes[Math.floor(Math.random() * creamyNotes.length)] * 1.3, now + 0.06);
+                const gainNode = audioCtx.createGain(); gainNode.gain.setValueAtTime(isSpecial ? 0.02 : 0.05, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, now + (isSpecial ? 0.3 : 0.1));
+                osc.connect(gainNode); gainNode.connect(audioCtx.destination);
+                osc.start(now); osc.stop(now + (isSpecial ? 0.35 : 0.12));
+            } catch (e) {}
+        }
+
+        // --- 【大重构细节】：全面下调初速度与衰减系数，打造舒缓优雅的盲盒动画流 ---
+        const canvas = document.getElementById('popCanvas'); const ctx = canvas.getContext('2d');
+        let dpr = window.devicePixelRatio || 1; let fxElements = [];
+
+        function initCanvas() {
+            dpr = window.devicePixelRatio || 1; canvas.width = window.innerWidth * dpr; canvas.height = window.innerHeight * dpr; ctx.scale(dpr, dpr);
+        }
+
+        // 33% 概率之一：奶油果冻泡泡（放慢）
+        class CreamyBubble {
+            constructor(x, y) {
+                this.x = x; this.y = y; this.radius = 2; this.maxRadius = Math.random() * 16 + 14;
+                this.vx = (Math.random() - 0.5) * 1.8; // 大幅调低漂移初速度
+                this.vy = (Math.random() - 0.5) * 1.8;
+                this.opacity = 1;
+                const colors = ['#A8E6CF', '#FFD3B6', '#FFAAA5', '#DCE5F7', '#FFC6FF']; this.color = colors[Math.floor(Math.random() * colors.length)];
+            }
+            update() { 
+                this.x += this.vx; this.y += this.vy; this.vx *= 0.94; this.vy *= 0.94; 
+                this.radius += (this.maxRadius - this.radius) * 0.06; // 放慢膨胀速率
+                this.opacity -= 0.018; // 放慢消失速率
+            }
+            draw() { ctx.save(); ctx.globalAlpha = this.opacity; ctx.fillStyle = this.color; ctx.strokeStyle = 'var(--text-color)'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.restore(); }
+        }
+
+        // 33% 概率之二：赛璐璐四角飞星（放慢）
+        class ComicStar {
+            constructor(x, y) {
+                this.x = x; this.y = y; this.size = Math.random() * 9 + 6; this.angle = Math.random() * Math.PI;
+                this.vx = (Math.random() - 0.5) * 3.2; 
+                this.vy = (Math.random() - 0.5) * 3.2; 
+                this.gravity = 0.07; // 放慢下坠重力
+                this.opacity = 1; this.color = Math.random() > 0.5 ? '#FFEE55' : '#FFFFFF';
+            }
+            update() { this.x += this.vx; this.y += this.vy; this.vy += this.gravity; this.opacity -= 0.015; this.angle += 0.025; }
+            draw() {
+                ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.angle); ctx.fillStyle = this.color; ctx.strokeStyle = 'var(--text-color)'; ctx.lineWidth = 2.5; ctx.globalAlpha = this.opacity;
+                ctx.beginPath(); for (let i = 0; i < 4; i++) { ctx.lineTo(0, -this.size); ctx.lineTo(this.size/3.5, -this.size/3.5); ctx.rotate(Math.PI / 2); }
+                ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
+            }
+        }
+
+        // 33% 概率之三：扁平硬壳小糖果（放慢）
+        class CreamyCandy {
+            constructor(x, y) {
+                this.x = x; this.y = y; this.w = Math.random() * 13 + 10; this.h = this.w * 0.6; this.angle = Math.random() * Math.PI;
+                this.vx = (Math.random() - 0.5) * 2.8; 
+                this.vy = (Math.random() - 0.5) * 2.8; 
+                this.gravity = 0.06; this.opacity = 1;
+                const colors = ['#FFC6FF', '#FF9AA2', '#BFFCC6', '#FFDAC1']; this.color = colors[Math.floor(Math.random() * colors.length)];
+            }
+            update() { this.x += this.vx; this.y += this.vy; this.vy += this.gravity; this.opacity -= 0.015; this.angle += 0.02; }
+            draw() {
+                ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.angle); ctx.fillStyle = this.color; ctx.strokeStyle = 'var(--text-color)'; ctx.lineWidth = 2.5; ctx.globalAlpha = this.opacity;
+                ctx.beginPath(); ctx.moveTo(-this.w/2 - 4, -this.h/2); ctx.lineTo(-this.w/2, 0); ctx.lineTo(-this.w/2 - 4, this.h/2); ctx.moveTo(this.w/2 + 4, -this.h/2); ctx.lineTo(this.w/2, 0); ctx.lineTo(this.w/2 + 4, this.h/2); ctx.stroke();
+                ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h); ctx.strokeRect(-this.w/2, -this.h/2, this.w, this.h); ctx.restore();
+            }
+        }
+
+        // 1% 隐藏概率：满屏漂浮音符（放慢）
+        class FloatingNote {
+            constructor() {
+                this.x = Math.random() * window.innerWidth; this.y = window.innerHeight + Math.random() * 60; this.size = Math.random() * 11 + 9; 
+                this.vy = -(Math.random() * 0.7 + 0.4); // 减缓徐徐升空的初速度
+                this.swaySpeed = 0.001 + Math.random() * 0.0015; // 减缓摆动频率
+                this.swayPhase = Math.random() * 10; this.opacity = 1;
+                this.chars = ['♩', '♪', '♫', '🎶']; this.char = this.chars[Math.floor(Math.random() * this.chars.length)];
+                const colors = ['#A8E6CF', '#FFD3B6', '#E8D7FF', '#FFC6FF']; this.color = colors[Math.floor(Math.random() * colors.length)];
+            }
+            update() { this.y += this.vy; this.x += Math.sin(Date.now() * this.swaySpeed + this.swayPhase) * 0.5; if(this.y < 40) this.opacity -= 0.008; }
+            draw() {
+                if(this.opacity <= 0) return; ctx.save(); ctx.globalAlpha = this.opacity; ctx.font = `bold ${this.size}px "Fredoka", sans-serif`; ctx.fillStyle = this.color; ctx.strokeStyle = 'var(--text-color)'; ctx.lineWidth = 2.5; ctx.textBaseline = 'middle'; ctx.textAlign = 'center'; ctx.strokeText(this.char, this.x, this.y); ctx.fillText(this.char, this.x, this.y); ctx.restore();
+            }
+        }
+
+        window.addEventListener('mousedown', (e) => {
+            if (e.target.closest('header') || e.target.closest('main') || e.target.closest('button') || e.target.closest('section')) return;
+            const dice = Math.random();
+            if (dice < 0.01) { playCelBleep(true); for(let i=0; i<25; i++) fxElements.push(new FloatingNote()); } 
+            else if (dice < 0.34) { playCelBleep(false); for(let i=0; i<5; i++) fxElements.push(new ComicStar(e.clientX, e.clientY)); } 
+            else if (dice < 0.67) { playCelBleep(false); for(let i=0; i<5; i++) fxElements.push(new CreamyBubble(e.clientX, e.clientY)); } 
+            else { playCelBleep(false); for(let i=0; i<4; i++) fxElements.push(new CreamyCandy(e.clientX, e.clientY)); }
+        });
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr); fxElements = fxElements.filter(el => el.opacity > 0); fxElements.forEach(el => { el.update(); el.draw(); }); requestAnimationFrame(animate);
+        }
+
+        // 双向渲染状态机数据绑定初始化
+        applyLanguage(currentLang);
+        changePalette(currentPalette);
+        changePattern(currentPattern);
+        initCanvas(); animate();
+        window.addEventListener('resize', initCanvas);
+    </script>
+</body>
+</html>
