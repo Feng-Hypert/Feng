@@ -160,7 +160,7 @@
             
             <div id="drawerContent" class="hidden mt-4 bg-[var(--card-bg)] border-3 border-[var(--text-color)] shadow-[4px_4px_0px_0px_var(--shadow-color)] rounded-2xl p-4 sm:p-5 grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <p id="drawer-p-color" data-i18n="drawer_p_color" class="text-[11px] font-mono font-bold text-[var(--text-muted)] mb-2">● 动态配置手账主配色盘 // PALETTE CONFIG</p>
+                    <p id="drawer-p-color" data-i18n="drawer_p_color" class="text-[11px] font-mono font-bold text-[var(--text-muted)] mb-2">● 手账配色盘 // PALETTE CONFIG</p>
                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
                         <button id="palette-matcha" onclick="changePalette('matcha')" class="border-2 border-slate-300 px-2 py-2 bg-[#A8E6CF] text-[#1A1C23] rounded-xl text-xs font-bold transition-all">抹茶 🍵</button>
                         <button id="palette-peach" onclick="changePalette('peach')" class="border-2 border-slate-300 px-2 py-2 bg-[#FFD3B6] text-[#231A1A] rounded-xl text-xs font-bold transition-all">蜜桃 🍑</button>
@@ -169,7 +169,7 @@
                     </div>
                 </div>
                 <div>
-                    <p id="drawer-p-pattern" data-i18n="drawer_p_pattern" class="text-[11px] font-mono font-bold text-[var(--text-muted)] mb-2">● 切换底层全覆覆盖底纹 // BACKDROP PATTERN</p>
+                    <p id="drawer-p-pattern" data-i18n="drawer_p_pattern" class="text-[11px] font-mono font-bold text-[var(--text-muted)] mb-2">● 手账底纹盘 // BACKDROP PATTERN</p>
                     <div class="grid grid-cols-3 gap-2">
                         <button onclick="changePattern('dots')" id="pattern-btn-dots" data-i18n="opt_dots" class="border-2 border-slate-300 py-2 bg-[var(--card-bg)] rounded-xl text-xs font-bold transition-all">波普圆点</button>
                         <button onclick="changePattern('grid')" id="pattern-btn-grid" data-i18n="opt_grid" class="border-2 border-slate-300 py-2 bg-[var(--card-bg)] rounded-xl text-xs font-bold transition-all">复古方格</button>
@@ -195,9 +195,9 @@
         const i18nTokens = {
             zh: {
                 exit_btn: "← 返回首页", hub_title: "CREAMY_PORTAL // ARCH_03",
-                notes_title: "随笔记事本", notes_desc: "刻录荒原之中的所思所想、三维代码脚本资产以及突发的创作频率碎屑。", notes_action: "运载终端系统 →",
-                todo_title: "生存必做清单", todo_desc: "管理并追踪你每日的核心生存任务线程、滑板刷街微调计划与数字化指令需求。", todo_action: "运载自动化管道 →",
-                drawer_title: "DIY 工作室面板 (点击控制台抽屉展开/折叠)", drawer_p_color: "● 动态配置手账主配色盘 // PALETTE CONFIG", drawer_p_pattern: "● 切换底层全覆覆盖底纹 // BACKDROP PATTERN",
+                notes_title: "记事本", notes_desc: "随心所想，随事所记", notes_action: "进入 →",
+                todo_title: "清单", todo_desc: "整理思绪，量化记忆", todo_action: "进入 →",
+                drawer_title: "DIY 工作室面板 (点击展开/折叠)", drawer_p_color: "● 手账配色盘 // PALETTE CONFIG", drawer_p_pattern: "● 手账底纹盘 // BACKDROP PATTERN",
                 opt_dots: "波普圆点", opt_grid: "复古方格", opt_none: "极简空白", footer_text: "© 2026 ERIS. PORTAL ARCHIVE COMPLETE."
             },
             en: {
