@@ -1,1 +1,319 @@
-<h1>Welcome to Archive</h1>
+<!DOCTYPE html>
+<html lang="zh-CN" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ERIS // Macaron Checklist</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Space+Grotesk:wght@700&family=Fira+Code:wght@600&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Fredoka', 'system-ui', '-apple-system', '"PingFang SC"', '"Microsoft YaHei"', 'sans-serif'],
+                        display: ['Space Grotesk', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        /* 马卡龙高明度甜系奶糕配色变量 */
+        :root {
+            --bg-color: #FFF9FA;       /* 蜜桃浅奶霜 */
+            --text-color: #1E2229;     /* 炭焙黑可可 */
+            --text-muted: #646A73;     /* 浆果雾灰 */
+            --card-bg: #FFFFFF;
+            --shadow-color: #1E2229;
+            --ink-1: #FFB7B2;          /* 樱花马卡龙粉 */
+            --ink-2: #BFFCC6;          /* 薄荷开心果绿 */
+            --ink-3: #FFDAC1;          /* 柠檬起司黄 */
+            --solid-shadow: 5px 5px 0px 0px var(--shadow-color);
+            --solid-shadow-sm: 3px 3px 0px 0px var(--shadow-color);
+            --solid-shadow-lg: 10px 10px 0px 0px var(--shadow-color);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: all 0.3s ease;
+        }
+
+        .lang-en { font-family: 'Fredoka', sans-serif; }
+        .lang-zh { font-family: 'Fredoka', 'system-ui', sans-serif; font-weight: 700; }
+
+        .pattern-dots { background-image: radial-gradient(var(--text-color) 1.5px, transparent 1.5px); background-size: 24px 24px; }
+        .pattern-grid { background-image: linear-gradient(var(--text-color) 1px, transparent 1px), linear-gradient(90deg, var(--text-color) 1px, transparent 1px); background-size: 20px 20px; }
+        .pattern-none { background-image: none; }
+
+        .cel-card {
+            background-color: var(--card-bg);
+            border: 4px solid var(--text-color);
+            box-shadow: var(--solid-shadow);
+            transition: all 0.15s steps(3);
+        }
+        .cel-card:hover { transform: translate(-3px, -3px); box-shadow: var(--solid-shadow-lg); }
+
+        .cel-btn {
+            border: 3px solid var(--text-color);
+            box-shadow: var(--solid-shadow-sm);
+            transition: all 0.1s steps(2);
+        }
+        .cel-btn:hover { transform: translate(-1px, -1px); box-shadow: var(--solid-shadow); }
+        .cel-btn:active { transform: translate(3px, 3px); box-shadow: 0px 0px 0px 0px var(--text-color); }
+
+        .cel-input { border: 3px solid var(--text-color); background-color: #FFFFFF; color: var(--text-color); }
+        .cel-input:focus { outline: none; border-color: var(--ink-1); }
+
+        .active-option {
+            border-color: var(--text-color) !important;
+            transform: scale(1.04);
+            box-shadow: 3px 3px 0px 0px var(--text-color) !important;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--text-color); border-radius: 3px; }
+    </style>
+</head>
+<body class="font-sans relative min-h-screen overflow-x-hidden p-4 sm:p-6 md:p-8 pattern-dots lang-zh" id="canvasBody">
+
+    <canvas id="splatCanvas" class="fixed inset-0 w-full h-full block z-[14] pointer-events-none"></canvas>
+
+    <div class="relative min-h-screen flex flex-col justify-between z-20 max-w-4xl mx-auto pb-24 md:pb-32">
+        
+        <header class="w-full flex justify-between items-center bg-[var(--card-bg)] border-3 border-[var(--text-color)] shadow-[4px_4px_0px_0px_var(--shadow-color)] p-3 sm:p-4 rounded-2xl mb-8 select-none">
+            <div class="flex items-center space-x-3 sm:space-x-4">
+                <a href="./gallery.html" id="btn-back" data-i18n="back_btn" class="cel-btn font-bold text-xs bg-[var(--ink-2)] px-4 py-2 rounded-xl">
+                    ← 返回枢纽
+                </a>
+                <span id="txt-title" data-i18n="page_title" class="hidden md:inline-block font-display font-black text-sm tracking-wider uppercase">☑ MACARON_CHECKLIST // ARCH_03</span>
+            </div>
+            <button onclick="purgeCompleted()" id="btn-purge" data-i18n="purge_btn" class="font-mono text-[10px] font-black border-2 border-[var(--text-color)] bg-[var(--ink-1)] px-3 py-1 rounded-xl shadow-[2px_2px_0px_0px_var(--shadow-color)] hover:translate-y-px active:shadow-none">PURGE_DONE</button>
+        </header>
+
+        <main class="w-full flex flex-col space-y-4 my-auto py-2">
+            
+            <div class="flex items-center justify-between px-1 select-none">
+                <h2 id="txt-subtitle" data-i18n="sub_title" class="font-display font-black text-xs tracking-wider uppercase bg-[var(--ink-3)] border-2 border-black shadow-[2px_2px_0px_0px_#000] px-3 py-1 rounded-md">Mission Registry Pipeline</h2>
+                <span id="todoCount" class="font-mono text-xs font-black">0 / 0 DONE</span>
+            </div>
+
+            <div class="cel-card rounded-2xl p-5 flex flex-col justify-between min-h-[380px]">
+                <form id="todoForm" class="mb-4 flex gap-2">
+                    <input id="todoInput" type="text" placeholder="输入并回车，注入新生存指令进程..." required autocomplete="off"
+                        class="flex-1 cel-input rounded-xl px-3 py-2 text-xs font-mono">
+                    <button type="submit" id="btn-add" data-i18n="add_btn" class="cel-btn px-5 bg-[var(--ink-2)] font-display font-black text-xs rounded-xl">
+                        ADD
+                    </button>
+                </form>
+
+                <div id="todoList" class="flex-1 overflow-y-auto custom-scrollbar space-y-2.5 max-h-[290px] pr-1"></div>
+            </div>
+
+        </main>
+
+        <section id="studioDrawer" class="w-full mt-6 select-none">
+            <button onclick="toggleStudioDrawer()" class="w-full border-3 border-[var(--text-color)] bg-[var(--card-bg)] shadow-[3px_3px_0px_0px_var(--shadow-color)] p-3 rounded-2xl font-bold text-xs flex items-center justify-between hover:bg-slate-50/5 transition-colors">
+                <div class="flex items-center space-x-2">
+                    <span>🎨</span>
+                    <span id="drawer-title" data-i18n="drawer_title">马卡龙对决色素舱控制台 (点击展开/折叠)</span>
+                </div>
+                <span id="drawerArrow" class="transform transition-transform duration-300">▲</span>
+            </button>
+            
+            <div id="drawerContent" class="hidden mt-3 bg-[var(--card-bg)] border-3 border-[var(--text-color)] shadow-[4px_4px_0px_0px_var(--shadow-color)] rounded-2xl p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <p class="text-[11px] font-mono font-bold text-[var(--text-muted)] mb-2">● 切换马卡龙主色素阵营 // MACARON INK</p>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button id="palette-c1" onclick="changePalette('c1')" class="border-2 border-slate-300 px-2 py-2 bg-[#FFB7B2] rounded-xl text-xs font-bold">樱花粉 粉</button>
+                        <button id="palette-c2" onclick="changePalette('c2')" class="border-2 border-slate-300 px-2 py-2 bg-[#BFFCC6] rounded-xl text-xs font-bold">薄荷绿 绿</button>
+                        <button id="palette-c3" onclick="changePalette('c3')" class="border-2 border-slate-300 px-2 py-2 bg-[#FFDAC1] rounded-xl text-xs font-bold">奶酪黄 黄</button>
+                    </div>
+                </div>
+                <div>
+                    <p class="text-[11px] font-mono font-bold text-[var(--text-muted)] mb-2">● 覆盖画布底层纹理 // CANVAS PATTERN</p>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="changePattern('dots')" id="pattern-btn-dots" data-i18n="opt_dots" class="border-2 border-slate-300 py-1.5 bg-[var(--card-bg)] rounded-xl text-xs font-bold">波普圆点</button>
+                        <button onclick="changePattern('grid')" id="pattern-btn-grid" data-i18n="opt_grid" class="border-2 border-slate-300 py-1.5 bg-[var(--card-bg)] rounded-xl text-xs font-bold">复古方格</button>
+                        <button onclick="changePattern('none')" id="pattern-btn-none" data-i18n="opt_none" class="border-2 border-slate-300 py-1.5 bg-[var(--card-bg)] rounded-xl text-xs font-bold">极简空白</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div class="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 select-none">
+        <button onclick="toggleLanguage()" class="cel-btn flex items-center space-x-1.5 bg-[var(--card-bg)] border-3 border-[var(--text-color)] px-4 py-2.5 rounded-2xl font-mono text-xs font-black shadow-[3px_3px_0px_0px_var(--shadow-color)]">
+            <span>🌐</span> <span id="langBtnLabel">LANG: 中文</span>
+        </button>
+    </div>
+
+    <script>
+        const i18nTokens = {
+            zh: {
+                back_btn: "← 返回枢纽", page_title: "☑ MACARON_CHECKLIST // ARCH_03",
+                purge_btn: "一键清除已完成", sub_title: "核心任务自动化序列集",
+                add_btn: "注入", drawer_title: "马卡龙对决色素舱控制台 (点击展开/折叠)",
+                opt_dots: "波普圆点", opt_grid: "复古方格", opt_none: "极简空白"
+            },
+            en: {
+                back_btn: "← PORTAL HUB", page_title: "☑ MACARON_CHECKLIST // ARCH_03",
+                purge_btn: "PURGE_COMPLETED", sub_title: "Mission Registry Pipeline",
+                add_btn: "ADD", drawer_title: "MACARON COLOR MATCHUP DRAWERS (Click to open)",
+                opt_dots: "Pop Dots", opt_grid: "Retro Grid", opt_none: "Pure Cream"
+            }
+        };
+
+        let todos = JSON.parse(localStorage.getItem('eris_cel_todos')) || [];
+        let currentLang = localStorage.getItem('eris_cel_lang') || 'zh';
+        let currentPalette = localStorage.getItem('eris_cel_palette_todo') || 'c1';
+        let currentPattern = localStorage.getItem('eris_cel_pattern') || 'dots';
+        let isDrawerOpen = false;
+
+        function applyLanguage(lang) {
+            currentLang = lang; localStorage.setItem('eris_cel_lang', lang);
+            const body = document.getElementById('canvasBody'); const label = document.getElementById('langBtnLabel');
+            if (lang === 'zh') { body.classList.remove('lang-en'); body.classList.add('lang-zh'); label.textContent = "LANG: 中文"; } 
+            else { body.classList.remove('lang-zh'); body.classList.add('lang-en'); label.textContent = "LANG: EN"; }
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const token = el.getAttribute('data-i18n'); if (i18nTokens[lang][token]) el.textContent = i18nTokens[lang][token];
+            });
+        }
+        function toggleLanguage() { applyLanguage(currentLang === 'zh' ? 'en' : 'zh'); playSquishBleep(true); }
+
+        function renderTodos() {
+            const container = document.getElementById('todoList'); const badge = document.getElementById('todoCount'); container.innerHTML = '';
+            const doneCount = todos.filter(t => t.completed).length; badge.textContent = `${doneCount} / ${todos.length} DONE`;
+            
+            if(todos.length === 0) {
+                container.innerHTML = `<div class="text-center py-12 font-mono text-xs text-[var(--text-muted)] border-2 border-dashed border-[var(--text-color)] rounded-xl bg-slate-50/5">清单已经全面清空归零。</div>`;
+                return;
+            }
+            todos.forEach(todo => {
+                const item = document.createElement('div');
+                // 【核心细节优化】：清单的复选块小盒子与图标完全对称对齐
+                item.className = `flex items-center justify-between p-3 rounded-xl border-2 border-[var(--text-color)] transition-all ${todo.completed ? 'bg-slate-100/40 text-slate-400 line-through' : 'bg-[var(--card-bg)] shadow-[2px_2px_0px_0px_var(--shadow-color)]'}`;
+                item.innerHTML = `
+                    <div class="flex items-center space-x-3 flex-1 cursor-pointer select-none" onclick="toggleTodo(${todo.id})">
+                        <span class="w-5 h-5 rounded-md border-2 border-[var(--text-color)] flex items-center justify-center font-display font-black text-xs transition-colors ${todo.completed ? 'bg-[var(--ink-2)] text-black' : 'bg-white'}">${todo.completed ? '✓' : ''}</span>
+                        <span class="leading-relaxed font-mono text-xs font-bold break-all">${todo.text}</span>
+                    </div>
+                    <button onclick="deleteTodo(${todo.id})" class="font-display font-black text-[10px] border-2 border-[var(--text-color)] bg-[var(--ink-1)] px-2 py-0.5 rounded-lg shadow-[1px_1px_0px_0px_var(--shadow-color)] active:translate-y-px transition-all ml-2">X</button>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        document.getElementById('todoForm').addEventListener('submit', (e) => {
+            e.preventDefault(); const input = document.getElementById('todoInput'); if(!input.value.trim()) return;
+            todos.unshift({ id: Date.now(), text: input.value.trim(), completed: false });
+            input.value = ''; localStorage.setItem('eris_cel_todos', JSON.stringify(todos)); renderTodos(); playSquishBleep(true);
+        });
+
+        function toggleTodo(id) { todos = todos.map(t => t.id === id ? {...t, completed: !t.completed} : t); localStorage.setItem('eris_cel_todos', JSON.stringify(todos)); renderTodos(); playSquishBleep(false); }
+        function deleteTodo(id) { todos = todos.filter(t => t.id !== id); localStorage.setItem('eris_cel_todos', JSON.stringify(todos)); renderTodos(); playSquishBleep(false); }
+        function purgeCompleted() { todos = todos.filter(t => !t.completed); localStorage.setItem('eris_cel_todos', JSON.stringify(todos)); renderTodos(); playSquishBleep(true); }
+        function toggleStudioDrawer() { isDrawerOpen = !isDrawerOpen; const content = document.getElementById('drawerContent'); const arrow = document.getElementById('drawerArrow'); if (isDrawerOpen) { content.classList.remove('hidden'); arrow.textContent = '▼'; } else { content.classList.add('hidden'); arrow.textContent = '▲'; } playSquishBleep(false); }
+
+        function changePalette(type) {
+            currentPalette = type; localStorage.setItem('eris_cel_palette_todo', type);
+            const root = document.documentElement;
+            if(type === 'c1') {
+                root.style.setProperty('--bg-color', '#FFF9FA'); root.style.setProperty('--text-color', '#1E2229'); root.style.setProperty('--card-bg', '#FFFFFF'); root.style.setProperty('--shadow-color', '#1E2229');
+            } else if(type === 'c2') {
+                root.style.setProperty('--bg-color', '#F5FFF7'); root.style.setProperty('--text-color', '#1A241C'); root.style.setProperty('--card-bg', '#FFFFFF'); root.style.setProperty('--shadow-color', '#1A241C');
+            } else if(type === 'c3') {
+                root.style.setProperty('--bg-color', '#FFFFF2'); root.style.setProperty('--text-color', '#26261A'); root.style.setProperty('--card-bg', '#FFFFFF'); root.style.setProperty('--shadow-color', '#26261A');
+            }
+            document.querySelectorAll('[id^="palette-"]').forEach(btn => btn.classList.remove('active-option'));
+            const act = document.getElementById(`palette-${type}`); if(act) act.classList.add('active-option');
+            playSquishBleep(false);
+        }
+
+        function changePattern(pattern) {
+            currentPattern = pattern; localStorage.setItem('eris_cel_pattern', pattern);
+            const body = document.getElementById('canvasBody'); body.classList.remove('pattern-dots', 'pattern-grid', 'pattern-none'); body.classList.add(`pattern-${pattern}`);
+            document.querySelectorAll('[id^="pattern-btn-"]').forEach(btn => btn.classList.remove('active-option'));
+            const act = document.getElementById(`pattern-btn-${pattern}`); if(act) act.classList.add('active-option');
+            playSquishBleep(false);
+        }
+
+        // --- AUDIO SCENARIOS ---
+        let audioCtx = null;
+        function playSquishBleep(isSpecial = false) {
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const now = audioCtx.currentTime; const osc = audioCtx.createOscillator();
+                osc.type = 'sine'; osc.frequency.setValueAtTime(isSpecial ? 480 : 320, now);
+                osc.frequency.exponentialRampToValueAtTime(70, now + 0.16);
+                const gainNode = audioCtx.createGain(); gainNode.gain.setValueAtTime(0.07, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+                osc.connect(gainNode); gainNode.connect(audioCtx.destination);
+                osc.start(now); osc.stop(now + 0.18);
+            } catch (e) {}
+        }
+
+        // --- SPLATOON INK GRAFFITI GENERATOR (马卡龙涂鸦大水花) ---
+        const canvas = document.getElementById('splatCanvas'); const ctx = canvas.getContext('2d');
+        let dpr = window.devicePixelRatio || 1; let splats = [];
+
+        function initCanvas() { dpr = window.devicePixelRatio || 1; canvas.width = window.innerWidth * dpr; canvas.height = window.innerHeight * dpr; ctx.scale(dpr, dpr); }
+
+        class InkSplat {
+            constructor(x, y) {
+                this.x = x; this.y = y; this.radius = 0; this.maxRadius = Math.random() * 22 + 22;
+                this.opacity = 0.85; this.growthSpeed = 2.0; // 缓步向外溢出开花
+                const macaronInks = ['#FFB7B2', '#BFFCC6', '#FFDAC1', '#FFC6FF', '#B5E2FA'];
+                this.color = macaronInks[Math.floor(Math.random() * macaronInks.length)];
+                this.drops = [];
+                let dropCount = Math.floor(Math.random() * 4) + 5;
+                for(let i=0; i<dropCount; i++) {
+                    let angle = (i / dropCount) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
+                    let targetDist = Math.random() * 38 + 28;
+                    this.drops.push({ cx: 0, cy: 0, tx: Math.cos(angle)*targetDist, ty: Math.sin(angle)*targetDist, r: 0, mr: Math.random()*5 + 3.5 });
+                }
+            }
+            update() {
+                if(this.radius < this.maxRadius) this.radius += this.growthSpeed;
+                this.drops.forEach(d => {
+                    d.cx += (d.tx - d.cx) * 0.08; d.cy += (d.ty - d.cy) * 0.08;
+                    if(d.r < d.mr) d.r += this.growthSpeed * 0.15;
+                });
+                if(this.radius >= this.maxRadius) this.opacity -= 0.005;
+            }
+            draw() {
+                ctx.save(); ctx.globalAlpha = this.opacity; ctx.fillStyle = this.color;
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fill();
+                this.drops.forEach(d => {
+                    ctx.beginPath(); ctx.arc(this.x + d.cx, this.y + d.cy, d.r, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.strokeStyle = this.color; ctx.lineWidth = d.r * 0.5;
+                    ctx.moveTo(this.x, this.y); ctx.lineTo(this.x + d.cx, this.y + d.cy); ctx.stroke();
+                });
+                ctx.restore();
+            }
+        }
+
+        window.addEventListener('mousedown', (e) => {
+            if (e.target.closest('header') || e.target.closest('main') || e.target.closest('button') || e.target.closest('section') || e.target.closest('input')) return;
+            playSquishBleep(false); splats.push(new InkSplat(e.clientX, e.clientY));
+        });
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
+            splats = splats.filter(s => s.opacity > 0); splats.forEach(s => { s.update(); s.draw(); });
+            requestAnimationFrame(animate);
+        }
+
+        applyLanguage(currentLang); changePalette(currentPalette); changePattern(currentPattern); renderTodos(); initCanvas(); animate();
+        window.addEventListener('resize', initCanvas);
+    </script>
+</body>
+</html>
