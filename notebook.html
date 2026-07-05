@@ -1,1 +1,342 @@
-<h1>Welcome to Archive</h1>
+<!DOCTYPE html>
+<html lang="zh-CN" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ERIS // Morandi Notebook</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Space+Grotesk:wght@700&family=Fira+Code:wght@600&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Fredoka', 'system-ui', '-apple-system', '"PingFang SC"', '"Microsoft YaHei"', 'sans-serif'],
+                        display: ['Space Grotesk', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        /* 莫兰迪低饱和度经典赛璐璐变量 */
+        :root {
+            --bg-color: #F4F2EC;       /* 亚麻燕麦白 */
+            --text-color: #2B2D35;     /* 铅墨冷灰 */
+            --text-muted: #6E7280;     /* 疏影雾灰 */
+            --card-bg: #FFFFFF;
+            --shadow-color: #2B2D35;
+            --ink-1: #C2B4A6;          /* 晚霞慵懒驼 */
+            --ink-2: #A3B5C0;          /* 冰川冷雾蓝 */
+            --ink-3: #B9C0A4;          /* 苍山暮色绿 */
+            --solid-shadow: 4px 4px 0px 0px var(--shadow-color);
+            --solid-shadow-sm: 2px 2px 0px 0px var(--shadow-color);
+            --solid-shadow-lg: 8px 8px 0px 0px var(--shadow-color);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: all 0.3s ease;
+        }
+
+        .lang-en { font-family: 'Fredoka', sans-serif; }
+        .lang-zh { font-family: 'Fredoka', 'system-ui', sans-serif; font-weight: 700; }
+
+        .pattern-dots { background-image: radial-gradient(var(--text-color) 1.2px, transparent 1.2px); background-size: 24px 24px; background-opacity: 0.04; }
+        .pattern-grid { background-image: linear-gradient(var(--text-color) 1px, transparent 1px), linear-gradient(90deg, var(--text-color) 1px, transparent 1px); background-size: 20px 20px; }
+        .pattern-none { background-image: none; }
+
+        .cel-card {
+            background-color: var(--card-bg);
+            border: 3px solid var(--text-color);
+            box-shadow: var(--solid-shadow);
+            transition: all 0.15s steps(3);
+        }
+        .cel-card:hover {
+            transform: translate(-3px, -3px);
+            box-shadow: var(--solid-shadow-lg);
+        }
+
+        .cel-btn {
+            border: 3px solid var(--text-color);
+            box-shadow: var(--solid-shadow-sm);
+            transition: all 0.1s steps(2);
+        }
+        .cel-btn:hover { transform: translate(-1px, -1px); box-shadow: var(--solid-shadow); }
+        .cel-btn:active { transform: translate(2px, 2px); box-shadow: 0px 0px 0px 0px var(--text-color); }
+
+        .cel-input { border: 3px solid var(--text-color); background-color: #FFFFFF; color: var(--text-color); }
+        .cel-input:focus { outline: none; border-color: var(--ink-2); }
+
+        .active-option {
+            border-color: var(--text-color) !important;
+            transform: scale(1.03);
+            box-shadow: 3px 3px 0px 0px var(--text-color) !important;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--text-color); border-radius: 3px; }
+    </style>
+</head>
+<body class="font-sans relative min-h-screen overflow-x-hidden p-4 sm:p-6 md:p-8 pattern-dots lang-zh" id="canvasBody">
+
+    <canvas id="splatCanvas" class="fixed inset-0 w-full h-full block z-[14] pointer-events-none"></canvas>
+
+    <div class="relative min-h-screen flex flex-col justify-between z-20 max-w-5xl mx-auto pb-24 md:pb-32">
+        
+        <header class="w-full flex justify-between items-center bg-[var(--card-bg)] border-3 border-[var(--text-color)] shadow-[4px_4px_0px_0px_var(--shadow-color)] p-3 sm:p-4 rounded-2xl mb-6 select-none">
+            <div class="flex items-center space-x-3 sm:space-x-4">
+                <a href="./gallery.html" id="btn-back" data-i18n="back_btn" class="cel-btn font-bold text-xs bg-[var(--ink-1)] px-4 py-2 rounded-xl">
+                    ← 返回枢纽
+                </a>
+                <span id="txt-title" data-i18n="page_title" class="hidden md:inline-block font-display font-black text-sm tracking-wider uppercase">📓 MORANDI_NOTEBOOK // ARCH_03</span>
+            </div>
+            <div class="font-mono text-xs font-black opacity-30 hidden sm:block">STATUS: INK_GENERATOR_READY</div>
+        </header>
+
+        <main class="w-full flex flex-col space-y-6 my-auto py-2">
+            
+            <section class="cel-card rounded-2xl p-4 sm:p-5">
+                <form id="noteForm" class="space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <input id="noteTitle" type="text" placeholder="便签标题主题..." required autocomplete="off"
+                            class="cel-input rounded-xl px-3 py-2 text-xs font-mono sm:col-span-2">
+                        <div class="flex items-center space-x-2">
+                            <select id="noteStamp" class="cel-input rounded-xl px-2 py-2 text-xs font-mono flex-1 bg-white cursor-pointer">
+                                <option value="🛹">🛹 滑板刷街</option>
+                                <option value="🎵">🎵 音乐无损</option>
+                                <option value="🎮">🎮 独游进程</option>
+                                <option value="💻">💻 代码资产</option>
+                                <option value="🎨">🎨 三维建模</option>
+                            </select>
+                        </div>
+                    </div>
+                    <textarea id="noteContent" rows="3" placeholder="在此刻录莫兰迪灰色系手账灵感碎屑... (按住空白背景可喷射涂鸦水花)" required
+                        class="w-full cel-input rounded-xl px-3 py-2 text-xs font-mono resize-none custom-scrollbar"></textarea>
+                    <div class="flex justify-end">
+                        <button type="submit" id="btn-submit" data-i18n="submit_btn" class="cel-btn px-6 py-2 bg-[var(--ink-2)] font-bold text-xs rounded-xl">
+                            刻录记忆碎片
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+            <section id="notesGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-4 overflow-y-auto custom-scrollbar max-h-[460px] pr-1"></section>
+
+        </main>
+
+        <section id="studioDrawer" class="w-full mt-6 select-none">
+            <button onclick="toggleStudioDrawer()" class="w-full border-3 border-[var(--text-color)] bg-[var(--card-bg)] shadow-[3px_3px_0px_0px_var(--shadow-color)] p-3 rounded-2xl font-bold text-xs flex items-center justify-between hover:bg-slate-50/5 transition-colors">
+                <div class="flex items-center space-x-2">
+                    <span>🎨</span>
+                    <span id="drawer-title" data-i18n="drawer_title">斯普拉遁墨水对决配置舱 (点击展开/折叠)</span>
+                </div>
+                <span id="drawerArrow" class="transform transition-transform duration-300">▲</span>
+            </button>
+            
+            <div id="drawerContent" class="hidden mt-3 bg-[var(--card-bg)] border-3 border-[var(--text-color)] shadow-[4px_4px_0px_0px_var(--shadow-color)] rounded-2xl p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <p class="text-[11px] font-mono font-bold text-[var(--text-muted)] mb-2">● 莫兰迪对战墨水选取 // INK SELECTION</p>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button id="palette-m1" onclick="changePalette('m1')" class="border-2 border-slate-300 px-2 py-2 bg-[#C2B4A6] rounded-xl text-xs font-bold">慵懒驼 驼</button>
+                        <button id="palette-m2" onclick="changePalette('m2')" class="border-2 border-slate-300 px-2 py-2 bg-[#A3B5C0] rounded-xl text-xs font-bold">雾霾蓝 蓝</button>
+                        <button id="palette-m3" onclick="changePalette('m3')" class="border-2 border-slate-300 px-2 py-2 bg-[#B9C0A4] rounded-xl text-xs font-bold">暮色绿 绿</button>
+                    </div>
+                </div>
+                <div>
+                    <p class="text-[11px] font-mono font-bold text-[var(--text-muted)] mb-2">● 覆盖画布手账底纹 // BACKDROP PATTERN</p>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="changePattern('dots')" id="pattern-btn-dots" data-i18n="opt_dots" class="border-2 border-slate-300 py-1.5 bg-[var(--card-bg)] rounded-xl text-xs font-bold">波普圆点</button>
+                        <button onclick="changePattern('grid')" id="pattern-btn-grid" data-i18n="opt_grid" class="border-2 border-slate-300 py-1.5 bg-[var(--card-bg)] rounded-xl text-xs font-bold">复古方格</button>
+                        <button onclick="changePattern('none')" id="pattern-btn-none" data-i18n="opt_none" class="border-2 border-slate-300 py-1.5 bg-[var(--card-bg)] rounded-xl text-xs font-bold">极简空白</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div class="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 select-none">
+        <button onclick="toggleLanguage()" class="cel-btn flex items-center space-x-1.5 bg-[var(--card-bg)] border-3 border-[var(--text-color)] px-4 py-2.5 rounded-2xl font-mono text-xs font-black shadow-[3px_3px_0px_0px_var(--shadow-color)]">
+            <span>🌐</span> <span id="langBtnLabel">LANG: 中文</span>
+        </button>
+    </div>
+
+    <script>
+        const i18nTokens = {
+            zh: {
+                back_btn: "← 返回枢纽", page_title: "📓 MORANDI_NOTEBOOK // ARCH_03",
+                submit_btn: "刻录记忆碎片", drawer_title: "斯普拉遁墨水对决配置舱 (点击展开/折叠)",
+                opt_dots: "波普圆点", opt_grid: "复古方格", opt_none: "极简空白"
+            },
+            en: {
+                back_btn: "← PORTAL HUB", page_title: "📓 MORANDI_NOTEBOOK // ARCH_03",
+                submit_btn: "RECORD CHIP", drawer_title: "SPLATOON INK MATCHUP DESK (Click to open)",
+                opt_dots: "Pop Dots", opt_grid: "Retro Grid", opt_none: "Pure Linen"
+            }
+        };
+
+        let notes = JSON.parse(localStorage.getItem('eris_cel_notes')) || [];
+        let currentLang = localStorage.getItem('eris_cel_lang') || 'zh';
+        let currentPalette = localStorage.getItem('eris_cel_palette_note') || 'm2';
+        let currentPattern = localStorage.getItem('eris_cel_pattern') || 'dots';
+        let isDrawerOpen = false;
+
+        function applyLanguage(lang) {
+            currentLang = lang; localStorage.setItem('eris_cel_lang', lang);
+            const body = document.getElementById('canvasBody');
+            const label = document.getElementById('langBtnLabel');
+            if (lang === 'zh') { body.classList.remove('lang-en'); body.classList.add('lang-zh'); label.textContent = "LANG: 中文"; } 
+            else { body.classList.remove('lang-zh'); body.classList.add('lang-en'); label.textContent = "LANG: EN"; }
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const token = el.getAttribute('data-i18n'); if (i18nTokens[lang][token]) el.textContent = i18nTokens[lang][token];
+            });
+        }
+        function toggleLanguage() { applyLanguage(currentLang === 'zh' ? 'en' : 'zh'); playSquishBleep(true); }
+
+        function renderNotes() {
+            const container = document.getElementById('notesGrid'); container.innerHTML = '';
+            if(notes.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-center py-12 font-mono text-xs text-[var(--text-muted)] border-2 border-dashed border-[var(--text-color)] rounded-2xl bg-[var(--card-bg)]">空白手账，点击顶栏注入首个莫兰迪芯片。</div>`;
+                return;
+            }
+            notes.forEach(note => {
+                const card = document.createElement('div');
+                card.className = "cel-card rounded-2xl p-4 flex flex-col justify-between";
+                card.innerHTML = `
+                    <div>
+                        <div class="flex justify-between items-center border-b-2 border-[var(--text-color)] pb-2 mb-2">
+                            <div class="flex items-center space-x-2">
+                                <span class="w-10 h-10 flex items-center justify-center text-lg bg-[var(--card-bg)] border-2 border-[var(--text-color)] rounded-xl shadow-[2px_2px_0px_0px_var(--shadow-color)]">${note.stamp || '📌'}</span>
+                                <h3 class="font-display font-black text-xs sm:text-sm">${note.title}</h3>
+                            </div>
+                            <span class="font-mono text-[9px] text-[var(--text-muted)] font-bold">${note.date}</span>
+                        </div>
+                        <p class="text-xs font-mono font-semibold leading-relaxed text-[var(--text-muted)] whitespace-pre-wrap break-all">${note.content}</p>
+                    </div>
+                    <div class="mt-4 pt-2 border-t-2 border-dashed border-black/10 flex justify-end">
+                        <button onclick="deleteNote(${note.id})" class="font-display font-black text-[10px] border-2 border-[var(--text-color)] bg-[var(--card-bg)] px-2.5 py-1 rounded-lg shadow-[1px_1px_0px_0px_var(--shadow-color)] hover:bg-black hover:text-white transition-colors">ERASE</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        document.getElementById('noteForm').addEventListener('submit', (e) => {
+            e.preventDefault(); const title = document.getElementById('noteTitle'); const stamp = document.getElementById('noteStamp'); const content = document.getElementById('noteContent');
+            const now = new Date(); const dateStr = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')}`;
+            notes.unshift({ id: Date.now(), title: title.value.trim(), stamp: stamp.value, content: content.value.trim(), date: dateStr });
+            title.value = ''; content.value = ''; localStorage.setItem('eris_cel_notes', JSON.stringify(notes)); renderNotes(); playSquishBleep(true);
+        });
+
+        function deleteNote(id) { notes = notes.filter(n => n.id !== id); localStorage.setItem('eris_cel_notes', JSON.stringify(notes)); renderNotes(); playSquishBleep(false); }
+        function toggleStudioDrawer() { isDrawerOpen = !isDrawerOpen; const content = document.getElementById('drawerContent'); const arrow = document.getElementById('drawerArrow'); if (isDrawerOpen) { content.classList.remove('hidden'); arrow.textContent = '▼'; } else { content.classList.add('hidden'); arrow.textContent = '▲'; } playSquishBleep(false); }
+
+        function changePalette(type) {
+            currentPalette = type; localStorage.setItem('eris_cel_palette_note', type);
+            const root = document.documentElement;
+            if(type === 'm1') {
+                root.style.setProperty('--bg-color', '#F4F2EC'); root.style.setProperty('--text-color', '#2B2D35'); root.style.setProperty('--card-bg', '#FFFFFF'); root.style.setProperty('--shadow-color', '#2B2D35');
+            } else if(type === 'm2') {
+                root.style.setProperty('--bg-color', '#ECEFF4'); root.style.setProperty('--text-color', '#2E3440'); root.style.setProperty('--card-bg', '#FFFFFF'); root.style.setProperty('--shadow-color', '#2E3440');
+            } else if(type === 'm3') {
+                root.style.setProperty('--bg-color', '#F0F2EE'); root.style.setProperty('--text-color', '#32382E'); root.style.setProperty('--card-bg', '#FFFFFF'); root.style.setProperty('--shadow-color', '#32382E');
+            }
+            document.querySelectorAll('[id^="palette-"]').forEach(btn => btn.classList.remove('active-option'));
+            const act = document.getElementById(`palette-${type}`); if(act) act.classList.add('active-option');
+            playSquishBleep(false);
+        }
+
+        function changePattern(pattern) {
+            currentPattern = pattern; localStorage.setItem('eris_cel_pattern', pattern);
+            const body = document.getElementById('canvasBody'); body.classList.remove('pattern-dots', 'pattern-grid', 'pattern-none'); body.classList.add(`pattern-${pattern}`);
+            document.querySelectorAll('[id^="pattern-btn-"]').forEach(btn => btn.classList.remove('active-option'));
+            const act = document.getElementById(`pattern-btn-${pattern}`); if(act) act.classList.add('active-option');
+            playSquishBleep(false);
+        }
+
+        // --- SPLATOON SQUISH LIQUID AUDIO (噗呲溅射潜水音效) ---
+        let audioCtx = null;
+        function playSquishBleep(isSpecial = false) {
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const now = audioCtx.currentTime; const osc = audioCtx.createOscillator();
+                osc.type = 'sine';
+                const baseFreq = isSpecial ? 440 : 290;
+                osc.frequency.setValueAtTime(baseFreq, now);
+                // 模拟液体气泡爆裂的频率向下骤降扫频
+                osc.frequency.exponentialRampToValueAtTime(60, now + 0.18);
+                const gainNode = audioCtx.createGain(); gainNode.gain.setValueAtTime(0.08, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+                osc.connect(gainNode); gainNode.connect(audioCtx.destination);
+                osc.start(now); osc.stop(now + 0.2);
+            } catch (e) {}
+        }
+
+        // --- SPLATOON INK GRAFFITI GENERATOR (动态喷漆涂鸦引擎) ---
+        const canvas = document.getElementById('splatCanvas'); const ctx = canvas.getContext('2d');
+        let dpr = window.devicePixelRatio || 1; let splats = [];
+
+        function initCanvas() { dpr = window.devicePixelRatio || 1; canvas.width = window.innerWidth * DPR; canvas.height = window.innerHeight * DPR; ctx.scale(dpr, dpr); }
+
+        class InkSplat {
+            constructor(x, y) {
+                this.x = x; this.y = y; this.radius = 0; this.maxRadius = Math.random() * 25 + 25;
+                this.opacity = 0.85; this.growthSpeed = 2.2; // 放慢扩散
+                const morandiInks = ['#C2B4A6', '#A3B5C0', '#B9C0A4', '#D0C4DF', '#C1CDCD'];
+                this.color = morandiInks[Math.floor(Math.random() * morandiInks.length)];
+                this.drops = [];
+                // 产生 5-8 个向外溅射的副墨水点
+                let dropCount = Math.floor(Math.random() * 4) + 5;
+                for(let i=0; i<dropCount; i++) {
+                    let angle = (i / dropCount) * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
+                    let targetDist = Math.random() * 40 + 30;
+                    this.drops.push({ cx: 0, cy: 0, tx: Math.cos(angle)*targetDist, ty: Math.sin(angle)*targetDist, r: 0, mr: Math.random()*5 + 4 });
+                }
+            }
+            update() {
+                if(this.radius < this.maxRadius) this.radius += this.growthSpeed;
+                this.drops.forEach(d => {
+                    d.cx += (d.tx - d.cx) * 0.08; d.cy += (d.ty - d.cy) * 0.08;
+                    if(d.r < d.mr) d.r += this.growthSpeed * 0.15;
+                });
+                if(this.radius >= this.maxRadius) this.opacity -= 0.005; // 极为缓慢地淡出
+            }
+            draw() {
+                ctx.save(); ctx.globalAlpha = this.opacity; ctx.fillStyle = this.color;
+                // 绘制中心主墨水团
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fill();
+                // 绘制向外喷溅的散落墨点
+                this.drops.forEach(d => {
+                    ctx.beginPath(); ctx.arc(this.x + d.cx, this.y + d.cy, d.r, 0, Math.PI * 2); ctx.fill();
+                    // 斯普拉遁经典特征：绘制连结主墨水团与副墨点的硬触手细线条
+                    ctx.beginPath(); ctx.strokeStyle = this.color; ctx.lineWidth = d.r * 0.5;
+                    ctx.moveTo(this.x, this.y); ctx.lineTo(this.x + d.cx, this.y + d.cy); ctx.stroke();
+                });
+                ctx.restore();
+            }
+        }
+
+        window.addEventListener('mousedown', (e) => {
+            if (e.target.closest('header') || e.target.closest('main') || e.target.closest('button') || e.target.closest('section')) return;
+            playSquishBleep(false); splats.push(new InkSplat(e.clientX, e.clientY));
+        });
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
+            splats = splats.filter(s => s.opacity > 0); splats.forEach(s => { s.update(); s.draw(); });
+            requestAnimationFrame(animate);
+        }
+
+        applyLanguage(currentLang); changePalette(currentPalette); changePattern(currentPattern); renderNotes(); initCanvas(); animate();
+        window.addEventListener('resize', initCanvas);
+    </script>
+</body>
+</html>
