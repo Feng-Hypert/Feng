@@ -114,9 +114,41 @@
         .wave-animate {
             animation: waveFloat 7s ease-in-out infinite;
         }
+
+        /* 轻量硬件合成：只让真正需要移动的层参与合成 */
+        .parallax-layer,
+        .card-click,
+        #quantumCanvas {
+            will-change: transform;
+        }
+
+        .card-click {
+            transform: translate3d(0, 0, 0);
+            box-shadow: 0 18px 60px rgba(0, 0, 0, 0.08);
+        }
+
+        .card-click:focus-visible,
+        button:focus-visible {
+            outline: 2px solid var(--accent-color);
+            outline-offset: 4px;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.001ms !important;
+                animation-iteration-count: 1 !important;
+                scroll-behavior: auto !important;
+                transition-duration: 0.001ms !important;
+            }
+
+            #quantumCanvas,
+            .scanlines {
+                display: none;
+            }
+        }
     </style>
 </head>
-<body class="font-sans relative min-h-screen overflow-x-hidden selection:bg-[var(--moss-color)] selection:text-white">
+<body class="font-sans relative min-h-[100svh] overflow-x-hidden selection:bg-[var(--moss-color)] selection:text-white antialiased isolate">
 
     <div class="fixed inset-0 scanlines opacity-25"></div>
     <div id="light-beam" class="fixed inset-0 ambient-light transition-opacity duration-300 z-10"></div>
@@ -213,7 +245,7 @@
 
     <div class="fixed bottom-0 left-0 w-full h-36 bg-gradient-to-t from-[var(--bg-color)] to-transparent z-[13] pointer-events-none opacity-95"></div>
 
-    <canvas id="quantumCanvas" class="fixed inset-0 w-full h-full block z-[14] touch-none"></canvas>
+    <canvas id="quantumCanvas" aria-hidden="true" class="fixed inset-0 w-full h-full block z-[14] touch-none pointer-events-none"></canvas>
 
     <div class="relative min-h-screen flex flex-col justify-between z-20 px-6 py-8 md:px-16 md:py-12">
         
@@ -225,7 +257,7 @@
             </div>
             
             <div class="flex items-center space-x-6">
-                <button id="soundToggle" class="group flex items-center space-x-2 text-xs font-mono tracking-widest text-tlou-ash/60 hover:text-[var(--text-white)] transition-colors focus:outline-none">
+                <button id="soundToggle" type="button" aria-pressed="true" class="group flex items-center space-x-2 text-xs font-mono tracking-widest text-tlou-ash/60 hover:text-[var(--text-white)] transition-colors focus:outline-none">
                     <span id="soundStatus">SOUND ON</span>
                     <div class="flex items-end space-x-0.5 h-4 w-5">
                         <div class="w-0.5 bg-tlou-rust bar-1"></div>
@@ -256,7 +288,7 @@
         <section class="w-full z-20">
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 
-                <div class="card-click group relative overflow-hidden rounded-xl border border-[var(--card-border)] bg-tlou-glass p-6 backdrop-blur-md transition-all duration-500 hover:border-tlou-moss/50 hover:translate-y-[-4px] cursor-pointer" onclick="handleCardClick('Archive')">
+                <div class="card-click group relative overflow-hidden rounded-xl border border-[var(--card-border)] bg-tlou-glass p-6 backdrop-blur-md transition-all duration-500 hover:border-tlou-moss/50 hover:translate-y-[-4px] cursor-pointer" role="button" tabindex="0" aria-label="打开思想档案" data-portal="Archive" onclick="handleCardClick('Archive')">
                     <div class="absolute -top-12 -right-12 w-24 h-24 bg-tlou-moss/10 rounded-full blur-xl group-hover:bg-tlou-moss/20 transition-all duration-500"></div>
                     <div class="flex justify-between items-start mb-4">
                         <span class="font-mono text-xs text-tlou-rust tracking-wider">PORTAL 01</span>
@@ -274,7 +306,7 @@
                     </div>
                 </div>
 
-                <div class="card-click group relative overflow-hidden rounded-xl border border-[var(--card-border)] bg-tlou-glass p-6 backdrop-blur-md transition-all duration-500 hover:border-tlou-moss/50 hover:translate-y-[-4px] cursor-pointer" onclick="handleCardClick('Radio')">
+                <div class="card-click group relative overflow-hidden rounded-xl border border-[var(--card-border)] bg-tlou-glass p-6 backdrop-blur-md transition-all duration-500 hover:border-tlou-moss/50 hover:translate-y-[-4px] cursor-pointer" role="button" tabindex="0" aria-label="打开西雅图回声电台" data-portal="Radio" onclick="handleCardClick('Radio')">
                     <div class="absolute -top-12 -right-12 w-24 h-24 bg-tlou-rust/10 rounded-full blur-xl group-hover:bg-tlou-rust/20 transition-all duration-500"></div>
                     <div class="flex justify-between items-start mb-4">
                         <span class="font-mono text-xs text-tlou-rust tracking-wider">PORTAL 02</span>
@@ -292,7 +324,7 @@
                     </div>
                 </div>
 
-                <div class="card-click group relative overflow-hidden rounded-xl border border-[var(--card-border)] bg-tlou-glass p-6 backdrop-blur-md transition-all duration-500 hover:border-tlou-moss/50 hover:translate-y-[-4px] cursor-pointer" onclick="handleCardClick('Gallery')">
+                <div class="card-click group relative overflow-hidden rounded-xl border border-[var(--card-border)] bg-tlou-glass p-6 backdrop-blur-md transition-all duration-500 hover:border-tlou-moss/50 hover:translate-y-[-4px] cursor-pointer" role="button" tabindex="0" aria-label="打开记忆画廊" data-portal="Gallery" onclick="handleCardClick('Gallery')">
                     <div class="absolute -top-12 -right-12 w-24 h-24 bg-tlou-moss/10 rounded-full blur-xl group-hover:bg-tlou-moss/20 transition-all duration-500"></div>
                     <div class="flex justify-between items-start mb-4">
                         <span class="font-mono text-xs text-tlou-rust tracking-wider">PORTAL 03</span>
@@ -311,7 +343,7 @@
                     </div>
                 </div>
 
-                <div class="card-click group relative overflow-hidden rounded-xl border border-[var(--card-border)] bg-tlou-glass p-6 backdrop-blur-md transition-all duration-500 hover:border-tlou-rust/10 hover:translate-y-[-4px] cursor-pointer" onclick="handleCardClick('Remnants')">
+                <div class="card-click group relative overflow-hidden rounded-xl border border-[var(--card-border)] bg-tlou-glass p-6 backdrop-blur-md transition-all duration-500 hover:border-tlou-rust/10 hover:translate-y-[-4px] cursor-pointer" role="button" tabindex="0" aria-label="打开数字遗迹" data-portal="Remnants" onclick="handleCardClick('Remnants')">
                     <div class="absolute -top-12 -right-12 w-24 h-24 bg-tlou-rust/10 rounded-full blur-xl group-hover:bg-tlou-rust/20 transition-all duration-500"></div>
                     <div class="flex justify-between items-start mb-4">
                         <span class="font-mono text-xs text-tlou-rust tracking-wider">PORTAL 04</span>
@@ -334,7 +366,7 @@
             <div class="mt-8 flex flex-col md:flex-row justify-between items-center text-[11px] font-mono text-tlou-ash/40 border-t border-[var(--card-border)] pt-4 gap-4">
                 <p>© 2026 ERIS. ALL RIGHTS RECLAIMED.</p>
                 
-                <button id="themeToggle" class="group flex items-center space-x-2 text-[11px] font-mono tracking-widest text-tlou-ash/50 hover:text-[var(--text-white)] transition-all focus:outline-none border border-[var(--card-border)] bg-black/5 px-4 py-2 rounded-full backdrop-blur-sm">
+                <button id="themeToggle" type="button" aria-pressed="false" class="group flex items-center space-x-2 text-[11px] font-mono tracking-widest text-tlou-ash/50 hover:text-[var(--text-white)] transition-all focus:outline-none border border-[var(--card-border)] bg-black/5 px-4 py-2 rounded-full backdrop-blur-sm">
                     <span id="themeLabel">MODE: DEEP NIGHT</span>
                     <span class="w-2.5 h-2.5 rounded-full bg-tlou-rust group-hover:scale-110 transition-transform shadow-[0_0_8px_var(--accent-color)]"></span>
                 </button>
@@ -342,14 +374,14 @@
         </section>
     </div>
 
-    <div id="portalAlert" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md opacity-0 pointer-events-none transition-all duration-300">
+    <div id="portalAlert" role="dialog" aria-modal="true" aria-labelledby="alertTitle" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md opacity-0 pointer-events-none transition-all duration-300">
         <div class="bg-tlou-dark border border-tlou-moss/50 rounded-xl p-8 max-w-sm w-full shadow-2xl relative">
             <span class="absolute top-2 right-4 font-mono text-xs text-tlou-rust">SYS_ALERT</span>
             <h3 id="alertTitle" class="font-cinzel text-2xl font-bold text-[var(--text-white)] mb-3 tracking-wider">MODULE STAGED</h3>
             <p id="alertBody" class="text-xs text-tlou-ash/70 leading-relaxed mb-6">
                 接口已经连接。新世界板块尚未搭建完毕，留作您的无尽想象。
             </p>
-            <button onclick="closeAlert()" class="w-full py-3 bg-tlou-moss/30 border border-tlou-moss hover:bg-tlou-moss text-white font-mono text-xs tracking-widest rounded-lg transition-all">
+            <button type="button" onclick="closeAlert()" class="w-full py-3 bg-tlou-moss/30 border border-tlou-moss hover:bg-tlou-moss text-white font-mono text-xs tracking-widest rounded-lg transition-all">
                 CLOSE CONNECTION
             </button>
         </div>
@@ -359,34 +391,33 @@
         let isDarkMode = true;
         const themeToggleBtn = document.getElementById('themeToggle');
         const themeLabel = document.getElementById('themeLabel');
+        const root = document.documentElement;
+        const themeValues = {
+            dark: {
+                label: 'MODE: DEEP NIGHT',
+                values: ['#080a06', '#c3c7db', '#ffffff', 'rgba(8, 10, 6, 0.75)', 'rgba(255, 255, 255, 0.05)', '#d97736', '#4a5d43', 'rgba(120, 150, 100, 0.14)']
+            },
+            light: {
+                label: 'MODE: MISTY DAY',
+                values: ['#d6dad0', '#232d1f', '#0a0d08', 'rgba(255, 255, 255, 0.65)', 'rgba(0, 0, 0, 0.08)', '#b3501a', '#384833', 'rgba(217, 119, 54, 0.12)']
+            }
+        };
+
+        function applyTheme(dark, playSound = false) {
+            isDarkMode = dark;
+            const theme = themeValues[dark ? 'dark' : 'light'];
+            document.body.classList.toggle('theme-light', !dark);
+            themeLabel.textContent = theme.label;
+            themeToggleBtn.setAttribute('aria-pressed', String(!dark));
+            ['--bg-color', '--text-color', '--text-white', '--card-bg', '--card-border', '--accent-color', '--moss-color', '--light-ray-color']
+                .forEach((name, index) => root.style.setProperty(name, theme.values[index]));
+            try { localStorage.setItem('eris-theme', dark ? 'dark' : 'light'); } catch (_) {}
+            if (playSound) playAmbientPluck();
+        }
 
         themeToggleBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            isDarkMode = !isDarkMode;
-            if (isDarkMode) {
-                document.body.classList.remove('theme-light');
-                themeLabel.textContent = 'MODE: DEEP NIGHT';
-                document.documentElement.style.setProperty('--bg-color', '#080a06');
-                document.documentElement.style.setProperty('--text-color', '#c3c7db');
-                document.documentElement.style.setProperty('--text-white', '#ffffff');
-                document.documentElement.style.setProperty('--card-bg', 'rgba(8, 10, 6, 0.75)');
-                document.documentElement.style.setProperty('--card-border', 'rgba(255, 255, 255, 0.05)');
-                document.documentElement.style.setProperty('--accent-color', '#d97736');
-                document.documentElement.style.setProperty('--moss-color', '#4a5d43');
-                document.documentElement.style.setProperty('--light-ray-color', 'rgba(120, 150, 100, 0.14)');
-            } else {
-                document.body.classList.add('theme-light');
-                themeLabel.textContent = 'MODE: MISTY DAY';
-                document.documentElement.style.setProperty('--bg-color', '#d6dad0');
-                document.documentElement.style.setProperty('--text-color', '#232d1f');
-                document.documentElement.style.setProperty('--text-white', '#0a0d08');
-                document.documentElement.style.setProperty('--card-bg', 'rgba(255, 255, 255, 0.65)');
-                document.documentElement.style.setProperty('--card-border', 'rgba(0, 0, 0, 0.08)');
-                document.documentElement.style.setProperty('--accent-color', '#b3501a');
-                document.documentElement.style.setProperty('--moss-color', '#384833');
-                document.documentElement.style.setProperty('--light-ray-color', 'rgba(217, 119, 54, 0.12)');
-            }
-            playAmbientPluck();
+            applyTheme(!isDarkMode, true);
         });
 
         // Web Audio 原生合成器
@@ -405,7 +436,21 @@
                 soundStatusSpan.textContent = 'SOUND OFF';
                 soundToggleBtn.classList.add('opacity-40');
             }
+            soundToggleBtn.setAttribute('aria-pressed', String(soundActive));
+            try { localStorage.setItem('eris-sound', soundActive ? 'on' : 'off'); } catch (_) {}
         });
+
+        let savedTheme = 'dark';
+        let savedSound = 'on';
+        try {
+            savedTheme = localStorage.getItem('eris-theme') || 'dark';
+            savedSound = localStorage.getItem('eris-sound') || 'on';
+        } catch (_) {}
+        soundActive = savedSound !== 'off';
+        soundStatusSpan.textContent = soundActive ? 'SOUND ON' : 'SOUND OFF';
+        soundToggleBtn.classList.toggle('opacity-40', !soundActive);
+        soundToggleBtn.setAttribute('aria-pressed', String(soundActive));
+        applyTheme(savedTheme !== 'light');
 
         function playAmbientPluck() {
             if (!soundActive) return;
@@ -434,11 +479,11 @@
                 filter.frequency.exponentialRampToValueAtTime(100, now + 1.6);
 
                 const mainGain = audioCtx.createGain();
-                mainGain.gain.setValueAtTime(0.35, now);
+                mainGain.gain.setValueAtTime(0.18, now);
                 mainGain.gain.exponentialRampToValueAtTime(0.001, now + 1.8);
 
                 const overtoneGain = audioCtx.createGain();
-                overtoneGain.gain.setValueAtTime(0.06, now);
+                overtoneGain.gain.setValueAtTime(0.03, now);
                 overtoneGain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
 
                 osc.connect(filter);
@@ -456,19 +501,40 @@
             }
         }
 
+        const portalRoutes = {
+            Archive: './archive.html',
+            Radio: './radio.html',
+            Gallery: './gallery.html',
+            Remnants: './remnants.html'
+        };
+
         function handleCardClick(name) {
+            const route = portalRoutes[name];
+            if (!route) return;
             playAmbientPluck();
-            setTimeout(() => {
-                if (name === 'Archive') window.location.href = './archive.html';
-                else if (name === 'Radio') window.location.href = './radio.html';
-                else if (name === 'Gallery') window.location.href = './gallery.html';
-                else if (name === 'Remnants') window.location.href = './remnants.html';
-            }, 200);
+            document.body.classList.add('is-navigating');
+            window.setTimeout(() => { window.location.href = route; }, 180);
         }
+
+        document.querySelectorAll('.card-click').forEach((card) => {
+            card.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    handleCardClick(card.dataset.portal);
+                }
+            });
+        });
 
         function closeAlert() {
             document.getElementById('portalAlert').classList.add('opacity-0', 'pointer-events-none');
         }
+
+        document.getElementById('portalAlert').addEventListener('click', (event) => {
+            if (event.target.id === 'portalAlert') closeAlert();
+        });
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') closeAlert();
+        });
 
         // --- RETINA 画布及高级重力视差控制器 ---
         const canvas = document.getElementById('quantumCanvas');
@@ -476,6 +542,9 @@
         let dpr = window.devicePixelRatio || 1;
         const bgLayer = document.getElementById('parallax-background');
         const fernLayer = document.getElementById('backdrop-fern-svg');
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        let parallaxFrame = 0;
+        let pendingPointer = null;
 
         function applyVisualParallax(clientX, clientY) {
             const offsetX = (clientX - window.innerWidth / 2) / (window.innerWidth / 2);
@@ -491,14 +560,19 @@
             document.getElementById('light-beam').style.setProperty('--mouse-y', `${yPercent}%`);
         }
 
-        window.addEventListener('mousemove', (e) => {
-            applyVisualParallax(e.clientX, e.clientY);
-        });
+        function queueVisualParallax(clientX, clientY) {
+            if (prefersReducedMotion) return;
+            pendingPointer = { clientX, clientY };
+            if (parallaxFrame) return;
+            parallaxFrame = requestAnimationFrame(() => {
+                parallaxFrame = 0;
+                if (pendingPointer) applyVisualParallax(pendingPointer.clientX, pendingPointer.clientY);
+            });
+        }
 
+        window.addEventListener('mousemove', (e) => queueVisualParallax(e.clientX, e.clientY), { passive: true });
         window.addEventListener('touchmove', (e) => {
-            if (e.touches.length > 0) {
-                applyVisualParallax(e.touches[0].clientX, e.touches[0].clientY);
-            }
+            if (e.touches.length > 0) queueVisualParallax(e.touches[0].clientX, e.touches[0].clientY);
         }, { passive: true });
 
         // --- 电影级线目光栅系统 ---
@@ -516,7 +590,7 @@
             });
         }
 
-        function drawVolumetricLight(w, h) {
+        function drawVolumetricLight(w, h, time) {
             ctx.save();
             ctx.globalCompositeOperation = 'screen';
 
@@ -524,7 +598,7 @@
             const startY = -h * 0.1;
 
             lightShafts.forEach((s) => {
-                const sweep = Math.sin(Date.now() * s.speed + s.phase) * 0.04;
+                const sweep = Math.sin(time * s.speed + s.phase) * 0.04;
                 const curAngle = s.angle + sweep;
                 const beamLength = Math.max(w, h) * 1.8;
                 
@@ -558,7 +632,9 @@
         }
 
         // --- 粒子生命之网与动态互动状态机 ---
-        const PARTICLES_COUNT = 400; 
+        const PARTICLES_COUNT = prefersReducedMotion
+            ? 0
+            : Math.min(400, Math.max(160, Math.floor((window.innerWidth * window.innerHeight) / 9000)));
         let particles = [];
         let erisShapePoints = [];
         
@@ -587,7 +663,7 @@
 
             const imgData = tempCtx.getImageData(0, 0, width, height).data;
             const pts = [];
-            const step = Math.max(2, Math.floor(Math.sqrt((width * height) / PARTICLES_COUNT) * 0.85));
+            const step = Math.max(2, Math.floor(Math.sqrt((width * height) / Math.max(1, PARTICLES_COUNT)) * 0.85));
 
             for (let y = 0; y < height; y += step) {
                 for (let x = 0; x < width; x += step) {
@@ -618,9 +694,9 @@
                 this.randomSeed = Math.random() * 100;
             }
 
-            update() {
-                const windX = Math.sin((Date.now() / 1500) + this.randomSeed) * 0.16;
-                const windY = (Math.cos((Date.now() / 1800) + this.randomSeed) - 0.1) * 0.14; 
+            update(time) {
+                const windX = Math.sin((time / 1500) + this.randomSeed) * 0.16;
+                const windY = (Math.cos((time / 1800) + this.randomSeed) - 0.1) * 0.14; 
 
                 if (particleState === 'AMBIENT' || this.isWild) {
                     // 全屏无死角空气悬浮游走
@@ -634,8 +710,8 @@
 
                     // 缓慢低耗自我呼吸
                     let targetAmbientAlpha = this.isWild ? 0.18 : 0.12;
-                    this.alpha += ( (Math.sin(Date.now() * 0.001 + this.randomSeed) * 0.05 + targetAmbientAlpha) - this.alpha ) * 0.05;
-                    this.size = this.baseSize + Math.sin((Date.now() / 350) + this.randomSeed) * 0.3;
+                    this.alpha += ( (Math.sin(time * 0.001 + this.randomSeed) * 0.05 + targetAmbientAlpha) - this.alpha ) * 0.05;
+                    this.size = this.baseSize + Math.sin((time / 350) + this.randomSeed) * 0.3;
 
                 } else if (particleState === 'DISSOLVING') {
                     // 解散动画惯性回归
@@ -669,7 +745,7 @@
 
                     // 拼图成立时爆发耀眼的高亮凝聚感
                     this.alpha += (0.82 - this.alpha) * 0.1; 
-                    this.size = this.baseSize * 1.15 + Math.sin((Date.now() / 100) + this.randomSeed) * 0.4;
+                    this.size = this.baseSize * 1.15 + Math.sin((time / 100) + this.randomSeed) * 0.4;
                 }
             }
 
@@ -753,9 +829,10 @@
             if (w <= 0) w = window.outerWidth || 800;
             if (h <= 0) h = window.outerHeight || 600;
 
-            canvas.width = w * dpr;
-            canvas.height = h * dpr;
-            ctx.scale(dpr, dpr);
+            canvas.width = Math.floor(w * dpr);
+            canvas.height = Math.floor(h * dpr);
+            // resize 会重置 canvas 状态，显式重建变换矩阵避免 DPR 缩放叠加。
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
             erisShapePoints = generateErisTextPoints(w, h);
 
@@ -776,11 +853,11 @@
         function updateButterflyTargets() {
             const w = window.innerWidth;
             const h = window.innerHeight;
-            const time = Date.now();
+            const time = performance.now();
             let matrixIndex = 0;
             for (let i = 0; i < particles.length; i++) {
                 if (particles[i].isWild) continue;
-                const targetPos = getButterflyPoints(matrixIndex, PARTICLES_COUNT * 0.85, w, h, time);
+                const targetPos = getButterflyPoints(matrixIndex, Math.max(1, particles.length * 0.85), w, h, time);
                 particles[i].tx = targetPos.x;
                 particles[i].ty = targetPos.y;
                 matrixIndex++;
@@ -864,34 +941,40 @@
         }, { passive: true });
 
         // 精密动态渲染闭环
-        function animate() {
+        let animationFrameId = null;
+        let pageVisible = !document.hidden;
+        let appStarted = false;
+
+        function animate(time) {
+            if (!pageVisible || prefersReducedMotion || PARTICLES_COUNT === 0) {
+                animationFrameId = null;
+                return;
+            }
             ctx.save();
-            // 【革命性修复】：利用目标消除机制清空历史画笔，既保留微弱粒子残影，又使得 Canvas 图层全透，100% 还原底层西雅图风景
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
             ctx.globalCompositeOperation = 'destination-out';
             ctx.fillRect(0, 0, canvas.width / dpr, canvas.height / dpr);
             ctx.restore();
 
-            // 刷写丁达尔并行光栅
-            drawVolumetricLight(canvas.width / dpr, canvas.height / dpr);
+            drawVolumetricLight(canvas.width / dpr, canvas.height / dpr, time);
 
             if (particleState === 'BUTTERFLY') {
-                updateButterflyTargets();
+                updateButterflyTargets(time);
             }
 
-            // 更新并吐出粒子
             particles.forEach(p => {
-                p.update();
+                p.update(time);
                 p.draw();
             });
 
             ctx.shadowBlur = 0;
-            requestAnimationFrame(animate);
+            animationFrameId = requestAnimationFrame(animate);
         }
 
         function startApp() {
+            if (appStarted) return;
+            appStarted = true;
             initCanvas();
-            animate();
+            if (!prefersReducedMotion) animationFrameId = requestAnimationFrame(animate);
         }
 
         if (document.readyState === 'complete' || document.readyState === 'interactive') {
@@ -900,6 +983,13 @@
             document.addEventListener('DOMContentLoaded', startApp);
             window.addEventListener('load', startApp);
         }
+
+        document.addEventListener('visibilitychange', () => {
+            pageVisible = !document.hidden;
+            if (pageVisible && !prefersReducedMotion && !animationFrameId) {
+                animationFrameId = requestAnimationFrame(animate);
+            }
+        });
 
         let resizeTimeout;
         window.addEventListener('resize', () => {
