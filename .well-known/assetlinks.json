@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "cd.cc.suifeng1.twa",
+        "sha256_cert_fingerprints": ["FC:08:A8:AB:3A:D9:93:98:EB:58:F3:90:A6:84:B9:B7:FB:26:35:6C:7A:C7:78:C2:A7:93:DD:84:28:09:72:55"]
+      }
+    }]
