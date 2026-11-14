@@ -1,0 +1,26 @@
+{
+  "id": "/radio.html",
+  "name": "FENG MUSIC",
+  "short_name": "FENG MUSIC",
+  "description": "个人沉浸式流光本地音乐播放器，支持内嵌封面与歌词同步。",
+  "start_url": "/radio.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#090b10",
+  "theme_color": "#090b10",
+  "icons": [
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
