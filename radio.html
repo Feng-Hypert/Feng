@@ -28,6 +28,7 @@
       --lyric-font-px: 21px;
       --safe-top: env(safe-area-inset-top, 0px);
       --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --app-full-height: 100lvh;
     }
 
     * {
@@ -39,9 +40,9 @@
       margin: 0;
       padding: 0;
       width: 100%;
-      height: 100%;
+      height: var(--app-full-height, 100lvh);
+      min-height: calc(100vh + env(safe-area-inset-bottom, 44px));
       background-color: #090b10;
-      overflow: hidden;
     }
 
     body {
@@ -51,14 +52,11 @@
       top: 0;
       left: 0;
       right: 0;
-      bottom: 0;
       width: 100%;
-      height: 100%;
-      min-height: 100vh;
-      min-height: -webkit-fill-available;
-      overflow: hidden;
+      height: var(--app-full-height, 100lvh);
+      min-height: calc(100vh + env(safe-area-inset-bottom, 44px));
       overscroll-behavior: none;
-      background-color: #090b10;
+      background-color: transparent;
       color: #ffffff;
       font-family: 'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif;
       user-select: none;
@@ -69,13 +67,19 @@
       font-variant-numeric: tabular-nums;
     }
 
-    /* Full-bleed background layer extending below iOS standalone bottom safe-area */
+    /* Full-bleed viewport & background layers spanning behind iOS Home Indicator */
+    .app-screen-shell {
+      height: var(--app-full-height, 100lvh);
+      min-height: calc(100vh + env(safe-area-inset-bottom, 44px));
+    }
+
     .full-bleed-bg {
       position: fixed;
-      top: -60px;
+      top: -40px;
       left: -40px;
       right: -40px;
-      bottom: -120px;
+      height: calc(var(--app-full-height, 100lvh) + 120px);
+      min-height: calc(100vh + env(safe-area-inset-bottom, 44px) + 120px);
       pointer-events: none;
       overflow: hidden;
     }
@@ -343,7 +347,7 @@
        ========================================================================= -->
   <div id="sidebar-backdrop" class="fixed inset-0 z-40 bg-black/55 backdrop-blur-xs opacity-0 pointer-events-none transition-opacity duration-300"></div>
 
-  <aside id="app-sidebar" class="fixed top-0 left-0 bottom-0 z-50 w-[280px] max-w-[82vw] liquid-sidebar -translate-x-full transition-transform duration-300 ease-out flex flex-col justify-between" style="padding-top: calc(var(--safe-top) + 14px); padding-bottom: calc(var(--safe-bottom) + 18px);">
+  <aside id="app-sidebar" class="app-screen-shell fixed top-0 left-0 z-50 w-[280px] max-w-[82vw] liquid-sidebar -translate-x-full transition-transform duration-300 ease-out flex flex-col justify-between" style="padding-top: calc(var(--safe-top) + 14px); padding-bottom: calc(var(--safe-bottom) + 18px);">
     <div class="px-4 flex flex-col gap-5 overflow-y-auto no-scrollbar">
       <!-- Brand Header & Collapse Button -->
       <div class="flex items-center justify-between px-1">
@@ -438,7 +442,7 @@
   <!-- =========================================================================
        MAIN WORKSPACE CONTAINER
        ========================================================================= -->
-  <main id="main-workspace" class="relative z-10 w-full h-full flex flex-col overflow-hidden">
+  <main id="main-workspace" class="app-screen-shell relative z-10 w-full flex flex-col overflow-hidden">
 
     <!-- ==================== VIEW 1: LIBRARY (曲库) ==================== -->
     <section id="view-library" class="app-view flex-1 flex flex-col overflow-hidden">
@@ -464,21 +468,21 @@
       </header>
 
       <!-- Action Bar: 播放全部, 随心漫步, 今日音乐签, Sort Dropdown -->
-      <div class="px-4 sm:px-6 pb-3 flex items-center gap-2 overflow-x-auto no-scrollbar shrink-0">
-        <button id="btn-play-all" class="liquid-pill px-3.5 py-2 rounded-full text-xs font-medium text-white flex items-center gap-1.5 shrink-0">
+      <div class="px-4 sm:px-6 pb-3 flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar shrink-0">
+        <button id="btn-play-all" class="liquid-pill px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full text-[11px] sm:text-xs font-medium text-white flex items-center gap-1 shrink-0">
           <svg class="w-3.5 h-3.5 text-sky-300" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
           播放全部
         </button>
-        <button id="btn-surprise-walk" class="liquid-pill px-3.5 py-2 rounded-full text-xs font-medium text-white flex items-center gap-1.5 shrink-0">
+        <button id="btn-surprise-walk" class="liquid-pill px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full text-[11px] sm:text-xs font-medium text-white flex items-center gap-1 shrink-0">
           <svg class="w-3.5 h-3.5 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
           随心漫步
         </button>
-        <button id="btn-daily-fortune" class="liquid-pill px-3.5 py-2 rounded-full text-xs font-medium text-white flex items-center gap-1.5 shrink-0">
+        <button id="btn-daily-fortune" class="liquid-pill px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full text-[11px] sm:text-xs font-medium text-white flex items-center gap-1 shrink-0">
           <svg class="w-3.5 h-3.5 text-rose-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
           今日音乐签
         </button>
         <div class="ml-auto shrink-0">
-          <select id="library-sort-select" class="liquid-pill px-3 py-2 rounded-full text-xs font-medium text-white/90 bg-transparent outline-none">
+          <select id="library-sort-select" class="liquid-pill px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-full text-[11px] sm:text-xs font-medium text-white/90 bg-transparent outline-none">
             <option value="default" class="bg-zinc-900 text-white">默认添加</option>
             <option value="title" class="bg-zinc-900 text-white">歌曲名称</option>
             <option value="artist" class="bg-zinc-900 text-white">歌手名称</option>
@@ -813,7 +817,7 @@
   <!-- =========================================================================
        FULL-SCREEN NOW PLAYING OVERLAY (封面 | 歌词 + 右上角设置)
        ========================================================================= -->
-  <div id="now-playing-modal" class="fixed inset-0 z-40 translate-y-full transition-transform duration-350 ease-out flex flex-col overflow-hidden bg-[#090b10]">
+  <div id="now-playing-modal" class="app-screen-shell fixed top-0 left-0 right-0 z-40 translate-y-full transition-transform duration-350 ease-out flex flex-col overflow-hidden bg-[#090b10]">
     <!-- Full-Bleed Dynamic Background for Player -->
     <div class="full-bleed-bg z-0 bg-[#090b10]" aria-hidden="true">
       <div id="player-aurora-layer" class="absolute inset-0 transition-opacity duration-500">
@@ -4722,7 +4726,26 @@
       // =========================================================================
       // BOOTSTRAP APPLICATION
       // =========================================================================
+      function syncFullScreenViewport() {
+        const isStandalone =
+          window.navigator.standalone === true ||
+          (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+        if (isStandalone && window.screen) {
+          const isPortrait = window.innerHeight >= window.innerWidth;
+          const physicalH = isPortrait
+            ? Math.max(window.innerHeight, window.screen.height)
+            : Math.max(window.innerHeight, window.screen.width);
+          document.documentElement.style.setProperty('--app-full-height', `${physicalH}px`);
+        } else {
+          document.documentElement.style.setProperty('--app-full-height', `${window.innerHeight}px`);
+        }
+      }
+
       async function bootstrap() {
+        syncFullScreenViewport();
+        window.addEventListener('resize', syncFullScreenViewport);
+        window.addEventListener('orientationchange', () => setTimeout(syncFullScreenViewport, 120));
+
         generateAppIcons();
         $('mini-cover').src = DEFAULT_APP_COVER;
         $('np-cover-img-rounded').src = DEFAULT_APP_COVER;
