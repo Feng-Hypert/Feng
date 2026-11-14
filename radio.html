@@ -9,9 +9,9 @@
   <meta name="theme-color" content="#090b10" />
   <title>FENG MUSIC</title>
 
-  <link id="dynamic-apple-icon" rel="apple-touch-icon" href="" />
-  <link id="dynamic-favicon" rel="icon" type="image/png" href="" />
-  <link id="dynamic-manifest" rel="manifest" href="" />
+  <link rel="apple-touch-icon" href="/icon-512.png" />
+  <link rel="icon" type="image/png" href="/icon-512.png" />
+  <link rel="manifest" href="/manifest.json" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -1496,50 +1496,6 @@
       }
 
       const DEFAULT_APP_COVER = generateDefaultCover('FM');
-
-      function generateAppIcons() {
-        try {
-          const canvas = document.createElement('canvas');
-          canvas.width = 512;
-          canvas.height = 512;
-          const ctx = canvas.getContext('2d');
-          const grad = ctx.createLinearGradient(0, 0, 512, 512);
-          grad.addColorStop(0, '#0ea5e9');
-          grad.addColorStop(0.5, '#6366f1');
-          grad.addColorStop(1, '#14b8a6');
-          ctx.fillStyle = grad;
-          ctx.fillRect(0, 0, 512, 512);
-
-          ctx.fillStyle = 'rgba(255,255,255,0.14)';
-          ctx.beginPath();
-          ctx.arc(390, 120, 150, 0, Math.PI * 2);
-          ctx.fill();
-
-          ctx.fillStyle = '#ffffff';
-          ctx.font = '700 180px Inter, sans-serif';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText('FM', 256, 272);
-
-          const iconUrl = canvas.toDataURL('image/png');
-          $('dynamic-apple-icon').href = iconUrl;
-          $('dynamic-favicon').href = iconUrl;
-
-          const manifest = {
-            name: 'FENG MUSIC',
-            short_name: 'FENG MUSIC',
-            start_url: '.',
-            display: 'standalone',
-            background_color: '#090b10',
-            theme_color: '#090b10',
-            icons: [{ src: iconUrl, sizes: '512x512', type: 'image/png' }]
-          };
-          const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
-          $('dynamic-manifest').href = URL.createObjectURL(manifestBlob);
-        } catch {
-          // Ignore icon generation failure on restricted contexts
-        }
-      }
 
       function updateAuroraColorsFromCover(coverUrl) {
         if (!coverUrl) return;
@@ -4746,7 +4702,10 @@
         window.addEventListener('resize', syncFullScreenViewport);
         window.addEventListener('orientationchange', () => setTimeout(syncFullScreenViewport, 120));
 
-        generateAppIcons();
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        }
+
         $('mini-cover').src = DEFAULT_APP_COVER;
         $('np-cover-img-rounded').src = DEFAULT_APP_COVER;
         $('np-cover-img-vinyl').src = DEFAULT_APP_COVER;
