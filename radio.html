@@ -419,6 +419,7 @@
   <!-- Hidden Audio Engine & File Inputs -->
   <audio id="audio-engine" preload="metadata" playsinline></audio>
   <input id="file-import-input" type="file" accept=".mp3,.flac,.m4a,.wav,.ogg,.aac,.lrc,audio/*" multiple class="hidden" />
+  <input id="relink-file-input" type="file" accept=".mp3,.flac,.m4a,.wav,.ogg,.aac,audio/*" multiple class="hidden" />
   <input id="bg-home-input" type="file" accept="image/*" class="hidden" />
   <input id="bg-player-input" type="file" accept="image/*" class="hidden" />
   <input id="track-cover-input" type="file" accept="image/*" class="hidden" />
@@ -1492,8 +1493,17 @@
         playlistModalMode: 'create',
         playlistModalPendingTrackId: null,
         posterTheme: 'aurora',
-        fortuneTrackId: null
+        fortuneTrackId: null,
+        pendingRelinkTrackId: null
       };
+      const sessionFileMap = new Map();
+
+      function toStorableTrackRecord(trk) {
+        const copy = { ...trk };
+        delete copy.blob;
+        delete copy.objectUrl;
+        return copy;
+      }
 
       // =========================================================================
       // INDEXEDDB PERSISTENCE
@@ -2238,6 +2248,42 @@
         };
       }
 
+      async function readMetadataFromFile(file) {
+        const headLimit = Math.min(file.size, 8 * 1024 * 1024);
+        const headBuf = await file.slice(0, headLimit).arrayBuffer();
+        const meta = await extractEmbeddedMetadata(headBuf, file.name);
+        if ((!meta.title || meta.artist === '未知歌手' || meta.album === '未知专辑') && file.size > 128) {
+          try {
+            const tailBuf = await file.slice(file.size - 128).arrayBuffer();
+            const v1 = parseId3v1(new Uint8Array(tailBuf));
+            if ((!meta.title || meta.title === file.name.replace(/\.[^/.]+$/, '').trim()) && v1.title) meta.title = v1.title;
+            if (meta.artist === '未知歌手' && v1.artist) meta.artist = v1.artist;
+            if (meta.album === '未知专辑' && v1.album) meta.album = v1.album;
+          } catch {}
+        }
+        return meta;
+      }
+
+      async function resolveTrackFile(rawTrack, requestPermission = false) {
+        if (!rawTrack) return null;
+        if (sessionFileMap.has(rawTrack.id)) return sessionFileMap.get(rawTrack.id);
+        if (rawTrack.fileHandle) {
+          try {
+            let perm = await rawTrack.fileHandle.queryPermission({ mode: 'read' });
+            if (perm !== 'granted' && requestPermission) {
+              perm = await rawTrack.fileHandle.requestPermission({ mode: 'read' });
+            }
+            if (perm === 'granted') {
+              const file = await rawTrack.fileHandle.getFile();
+              sessionFileMap.set(rawTrack.id, file);
+              return file;
+            }
+          } catch {}
+        }
+        if (rawTrack.blob) return rawTrack.blob;
+        return null;
+      }
+
       // =========================================================================
       // LRC SYNCED LYRICS PARSER & RENDERER
       // =========================================================================
@@ -2462,13 +2508,30 @@
         state.parsedLyrics = parseLrcText(track.lrc);
         renderLyricsList();
 
-        if (rawTrack.objectUrl) {
-          audio.src = rawTrack.objectUrl;
-        } else if (rawTrack.blob) {
-          rawTrack.objectUrl = URL.createObjectURL(rawTrack.blob);
-          audio.src = rawTrack.objectUrl;
-        } else if (rawTrack.src) {
-          audio.src = rawTrack.src;
+        let playableUrl = '';
+        if (rawTrack.src) {
+          playableUrl = rawTrack.src;
+        } else if (rawTrack.objectUrl) {
+          playableUrl = rawTrack.objectUrl;
+        } else {
+          const resolvedFile = await resolveTrackFile(rawTrack, autoPlay);
+          if (resolvedFile) {
+            rawTrack.objectUrl = URL.createObjectURL(resolvedFile);
+            playableUrl = rawTrack.objectUrl;
+          } else if (autoPlay) {
+            state.pendingRelinkTrackId = rawTrack.id;
+            state.isPlaying = false;
+            updatePlayStateUI();
+            showToast('请重新定位原音频文件以继续原位播放');
+            $('relink-file-input').click();
+            return;
+          }
+        }
+
+        if (playableUrl) {
+          audio.src = playableUrl;
+        } else {
+          audio.removeAttribute('src');
         }
         audio.playbackRate = state.playbackRate || 1;
 
@@ -2477,7 +2540,7 @@
           $('np-time-duration').textContent = formatTime(audio.duration);
           if (!rawTrack.duration && Number.isFinite(audio.duration)) {
             rawTrack.duration = audio.duration;
-            if (rawTrack.blob) await dbPut('tracks', rawTrack);
+            if (!rawTrack.isRemote) await dbPut('tracks', toStorableTrackRecord(rawTrack));
             renderLibrary();
           }
           if (resumeTime > 0 && resumeTime < audio.duration - 1) {
@@ -2724,7 +2787,7 @@
               </div>
               <button id="btn-empty-import" class="px-5 py-2.5 rounded-full bg-white text-zinc-950 text-xs font-semibold shadow-lg active:scale-95 transition">立即导入音乐</button>
             </div>`;
-          on('btn-empty-import', () => $('file-import-input').click());
+          on('btn-empty-import', () => triggerMusicImport());
           return;
         }
 
@@ -4238,7 +4301,7 @@
         const raw = state.tracks.find((t) => t.id === state.currentTrackId);
         const track = raw
           ? getTrackDisplay(raw)
-          : { title: 'FENG MUSIC', artist: '私人纯享音乐空间', cover: DEFAULT_APP_COVER };
+          : { title: 'FENG MUSIC', artist: 'test', cover: DEFAULT_APP_COVER };
 
         const canvas = document.createElement('canvas');
         canvas.width = 750;
@@ -4379,14 +4442,52 @@
       // =========================================================================
       // IMPORT & RE-SCAN EMBEDDED METADATA
       // =========================================================================
-      async function handleFileImport(fileList) {
-        const files = [...(fileList || [])];
-        if (!files.length) return;
+      async function triggerMusicImport() {
+        if (typeof window.showOpenFilePicker === 'function') {
+          try {
+            const handles = await window.showOpenFilePicker({
+              multiple: true,
+              types: [
+                {
+                  description: '音频与 LRC 歌词',
+                  accept: {
+                    'audio/*': ['.mp3', '.flac', '.m4a', '.wav', '.ogg', '.aac'],
+                    'text/plain': ['.lrc']
+                  }
+                }
+              ]
+            });
+            if (!handles || !handles.length) return;
+            const entries = [];
+            for (const handle of handles) {
+              try {
+                const file = await handle.getFile();
+                entries.push({ file, fileHandle: handle });
+              } catch {}
+            }
+            if (entries.length) await handleFileImport(entries);
+            return;
+          } catch (err) {
+            if (err && err.name === 'AbortError') return;
+          }
+        }
+        $('file-import-input').click();
+      }
 
-        const audioFiles = [];
+      async function handleFileImport(fileListOrEntries) {
+        const rawItems = [...(fileListOrEntries || [])];
+        if (!rawItems.length) return;
+
+        const entries = rawItems.map((item) =>
+          item && item.file ? item : { file: item, fileHandle: null }
+        );
+
+        const audioEntries = [];
         const lrcMap = new Map();
 
-        for (const f of files) {
+        for (const entry of entries) {
+          const f = entry.file;
+          if (!f) continue;
           const lower = f.name.toLowerCase();
           if (lower.endsWith('.lrc')) {
             const base = f.name.replace(/\.lrc$/i, '').trim().toLowerCase();
@@ -4394,26 +4495,25 @@
               const buf = await f.arrayBuffer();
               const text = decodeTagBytes(new Uint8Array(buf), 0);
               lrcMap.set(base, text);
-            } catch {
-              // Ignore unreadable lrc
-            }
+            } catch {}
           } else if (f.type.startsWith('audio/') || /\.(mp3|flac|m4a|wav|ogg|aac)$/i.test(lower)) {
-            audioFiles.push(f);
+            audioEntries.push(entry);
           }
         }
 
-        // Match standalone .lrc files to existing tracks if no audio files or matching names exist
         let matchedExistingLrcCount = 0;
         for (const [baseName, lrcText] of lrcMap.entries()) {
-          const existing = state.tracks.find((t) => t.title.toLowerCase() === baseName || (t.fileName && t.fileName.replace(/\.[^/.]+$/, '').toLowerCase() === baseName));
+          const existing = state.tracks.find(
+            (t) => t.title.toLowerCase() === baseName || (t.fileName && t.fileName.replace(/\.[^/.]+$/, '').toLowerCase() === baseName)
+          );
           if (existing) {
             existing.lrc = lrcText;
-            if (existing.blob) await dbPut('tracks', existing);
+            if (!existing.isRemote) await dbPut('tracks', toStorableTrackRecord(existing));
             matchedExistingLrcCount++;
           }
         }
 
-        if (!audioFiles.length) {
+        if (!audioEntries.length) {
           if (matchedExistingLrcCount > 0) {
             if (state.currentTrackId) {
               const cur = getTrackDisplay(state.tracks.find((t) => t.id === state.currentTrackId));
@@ -4427,19 +4527,23 @@
           return;
         }
 
-        showToast(`正在解析 ${audioFiles.length} 首歌曲的封面与歌词...`);
+        showToast(`正在原位解析 ${audioEntries.length} 首歌曲的封面与歌词...`);
         let importedCount = 0;
 
-        for (const file of audioFiles) {
+        for (const entry of audioEntries) {
+          const file = entry.file;
           try {
-            const arrayBuffer = await file.arrayBuffer();
-            const meta = await extractEmbeddedMetadata(arrayBuffer, file.name);
+            const meta = await readMetadataFromFile(file);
             const baseName = file.name.replace(/\.[^/.]+$/, '').trim().toLowerCase();
             const externalLrc = lrcMap.get(baseName) || '';
+            const id = `trk_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
             const trackRecord = {
-              id: `trk_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+              id,
               fileName: file.name,
+              fileSize: file.size || 0,
+              lastModified: file.lastModified || 0,
+              fileHandle: entry.fileHandle || null,
               title: meta.title,
               artist: meta.artist,
               album: meta.album,
@@ -4447,17 +4551,15 @@
               hasEmbeddedCover: Boolean(meta.cover),
               lrc: externalLrc || meta.lrc || '',
               duration: 0,
-              blob: file,
               objectUrl: URL.createObjectURL(file),
               addedAt: Date.now()
             };
 
+            sessionFileMap.set(id, file);
             state.tracks.unshift(trackRecord);
-            await dbPut('tracks', trackRecord);
+            await dbPut('tracks', toStorableTrackRecord(trackRecord));
             importedCount++;
-          } catch {
-            // Skip corrupted file
-          }
+          } catch {}
         }
 
         state.queue = getSortedTracks().map((t) => t.id);
@@ -4471,13 +4573,41 @@
             renderLyricsList();
           }
         }
-        showToast(`成功导入 ${importedCount} 首歌曲`);
+        showToast(`原位导入成功（${importedCount} 首，零音频体积占用）`);
+      }
+
+      async function relinkLocalFiles(fileList) {
+        const files = [...(fileList || [])];
+        if (!files.length) return;
+        let matchedCount = 0;
+        for (const trk of state.tracks) {
+          if (trk.isRemote) continue;
+          const match =
+            files.find((f) => f.name === trk.fileName && (!trk.fileSize || f.size === trk.fileSize)) ||
+            files.find((f) => f.name === trk.fileName);
+          if (match) {
+            sessionFileMap.set(trk.id, match);
+            if (trk.objectUrl) URL.revokeObjectURL(trk.objectUrl);
+            trk.objectUrl = URL.createObjectURL(match);
+            matchedCount++;
+          }
+        }
+        const pendingId = state.pendingRelinkTrackId;
+        state.pendingRelinkTrackId = null;
+        if (matchedCount > 0) {
+          showToast(`已成功关联 ${matchedCount} 个原音频文件`);
+          if (pendingId && sessionFileMap.has(pendingId)) {
+            await loadTrack(pendingId, true);
+          }
+        } else {
+          showToast('未匹配到对应文件名的音频文件');
+        }
       }
 
       async function rescanTracksMetadata(targetTrackId = null) {
         const targets = targetTrackId
           ? state.tracks.filter((t) => t.id === targetTrackId)
-          : state.tracks.filter((t) => t.blob);
+          : state.tracks.filter((t) => !t.isRemote);
 
         if (!targets.length) {
           showToast('当前没有可重新解析的本地音频文件');
@@ -4488,26 +4618,22 @@
         let updatedCount = 0;
 
         for (const trk of targets) {
-          if (!trk.blob) continue;
           try {
-            const buf = await trk.blob.arrayBuffer();
-            const meta = await extractEmbeddedMetadata(buf, trk.fileName || trk.title);
+            const file = await resolveTrackFile(trk, true);
+            if (!file) continue;
+            const meta = await readMetadataFromFile(file);
             if (meta.cover) {
               trk.cover = meta.cover;
               trk.hasEmbeddedCover = true;
             }
-            if (meta.lrc) {
-              trk.lrc = meta.lrc;
-            }
+            if (meta.lrc) trk.lrc = meta.lrc;
             if (meta.title && trk.title === '未知曲目') trk.title = meta.title;
             if (meta.artist && trk.artist === '未知歌手') trk.artist = meta.artist;
             if (meta.album && trk.album === '未知专辑') trk.album = meta.album;
 
-            await dbPut('tracks', trk);
+            await dbPut('tracks', toStorableTrackRecord(trk));
             updatedCount++;
-          } catch {
-            // Skip unreadable blob
-          }
+          } catch {}
         }
 
         renderLibrary();
@@ -4617,7 +4743,11 @@
 
         on('btn-sidebar-import', () => {
           closeSidebar();
-          $('file-import-input').click();
+          triggerMusicImport();
+        });
+        on('relink-file-input', 'change', async (e) => {
+          await relinkLocalFiles(e.target.files);
+          e.target.value = '';
         });
         on('btn-sidebar-rescan', async () => {
           closeSidebar();
@@ -5436,7 +5566,6 @@
           if (storedTracks.length) {
             storedTracks.sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
             for (const trk of storedTracks) {
-              if (trk.blob) trk.objectUrl = URL.createObjectURL(trk.blob);
               state.tracks.push(trk);
             }
           }
