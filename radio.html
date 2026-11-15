@@ -2759,7 +2759,13 @@
         } catch {}
       }
 
+      window.__fengPrevTrack = () => playPrev();
+      window.__fengNextTrack = () => playNext(true);
+
       function syncMediaSessionHandlers() {
+        if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.fengMedia) {
+          try { window.webkit.messageHandlers.fengMedia.postMessage('sync'); } catch {}
+        }
         if (!('mediaSession' in navigator)) return;
         const ms = navigator.mediaSession;
         const safeSet = (action, handler) => {
