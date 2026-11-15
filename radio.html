@@ -453,11 +453,14 @@
     <div class="px-4 flex flex-col gap-5 overflow-y-auto no-scrollbar">
       <!-- Brand Header & Collapse Button -->
       <div class="flex items-center justify-between px-1">
-        <div class="flex items-center gap-3">
-          <img src="/icon-512.png" alt="FENG MUSIC" class="w-9 h-9 rounded-xl object-cover shadow-lg shadow-sky-500/30 bg-white/10" />
-          <div>
-            <div class="text-base font-bold tracking-wide text-white leading-tight">FENG MUSIC</div>
-            <div class="text-[11px] text-white/50">私人纯享音乐空间</div>
+        <div class="flex items-center gap-3 min-w-0 flex-1 pr-2">
+          <img src="/icon-512.png" alt="FENG MUSIC" class="w-9 h-9 rounded-xl object-cover shadow-lg shadow-sky-500/30 bg-white/10 shrink-0" />
+          <div class="min-w-0 flex-1">
+            <div class="text-base font-bold tracking-wide text-white leading-tight truncate">FENG MUSIC</div>
+            <div id="sidebar-steam-status" class="flex items-center gap-1.5 text-[11px] text-white/50 truncate mt-0.5 cursor-pointer" title="点击打开播放页">
+              <span id="sidebar-steam-dot" class="w-2 h-2 rounded-full bg-white/35 shrink-0 transition-colors"></span>
+              <span id="sidebar-steam-text" class="truncate">在线 · 等待播放</span>
+            </div>
           </div>
         </div>
         <button id="btn-sidebar-collapse" class="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/15 active:scale-95 flex items-center justify-center text-white/85" title="收起侧边栏">
@@ -533,6 +536,10 @@
       <button id="btn-sidebar-import" class="w-full py-2.5 px-3.5 rounded-2xl bg-gradient-to-r from-sky-500/80 to-indigo-500/80 hover:from-sky-500 hover:to-indigo-500 active:scale-[0.98] text-sm font-semibold text-white flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/25 transition">
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
         导入本地音乐 / LRC
+      </button>
+      <button id="btn-sidebar-native-scan" class="hidden w-full py-2 px-3.5 rounded-2xl bg-teal-500/20 hover:bg-teal-500/30 active:scale-[0.98] text-xs font-medium text-teal-200 flex items-center justify-center gap-2 transition">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7a2 2 0 012-2h5l2 2h7a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>
+        扫描 FENG MUSIC 文件夹
       </button>
       <button id="btn-sidebar-rescan" class="w-full py-2 px-3.5 rounded-2xl bg-emerald-500/15 hover:bg-emerald-500/25 active:scale-[0.98] text-xs font-medium text-emerald-200 flex items-center justify-center gap-2 transition">
         <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
@@ -906,7 +913,11 @@
           <button data-wn-preset="rainy_read" class="wn-preset-btn liquid-pill px-3.5 py-1.5 rounded-full text-xs font-medium text-white shrink-0">🌧️ 雨夜读书</button>
           <button data-wn-preset="ocean_zen" class="wn-preset-btn liquid-pill px-3.5 py-1.5 rounded-full text-xs font-medium text-white shrink-0">🌊 海边冥想</button>
           <button data-wn-preset="winter_fire" class="wn-preset-btn liquid-pill px-3.5 py-1.5 rounded-full text-xs font-medium text-white shrink-0">🔥 冬夜壁炉</button>
-          <button data-wn-preset="forest_walk" class="wn-preset-btn liquid-pill px-3.5 py-1.5 rounded-full text-xs font-medium text-white shrink-0">🌲 林间夜风</button>
+          <button data-wn-preset="forest_stream" class="wn-preset-btn liquid-pill px-3.5 py-1.5 rounded-full text-xs font-medium text-white shrink-0">🌲 山林溪畔</button>
+          <button data-wn-preset="midnight_train" class="wn-preset-btn liquid-pill px-3.5 py-1.5 rounded-full text-xs font-medium text-white shrink-0">🚂 午夜列车</button>
+          <button data-wn-preset="cafe_rain" class="wn-preset-btn liquid-pill px-3.5 py-1.5 rounded-full text-xs font-medium text-white shrink-0">☕ 咖啡馆午后</button>
+          <button data-wn-preset="deep_space" class="wn-preset-btn liquid-pill px-3.5 py-1.5 rounded-full text-xs font-medium text-white shrink-0">🌌 宇航员助眠</button>
+          <button data-wn-preset="storm_night" class="wn-preset-btn liquid-pill px-3.5 py-1.5 rounded-full text-xs font-medium text-white shrink-0">⛈️ 暴雨听雷</button>
         </div>
         <div class="liquid-panel rounded-2xl px-4 py-2.5 flex items-center gap-3">
           <span class="text-xs font-medium text-white/75 shrink-0">总音量</span>
@@ -923,25 +934,27 @@
          ========================================================================= -->
     <div id="mini-player-wrapper" class="fixed left-0 right-0 z-30 px-3.5 sm:px-6 pointer-events-none" style="bottom: calc(var(--safe-bottom) + 10px);">
       <div id="mini-player-bar" class="liquid-dock relative pointer-events-auto max-w-2xl mx-auto rounded-[26px] overflow-hidden cursor-pointer transition-transform duration-200 active:scale-[0.985]">
-        <!-- Liquid Glass Specular Rim Progress Bar (Wraps smoothly from left arc to right arc) -->
-        <svg id="mini-progress-svg" class="absolute inset-0 w-full h-full pointer-events-none z-20" aria-hidden="true">
+        <!-- Liquid Glass Specular Rim Progress Bar (Dual-layer glow + specular comet tip) -->
+        <svg id="mini-progress-svg" class="absolute inset-0 w-full h-full pointer-events-none z-20 overflow-visible" aria-hidden="true">
           <defs>
             <linearGradient id="mini-glass-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stop-color="rgba(255,255,255,0.55)" />
+              <stop offset="0%" stop-color="rgba(255,255,255,0.75)" />
               <stop offset="35%" stop-color="var(--aurora-1, #38bdf8)" />
               <stop offset="70%" stop-color="#ffffff" />
               <stop offset="100%" stop-color="var(--aurora-3, #2dd4bf)" />
             </linearGradient>
-            <filter id="mini-glass-glow" x="-10%" y="-40%" width="120%" height="180%">
-              <feGaussianBlur stdDeviation="2" result="blur" />
+            <filter id="mini-glass-glow" x="-20%" y="-80%" width="140%" height="260%">
+              <feGaussianBlur stdDeviation="3" result="blur" />
               <feMerge>
                 <feMergeNode in="blur" />
                 <feMergeNode in="SourceGraphic" />
               </feMerge>
             </filter>
           </defs>
-          <path id="mini-progress-track" fill="none" stroke="rgba(255,255,255,0.16)" stroke-width="2" stroke-linecap="round" />
-          <path id="mini-progress-fill" fill="none" stroke="url(#mini-glass-grad)" stroke-width="2.5" stroke-linecap="round" filter="url(#mini-glass-glow)" style="opacity:0; transition: stroke-dashoffset 0.15s linear, opacity 0.2s ease;" />
+          <path id="mini-progress-track" fill="none" stroke="rgba(255,255,255,0.16)" stroke-width="1.8" stroke-linecap="round" />
+          <path id="mini-progress-glow" fill="none" stroke="url(#mini-glass-grad)" stroke-width="5.5" stroke-linecap="round" filter="url(#mini-glass-glow)" style="opacity:0; transition: stroke-dashoffset 0.12s linear, opacity 0.25s ease;" />
+          <path id="mini-progress-fill" fill="none" stroke="url(#mini-glass-grad)" stroke-width="2.4" stroke-linecap="round" style="opacity:0; transition: stroke-dashoffset 0.12s linear, opacity 0.25s ease;" />
+          <circle id="mini-progress-tip" r="3" fill="#ffffff" filter="url(#mini-glass-glow)" style="opacity:0; transition: opacity 0.25s ease;" />
         </svg>
         <div class="px-3 py-2.5 flex items-center justify-between gap-3">
           <div class="flex items-center gap-3 min-w-0 flex-1">
@@ -1800,9 +1813,9 @@
                 const img = new Image();
                 img.onload = () => {
                   try {
-                    const maxDim = 900;
-                    let w = img.naturalWidth || img.width || 500;
-                    let h = img.naturalHeight || img.height || 500;
+                    const maxDim = 360;
+                    let w = img.naturalWidth || img.width || 360;
+                    let h = img.naturalHeight || img.height || 360;
                     if (w > maxDim || h > maxDim) {
                       const ratio = Math.min(maxDim / w, maxDim / h);
                       w = Math.round(w * ratio);
@@ -1815,7 +1828,7 @@
                     ctx.drawImage(img, 0, 0, w, h);
                     URL.revokeObjectURL(url);
                     const outMime = mime === 'image/png' ? 'image/png' : 'image/jpeg';
-                    res(canvas.toDataURL(outMime, 0.88));
+                    res(canvas.toDataURL(outMime, 0.78));
                   } catch {
                     URL.revokeObjectURL(url);
                     res('');
@@ -2249,9 +2262,27 @@
       }
 
       async function readMetadataFromFile(file) {
-        const headLimit = Math.min(file.size, 8 * 1024 * 1024);
-        const headBuf = await file.slice(0, headLimit).arrayBuffer();
+        const probeSize = Math.min(file.size, 256 * 1024);
+        let headBuf = await file.slice(0, probeSize).arrayBuffer();
+        const probeBytes = new Uint8Array(headBuf);
+        let neededSize = probeSize;
+        if (probeBytes.length >= 10 && probeBytes[0] === 0x49 && probeBytes[1] === 0x44 && probeBytes[2] === 0x33) {
+          const tagSize =
+            ((probeBytes[6] & 0x7f) << 21) |
+            ((probeBytes[7] & 0x7f) << 14) |
+            ((probeBytes[8] & 0x7f) << 7) |
+            (probeBytes[9] & 0x7f);
+          neededSize = Math.min(file.size, Math.max(probeSize, 10 + tagSize + 1024), 3 * 1024 * 1024);
+        } else if (probeBytes.length >= 4 && probeBytes[0] === 0x66 && probeBytes[1] === 0x4c && probeBytes[2] === 0x61 && probeBytes[3] === 0x43) {
+          neededSize = Math.min(file.size, 2 * 1024 * 1024);
+        } else if (probeBytes.length >= 12 && probeBytes[4] === 0x66 && probeBytes[5] === 0x74 && probeBytes[6] === 0x79 && probeBytes[7] === 0x70) {
+          neededSize = Math.min(file.size, 2 * 1024 * 1024);
+        }
+        if (neededSize > probeSize) {
+          headBuf = await file.slice(0, neededSize).arrayBuffer();
+        }
         const meta = await extractEmbeddedMetadata(headBuf, file.name);
+        headBuf = null;
         if ((!meta.title || meta.artist === '未知歌手' || meta.album === '未知专辑') && file.size > 128) {
           try {
             const tailBuf = await file.slice(file.size - 128).arrayBuffer();
@@ -2262,6 +2293,128 @@
           } catch {}
         }
         return meta;
+      }
+
+      function isCapacitorNative() {
+        return Boolean(
+          window.Capacitor &&
+          typeof window.Capacitor.isNativePlatform === 'function' &&
+          window.Capacitor.isNativePlatform() &&
+          window.Capacitor.Plugins &&
+          window.Capacitor.Plugins.Filesystem
+        );
+      }
+
+      async function resolveNativeDocUrl(nativePath) {
+        if (!isCapacitorNative() || !nativePath) return '';
+        try {
+          const Filesystem = window.Capacitor.Plugins.Filesystem;
+          const uriRes = await Filesystem.getUri({ path: nativePath, directory: 'DOCUMENTS' });
+          if (uriRes && uriRes.uri) {
+            return window.Capacitor.convertFileSrc(uriRes.uri);
+          }
+        } catch {}
+        return '';
+      }
+
+      async function scanNativeDocumentsFolder(showFeedback = false) {
+        if (!isCapacitorNative()) return 0;
+        const Filesystem = window.Capacitor.Plugins.Filesystem;
+        let entries = [];
+        try {
+          const res = await Filesystem.readdir({ path: '', directory: 'DOCUMENTS' });
+          entries = (res && res.files) || [];
+        } catch {
+          return 0;
+        }
+
+        const audioExts = /\.(mp3|flac|m4a|wav|ogg|aac)$/i;
+        const lrcMap = new Map();
+        const audioEntries = [];
+
+        for (const item of entries) {
+          const name = typeof item === 'string' ? item : item.name;
+          if (!name || (item.type && item.type === 'directory')) continue;
+          const lower = name.toLowerCase();
+          if (lower.endsWith('.lrc')) {
+            const base = name.replace(/\.lrc$/i, '').trim().toLowerCase();
+            try {
+              const lrcRes = await Filesystem.readFile({ path: name, directory: 'DOCUMENTS', encoding: 'utf8' });
+              if (lrcRes && lrcRes.data) lrcMap.set(base, lrcRes.data);
+            } catch {}
+          } else if (audioExts.test(lower)) {
+            audioEntries.push(name);
+          }
+        }
+
+        // Remove stale native tracks whose files were deleted from the folder
+        const currentNameSet = new Set(audioEntries);
+        for (let i = state.tracks.length - 1; i >= 0; i--) {
+          const trk = state.tracks[i];
+          if (trk.isNativeDoc && !currentNameSet.has(trk.nativePath)) {
+            state.tracks.splice(i, 1);
+            await dbDelete('tracks', trk.id);
+          }
+        }
+
+        let addedCount = 0;
+        for (const fileName of audioEntries) {
+          const baseName = fileName.replace(/\.[^/.]+$/, '').trim().toLowerCase();
+          const externalLrc = lrcMap.get(baseName) || '';
+          const existing = state.tracks.find((t) => t.isNativeDoc && t.nativePath === fileName);
+          if (existing) {
+            if (externalLrc && !existing.lrc) {
+              existing.lrc = externalLrc;
+              await dbPut('tracks', toStorableTrackRecord(existing));
+            }
+            continue;
+          }
+
+          let meta = {
+            title: fileName.replace(/\.[^/.]+$/, '').trim() || '未知曲目',
+            artist: '未知歌手',
+            album: '未知专辑',
+            lrc: '',
+            cover: ''
+          };
+          try {
+            const url = await resolveNativeDocUrl(fileName);
+            if (url) {
+              const resp = await fetch(url, { headers: { Range: 'bytes=0-2097151' } });
+              if (resp.ok || resp.status === 206) {
+                const buf = await resp.arrayBuffer();
+                const sliceBuf = buf.byteLength > 3 * 1024 * 1024 ? buf.slice(0, 3 * 1024 * 1024) : buf;
+                meta = await extractEmbeddedMetadata(sliceBuf, fileName);
+              }
+            }
+          } catch {}
+
+          const trk = {
+            id: `nat_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+            isNativeDoc: true,
+            nativePath: fileName,
+            fileName,
+            title: meta.title,
+            artist: meta.artist,
+            album: meta.album,
+            cover: meta.cover || DEFAULT_APP_COVER,
+            hasEmbeddedCover: Boolean(meta.cover),
+            lrc: externalLrc || meta.lrc || '',
+            duration: 0,
+            addedAt: Date.now()
+          };
+          state.tracks.unshift(trk);
+          await dbPut('tracks', toStorableTrackRecord(trk));
+          addedCount++;
+          await new Promise((r) => setTimeout(r, 15));
+        }
+
+        state.queue = getSortedTracks().map((t) => t.id);
+        renderLibrary();
+        if (showFeedback) {
+          showToast(addedCount > 0 ? `已从 FENG MUSIC 文件夹新增 ${addedCount} 首歌曲` : `扫描完成，当前共 ${audioEntries.length} 首本地歌曲`);
+        }
+        return addedCount;
       }
 
       async function resolveTrackFile(rawTrack, requestPermission = false) {
@@ -2465,6 +2618,29 @@
 
         const discImg = $('np-cover-img-disc');
         discImg.classList.toggle('spin-paused', !playing);
+
+        const steamStatus = $('sidebar-steam-status');
+        const steamDot = $('sidebar-steam-dot');
+        const steamText = $('sidebar-steam-text');
+        if (steamStatus && steamDot && steamText) {
+          const rawCur = state.currentTrackId ? state.tracks.find((t) => t.id === state.currentTrackId) : null;
+          if (rawCur) {
+            const disp = getTrackDisplay(rawCur);
+            if (playing) {
+              steamStatus.className = 'flex items-center gap-1.5 text-[11px] font-medium text-[#a3e635] truncate mt-0.5 cursor-pointer';
+              steamDot.className = 'w-2 h-2 rounded-full bg-[#a3e635] shadow-[0_0_8px_#a3e635] animate-pulse shrink-0';
+              steamText.textContent = `正在播放 · ${disp.title}`;
+            } else {
+              steamStatus.className = 'flex items-center gap-1.5 text-[11px] font-medium text-sky-300/85 truncate mt-0.5 cursor-pointer';
+              steamDot.className = 'w-2 h-2 rounded-full bg-sky-400 shrink-0';
+              steamText.textContent = `已暂停 · ${disp.title}`;
+            }
+          } else {
+            steamStatus.className = 'flex items-center gap-1.5 text-[11px] text-white/50 truncate mt-0.5 cursor-pointer';
+            steamDot.className = 'w-2 h-2 rounded-full bg-white/35 shrink-0';
+            steamText.textContent = '在线 · 等待播放';
+          }
+        }
       }
 
       function recordTrackPlay(trackId) {
@@ -2511,18 +2687,26 @@
         let playableUrl = '';
         if (rawTrack.src) {
           playableUrl = rawTrack.src;
-        } else if (rawTrack.objectUrl) {
-          playableUrl = rawTrack.objectUrl;
+        } else if (rawTrack.isNativeDoc && rawTrack.nativePath) {
+          playableUrl = await resolveNativeDocUrl(rawTrack.nativePath);
+          if (!playableUrl && autoPlay) {
+            showToast('未在 FENG MUSIC 文件夹找到该音频文件');
+            return;
+          }
         } else {
+          if (state.activeObjectUrl) {
+            URL.revokeObjectURL(state.activeObjectUrl);
+            state.activeObjectUrl = null;
+          }
           const resolvedFile = await resolveTrackFile(rawTrack, autoPlay);
           if (resolvedFile) {
-            rawTrack.objectUrl = URL.createObjectURL(resolvedFile);
-            playableUrl = rawTrack.objectUrl;
+            state.activeObjectUrl = URL.createObjectURL(resolvedFile);
+            playableUrl = state.activeObjectUrl;
           } else if (autoPlay) {
             state.pendingRelinkTrackId = rawTrack.id;
             state.isPlaying = false;
             updatePlayStateUI();
-            showToast('请重新定位原音频文件以继续原位播放');
+            showToast('iOS 浏览器重启后需重新选定原文件以授权读取');
             $('relink-file-input').click();
             return;
           }
@@ -2730,7 +2914,7 @@
               </div>
               <div class="min-w-0 flex-1">
                 <div class="text-sm font-semibold truncate ${isCurrent ? 'text-sky-300' : 'text-white'}">${escapeHtml(track.title)}</div>
-                <div class="text-xs text-white/55 truncate mt-0.5">${escapeHtml(track.artist)} · ${escapeHtml(track.album)}</div>
+                <div class="text-xs text-white/55 truncate mt-0.5">${escapeHtml(track.artist)} · ${escapeHtml(track.album)}${(!track.isRemote && !track.isNativeDoc && !track.fileHandle && !track.blob && !sessionFileMap.has(track.id)) ? ' <span class="text-amber-300/90">· 待定位</span>' : ''}</div>
               </div>
             </div>
             <div class="flex items-center gap-1.5 shrink-0">
@@ -3595,7 +3779,11 @@
         { id: 'wind', name: '林间晚风', desc: '穿过树梢的柔和微风声', icon: '🌬️', defaultVol: 50 },
         { id: 'thunder', name: '远方雷鸣', desc: '低沉舒缓的远空雷声回响', icon: '⛈️', defaultVol: 50 },
         { id: 'crickets', name: '夏夜虫鸣', desc: '静谧田野里的轻柔虫鸣', icon: '🦗', defaultVol: 40 },
-        { id: 'cafe', name: '咖啡馆微噪', desc: '温和舒适的室内环境白噪', icon: '☕', defaultVol: 50 }
+        { id: 'cafe', name: '咖啡馆微噪', desc: '温和舒适的室内环境白噪', icon: '☕', defaultVol: 50 },
+        { id: 'stream', name: '山涧溪流', desc: '清澈流动的林间溪水声', icon: '💧', defaultVol: 55 },
+        { id: 'train', name: '绿皮火车', desc: '规律轻摇的铁轨与车厢低鸣', icon: '🚂', defaultVol: 50 },
+        { id: 'blizzard', name: '冬日暴雪', desc: '呼啸而过的寒冷风雪声', icon: '❄️', defaultVol: 45 },
+        { id: 'space', name: '深空嗡鸣', desc: '极简冥想级宇宙低频共振', icon: '🌌', defaultVol: 50 }
       ];
       const wnState = { masterVol: 65, channels: {} };
       WN_CHANNELS.forEach((ch) => {
@@ -3632,6 +3820,25 @@
             const chirp = Math.sin(t * 2 * Math.PI * 4200) * Math.sin(t * 2 * Math.PI * 24) * pulse;
             const bed = (Math.random() * 2 - 1) * 0.008;
             data[i] = chirp * 0.045 + bed;
+          }
+        } else if (channelId === 'train') {
+          let b0 = 0;
+          for (let i = 0; i < len; i++) {
+            const t = i / sr;
+            const beatPhase = (t * 1.65) % 1;
+            const clack = (beatPhase < 0.04 || (beatPhase > 0.14 && beatPhase < 0.18)) ? (Math.random() * 2 - 1) * 0.18 : 0;
+            const w = Math.random() * 2 - 1;
+            b0 = 0.985 * b0 + w * 0.05;
+            data[i] = b0 * 0.18 + clack;
+          }
+        } else if (channelId === 'space') {
+          let b0 = 0;
+          for (let i = 0; i < len; i++) {
+            const t = i / sr;
+            const w = Math.random() * 2 - 1;
+            b0 = 0.992 * b0 + w * 0.03;
+            const drone = Math.sin(t * 2 * Math.PI * 64) * 0.07 + Math.sin(t * 2 * Math.PI * 96) * 0.04 + Math.sin(t * 2 * Math.PI * 128) * 0.025;
+            data[i] = drone + b0 * 0.05;
           }
         } else {
           let b0 = 0, b1 = 0, b2 = 0;
@@ -3670,6 +3877,17 @@
           filter.type = 'bandpass';
           filter.frequency.value = 780;
           filter.Q.value = 0.7;
+        } else if (channelId === 'stream') {
+          filter.type = 'bandpass';
+          filter.frequency.value = 1850;
+          filter.Q.value = 0.5;
+        } else if (channelId === 'blizzard') {
+          filter.type = 'bandpass';
+          filter.frequency.value = 920;
+          filter.Q.value = 1.8;
+        } else if (channelId === 'train' || channelId === 'space') {
+          filter.type = 'lowpass';
+          filter.frequency.value = 340;
         } else {
           filter.type = 'allpass';
         }
@@ -3683,7 +3901,7 @@
         source.start();
 
         let lfo = null;
-        if (channelId === 'ocean' || channelId === 'wind' || channelId === 'thunder') {
+        if (channelId === 'ocean' || channelId === 'wind' || channelId === 'thunder' || channelId === 'blizzard' || channelId === 'stream') {
           lfo = audioCtx.createOscillator();
           const lfoGain = audioCtx.createGain();
           lfo.frequency.value = channelId === 'ocean' ? 0.13 : channelId === 'wind' ? 0.09 : 0.07;
@@ -4301,7 +4519,7 @@
         const raw = state.tracks.find((t) => t.id === state.currentTrackId);
         const track = raw
           ? getTrackDisplay(raw)
-          : { title: 'FENG MUSIC', artist: 'test', cover: DEFAULT_APP_COVER };
+          : { title: 'FENG MUSIC', artist: '私人纯享音乐空间', cover: DEFAULT_APP_COVER };
 
         const canvas = document.createElement('canvas');
         canvas.width = 750;
@@ -4551,7 +4769,6 @@
               hasEmbeddedCover: Boolean(meta.cover),
               lrc: externalLrc || meta.lrc || '',
               duration: 0,
-              objectUrl: URL.createObjectURL(file),
               addedAt: Date.now()
             };
 
@@ -4559,6 +4776,7 @@
             state.tracks.unshift(trackRecord);
             await dbPut('tracks', toStorableTrackRecord(trackRecord));
             importedCount++;
+            await new Promise((r) => setTimeout(r, 15));
           } catch {}
         }
 
@@ -4578,6 +4796,8 @@
 
       async function relinkLocalFiles(fileList) {
         const files = [...(fileList || [])];
+        const pendingId = state.pendingRelinkTrackId;
+        state.pendingRelinkTrackId = null;
         if (!files.length) return;
         let matchedCount = 0;
         for (const trk of state.tracks) {
@@ -4587,15 +4807,12 @@
             files.find((f) => f.name === trk.fileName);
           if (match) {
             sessionFileMap.set(trk.id, match);
-            if (trk.objectUrl) URL.revokeObjectURL(trk.objectUrl);
-            trk.objectUrl = URL.createObjectURL(match);
             matchedCount++;
           }
         }
-        const pendingId = state.pendingRelinkTrackId;
-        state.pendingRelinkTrackId = null;
+        renderLibrary();
         if (matchedCount > 0) {
-          showToast(`已成功关联 ${matchedCount} 个原音频文件`);
+          showToast(`已关联 ${matchedCount} 个原音频文件`);
           if (pendingId && sessionFileMap.has(pendingId)) {
             await loadTrack(pendingId, true);
           }
@@ -4724,6 +4941,12 @@
           on(btn, 'click', openSidebar);
         });
         on('btn-sidebar-collapse', closeSidebar);
+        on('sidebar-steam-status', () => {
+          if (state.currentTrackId) {
+            closeSidebar();
+            openNowPlaying();
+          }
+        });
         on(sidebarBackdrop, 'click', closeSidebar);
 
         // Swipe Left on Sidebar to Collapse
@@ -4748,6 +4971,10 @@
         on('relink-file-input', 'change', async (e) => {
           await relinkLocalFiles(e.target.files);
           e.target.value = '';
+        });
+        on('btn-sidebar-native-scan', async () => {
+          closeSidebar();
+          await scanNativeDocumentsFolder(true);
         });
         on('btn-sidebar-rescan', async () => {
           closeSidebar();
@@ -4973,27 +5200,39 @@
         const syncMiniRimPath = () => {
           const bar = $('mini-player-bar');
           const track = $('mini-progress-track');
+          const glow = $('mini-progress-glow');
           const fill = $('mini-progress-fill');
           if (!bar || !track || !fill) return;
           const w = bar.clientWidth;
           const h = bar.clientHeight;
           if (w < 60 || h < 20) return;
+          const inset = 2;
           const r = Math.min(26, Math.floor(h / 2) - 1);
-          const d = `M 1.5,${r} A ${r - 1.5},${r - 1.5} 0 0 1 ${r},1.5 L ${w - r},1.5 A ${r - 1.5},${r - 1.5} 0 0 1 ${w - 1.5},${r}`;
+          const arcR = Math.max(4, r - inset);
+          const d = `M ${inset},${r} A ${arcR},${arcR} 0 0 1 ${r},${inset} L ${w - r},${inset} A ${arcR},${arcR} 0 0 1 ${w - inset},${r}`;
           track.setAttribute('d', d);
+          if (glow) glow.setAttribute('d', d);
           fill.setAttribute('d', d);
           const len = fill.getTotalLength();
           fill.dataset.totalLen = String(len);
           fill.style.strokeDasharray = `${len}`;
+          if (glow) glow.style.strokeDasharray = `${len}`;
           const curPct = parseFloat(fill.dataset.pct || '0');
-          fill.style.strokeDashoffset = `${len * (1 - curPct / 100)}`;
+          const offset = len * (1 - curPct / 100);
+          fill.style.strokeDashoffset = `${offset}`;
+          if (glow) glow.style.strokeDashoffset = `${offset}`;
         };
         syncMiniRimPath();
         window.addEventListener('resize', syncMiniRimPath);
+        if (typeof ResizeObserver === 'function' && $('mini-player-bar')) {
+          new ResizeObserver(syncMiniRimPath).observe($('mini-player-bar'));
+        }
 
         const setProgressVisual = (pct, secText = null) => {
           const clamped = Math.max(0, Math.min(100, pct));
           const miniFill = $('mini-progress-fill');
+          const miniGlow = $('mini-progress-glow');
+          const miniTip = $('mini-progress-tip');
           if (miniFill) {
             miniFill.dataset.pct = String(clamped);
             let len = parseFloat(miniFill.dataset.totalLen || '0');
@@ -5002,9 +5241,27 @@
               len = parseFloat(miniFill.dataset.totalLen || '0');
             }
             if (len > 0) {
+              const drawn = len * (clamped / 100);
+              const offset = len - drawn;
+              const visible = clamped > 0.2;
               miniFill.style.strokeDasharray = `${len}`;
-              miniFill.style.strokeDashoffset = `${len * (1 - clamped / 100)}`;
-              miniFill.style.opacity = clamped > 0.2 ? '1' : '0';
+              miniFill.style.strokeDashoffset = `${offset}`;
+              miniFill.style.opacity = visible ? '1' : '0';
+              if (miniGlow) {
+                miniGlow.style.strokeDasharray = `${len}`;
+                miniGlow.style.strokeDashoffset = `${offset}`;
+                miniGlow.style.opacity = visible ? '0.62' : '0';
+              }
+              if (miniTip && typeof miniFill.getPointAtLength === 'function') {
+                if (visible) {
+                  const pt = miniFill.getPointAtLength(Math.min(len, Math.max(0, drawn)));
+                  miniTip.setAttribute('cx', pt.x.toFixed(1));
+                  miniTip.setAttribute('cy', pt.y.toFixed(1));
+                  miniTip.style.opacity = '1';
+                } else {
+                  miniTip.style.opacity = '0';
+                }
+              }
             }
           }
           $('np-progress-fill').style.width = `${clamped}%`;
@@ -5147,8 +5404,12 @@
             const map = {
               rainy_read: [['rain', 65], ['thunder', 35], ['vinyl', 30]],
               ocean_zen: [['ocean', 70], ['wind', 40]],
-              winter_fire: [['fireplace', 75], ['wind', 35]],
-              forest_walk: [['wind', 60], ['crickets', 45]]
+              winter_fire: [['fireplace', 75], ['blizzard', 40]],
+              forest_stream: [['stream', 65], ['wind', 40], ['crickets', 35]],
+              midnight_train: [['train', 70], ['rain', 45]],
+              cafe_rain: [['cafe', 60], ['rain', 45], ['vinyl', 25]],
+              deep_space: [['space', 70], ['wind', 30]],
+              storm_night: [['rain', 80], ['thunder', 65], ['wind', 50]]
             };
             (map[preset] || []).forEach(([id, vol]) => {
               wnState.channels[id].vol = vol;
@@ -5604,6 +5865,12 @@
             }
           } catch {
             // Normal when no songs.json is hosted
+          }
+
+          if (isCapacitorNative()) {
+            const nativeScanBtn = $('btn-sidebar-native-scan');
+            if (nativeScanBtn) nativeScanBtn.classList.remove('hidden');
+            await scanNativeDocumentsFolder(false);
           }
 
           applyDiySettings();
