@@ -31,7 +31,7 @@ jobs:
           }
           EOF
           npm init -y
-          npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
+          npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6 @capacitor/filesystem@6
           npx cap add android
           for dir in mipmap-mdpi mipmap-hdpi mipmap-xhdpi mipmap-xxhdpi mipmap-xxxhdpi; do
             mkdir -p "android/app/src/main/res/$dir"
@@ -75,8 +75,16 @@ jobs:
           }
           EOF
           npm init -y
-          npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/ios@6
+          npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/ios@6 @capacitor/filesystem@6
           npx cap add ios
+
+      - name: Configure iOS Files App Sharing & Background Audio
+        run: |
+          PLIST="ios/App/App/Info.plist"
+          /usr/libexec/PlistBuddy -c "Add :UIFileSharingEnabled bool true" "$PLIST" || /usr/libexec/PlistBuddy -c "Set :UIFileSharingEnabled true" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :LSSupportsOpeningDocumentsInPlace bool true" "$PLIST" || /usr/libexec/PlistBuddy -c "Set :LSSupportsOpeningDocumentsInPlace true" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :UIBackgroundModes array" "$PLIST" || true
+          /usr/libexec/PlistBuddy -c "Add :UIBackgroundModes:0 string audio" "$PLIST" || true
 
       - name: Force Replace iOS App Icon
         run: |
