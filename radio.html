@@ -2655,6 +2655,44 @@
         }
       }
 
+      function syncMediaSessionPosition() {
+        if (!('mediaSession' in navigator) || typeof navigator.mediaSession.setPositionState !== 'function') return;
+        try {
+          if (Number.isFinite(audio.duration) && audio.duration > 0) {
+            navigator.mediaSession.setPositionState({
+              duration: audio.duration,
+              playbackRate: audio.playbackRate || 1,
+              position: Math.min(audio.duration, Math.max(0, audio.currentTime || 0))
+            });
+          }
+        } catch {}
+      }
+
+      function syncMediaSessionHandlers() {
+        if (!('mediaSession' in navigator)) return;
+        const ms = navigator.mediaSession;
+        const safeSet = (action, handler) => {
+          try { ms.setActionHandler(action, handler); } catch {}
+        };
+        // Explicitly clear 10s skip handlers so iOS Lock Screen & Dynamic Island show Prev/Next Track
+        safeSet('seekbackward', null);
+        safeSet('seekforward', null);
+        safeSet('play', () => {
+          if (audio.paused) togglePlayPause();
+        });
+        safeSet('pause', () => {
+          if (!audio.paused) togglePlayPause();
+        });
+        safeSet('previoustrack', () => playPrev());
+        safeSet('nexttrack', () => playNext(true));
+        safeSet('seekto', (details) => {
+          if (details && Number.isFinite(details.seekTime)) {
+            audio.currentTime = Math.max(0, Math.min(audio.duration || details.seekTime, details.seekTime));
+            syncMediaSessionPosition();
+          }
+        });
+      }
+
       async function loadTrack(trackId, autoPlay = true, resumeTime = 0) {
         const rawTrack = state.tracks.find((t) => t.id === trackId);
         if (!rawTrack) return;
@@ -2730,6 +2768,8 @@
           if (resumeTime > 0 && resumeTime < audio.duration - 1) {
             audio.currentTime = resumeTime;
           }
+          syncMediaSessionPosition();
+          syncMediaSessionHandlers();
         };
 
         if ('mediaSession' in navigator) {
@@ -2740,6 +2780,7 @@
               album: track.album,
               artwork: [{ src: track.cover, sizes: '512x512', type: 'image/png' }]
             });
+            syncMediaSessionHandlers();
           } catch {
             // Ignore MediaSession errors on older browsers
           }
@@ -5342,14 +5383,28 @@
         audio.addEventListener('play', () => {
           state.isPlaying = true;
           updatePlayStateUI();
+          if ('mediaSession' in navigator) {
+            try { navigator.mediaSession.playbackState = 'playing'; } catch {}
+            syncMediaSessionHandlers();
+            syncMediaSessionPosition();
+          }
         });
         audio.addEventListener('playing', () => {
           state.isPlaying = true;
           updatePlayStateUI();
+          if ('mediaSession' in navigator) {
+            try { navigator.mediaSession.playbackState = 'playing'; } catch {}
+            syncMediaSessionHandlers();
+            syncMediaSessionPosition();
+          }
         });
         audio.addEventListener('pause', () => {
           state.isPlaying = false;
           updatePlayStateUI();
+          if ('mediaSession' in navigator) {
+            try { navigator.mediaSession.playbackState = 'paused'; } catch {}
+            syncMediaSessionPosition();
+          }
         });
         audio.addEventListener('ended', () => {
           state.isPlaying = false;
@@ -5748,17 +5803,8 @@
           }
         });
 
-        // Media Session Controls for iOS Lock Screen & Control Center
-        if ('mediaSession' in navigator) {
-          try {
-            navigator.mediaSession.setActionHandler('play', () => togglePlayPause());
-            navigator.mediaSession.setActionHandler('pause', () => togglePlayPause());
-            navigator.mediaSession.setActionHandler('previoustrack', () => playPrev());
-            navigator.mediaSession.setActionHandler('nexttrack', () => playNext(true));
-          } catch {
-            // Ignore unsupported handlers
-          }
-        }
+        // Media Session Controls for iOS Lock Screen & Dynamic Island
+        syncMediaSessionHandlers();
       }
 
       // =========================================================================
