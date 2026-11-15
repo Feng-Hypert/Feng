@@ -24,6 +24,7 @@
       --aurora-2: #818cf8;
       --aurora-3: #2dd4bf;
       --glass-alpha: 0.11;
+      --song-card-alpha: 0.11;
       --glass-border: 0.18;
       --lyric-font-px: 21px;
       --safe-top: env(safe-area-inset-top, 0px);
@@ -125,6 +126,18 @@
       -webkit-backdrop-filter: blur(28px) saturate(185%);
       border: 1px solid rgba(255, 255, 255, var(--glass-border));
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24), 0 10px 30px rgba(0, 0, 0, 0.28);
+    }
+
+    .song-card-glass {
+      background: linear-gradient(
+        145deg,
+        rgba(255, 255, 255, calc(var(--song-card-alpha) + 0.03)),
+        rgba(255, 255, 255, calc(var(--song-card-alpha) * 0.6))
+      );
+      backdrop-filter: blur(22px) saturate(175%);
+      -webkit-backdrop-filter: blur(22px) saturate(175%);
+      border: 1px solid rgba(255, 255, 255, calc(var(--song-card-alpha) + 0.07));
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 8px 24px rgba(0, 0, 0, 0.22);
     }
 
     .liquid-pill {
@@ -423,6 +436,7 @@
   <input id="bg-home-input" type="file" accept="image/*" class="hidden" />
   <input id="bg-player-input" type="file" accept="image/*" class="hidden" />
   <input id="track-cover-input" type="file" accept="image/*" class="hidden" />
+  <input id="playlist-cover-input" type="file" accept="image/*" class="hidden" />
   <input id="backup-import-input" type="file" accept=".json,application/json" class="hidden" />
 
   <!-- =========================================================================
@@ -671,10 +685,15 @@
             <p id="playlists-subtitle" class="text-xs text-white/55">创建你的专属心情合集</p>
           </div>
         </div>
-        <button id="btn-new-playlist" class="liquid-pill px-3.5 py-2 rounded-full text-xs sm:text-sm font-medium text-white flex items-center gap-1.5 shrink-0">
-          <svg class="w-4 h-4 text-sky-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-          新建歌单
-        </button>
+        <div class="flex items-center gap-2 shrink-0">
+          <button id="btn-playlist-layout-settings" class="liquid-pill w-9 h-9 rounded-full flex items-center justify-center text-white/90" title="歌单卡片外观设置" aria-label="歌单卡片设置">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+          </button>
+          <button id="btn-new-playlist" class="liquid-pill px-3.5 py-2 rounded-full text-xs sm:text-sm font-medium text-white flex items-center gap-1.5 shrink-0">
+            <svg class="w-4 h-4 text-sky-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+            新建歌单
+          </button>
+        </div>
       </header>
       <div id="playlists-grid" class="flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-36 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5 content-start"></div>
     </section>
@@ -888,6 +907,14 @@
               <span id="diy-glass-val" class="tabular-nums">11%</span>
             </div>
             <input id="diy-glass-alpha" type="range" min="4" max="25" value="11" class="feng-slider w-full" />
+          </div>
+
+          <div class="space-y-1.5 pt-2 border-t border-white/10">
+            <div class="flex justify-between text-xs text-white/70">
+              <span>歌曲卡片通透度</span>
+              <span id="diy-song-alpha-val" class="tabular-nums">11%</span>
+            </div>
+            <input id="diy-song-alpha" type="range" min="2" max="30" value="11" class="feng-slider w-full" />
           </div>
         </div>
       </div>
@@ -1431,6 +1458,61 @@
     </div>
   </div>
 
+  <!-- 12. Playlist Card Layout/Size/Shape Sheet -->
+  <div id="sheet-playlist-layout" class="fixed left-0 right-0 bottom-0 z-50 liquid-sheet rounded-t-[32px] translate-y-full transition-transform duration-300 max-w-xl mx-auto p-5 space-y-4" style="padding-bottom: calc(var(--safe-bottom) + 22px);">
+    <div class="w-10 h-1 rounded-full bg-white/25 mx-auto"></div>
+    <div class="flex items-center justify-between">
+      <h3 class="text-base font-bold text-white">歌单卡片设置</h3>
+      <button class="btn-close-sheets text-xs text-white/65 hover:text-white px-2.5 py-1 rounded-full bg-white/10">关闭</button>
+    </div>
+
+    <div class="space-y-2">
+      <div class="text-xs text-white/70">摆放方式</div>
+      <div class="grid grid-cols-2 gap-2">
+        <button data-pl-layout="grid" class="pl-layout-btn py-2.5 rounded-xl text-xs font-medium bg-white/20 text-white">网格排列</button>
+        <button data-pl-layout="list" class="pl-layout-btn py-2.5 rounded-xl text-xs font-medium bg-white/8 text-white/75">列表排列</button>
+      </div>
+    </div>
+
+    <div class="space-y-2">
+      <div class="text-xs text-white/70">卡片大小</div>
+      <div class="grid grid-cols-3 gap-2">
+        <button data-pl-size="sm" class="pl-size-btn py-2.5 rounded-xl text-xs font-medium bg-white/8 text-white/75">小巧</button>
+        <button data-pl-size="md" class="pl-size-btn py-2.5 rounded-xl text-xs font-medium bg-white/20 text-white">适中</button>
+        <button data-pl-size="lg" class="pl-size-btn py-2.5 rounded-xl text-xs font-medium bg-white/8 text-white/75">大卡片</button>
+      </div>
+    </div>
+
+    <div class="space-y-2">
+      <div class="text-xs text-white/70">卡片形状</div>
+      <div class="grid grid-cols-3 gap-2">
+        <button data-pl-shape="rounded" class="pl-shape-btn py-2.5 rounded-xl text-xs font-medium bg-white/20 text-white">圆角矩形</button>
+        <button data-pl-shape="square" class="pl-shape-btn py-2.5 rounded-xl text-xs font-medium bg-white/8 text-white/75">直角方形</button>
+        <button data-pl-shape="circle" class="pl-shape-btn py-2.5 rounded-xl text-xs font-medium bg-white/8 text-white/75">圆形封面</button>
+      </div>
+    </div>
+    <p class="text-[11px] text-white/45 text-center pt-1">提示：长按任意歌单卡片可修改名称与自定义封面</p>
+  </div>
+
+  <!-- 13. Edit Playlist Name & Custom Cover Modal (Long-Press) -->
+  <div id="modal-edit-playlist" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-4">
+    <div class="liquid-sheet rounded-3xl w-full max-w-sm p-5 space-y-4 border border-white/20">
+      <h3 class="text-base font-bold text-white">编辑歌单信息</h3>
+      <div class="flex items-center gap-3">
+        <img id="edit-pl-cover-preview" src="" alt="" class="w-16 h-16 rounded-2xl object-cover bg-white/10 shrink-0" />
+        <div class="flex flex-col gap-2">
+          <button id="btn-edit-pl-cover" class="liquid-pill px-3.5 py-1.5 rounded-xl text-xs font-medium text-white">更换封面图片</button>
+          <button id="btn-edit-pl-cover-reset" class="px-3.5 py-1.5 rounded-xl bg-white/8 hover:bg-white/15 text-[11px] text-white/70">恢复默认封面</button>
+        </div>
+      </div>
+      <input id="input-edit-pl-name" type="text" placeholder="歌单名称" class="w-full px-3.5 py-2.5 rounded-xl bg-white/10 border border-white/15 text-sm text-white outline-none focus:border-sky-400" />
+      <div class="flex gap-2.5">
+        <button id="btn-edit-pl-cancel" class="flex-1 py-2.5 rounded-2xl bg-white/10 text-sm font-medium text-white/80">取消</button>
+        <button id="btn-edit-pl-save" class="flex-1 py-2.5 rounded-2xl bg-sky-500 text-sm font-semibold text-zinc-950">保存</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Banner -->
   <div id="toast-banner" class="fixed left-1/2 -translate-x-1/2 z-[70] px-4 py-2.5 rounded-full liquid-dock text-xs font-medium text-white opacity-0 pointer-events-none transition-all duration-300 whitespace-nowrap" style="top: calc(var(--safe-top) + 14px);">
     提示信息
@@ -1491,7 +1573,11 @@
           waveStyle: 'bars', // 'bars' | 'wave' | 'pulse'
           playerEffect: 'sparks', // 'sparks' | 'snow' | 'fireflies' | 'petals' | 'off'
           lyricFontSize: 21,
-          glassAlpha: 11
+          glassAlpha: 11,
+          songCardAlpha: 11,
+          playlistLayout: 'grid',
+          playlistCardSize: 'md',
+          playlistCardShape: 'rounded'
         },
         parsedLyrics: [],
         activeLyricIdx: -1,
@@ -1613,7 +1699,11 @@
             waveStyle: state.diy.waveStyle,
             playerEffect: state.diy.playerEffect,
             lyricFontSize: state.diy.lyricFontSize,
-            glassAlpha: state.diy.glassAlpha
+            glassAlpha: state.diy.glassAlpha,
+            songCardAlpha: state.diy.songCardAlpha,
+            playlistLayout: state.diy.playlistLayout,
+            playlistCardSize: state.diy.playlistCardSize,
+            playlistCardShape: state.diy.playlistCardShape
           }
         };
         await dbPut('kv', payload);
@@ -2579,7 +2669,8 @@
       // PLAYBACK ENGINE, QUEUE & RECORDING STATS
       // =========================================================================
       function updatePlayStateUI() {
-        const playing = Boolean(state.isPlaying);
+        const playing = Boolean(state.currentTrackId && audio && !audio.paused && !audio.ended);
+        state.isPlaying = playing;
         const miniPlay = $('icon-mini-play');
         const miniPause = $('icon-mini-pause');
         const npPlay = $('icon-np-play');
@@ -2941,7 +3032,7 @@
       function buildSongRowHtml(track, indexLabel = '', extraActionHtml = '') {
         const isCurrent = track.id === state.currentTrackId;
         return `
-          <div data-track-id="${track.id}" class="song-row liquid-panel rounded-2xl p-2.5 flex items-center justify-between gap-3 cursor-pointer transition hover:bg-white/15 ${isCurrent ? 'ring-1 ring-sky-400/65 bg-sky-500/15' : ''}">
+          <div data-track-id="${track.id}" class="song-row song-card-glass rounded-2xl p-2.5 flex items-center justify-between gap-3 cursor-pointer transition hover:bg-white/15 ${isCurrent ? 'ring-1 ring-sky-400/65 bg-sky-500/15' : ''}">
             <div class="flex items-center gap-3 min-w-0 flex-1">
               <div class="relative w-12 h-12 rounded-xl overflow-hidden bg-white/10 shrink-0">
                 <img src="${track.cover}" alt="" class="w-full h-full object-cover" />
@@ -3104,10 +3195,69 @@
         switchView('group-detail');
       }
 
+      function openEditPlaylistModal(playlistId) {
+        const pl = state.playlists.find((p) => p.id === playlistId);
+        if (!pl) return;
+        state.editingPlaylistId = playlistId;
+        const validTracks = (pl.trackIds || [])
+          .map((id) => state.tracks.find((t) => t.id === id))
+          .filter(Boolean)
+          .map(getTrackDisplay);
+        const fallbackCover = pl.cover || validTracks[0]?.cover || DEFAULT_APP_COVER;
+        $('edit-pl-cover-preview').src = fallbackCover;
+        $('edit-pl-cover-preview').dataset.pendingCover = pl.cover || '';
+        $('input-edit-pl-name').value = pl.name || '';
+        openCenteredModal('modal-edit-playlist');
+      }
+
+      function applyPlaylistLayoutUI() {
+        const layout = state.diy.playlistLayout || 'grid';
+        const size = state.diy.playlistCardSize || 'md';
+        const shape = state.diy.playlistCardShape || 'rounded';
+
+        document.querySelectorAll('.pl-layout-btn').forEach((b) => {
+          const active = b.dataset.plLayout === layout;
+          b.classList.toggle('bg-white/20', active);
+          b.classList.toggle('text-white', active);
+          b.classList.toggle('bg-white/8', !active);
+          b.classList.toggle('text-white/75', !active);
+        });
+        document.querySelectorAll('.pl-size-btn').forEach((b) => {
+          const active = b.dataset.plSize === size;
+          b.classList.toggle('bg-white/20', active);
+          b.classList.toggle('text-white', active);
+          b.classList.toggle('bg-white/8', !active);
+          b.classList.toggle('text-white/75', !active);
+        });
+        document.querySelectorAll('.pl-shape-btn').forEach((b) => {
+          const active = b.dataset.plShape === shape;
+          b.classList.toggle('bg-white/20', active);
+          b.classList.toggle('text-white', active);
+          b.classList.toggle('bg-white/8', !active);
+          b.classList.toggle('text-white/75', !active);
+        });
+      }
+
       function renderPlaylists() {
         updateSidebarBadges();
-        $('playlists-subtitle').textContent = `共 ${state.playlists.length} 个歌单`;
+        applyPlaylistLayoutUI();
+        $('playlists-subtitle').textContent = `共 ${state.playlists.length} 个歌单 · 长按卡片可编辑`;
         const grid = $('playlists-grid');
+
+        const layout = state.diy.playlistLayout || 'grid';
+        const size = state.diy.playlistCardSize || 'md';
+        const shape = state.diy.playlistCardShape || 'rounded';
+
+        const gridColsClass =
+          layout === 'list'
+            ? 'grid-cols-1 gap-2.5'
+            : size === 'sm'
+            ? 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2.5'
+            : size === 'lg'
+            ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4'
+            : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5';
+
+        grid.className = `flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-36 grid ${gridColsClass} content-start`;
 
         if (!state.playlists.length) {
           grid.innerHTML = `
@@ -3118,6 +3268,9 @@
           return;
         }
 
+        const shapeClass = shape === 'square' ? 'rounded-none' : shape === 'circle' ? 'rounded-full' : 'rounded-2xl';
+        const listImgSize = size === 'sm' ? 'w-12 h-12' : size === 'lg' ? 'w-20 h-20' : 'w-14 h-14';
+
         grid.innerHTML = state.playlists
           .map((pl) => {
             const validTracks = (pl.trackIds || [])
@@ -3125,20 +3278,39 @@
               .filter(Boolean)
               .map(getTrackDisplay);
             const covers = validTracks.slice(0, 4).map((t) => t.cover);
-            let mosaicHtml = '';
-            if (covers.length >= 4) {
-              mosaicHtml = `<div class="w-full aspect-square rounded-2xl overflow-hidden grid grid-cols-2 grid-rows-2 gap-0.5 bg-white/10">
-                ${covers.map((c) => `<img src="${c}" alt="" class="w-full h-full object-cover" />`).join('')}
-              </div>`;
-            } else {
+
+            const renderCover = (sizeCls) => {
+              if (pl.cover) {
+                return `<img src="${pl.cover}" alt="" class="${sizeCls} ${shapeClass} object-cover bg-white/10 shrink-0" />`;
+              }
+              if (covers.length >= 4 && shape !== 'circle') {
+                return `<div class="${sizeCls} ${shapeClass} overflow-hidden grid grid-cols-2 grid-rows-2 gap-0.5 bg-white/10 shrink-0">
+                  ${covers.map((c) => `<img src="${c}" alt="" class="w-full h-full object-cover" />`).join('')}
+                </div>`;
+              }
               const singleCover = covers[0] || DEFAULT_APP_COVER;
-              mosaicHtml = `<img src="${singleCover}" alt="" class="w-full aspect-square rounded-2xl object-cover bg-white/10" />`;
+              return `<img src="${singleCover}" alt="" class="${sizeCls} ${shapeClass} object-cover bg-white/10 shrink-0" />`;
+            };
+
+            if (layout === 'list') {
+              return `
+                <div data-playlist-id="${pl.id}" class="playlist-card liquid-panel rounded-3xl p-3 flex items-center justify-between gap-3 cursor-pointer active:scale-[0.985] transition select-none">
+                  <div class="flex items-center gap-3 min-w-0 flex-1">
+                    ${renderCover(listImgSize)}
+                    <div class="min-w-0 flex-1">
+                      <div class="text-sm font-bold text-white truncate">${escapeHtml(pl.name)}</div>
+                      <div class="text-xs text-white/55 mt-0.5">${validTracks.length} 首歌曲</div>
+                    </div>
+                  </div>
+                  <svg class="w-4 h-4 text-white/40 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                </div>`;
             }
+
             return `
-              <div data-playlist-id="${pl.id}" class="playlist-card liquid-panel rounded-3xl p-3 space-y-2.5 cursor-pointer active:scale-[0.98] transition">
-                ${mosaicHtml}
+              <div data-playlist-id="${pl.id}" class="playlist-card liquid-panel ${shape === 'circle' ? 'rounded-3xl text-center' : 'rounded-3xl'} ${size === 'sm' ? 'p-2' : 'p-3'} space-y-2 cursor-pointer active:scale-[0.98] transition select-none">
+                ${renderCover('w-full aspect-square')}
                 <div class="px-0.5">
-                  <div class="text-xs sm:text-sm font-bold text-white truncate">${escapeHtml(pl.name)}</div>
+                  <div class="${size === 'sm' ? 'text-[11px]' : 'text-xs sm:text-sm'} font-bold text-white truncate">${escapeHtml(pl.name)}</div>
                   <div class="text-[11px] text-white/55 mt-0.5">${validTracks.length} 首歌曲</div>
                 </div>
               </div>`;
@@ -3146,7 +3318,63 @@
           .join('');
 
         grid.querySelectorAll('.playlist-card').forEach((card) => {
-          on(card, 'click', () => openPlaylistDetail(card.dataset.playlistId));
+          const plId = card.dataset.playlistId;
+          let pressTimer = null;
+          let longPressed = false;
+          let startX = 0;
+          let startY = 0;
+
+          const cancelPress = () => {
+            clearTimeout(pressTimer);
+            pressTimer = null;
+          };
+
+          on(card, 'touchstart', (e) => {
+            longPressed = false;
+            const t = e.touches[0];
+            startX = t.clientX;
+            startY = t.clientY;
+            pressTimer = setTimeout(() => {
+              longPressed = true;
+              openEditPlaylistModal(plId);
+            }, 480);
+          }, { passive: true });
+
+          on(card, 'touchmove', (e) => {
+            if (!pressTimer) return;
+            const t = e.touches[0];
+            if (Math.abs(t.clientX - startX) > 10 || Math.abs(t.clientY - startY) > 10) {
+              cancelPress();
+            }
+          }, { passive: true });
+
+          on(card, 'touchend', cancelPress);
+          on(card, 'touchcancel', cancelPress);
+
+          on(card, 'mousedown', (e) => {
+            if (e.button !== 0) return;
+            longPressed = false;
+            pressTimer = setTimeout(() => {
+              longPressed = true;
+              openEditPlaylistModal(plId);
+            }, 480);
+          });
+          on(card, 'mouseup', cancelPress);
+          on(card, 'mouseleave', cancelPress);
+
+          on(card, 'contextmenu', (e) => {
+            e.preventDefault();
+            cancelPress();
+            openEditPlaylistModal(plId);
+          });
+
+          on(card, 'click', () => {
+            if (longPressed) {
+              longPressed = false;
+              return;
+            }
+            openPlaylistDetail(plId);
+          });
         });
       }
 
@@ -3433,6 +3661,12 @@
         document.documentElement.style.setProperty('--glass-border', borderAlpha);
         $('diy-glass-alpha').value = d.glassAlpha;
         $('diy-glass-val').textContent = `${d.glassAlpha}%`;
+
+        const songAlphaVal = d.songCardAlpha ?? 11;
+        document.documentElement.style.setProperty('--song-card-alpha', (songAlphaVal / 100).toFixed(2));
+        $('diy-song-alpha').value = songAlphaVal;
+        $('diy-song-alpha-val').textContent = `${songAlphaVal}%`;
+        applyPlaylistLayoutUI();
         updatePlayerEffectButtons();
       }
 
@@ -4221,7 +4455,7 @@
       // =========================================================================
       function closeAllBottomSheets() {
         modalBackdrop.classList.add('opacity-0', 'pointer-events-none');
-        ['sheet-np-settings', 'sheet-track-actions', 'sheet-queue', 'sheet-pick-playlist'].forEach((id) => {
+        ['sheet-np-settings', 'sheet-track-actions', 'sheet-queue', 'sheet-pick-playlist', 'sheet-playlist-layout'].forEach((id) => {
           const el = $(id);
           if (el) el.classList.add('translate-y-full');
         });
@@ -4232,7 +4466,8 @@
           'modal-edit-lrc',
           'modal-poster',
           'modal-backup-guide',
-          'modal-fortune'
+          'modal-fortune',
+          'modal-edit-playlist'
         ].forEach((id) => {
           const el = $(id);
           if (el) el.classList.add('hidden');
@@ -5780,6 +6015,88 @@
         });
         on('diy-glass-alpha', 'change', saveAppState);
 
+        on('diy-song-alpha', 'input', (e) => {
+          state.diy.songCardAlpha = Number(e.target.value);
+          applyDiySettings();
+        });
+        on('diy-song-alpha', 'change', saveAppState);
+
+        // Playlist Card Layout / Size / Shape Controls
+        on('btn-playlist-layout-settings', () => {
+          applyPlaylistLayoutUI();
+          openBottomSheet('sheet-playlist-layout');
+        });
+        document.querySelectorAll('.pl-layout-btn').forEach((btn) => {
+          on(btn, 'click', async () => {
+            state.diy.playlistLayout = btn.dataset.plLayout;
+            renderPlaylists();
+            await saveAppState();
+          });
+        });
+        document.querySelectorAll('.pl-size-btn').forEach((btn) => {
+          on(btn, 'click', async () => {
+            state.diy.playlistCardSize = btn.dataset.plSize;
+            renderPlaylists();
+            await saveAppState();
+          });
+        });
+        document.querySelectorAll('.pl-shape-btn').forEach((btn) => {
+          on(btn, 'click', async () => {
+            state.diy.playlistCardShape = btn.dataset.plShape;
+            renderPlaylists();
+            await saveAppState();
+          });
+        });
+
+        // Edit Playlist Name & Custom Cover Modal
+        on('btn-edit-pl-cover', () => $('playlist-cover-input').click());
+        on('playlist-cover-input', 'change', (e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          const url = URL.createObjectURL(file);
+          const img = new Image();
+          img.onload = () => {
+            const maxDim = 360;
+            let w = img.naturalWidth || 360;
+            let h = img.naturalHeight || 360;
+            if (w > maxDim || h > maxDim) {
+              const ratio = Math.min(maxDim / w, maxDim / h);
+              w = Math.round(w * ratio);
+              h = Math.round(h * ratio);
+            }
+            const c = document.createElement('canvas');
+            c.width = w;
+            c.height = h;
+            c.getContext('2d').drawImage(img, 0, 0, w, h);
+            const dataUrl = c.toDataURL('image/jpeg', 0.8);
+            URL.revokeObjectURL(url);
+            $('edit-pl-cover-preview').src = dataUrl;
+            $('edit-pl-cover-preview').dataset.pendingCover = dataUrl;
+          };
+          img.onerror = () => URL.revokeObjectURL(url);
+          img.src = url;
+          e.target.value = '';
+        });
+        on('btn-edit-pl-cover-reset', () => {
+          $('edit-pl-cover-preview').src = DEFAULT_APP_COVER;
+          $('edit-pl-cover-preview').dataset.pendingCover = '';
+        });
+        on('btn-edit-pl-cancel', closeAllBottomSheets);
+        on('btn-edit-pl-save', async () => {
+          const pl = state.playlists.find((p) => p.id === state.editingPlaylistId);
+          if (!pl) return;
+          const nextName = $('input-edit-pl-name').value.trim();
+          if (!nextName) return showToast('请输入歌单名称');
+          pl.name = nextName;
+          const pendingCover = $('edit-pl-cover-preview').dataset.pendingCover;
+          if (pendingCover) pl.cover = pendingCover;
+          else delete pl.cover;
+          await saveAppState();
+          closeAllBottomSheets();
+          renderPlaylists();
+          showToast('歌单信息已更新');
+        });
+
         // Global Backdrop & Centered Modal Outside-Click & Escape Key
         on(modalBackdrop, 'click', closeAllBottomSheets);
         [
@@ -5789,7 +6106,8 @@
           'modal-edit-lrc',
           'modal-poster',
           'modal-backup-guide',
-          'modal-fortune'
+          'modal-fortune',
+          'modal-edit-playlist'
         ].forEach((modalId) => {
           const modalEl = $(modalId);
           on(modalEl, 'click', (e) => {
