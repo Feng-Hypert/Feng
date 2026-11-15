@@ -291,6 +291,102 @@
       color: #09090b !important;
     }
 
+    /* Play/Pause Button Icon Contrast & Visibility Guarantee */
+    .play-toggle-btn {
+      background-color: #ffffff;
+      color: #09090b;
+    }
+    .play-toggle-btn svg {
+      color: #09090b;
+      fill: currentColor;
+    }
+
+    /* Personalized Aurora Progress Bar */
+    .np-progress-wrap {
+      position: relative;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      touch-action: none;
+    }
+    .np-progress-rail {
+      position: relative;
+      width: 100%;
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.14);
+      overflow: visible;
+      transition: height 0.2s cubic-bezier(0.22, 1, 0.36, 1), background 0.2s ease;
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
+    }
+    .np-progress-wrap:hover .np-progress-rail,
+    .np-progress-wrap.is-seeking .np-progress-rail {
+      height: 9px;
+      background: rgba(255, 255, 255, 0.2);
+    }
+    .np-progress-fill {
+      position: relative;
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--aurora-1), var(--aurora-2), var(--aurora-3), #ffffff);
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.55);
+      transition: width 0.08s linear;
+    }
+    .np-progress-thumb {
+      position: absolute;
+      top: 50%;
+      left: 0%;
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      background: #ffffff;
+      transform: translate(-50%, -50%) scale(0.9);
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.22), 0 2px 10px rgba(0, 0, 0, 0.55);
+      transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s ease;
+      pointer-events: none;
+    }
+    .np-progress-wrap.is-playing .np-progress-thumb {
+      box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.28), 0 0 14px rgba(255, 255, 255, 0.75);
+    }
+    .np-progress-wrap.is-seeking .np-progress-thumb {
+      transform: translate(-50%, -50%) scale(1.28);
+      box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.26), 0 0 18px rgba(255, 255, 255, 0.9);
+    }
+    .np-seek-tooltip {
+      position: absolute;
+      bottom: 24px;
+      left: 0%;
+      transform: translateX(-50%) translateY(4px);
+      padding: 3px 9px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.88);
+      border: 1px solid rgba(255, 255, 255, 0.24);
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.18s ease, transform 0.18s ease;
+      white-space: nowrap;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
+    }
+    .np-progress-wrap.is-seeking .np-seek-tooltip {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    #np-progress-slider {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+      margin: 0;
+      z-index: 5;
+    }
+
     /* Custom Sliders */
     input[type="range"].feng-slider {
       -webkit-appearance: none;
@@ -412,6 +508,14 @@
             <svg class="w-4 h-4 text-rose-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
             听歌足迹
           </span>
+        </button>
+
+        <button data-nav="whitenoise" class="sidebar-nav-btn flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-sm font-medium text-white/75 hover:bg-white/10 transition">
+          <span class="flex items-center gap-3">
+            <svg class="w-4 h-4 text-teal-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/></svg>
+            白噪音
+          </span>
+          <span id="sidebar-wn-badge" class="hidden px-1.5 py-0.5 rounded-full bg-teal-400/25 text-[10px] font-semibold text-teal-200 tabular-nums">0</span>
         </button>
 
         <button data-nav="diy" class="sidebar-nav-btn flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-sm font-medium text-white/75 hover:bg-white/10 transition">
@@ -781,15 +885,63 @@
       </div>
     </section>
 
+    <!-- ==================== VIEW 10: WHITE NOISE (白噪音空间) ==================== -->
+    <section id="view-whitenoise" class="app-view hidden flex-1 flex flex-col overflow-hidden">
+      <header class="px-4 sm:px-6 pb-3 flex items-center justify-between gap-3 shrink-0" style="padding-top: calc(var(--safe-top) + 12px);">
+        <div class="flex items-center gap-3">
+          <button class="btn-open-sidebar w-10 h-10 rounded-2xl liquid-pill flex items-center justify-center text-white shrink-0">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M4 12h16M4 17h10" /></svg>
+          </button>
+          <div>
+            <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-white">白噪音空间</h1>
+            <p id="wn-subtitle" class="text-xs text-white/55">自由叠加多种自然声景，伴随音乐或独立专注</p>
+          </div>
+        </div>
+        <button id="btn-wn-stop-all" class="liquid-pill px-3.5 py-2 rounded-full text-xs font-medium text-rose-200 shrink-0">全部静音</button>
+      </header>
+
+      <div class="px-4 sm:px-6 pb-3 space-y-3 shrink-0">
+        <div class="flex items-center gap-2 overflow-x-auto no-scrollbar">
+          <button data-wn-preset="rainy_read" class="wn-preset-btn liquid-pill px-3.5 py-1.5 rounded-full text-xs font-medium text-white shrink-0">🌧️ 雨夜读书</button>
+          <button data-wn-preset="ocean_zen" class="wn-preset-btn liquid-pill px-3.5 py-1.5 rounded-full text-xs font-medium text-white shrink-0">🌊 海边冥想</button>
+          <button data-wn-preset="winter_fire" class="wn-preset-btn liquid-pill px-3.5 py-1.5 rounded-full text-xs font-medium text-white shrink-0">🔥 冬夜壁炉</button>
+          <button data-wn-preset="forest_walk" class="wn-preset-btn liquid-pill px-3.5 py-1.5 rounded-full text-xs font-medium text-white shrink-0">🌲 林间夜风</button>
+        </div>
+        <div class="liquid-panel rounded-2xl px-4 py-2.5 flex items-center gap-3">
+          <span class="text-xs font-medium text-white/75 shrink-0">总音量</span>
+          <input id="wn-master-vol" type="range" min="0" max="100" value="65" class="feng-slider flex-1" />
+          <span id="wn-master-val" class="text-xs text-sky-300 tabular-nums w-9 text-right">65%</span>
+        </div>
+      </div>
+
+      <div id="wn-channels-grid" class="flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-36 grid grid-cols-1 sm:grid-cols-2 gap-3 content-start"></div>
+    </section>
+
     <!-- =========================================================================
          FLOATING LIQUID GLASS CAPSULE DOCK MINI-PLAYER
          ========================================================================= -->
     <div id="mini-player-wrapper" class="fixed left-0 right-0 z-30 px-3.5 sm:px-6 pointer-events-none" style="bottom: calc(var(--safe-bottom) + 10px);">
-      <div id="mini-player-bar" class="liquid-dock pointer-events-auto max-w-2xl mx-auto rounded-[26px] overflow-hidden cursor-pointer transition-transform duration-200 active:scale-[0.985]">
-        <!-- Thin Top Specular Progress Line -->
-        <div class="w-full h-[2.5px] bg-white/12">
-          <div id="mini-progress-fill" class="h-full bg-gradient-to-r from-sky-300 via-white to-teal-300 w-0 transition-[width] duration-150"></div>
-        </div>
+      <div id="mini-player-bar" class="liquid-dock relative pointer-events-auto max-w-2xl mx-auto rounded-[26px] overflow-hidden cursor-pointer transition-transform duration-200 active:scale-[0.985]">
+        <!-- Liquid Glass Specular Rim Progress Bar (Wraps smoothly from left arc to right arc) -->
+        <svg id="mini-progress-svg" class="absolute inset-0 w-full h-full pointer-events-none z-20" aria-hidden="true">
+          <defs>
+            <linearGradient id="mini-glass-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="rgba(255,255,255,0.55)" />
+              <stop offset="35%" stop-color="var(--aurora-1, #38bdf8)" />
+              <stop offset="70%" stop-color="#ffffff" />
+              <stop offset="100%" stop-color="var(--aurora-3, #2dd4bf)" />
+            </linearGradient>
+            <filter id="mini-glass-glow" x="-10%" y="-40%" width="120%" height="180%">
+              <feGaussianBlur stdDeviation="2" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+          <path id="mini-progress-track" fill="none" stroke="rgba(255,255,255,0.16)" stroke-width="2" stroke-linecap="round" />
+          <path id="mini-progress-fill" fill="none" stroke="url(#mini-glass-grad)" stroke-width="2.5" stroke-linecap="round" filter="url(#mini-glass-glow)" style="opacity:0; transition: stroke-dashoffset 0.15s linear, opacity 0.2s ease;" />
+        </svg>
         <div class="px-3 py-2.5 flex items-center justify-between gap-3">
           <div class="flex items-center gap-3 min-w-0 flex-1">
             <img id="mini-cover" src="" alt="" class="w-11 h-11 rounded-2xl object-cover bg-white/10 shrink-0 shadow-md" />
@@ -799,7 +951,7 @@
             </div>
           </div>
           <div class="flex items-center gap-1.5 shrink-0">
-            <button id="btn-mini-play" class="w-10 h-10 rounded-full bg-white text-zinc-950 flex items-center justify-center shadow-md active:scale-90 transition" aria-label="播放/暂停">
+            <button id="btn-mini-play" class="play-toggle-btn w-10 h-10 rounded-full bg-white text-zinc-950 flex items-center justify-center shadow-md active:scale-90 transition" aria-label="播放/暂停">
               <svg id="icon-mini-play" class="w-5 h-5 translate-x-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
               <svg id="icon-mini-pause" class="w-5 h-5 hidden" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
             </button>
@@ -832,6 +984,9 @@
       </div>
       <div class="absolute inset-0 bg-gradient-to-b from-black/30 via-black/15 to-black/55"></div>
     </div>
+
+    <!-- Ambient Playback Particle Canvas (Sparks, Snowflakes, Fireflies, Petals) -->
+    <canvas id="np-particles-canvas" class="absolute inset-0 z-[1] w-full h-full pointer-events-none opacity-0 transition-opacity duration-700" aria-hidden="true"></canvas>
 
     <!-- Top Navigation Bar: Collapse | 封面/歌词 Switcher | 设置 Gear -->
     <header class="relative z-10 px-4 sm:px-6 pb-2 flex items-center justify-between shrink-0" style="padding-top: calc(var(--safe-top) + 10px);">
@@ -917,9 +1072,16 @@
           </button>
         </div>
 
-        <div class="space-y-1.5">
-          <input id="np-progress-slider" type="range" min="0" max="1000" value="0" class="feng-slider w-full" />
-          <div class="flex justify-between text-[11px] font-medium text-white/55 tabular-nums">
+        <div class="space-y-1">
+          <div id="np-progress-wrap" class="np-progress-wrap">
+            <div class="np-progress-rail">
+              <div id="np-progress-fill" class="np-progress-fill"></div>
+              <div id="np-progress-thumb" class="np-progress-thumb"></div>
+            </div>
+            <div id="np-seek-tooltip" class="np-seek-tooltip">00:00</div>
+            <input id="np-progress-slider" type="range" min="0" max="1000" value="0" aria-label="播放进度" />
+          </div>
+          <div class="flex justify-between text-[11px] font-medium text-white/60 tabular-nums">
             <span id="np-time-current">00:00</span>
             <span id="np-time-duration">00:00</span>
           </div>
@@ -932,7 +1094,7 @@
             <svg class="w-7 h-7" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
           </button>
 
-          <button id="btn-np-play" class="w-16 h-16 rounded-full bg-white text-zinc-950 flex items-center justify-center shadow-xl shadow-black/40 active:scale-92 transition" aria-label="播放/暂停">
+          <button id="btn-np-play" class="play-toggle-btn w-16 h-16 rounded-full bg-white text-zinc-950 flex items-center justify-center shadow-xl shadow-black/40 active:scale-95 transition" aria-label="播放/暂停">
             <svg id="icon-np-play" class="w-8 h-8 translate-x-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
             <svg id="icon-np-pause" class="w-8 h-8 hidden" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
           </button>
@@ -1017,21 +1179,18 @@
       </div>
     </div>
 
-    <!-- Ambient Soundscape Mixer (White Noise / Vinyl Crackle Overlay) -->
+    <!-- Playback Dynamic Particle Effects -->
     <div class="space-y-2">
       <div class="flex justify-between text-xs text-white/70">
-        <span>氛围背景音叠加（白噪音 / 黑胶底噪）</span>
-        <span id="ambient-sound-status" class="text-amber-300 font-medium">关闭</span>
+        <span>播放动态特效</span>
+        <span id="player-effect-status" class="text-sky-300 font-medium">星星之火</span>
       </div>
-      <div class="grid grid-cols-4 gap-2">
-        <button data-ambient="off" class="ambient-opt-btn py-2 rounded-xl text-xs font-medium bg-white/20 text-white">关闭</button>
-        <button data-ambient="vinyl" class="ambient-opt-btn py-2 rounded-xl text-xs font-medium bg-white/8 text-white/75">黑胶底噪</button>
-        <button data-ambient="rain" class="ambient-opt-btn py-2 rounded-xl text-xs font-medium bg-white/8 text-white/75">窗边细雨</button>
-        <button data-ambient="ocean" class="ambient-opt-btn py-2 rounded-xl text-xs font-medium bg-white/8 text-white/75">深夜海浪</button>
-      </div>
-      <div id="ambient-vol-row" class="hidden pt-1 flex items-center gap-3">
-        <span class="text-[11px] text-white/55 shrink-0">氛围音量</span>
-        <input id="ambient-vol-slider" type="range" min="5" max="80" value="32" class="feng-slider flex-1" />
+      <div class="grid grid-cols-5 gap-1.5">
+        <button data-effect="sparks" class="effect-opt-btn py-2 rounded-xl text-[11px] font-medium bg-white/20 text-white">星星之火</button>
+        <button data-effect="snow" class="effect-opt-btn py-2 rounded-xl text-[11px] font-medium bg-white/8 text-white/75">冬日飘雪</button>
+        <button data-effect="fireflies" class="effect-opt-btn py-2 rounded-xl text-[11px] font-medium bg-white/8 text-white/75">流光萤火</button>
+        <button data-effect="petals" class="effect-opt-btn py-2 rounded-xl text-[11px] font-medium bg-white/8 text-white/75">夜樱花瓣</button>
+        <button data-effect="off" class="effect-opt-btn py-2 rounded-xl text-[11px] font-medium bg-white/8 text-white/75">关闭</button>
       </div>
     </div>
 
@@ -1316,6 +1475,7 @@
           coverStyle: 'rounded', // 'rounded' | 'vinyl' | 'disc'
           showWaves: true,
           waveStyle: 'bars', // 'bars' | 'wave' | 'pulse'
+          playerEffect: 'sparks', // 'sparks' | 'snow' | 'fireflies' | 'petals' | 'off'
           lyricFontSize: 21,
           glassAlpha: 11
         },
@@ -1428,6 +1588,7 @@
             coverStyle: state.diy.coverStyle,
             showWaves: state.diy.showWaves,
             waveStyle: state.diy.waveStyle,
+            playerEffect: state.diy.playerEffect,
             lyricFontSize: state.diy.lyricFontSize,
             glassAlpha: state.diy.glassAlpha
           }
@@ -2219,11 +2380,31 @@
       // PLAYBACK ENGINE, QUEUE & RECORDING STATS
       // =========================================================================
       function updatePlayStateUI() {
-        const playing = state.isPlaying;
-        $('icon-mini-play').classList.toggle('hidden', playing);
-        $('icon-mini-pause').classList.toggle('hidden', !playing);
-        $('icon-np-play').classList.toggle('hidden', playing);
-        $('icon-np-pause').classList.toggle('hidden', !playing);
+        const playing = Boolean(state.isPlaying);
+        const miniPlay = $('icon-mini-play');
+        const miniPause = $('icon-mini-pause');
+        const npPlay = $('icon-np-play');
+        const npPause = $('icon-np-pause');
+
+        miniPlay.classList.toggle('hidden', playing);
+        miniPause.classList.toggle('hidden', !playing);
+        npPlay.classList.toggle('hidden', playing);
+        npPause.classList.toggle('hidden', !playing);
+
+        miniPlay.style.display = playing ? 'none' : 'block';
+        miniPause.style.display = playing ? 'block' : 'none';
+        npPlay.style.display = playing ? 'none' : 'block';
+        npPause.style.display = playing ? 'block' : 'none';
+
+        const progressWrap = $('np-progress-wrap');
+        if (progressWrap) progressWrap.classList.toggle('is-playing', playing);
+
+        const particleCanvas = $('np-particles-canvas');
+        if (particleCanvas) {
+          const showParticles = playing && (state.diy.playerEffect || 'sparks') !== 'off';
+          particleCanvas.classList.toggle('opacity-100', showParticles);
+          particleCanvas.classList.toggle('opacity-0', !showParticles);
+        }
 
         const roundedImg = $('np-cover-img-rounded');
         roundedImg.classList.toggle('cover-playing', playing);
@@ -2964,6 +3145,7 @@
         document.documentElement.style.setProperty('--glass-border', borderAlpha);
         $('diy-glass-alpha').value = d.glassAlpha;
         $('diy-glass-val').textContent = `${d.glassAlpha}%`;
+        updatePlayerEffectButtons();
       }
 
       // =========================================================================
@@ -3070,60 +3252,367 @@
         }
       }
 
-      function setAmbientSound(mode) {
-        currentAmbientMode = mode;
-        stopAmbientSound();
-
-        const labels = { off: '关闭', vinyl: '黑胶底噪', rain: '窗边细雨', ocean: '深夜海浪' };
-        $('ambient-sound-status').textContent = labels[mode] || '关闭';
-        $('ambient-vol-row').classList.toggle('hidden', mode === 'off');
-
-        document.querySelectorAll('.ambient-opt-btn').forEach((btn) => {
-          const active = btn.dataset.ambient === mode;
+      function updatePlayerEffectButtons() {
+        const mode = state.diy.playerEffect || 'sparks';
+        const labels = {
+          sparks: '星星之火',
+          snow: '冬日飘雪',
+          fireflies: '流光萤火',
+          petals: '夜樱花瓣',
+          off: '关闭'
+        };
+        const statusEl = $('player-effect-status');
+        if (statusEl) statusEl.textContent = labels[mode] || '星星之火';
+        document.querySelectorAll('.effect-opt-btn').forEach((btn) => {
+          const active = btn.dataset.effect === mode;
           btn.classList.toggle('bg-white/20', active);
           btn.classList.toggle('text-white', active);
           btn.classList.toggle('bg-white/8', !active);
           btn.classList.toggle('text-white/75', !active);
         });
+        const canvas = $('np-particles-canvas');
+        if (canvas) {
+          const visible = state.isPlaying && mode !== 'off';
+          canvas.classList.toggle('opacity-100', visible);
+          canvas.classList.toggle('opacity-0', !visible);
+        }
+      }
 
-        if (mode === 'off') return;
+      function initPlayerParticles() {
+        const canvas = $('np-particles-canvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        let width = 0;
+        let height = 0;
+        let dpr = 1;
+        let activeEffect = state.diy.playerEffect || 'sparks';
+        const particles = [];
 
+        const resizeCanvas = () => {
+          dpr = Math.min(window.devicePixelRatio || 1, 2);
+          width = canvas.clientWidth || window.innerWidth;
+          height = canvas.clientHeight || window.innerHeight;
+          canvas.width = Math.round(width * dpr);
+          canvas.height = Math.round(height * dpr);
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        };
+
+        const drawSnowflakeCrystal = (x, y, radius, angle) => {
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.rotate(angle);
+          ctx.strokeStyle = 'rgba(240, 249, 255, 0.92)';
+          ctx.lineWidth = Math.max(0.9, radius * 0.16);
+          ctx.lineCap = 'round';
+          for (let k = 0; k < 6; k++) {
+            ctx.rotate(Math.PI / 3);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0, -radius);
+            ctx.moveTo(0, -radius * 0.55);
+            ctx.lineTo(-radius * 0.28, -radius * 0.78);
+            ctx.moveTo(0, -radius * 0.55);
+            ctx.lineTo(radius * 0.28, -radius * 0.78);
+            ctx.stroke();
+          }
+          ctx.restore();
+        };
+
+        const createParticle = (mode, randomY = false) => {
+          const w = width || window.innerWidth;
+          const h = height || window.innerHeight;
+          if (mode === 'sparks') {
+            const isBokeh = Math.random() < 0.24;
+            return {
+              x: Math.random() * w,
+              y: randomY ? Math.random() * h : h + 15 + Math.random() * 50,
+              vx: (Math.random() - 0.5) * 0.75,
+              vy: isBokeh ? -(0.45 + Math.random() * 0.7) : -(1.1 + Math.random() * 1.9),
+              size: isBokeh ? 3.2 + Math.random() * 3.4 : 1.0 + Math.random() * 1.8,
+              alpha: isBokeh ? 0.26 + Math.random() * 0.28 : 0.6 + Math.random() * 0.4,
+              isBokeh,
+              phase: Math.random() * Math.PI * 2,
+              swayAmp: 0.25 + Math.random() * 0.55,
+              hue: Math.random() < 0.78 ? 22 + Math.random() * 26 : 192 + Math.random() * 22
+            };
+          }
+          if (mode === 'snow') {
+            const isCrystal = Math.random() < 0.32;
+            return {
+              x: Math.random() * w,
+              y: randomY ? Math.random() * h : -20 - Math.random() * 50,
+              vx: (Math.random() - 0.5) * 0.4,
+              vy: isCrystal ? 0.65 + Math.random() * 0.85 : 0.45 + Math.random() * 1.15,
+              size: isCrystal ? 4.2 + Math.random() * 3.8 : 1.6 + Math.random() * 3.2,
+              alpha: isCrystal ? 0.55 + Math.random() * 0.35 : 0.25 + Math.random() * 0.45,
+              isCrystal,
+              angle: Math.random() * Math.PI * 2,
+              spin: (Math.random() - 0.5) * 0.025,
+              phase: Math.random() * Math.PI * 2
+            };
+          }
+          if (mode === 'petals') {
+            return {
+              x: Math.random() * w,
+              y: randomY ? Math.random() * h : -24 - Math.random() * 50,
+              vx: 0.45 + Math.random() * 0.75,
+              vy: 0.85 + Math.random() * 1.15,
+              size: 4.5 + Math.random() * 4.5,
+              alpha: 0.45 + Math.random() * 0.4,
+              angle: Math.random() * Math.PI * 2,
+              spin: (Math.random() - 0.5) * 0.035,
+              flip: Math.random() * Math.PI * 2,
+              phase: Math.random() * Math.PI * 2
+            };
+          }
+          return {
+            x: Math.random() * w,
+            y: Math.random() * h,
+            vx: (Math.random() - 0.5) * 0.5,
+            vy: (Math.random() - 0.5) * 0.45,
+            size: 1.8 + Math.random() * 2.6,
+            alpha: 0.35 + Math.random() * 0.65,
+            phase: Math.random() * Math.PI * 2,
+            hue: Math.random() < 0.55 ? 188 : 158
+          };
+        };
+
+        const resetParticles = (mode) => {
+          particles.length = 0;
+          const count = mode === 'snow' ? 54 : mode === 'sparks' ? 52 : mode === 'petals' ? 34 : 36;
+          for (let i = 0; i < count; i++) {
+            particles.push(createParticle(mode, true));
+          }
+        };
+
+        resizeCanvas();
+        resetParticles(activeEffect);
+        window.addEventListener('resize', resizeCanvas);
+
+        const renderFrame = () => {
+          requestAnimationFrame(renderFrame);
+          const mode = state.diy.playerEffect || 'sparks';
+          if (mode !== activeEffect) {
+            activeEffect = mode;
+            resetParticles(mode);
+          }
+          if (mode === 'off' || !state.isPlaying || nowPlayingModal.classList.contains('translate-y-full')) {
+            return;
+          }
+          if (!width || !height) resizeCanvas();
+          ctx.clearRect(0, 0, width, height);
+
+          for (let i = 0; i < particles.length; i++) {
+            const p = particles[i];
+            p.phase += 0.032;
+
+            if (mode === 'sparks') {
+              const driftX = p.vx + Math.sin(p.phase * 1.2) * p.swayAmp;
+              p.x += driftX;
+              p.y += p.vy;
+              const lifeAlpha = p.alpha * Math.max(0, Math.min(1, p.y / (height * 0.85)));
+              const flicker = 0.72 + 0.28 * Math.sin(p.phase * 3.8);
+              const finalAlpha = lifeAlpha * flicker;
+
+              ctx.save();
+              ctx.globalAlpha = finalAlpha;
+              if (!p.isBokeh) {
+                ctx.strokeStyle = `hsla(${p.hue}, 98%, 70%, ${finalAlpha * 0.65})`;
+                ctx.lineWidth = p.size * 0.9;
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.moveTo(p.x, p.y);
+                ctx.lineTo(p.x - driftX * 4.5, p.y - p.vy * 5.2);
+                ctx.stroke();
+              }
+              const glowR = p.size * (p.isBokeh ? 3.8 : 3.0);
+              const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowR);
+              grad.addColorStop(0, '#ffffff');
+              grad.addColorStop(0.32, `hsla(${p.hue}, 98%, 68%, 0.92)`);
+              grad.addColorStop(1, `hsla(${p.hue}, 98%, 55%, 0)`);
+              ctx.fillStyle = grad;
+              ctx.beginPath();
+              ctx.arc(p.x, p.y, glowR, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.restore();
+
+              if (p.y < -25 || p.x < -30 || p.x > width + 30) {
+                particles[i] = createParticle('sparks', false);
+              }
+            } else if (mode === 'snow') {
+              p.x += p.vx + Math.sin(p.phase * 0.75) * 0.48;
+              p.y += p.vy;
+              p.angle += p.spin;
+              ctx.save();
+              ctx.globalAlpha = p.alpha;
+              if (p.isCrystal) {
+                drawSnowflakeCrystal(p.x, p.y, p.size, p.angle);
+              } else {
+                const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 2.1);
+                grad.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+                grad.addColorStop(0.55, 'rgba(224, 242, 254, 0.45)');
+                grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size * 2.1, 0, Math.PI * 2);
+                ctx.fill();
+              }
+              ctx.restore();
+              if (p.y > height + 25 || p.x < -25 || p.x > width + 25) {
+                particles[i] = createParticle('snow', false);
+              }
+            } else if (mode === 'petals') {
+              p.x += p.vx + Math.sin(p.phase * 0.9) * 0.55;
+              p.y += p.vy;
+              p.angle += p.spin;
+              p.flip += 0.045;
+              const scaleY = 0.45 + 0.55 * Math.abs(Math.cos(p.flip));
+              ctx.save();
+              ctx.translate(p.x, p.y);
+              ctx.rotate(p.angle);
+              ctx.scale(1, scaleY);
+              ctx.globalAlpha = p.alpha;
+              const grad = ctx.createLinearGradient(-p.size, -p.size, p.size, p.size);
+              grad.addColorStop(0, 'rgba(255, 241, 242, 0.95)');
+              grad.addColorStop(1, 'rgba(249, 168, 212, 0.75)');
+              ctx.fillStyle = grad;
+              ctx.beginPath();
+              ctx.moveTo(0, -p.size * 0.5);
+              ctx.bezierCurveTo(p.size * 0.85, -p.size, p.size, p.size * 0.4, 0, p.size);
+              ctx.bezierCurveTo(-p.size, p.size * 0.4, -p.size * 0.85, -p.size, 0, -p.size * 0.5);
+              ctx.fill();
+              ctx.restore();
+              if (p.y > height + 25 || p.x > width + 30) {
+                particles[i] = createParticle('petals', false);
+                particles[i].x = Math.random() * width * 0.85;
+              }
+            } else {
+              const dx = p.vx + Math.cos(p.phase * 0.7) * 0.36;
+              const dy = p.vy + Math.sin(p.phase * 0.95) * 0.36;
+              p.x += dx;
+              p.y += dy;
+              if (p.x < 0) p.x = width;
+              if (p.x > width) p.x = 0;
+              if (p.y < 0) p.y = height;
+              if (p.y > height) p.y = 0;
+              const pulse = 0.4 + 0.6 * Math.sin(p.phase * 1.65);
+              ctx.save();
+              ctx.globalAlpha = p.alpha * pulse;
+              ctx.strokeStyle = `hsla(${p.hue}, 92%, 75%, 0.45)`;
+              ctx.lineWidth = p.size * 0.7;
+              ctx.lineCap = 'round';
+              ctx.beginPath();
+              ctx.moveTo(p.x, p.y);
+              ctx.lineTo(p.x - dx * 7, p.y - dy * 7);
+              ctx.stroke();
+              const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 3.8);
+              grad.addColorStop(0, '#ffffff');
+              grad.addColorStop(0.38, `hsla(${p.hue}, 92%, 72%, 0.88)`);
+              grad.addColorStop(1, `hsla(${p.hue}, 92%, 60%, 0)`);
+              ctx.fillStyle = grad;
+              ctx.beginPath();
+              ctx.arc(p.x, p.y, p.size * 3.8, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.restore();
+            }
+          }
+        };
+        requestAnimationFrame(renderFrame);
+        updatePlayerEffectButtons();
+      }
+
+      // =========================================================================
+      // MULTI-CHANNEL WHITE NOISE MIXER (SIDEBAR)
+      // =========================================================================
+      const WN_CHANNELS = [
+        { id: 'rain', name: '窗边细雨', desc: '绵密细腻的雨滴敲窗声', icon: '🌧️', defaultVol: 60 },
+        { id: 'ocean', name: '深夜海浪', desc: '周期起伏的海岸潮汐声', icon: '🌊', defaultVol: 55 },
+        { id: 'fireplace', name: '壁炉篝火', desc: '温暖木柴燃烧与噼啪火星', icon: '🔥', defaultVol: 65 },
+        { id: 'vinyl', name: '黑胶底噪', desc: '复古唱针与唱片沙沙声', icon: '💿', defaultVol: 45 },
+        { id: 'wind', name: '林间晚风', desc: '穿过树梢的柔和微风声', icon: '🌬️', defaultVol: 50 },
+        { id: 'thunder', name: '远方雷鸣', desc: '低沉舒缓的远空雷声回响', icon: '⛈️', defaultVol: 50 },
+        { id: 'crickets', name: '夏夜虫鸣', desc: '静谧田野里的轻柔虫鸣', icon: '🦗', defaultVol: 40 },
+        { id: 'cafe', name: '咖啡馆微噪', desc: '温和舒适的室内环境白噪', icon: '☕', defaultVol: 50 }
+      ];
+      const wnState = { masterVol: 65, channels: {} };
+      WN_CHANNELS.forEach((ch) => {
+        wnState.channels[ch.id] = { active: false, vol: ch.defaultVol, nodes: null };
+      });
+
+      function createWhiteNoiseNodes(channelId, gainValue) {
         ensureAudioContext();
-        if (!audioCtx) return;
+        if (!audioCtx) return null;
+        const sr = audioCtx.sampleRate;
+        const len = sr * 4;
+        const buffer = audioCtx.createBuffer(1, len, sr);
+        const data = buffer.getChannelData(0);
 
-        const bufferSize = audioCtx.sampleRate * 3;
-        const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-        const output = noiseBuffer.getChannelData(0);
-
-        if (mode === 'vinyl') {
-          for (let i = 0; i < bufferSize; i++) {
-            const hiss = (Math.random() * 2 - 1) * 0.015;
-            const crackle = Math.random() < 0.0018 ? (Math.random() * 2 - 1) * 0.45 : 0;
-            output[i] = hiss + crackle;
+        if (channelId === 'vinyl') {
+          for (let i = 0; i < len; i++) {
+            const hiss = (Math.random() * 2 - 1) * 0.02;
+            const pop = Math.random() < 0.002 ? (Math.random() * 2 - 1) * 0.42 : 0;
+            data[i] = hiss + pop;
+          }
+        } else if (channelId === 'fireplace') {
+          let b0 = 0, b1 = 0;
+          for (let i = 0; i < len; i++) {
+            const w = Math.random() * 2 - 1;
+            b0 = 0.99 * b0 + w * 0.08;
+            b1 = 0.96 * b1 + w * 0.2;
+            const crackle = Math.random() < 0.0012 ? (Math.random() * 2 - 1) * 0.65 : 0;
+            data[i] = (b0 + b1) * 0.09 + crackle;
+          }
+        } else if (channelId === 'crickets') {
+          for (let i = 0; i < len; i++) {
+            const t = i / sr;
+            const pulse = Math.pow(Math.max(0, Math.sin(t * 2 * Math.PI * 2.2)), 6);
+            const chirp = Math.sin(t * 2 * Math.PI * 4200) * Math.sin(t * 2 * Math.PI * 24) * pulse;
+            const bed = (Math.random() * 2 - 1) * 0.008;
+            data[i] = chirp * 0.045 + bed;
           }
         } else {
-          // Pink-ish noise for rain / ocean
           let b0 = 0, b1 = 0, b2 = 0;
-          for (let i = 0; i < bufferSize; i++) {
-            const white = Math.random() * 2 - 1;
-            b0 = 0.99765 * b0 + white * 0.099046;
-            b1 = 0.96300 * b1 + white * 0.2965164;
-            b2 = 0.57000 * b2 + white * 1.0526913;
-            output[i] = (b0 + b1 + b2 + white * 0.1848) * 0.06;
+          for (let i = 0; i < len; i++) {
+            const w = Math.random() * 2 - 1;
+            b0 = 0.99765 * b0 + w * 0.099046;
+            b1 = 0.96300 * b1 + w * 0.2965164;
+            b2 = 0.57000 * b2 + w * 1.0526913;
+            data[i] = (b0 + b1 + b2 + w * 0.1848) * 0.07;
           }
         }
 
         const source = audioCtx.createBufferSource();
-        source.buffer = noiseBuffer;
+        source.buffer = buffer;
         source.loop = true;
 
         const filter = audioCtx.createBiquadFilter();
-        filter.type = mode === 'rain' ? 'bandpass' : 'lowpass';
-        filter.frequency.value = mode === 'rain' ? 1400 : mode === 'ocean' ? 420 : 2800;
+        if (channelId === 'rain') {
+          filter.type = 'bandpass';
+          filter.frequency.value = 1450;
+          filter.Q.value = 0.6;
+        } else if (channelId === 'ocean') {
+          filter.type = 'lowpass';
+          filter.frequency.value = 460;
+        } else if (channelId === 'fireplace') {
+          filter.type = 'lowpass';
+          filter.frequency.value = 1200;
+        } else if (channelId === 'wind') {
+          filter.type = 'bandpass';
+          filter.frequency.value = 620;
+          filter.Q.value = 1.4;
+        } else if (channelId === 'thunder') {
+          filter.type = 'lowpass';
+          filter.frequency.value = 190;
+        } else if (channelId === 'cafe') {
+          filter.type = 'bandpass';
+          filter.frequency.value = 780;
+          filter.Q.value = 0.7;
+        } else {
+          filter.type = 'allpass';
+        }
 
         const gainNode = audioCtx.createGain();
-        const vol = Number($('ambient-vol-slider').value || 32) / 100;
-        gainNode.gain.value = vol * 0.45;
+        gainNode.gain.value = gainValue;
 
         source.connect(filter);
         filter.connect(gainNode);
@@ -3131,17 +3620,110 @@
         source.start();
 
         let lfo = null;
-        if (mode === 'ocean') {
+        if (channelId === 'ocean' || channelId === 'wind' || channelId === 'thunder') {
           lfo = audioCtx.createOscillator();
           const lfoGain = audioCtx.createGain();
-          lfo.frequency.value = 0.14;
-          lfoGain.gain.value = vol * 0.22;
+          lfo.frequency.value = channelId === 'ocean' ? 0.13 : channelId === 'wind' ? 0.09 : 0.07;
+          lfoGain.gain.value = gainValue * 0.45;
           lfo.connect(lfoGain);
           lfoGain.connect(gainNode.gain);
           lfo.start();
         }
+        return { source, gain: gainNode, lfo };
+      }
 
-        ambientNodes = { source, gain: gainNode, lfo };
+      function computeChannelGain(chId) {
+        const ch = wnState.channels[chId];
+        return (wnState.masterVol / 100) * ((ch?.vol || 50) / 100) * 0.55;
+      }
+
+      function stopWhiteNoiseChannel(chId) {
+        const ch = wnState.channels[chId];
+        if (!ch) return;
+        ch.active = false;
+        if (ch.nodes) {
+          try {
+            ch.nodes.source.stop();
+            ch.nodes.source.disconnect();
+            ch.nodes.gain.disconnect();
+            if (ch.nodes.lfo) ch.nodes.lfo.stop();
+          } catch {}
+          ch.nodes = null;
+        }
+      }
+
+      function toggleWhiteNoiseChannel(chId, forceState = null) {
+        const ch = wnState.channels[chId];
+        if (!ch) return;
+        const nextActive = forceState !== null ? forceState : !ch.active;
+        if (nextActive) {
+          stopWhiteNoiseChannel(chId);
+          ch.active = true;
+          ch.nodes = createWhiteNoiseNodes(chId, computeChannelGain(chId));
+        } else {
+          stopWhiteNoiseChannel(chId);
+        }
+        renderWhiteNoiseGrid();
+      }
+
+      function stopAllWhiteNoise() {
+        WN_CHANNELS.forEach((ch) => stopWhiteNoiseChannel(ch.id));
+        renderWhiteNoiseGrid();
+      }
+
+      function renderWhiteNoiseGrid() {
+        const grid = $('wn-channels-grid');
+        if (!grid) return;
+        const activeCount = WN_CHANNELS.filter((c) => wnState.channels[c.id].active).length;
+
+        const badge = $('sidebar-wn-badge');
+        if (badge) {
+          badge.textContent = activeCount;
+          badge.classList.toggle('hidden', activeCount === 0);
+        }
+        const sub = $('wn-subtitle');
+        if (sub) {
+          sub.textContent = activeCount > 0 ? `正在混合播放 ${activeCount} 种白噪音声景` : '自由叠加多种自然声景，伴随音乐或独立专注';
+        }
+
+        grid.innerHTML = WN_CHANNELS.map((meta) => {
+          const st = wnState.channels[meta.id];
+          return `
+            <div data-wn-card="${meta.id}" class="liquid-panel rounded-3xl p-4 space-y-3 transition ${st.active ? 'ring-1 ring-teal-400/70 bg-teal-500/15' : ''}">
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-3 min-w-0">
+                  <span class="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center text-xl shrink-0">${meta.icon}</span>
+                  <div class="min-w-0">
+                    <div class="text-sm font-bold text-white truncate">${meta.name}</div>
+                    <div class="text-[11px] text-white/55 truncate">${meta.desc}</div>
+                  </div>
+                </div>
+                <button data-wn-toggle="${meta.id}" class="w-11 h-6 rounded-full p-0.5 transition-colors flex items-center shrink-0 ${st.active ? 'bg-teal-400 justify-end' : 'bg-white/15 justify-start'}" aria-label="开关${meta.name}">
+                  <span class="w-5 h-5 rounded-full bg-white shadow"></span>
+                </button>
+              </div>
+              <div class="flex items-center gap-2.5">
+                <span class="text-[11px] text-white/50 shrink-0">音量</span>
+                <input data-wn-vol="${meta.id}" type="range" min="0" max="100" value="${st.vol}" class="wn-vol-slider feng-slider flex-1" />
+                <span class="text-[11px] text-white/70 tabular-nums w-8 text-right">${st.vol}%</span>
+              </div>
+            </div>`;
+        }).join('');
+
+        grid.querySelectorAll('[data-wn-toggle]').forEach((btn) => {
+          on(btn, 'click', () => toggleWhiteNoiseChannel(btn.dataset.wnToggle));
+        });
+        grid.querySelectorAll('.wn-vol-slider').forEach((slider) => {
+          on(slider, 'input', (e) => {
+            const id = slider.dataset.wnVol;
+            const val = Number(e.target.value);
+            wnState.channels[id].vol = val;
+            slider.nextElementSibling.textContent = `${val}%`;
+            if (wnState.channels[id].active && wnState.channels[id].nodes?.gain) {
+              wnState.channels[id].nodes.gain.gain.value = computeChannelGain(id);
+            }
+          });
+        });
       }
 
       // =========================================================================
@@ -4257,16 +4839,73 @@
 
         // Progress Slider & Audio Time Events
         const progressSlider = $('np-progress-slider');
-        on(progressSlider, 'pointerdown', () => { state.isSeeking = true; });
-        on(progressSlider, 'touchstart', () => { state.isSeeking = true; }, { passive: true });
-        on(progressSlider, 'pointerup', () => { state.isSeeking = false; });
-        on(progressSlider, 'touchend', () => { state.isSeeking = false; });
-        on(progressSlider, 'change', () => { state.isSeeking = false; });
+        const progressWrap = $('np-progress-wrap');
+        const syncMiniRimPath = () => {
+          const bar = $('mini-player-bar');
+          const track = $('mini-progress-track');
+          const fill = $('mini-progress-fill');
+          if (!bar || !track || !fill) return;
+          const w = bar.clientWidth;
+          const h = bar.clientHeight;
+          if (w < 60 || h < 20) return;
+          const r = Math.min(26, Math.floor(h / 2) - 1);
+          const d = `M 1.5,${r} A ${r - 1.5},${r - 1.5} 0 0 1 ${r},1.5 L ${w - r},1.5 A ${r - 1.5},${r - 1.5} 0 0 1 ${w - 1.5},${r}`;
+          track.setAttribute('d', d);
+          fill.setAttribute('d', d);
+          const len = fill.getTotalLength();
+          fill.dataset.totalLen = String(len);
+          fill.style.strokeDasharray = `${len}`;
+          const curPct = parseFloat(fill.dataset.pct || '0');
+          fill.style.strokeDashoffset = `${len * (1 - curPct / 100)}`;
+        };
+        syncMiniRimPath();
+        window.addEventListener('resize', syncMiniRimPath);
+
+        const setProgressVisual = (pct, secText = null) => {
+          const clamped = Math.max(0, Math.min(100, pct));
+          const miniFill = $('mini-progress-fill');
+          if (miniFill) {
+            miniFill.dataset.pct = String(clamped);
+            let len = parseFloat(miniFill.dataset.totalLen || '0');
+            if (!len) {
+              syncMiniRimPath();
+              len = parseFloat(miniFill.dataset.totalLen || '0');
+            }
+            if (len > 0) {
+              miniFill.style.strokeDasharray = `${len}`;
+              miniFill.style.strokeDashoffset = `${len * (1 - clamped / 100)}`;
+              miniFill.style.opacity = clamped > 0.2 ? '1' : '0';
+            }
+          }
+          $('np-progress-fill').style.width = `${clamped}%`;
+          $('np-progress-thumb').style.left = `${clamped}%`;
+          $('np-seek-tooltip').style.left = `${clamped}%`;
+          if (secText !== null) $('np-seek-tooltip').textContent = secText;
+        };
+        const beginSeek = () => {
+          state.isSeeking = true;
+          progressWrap.classList.add('is-seeking');
+        };
+        const endSeek = () => {
+          state.isSeeking = false;
+          progressWrap.classList.remove('is-seeking');
+        };
+
+        on(progressSlider, 'pointerdown', beginSeek);
+        on(progressSlider, 'touchstart', beginSeek, { passive: true });
+        on(progressSlider, 'pointerup', endSeek);
+        on(progressSlider, 'touchend', endSeek);
+        on(progressSlider, 'change', endSeek);
         on(progressSlider, 'input', (e) => {
-          if (!Number.isFinite(audio.duration)) return;
           const pct = Number(e.target.value) / 1000;
+          if (!Number.isFinite(audio.duration) || audio.duration <= 0) {
+            setProgressVisual(pct * 100, '00:00');
+            return;
+          }
           const targetSec = pct * audio.duration;
-          $('np-time-current').textContent = formatTime(targetSec);
+          const formatted = formatTime(targetSec);
+          $('np-time-current').textContent = formatted;
+          setProgressVisual(pct * 100, formatted);
           audio.currentTime = targetSec;
           syncActiveLyric(true);
         });
@@ -4280,8 +4919,11 @@
             $('np-time-current').textContent = formatTime(cur);
             if (dur > 0) {
               const pct = (cur / dur) * 100;
-              $('mini-progress-fill').style.width = `${pct}%`;
+              setProgressVisual(pct, formatTime(cur));
               $('np-progress-slider').value = Math.round(pct * 10);
+            } else {
+              setProgressVisual(0, '00:00');
+              $('np-progress-slider').value = 0;
             }
           }
           syncActiveLyric(false);
@@ -4314,7 +4956,15 @@
           state.isPlaying = true;
           updatePlayStateUI();
         });
+        audio.addEventListener('playing', () => {
+          state.isPlaying = true;
+          updatePlayStateUI();
+        });
         audio.addEventListener('pause', () => {
+          state.isPlaying = false;
+          updatePlayStateUI();
+        });
+        audio.addEventListener('ended', () => {
           state.isPlaying = false;
           updatePlayStateUI();
         });
@@ -4345,9 +4995,48 @@
           });
         });
 
-        // Ambient Soundscape Mixer Options
-        document.querySelectorAll('.ambient-opt-btn').forEach((btn) => {
-          on(btn, 'click', () => setAmbientSound(btn.dataset.ambient));
+        // White Noise Mixer Controls (Sidebar View)
+        renderWhiteNoiseGrid();
+        on('btn-wn-stop-all', () => {
+          stopAllWhiteNoise();
+          showToast('已静音所有白噪音');
+        });
+        on('wn-master-vol', 'input', (e) => {
+          wnState.masterVol = Number(e.target.value);
+          $('wn-master-val').textContent = `${wnState.masterVol}%`;
+          WN_CHANNELS.forEach((c) => {
+            if (wnState.channels[c.id].active && wnState.channels[c.id].nodes?.gain) {
+              wnState.channels[c.id].nodes.gain.gain.value = computeChannelGain(c.id);
+            }
+          });
+        });
+        document.querySelectorAll('.wn-preset-btn').forEach((btn) => {
+          on(btn, 'click', () => {
+            const preset = btn.dataset.wnPreset;
+            stopAllWhiteNoise();
+            const map = {
+              rainy_read: [['rain', 65], ['thunder', 35], ['vinyl', 30]],
+              ocean_zen: [['ocean', 70], ['wind', 40]],
+              winter_fire: [['fireplace', 75], ['wind', 35]],
+              forest_walk: [['wind', 60], ['crickets', 45]]
+            };
+            (map[preset] || []).forEach(([id, vol]) => {
+              wnState.channels[id].vol = vol;
+              toggleWhiteNoiseChannel(id, true);
+            });
+            showToast(`已开启场景：${btn.textContent.trim()}`);
+          });
+        });
+
+        // Playback Dynamic Visual Effects Options
+        document.querySelectorAll('.effect-opt-btn').forEach((btn) => {
+          on(btn, 'click', async () => {
+            state.diy.playerEffect = btn.dataset.effect;
+            updatePlayerEffectButtons();
+            await saveAppState();
+            const label = btn.textContent.trim();
+            showToast(state.diy.playerEffect === 'off' ? '已关闭播放动态特效' : `播放特效已切换为：${label}`);
+          });
         });
         on('ambient-vol-slider', 'input', (e) => {
           if (ambientNodes && ambientNodes.gain) {
@@ -4717,6 +5406,7 @@
         bindEvents();
         setupInteractiveCoverStage();
         initRhythmWaves();
+        initPlayerParticles();
 
         try {
           const [storedTracks, kvAll] = await Promise.all([dbGetAll('tracks'), dbGetAll('kv')]);
