@@ -10,7 +10,7 @@
   <title>FENG MUSIC</title>
 
   <link rel="apple-touch-icon" href="/icon-512.png" />
-  <link rel="icon" type="image/png" href="/icon-512.png" />
+  <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
   <link rel="manifest" href="/manifest.json" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -286,6 +286,11 @@
       opacity: 1;
     }
 
+    /* Ensure active Now Playing tab text keeps dark contrast on white pill */
+    .np-tab-btn.bg-white {
+      color: #09090b !important;
+    }
+
     /* Custom Sliders */
     input[type="range"].feng-slider {
       -webkit-appearance: none;
@@ -352,11 +357,7 @@
       <!-- Brand Header & Collapse Button -->
       <div class="flex items-center justify-between px-1">
         <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-400 via-indigo-500 to-teal-400 flex items-center justify-center shadow-lg shadow-sky-500/30">
-            <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
-            </svg>
-          </div>
+          <img src="/icon-512.png" alt="FENG MUSIC" class="w-9 h-9 rounded-xl object-cover shadow-lg shadow-sky-500/30 bg-white/10" />
           <div>
             <div class="text-base font-bold tracking-wide text-white leading-tight">FENG MUSIC</div>
             <div class="text-[11px] text-white/50">私人纯享音乐空间</div>
@@ -1495,7 +1496,7 @@
         return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
       }
 
-      const DEFAULT_APP_COVER = generateDefaultCover('FM');
+      const DEFAULT_APP_COVER = '/icon-512.png';
 
       function updateAuroraColorsFromCover(coverUrl) {
         if (!coverUrl) return;
@@ -2112,7 +2113,7 @@
           title: cm.title || rawTrack.title || '未知曲目',
           artist: cm.artist || rawTrack.artist || '未知歌手',
           album: cm.album || rawTrack.album || '未知专辑',
-          cover: cm.cover || rawTrack.cover || generateDefaultCover(cm.title || rawTrack.title || 'FM'),
+          cover: cm.cover || rawTrack.cover || DEFAULT_APP_COVER,
           lrc: customLrc !== undefined ? customLrc : rawTrack.lrc || ''
         };
       }
@@ -2661,7 +2662,7 @@
                 ${covers.map((c) => `<img src="${c}" alt="" class="w-full h-full object-cover" />`).join('')}
               </div>`;
             } else {
-              const singleCover = covers[0] || generateDefaultCover(pl.name);
+              const singleCover = covers[0] || DEFAULT_APP_COVER;
               mosaicHtml = `<img src="${singleCover}" alt="" class="w-full aspect-square rounded-2xl object-cover bg-white/10" />`;
             }
             return `
@@ -3364,6 +3365,7 @@
           btn.classList.toggle('bg-white', active);
           btn.classList.toggle('text-zinc-950', active);
           btn.classList.toggle('text-white/75', !active);
+          btn.classList.toggle('hover:text-white', !active);
         });
         $('np-panel-cover').classList.toggle('hidden', tabName !== 'cover');
         $('np-panel-lyrics').classList.toggle('hidden', tabName !== 'lyrics');
@@ -3859,7 +3861,7 @@
               title: meta.title,
               artist: meta.artist,
               album: meta.album,
-              cover: meta.cover || generateDefaultCover(meta.title),
+              cover: meta.cover || DEFAULT_APP_COVER,
               hasEmbeddedCover: Boolean(meta.cover),
               lrc: externalLrc || meta.lrc || '',
               duration: 0,
@@ -4772,7 +4774,7 @@
                     title: item.title || '在线曲目',
                     artist: item.artist || '未知歌手',
                     album: item.album || '在线曲库',
-                    cover: item.cover || generateDefaultCover(item.title || 'FM'),
+                    cover: item.cover || DEFAULT_APP_COVER,
                     lrc: lrcText,
                     src: item.src,
                     isRemote: true,
