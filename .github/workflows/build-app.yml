@@ -1,0 +1,85 @@
+name: Build Offline Android APK & iOS IPA
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Prepare Web Assets & Capacitor
+        run: |
+          mkdir -p www
+          cp radio.html www/index.html
+          cp icon-512.png www/icon-512.png
+          sed -i 's|"/icon-512.png"|"./icon-512.png"|g' www/index.html
+          npm init -y
+          npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6 @capacitor/assets
+          npx cap add android
+          npx capacitor-assets generate --android --iconPath www/icon-512.png
+
+      - name: Build Android APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: FENG_MUSIC_Android_APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+
+  build-ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Prepare Web Assets & Capacitor
+        run: |
+          mkdir -p www
+          cp radio.html www/index.html
+          cp icon-512.png www/icon-512.png
+          sed -i '' 's|"/icon-512.png"|"./icon-512.png"|g' www/index.html
+          npm init -y
+          npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/ios@6 @capacitor/assets
+          npx cap add ios
+          npx capacitor-assets generate --ios --iconPath www/icon-512.png
+
+      - name: Build Unsigned iOS IPA
+        run: |
+          if [ -d "ios/App/App.xcworkspace" ]; then
+            TARGET="-workspace ios/App/App.xcworkspace"
+          else
+            TARGET="-project ios/App/App.xcodeproj"
+          fi
+          xcodebuild $TARGET \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            clean build
+          mkdir -p Payload
+          cp -r build/Build/Products/Release-iphoneos/App.app Payload/
+          zip -qr FENG_MUSIC_iOS.ipa Payload
+
+      - name: Upload iOS IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: FENG_MUSIC_iOS_IPA
+          path: FENG_MUSIC_iOS.ipa
