@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ERIS // Macaron Checklist</title>
+    <title>ERIS // Checklist</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -24,7 +24,7 @@
     </script>
     
     <style>
-        /* 马卡龙高明度甜系奶糕配色变量 */
+        /* 马卡龙高明度甜系奶糕配色与 DIY 变量 */
         :root {
             --bg-color: #FFF9FA;       /* 蜜桃浅奶霜 */
             --text-color: #1E2229;     /* 炭焙黑可可 */
@@ -34,31 +34,43 @@
             --ink-1: #FFB7B2;          /* 樱花马卡龙粉 */
             --ink-2: #BFFCC6;          /* 薄荷开心果绿 */
             --ink-3: #FFDAC1;          /* 柠檬起司黄 */
-            --solid-shadow: 5px 5px 0px 0px var(--shadow-color);
+            --ink-active: #FFB7B2;     /* 当前选中主色素 */
+            --card-radius: 20px;
+            --shadow-offset: 5px;
+            --solid-shadow: var(--shadow-offset) var(--shadow-offset) 0px 0px var(--shadow-color);
             --solid-shadow-sm: 3px 3px 0px 0px var(--shadow-color);
-            --solid-shadow-lg: 10px 10px 0px 0px var(--shadow-color);
         }
 
         body {
             background-color: var(--bg-color);
             color: var(--text-color);
-            transition: all 0.3s ease;
+            font-family: 'Fredoka', 'system-ui', sans-serif;
+            font-weight: 700;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
-        .lang-en { font-family: 'Fredoka', sans-serif; }
-        .lang-zh { font-family: 'Fredoka', 'system-ui', sans-serif; font-weight: 700; }
+        .border-3 { border-width: 3px; border-style: solid; }
 
         .pattern-dots { background-image: radial-gradient(var(--text-color) 1.5px, transparent 1.5px); background-size: 24px 24px; }
         .pattern-grid { background-image: linear-gradient(var(--text-color) 1px, transparent 1px), linear-gradient(90deg, var(--text-color) 1px, transparent 1px); background-size: 20px 20px; }
+        .pattern-stripes { background-image: repeating-linear-gradient(45deg, transparent, transparent 14px, rgba(128,128,128,0.12) 14px, rgba(128,128,128,0.12) 16px); }
+        .pattern-lines { background-image: linear-gradient(transparent 23px, rgba(128,128,128,0.18) 24px); background-size: 100% 24px; }
         .pattern-none { background-image: none; }
 
         .cel-card {
             background-color: var(--card-bg);
             border: 4px solid var(--text-color);
+            border-radius: var(--card-radius);
             box-shadow: var(--solid-shadow);
             transition: all 0.15s steps(3);
         }
-        .cel-card:hover { transform: translate(-3px, -3px); box-shadow: var(--solid-shadow-lg); }
+
+        .cel-surface {
+            background-color: var(--card-bg);
+            border: 3px solid var(--text-color);
+            border-radius: calc(var(--card-radius) * 0.75);
+            box-shadow: var(--solid-shadow);
+        }
 
         .cel-btn {
             border: 3px solid var(--text-color);
@@ -68,8 +80,8 @@
         .cel-btn:hover { transform: translate(-1px, -1px); box-shadow: var(--solid-shadow); }
         .cel-btn:active { transform: translate(3px, 3px); box-shadow: 0px 0px 0px 0px var(--text-color); }
 
-        .cel-input { border: 3px solid var(--text-color); background-color: #FFFFFF; color: var(--text-color); }
-        .cel-input:focus { outline: none; border-color: var(--ink-1); }
+        .cel-input { border: 3px solid var(--text-color); background-color: #FFFFFF; color: #1E2229; }
+        .cel-input:focus { outline: none; border-color: var(--ink-active); }
 
         .active-option {
             border-color: var(--text-color) !important;
@@ -77,220 +89,435 @@
             box-shadow: 3px 3px 0px 0px var(--text-color) !important;
         }
 
+        .filter-tab-active {
+            background-color: var(--ink-active) !important;
+            color: #1E2229 !important;
+            box-shadow: 2px 2px 0px 0px var(--shadow-color) !important;
+        }
+
+        @keyframes bleepBounce { 0%, 100% { height: 5px; } 50% { height: 14px; } }
+        .bar-1 { animation: bleepBounce 0.4s steps(3) infinite alternate; }
+        .bar-2 { animation: bleepBounce 0.3s steps(3) infinite alternate 0.05s; }
+        .sound-muted .bar-1, .sound-muted .bar-2 { animation: none !important; height: 4px !important; }
+
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--text-color); border-radius: 3px; }
     </style>
 </head>
-<body class="font-sans relative min-h-screen overflow-x-hidden p-4 sm:p-6 md:p-8 pattern-dots lang-zh" id="canvasBody">
+<body class="font-sans relative min-h-screen overflow-x-hidden p-4 sm:p-6 md:p-8 pattern-dots" id="canvasBody">
 
     <canvas id="splatCanvas" class="fixed inset-0 w-full h-full block z-[14] pointer-events-none"></canvas>
 
-    <div class="relative min-h-screen flex flex-col justify-between z-20 max-w-4xl mx-auto pb-24 md:pb-32">
+    <div class="relative min-h-screen flex flex-col justify-between z-20 max-w-4xl mx-auto pb-16 md:pb-24">
         
-        <header class="w-full flex justify-between items-center bg-[var(--card-bg)] border-3 border-[var(--text-color)] shadow-[4px_4px_0px_0px_var(--shadow-color)] p-3 sm:p-4 rounded-2xl mb-8 select-none">
+        <header class="cel-surface w-full flex justify-between items-center p-3 sm:p-4 mb-8 select-none">
             <div class="flex items-center space-x-3 sm:space-x-4">
-                <a href="./gallery.html" id="btn-back" data-i18n="back_btn" class="cel-btn font-bold text-xs bg-[var(--ink-2)] px-4 py-2 rounded-xl">
+                <a href="./gallery.html" class="cel-btn font-bold text-xs bg-[var(--ink-2)] text-[#1E2229] px-4 py-2 rounded-xl">
                     ← 返回枢纽
                 </a>
-                <span id="txt-title" data-i18n="page_title" class="hidden md:inline-block font-display font-black text-sm tracking-wider uppercase">☑ MACARON_CHECKLIST // ARCH_03</span>
+                <span class="hidden md:inline-block font-display font-black text-sm tracking-wider uppercase">☑ MACARON_CHECKLIST // ARCH_03</span>
             </div>
-            <button onclick="purgeCompleted()" id="btn-purge" data-i18n="purge_btn" class="font-mono text-[10px] font-black border-2 border-[var(--text-color)] bg-[var(--ink-1)] px-3 py-1 rounded-xl shadow-[2px_2px_0px_0px_var(--shadow-color)] hover:translate-y-px active:shadow-none">PURGE_DONE</button>
+            <div class="flex items-center space-x-2">
+                <button id="soundToggle" type="button" class="cel-btn flex items-center space-x-1.5 font-mono text-[11px] font-bold bg-[#DCE5F7] text-[#1E2229] px-2.5 py-1.5 rounded-xl">
+                    <span id="soundStatus">SFX: ON</span>
+                    <div class="flex items-end space-x-0.5 h-3 w-2.5">
+                        <div class="w-0.5 bg-[#1E2229] bar-1"></div>
+                        <div class="w-0.5 bg-[#1E2229] bar-2"></div>
+                    </div>
+                </button>
+                <button type="button" onclick="purgeCompleted()" class="font-mono text-[10px] font-black border-2 border-[var(--text-color)] bg-[var(--ink-1)] text-[#1E2229] px-3 py-1.5 rounded-xl shadow-[2px_2px_0px_0px_var(--shadow-color)] hover:translate-y-px active:shadow-none">一键清除已完成</button>
+            </div>
         </header>
 
         <main class="w-full flex flex-col space-y-4 my-auto py-2">
             
-            <div class="flex items-center justify-between px-1 select-none">
-                <h2 id="txt-subtitle" data-i18n="sub_title" class="font-display font-black text-xs tracking-wider uppercase bg-[var(--ink-3)] border-2 border-black shadow-[2px_2px_0px_0px_#000] px-3 py-1 rounded-md">Mission Registry Pipeline</h2>
-                <span id="todoCount" class="font-mono text-xs font-black">0 / 0 DONE</span>
+            <div class="flex flex-wrap items-center justify-between gap-2 px-1 select-none">
+                <h2 class="font-display font-black text-xs tracking-wider uppercase bg-[var(--ink-3)] text-[#1E2229] border-2 border-[var(--text-color)] shadow-[2px_2px_0px_0px_var(--shadow-color)] px-3 py-1 rounded-md">核心任务自动化序列集</h2>
+                <div class="flex items-center space-x-3">
+                    <div class="w-24 sm:w-32 h-3 bg-[var(--card-bg)] border-2 border-[var(--text-color)] rounded-full overflow-hidden">
+                        <div id="todoProgressBar" class="h-full bg-[var(--ink-2)] transition-all duration-300" style="width: 0%;"></div>
+                    </div>
+                    <span id="todoCount" class="font-mono text-xs font-black">0 / 0 完成</span>
+                </div>
             </div>
 
-            <div class="cel-card rounded-2xl p-5 flex flex-col justify-between min-h-[380px]">
-                <form id="todoForm" class="mb-4 flex gap-2">
-                    <input id="todoInput" type="text" placeholder="输入并回车，注入新生存指令进程..." required autocomplete="off"
+            <div class="cel-card p-5 flex flex-col justify-between min-h-[400px]">
+                <form id="todoForm" class="mb-3 flex gap-2">
+                    <input id="todoInput" type="text" placeholder="输入并回车，注入新待办任务..." required autocomplete="off"
                         class="flex-1 cel-input rounded-xl px-3 py-2 text-xs font-mono">
-                    <button type="submit" id="btn-add" data-i18n="add_btn" class="cel-btn px-5 bg-[var(--ink-2)] font-display font-black text-xs rounded-xl">
-                        ADD
+                    <button type="submit" class="cel-btn px-5 bg-[var(--ink-2)] text-[#1E2229] font-display font-black text-xs rounded-xl">
+                        注入
                     </button>
                 </form>
 
-                <div id="todoList" class="flex-1 overflow-y-auto custom-scrollbar space-y-2.5 max-h-[290px] pr-1"></div>
+                <!-- 筛选标签栏 -->
+                <div class="flex items-center justify-between gap-2 mb-3 pb-2 border-b-2 border-dashed border-[var(--text-color)]/20 select-none">
+                    <div class="flex items-center space-x-1.5">
+                        <button type="button" onclick="setFilter('all')" id="tab-all" class="filter-tab-active font-mono text-[10px] font-black border-2 border-[var(--text-color)] bg-[var(--card-bg)] px-2.5 py-1 rounded-lg transition-all">全部</button>
+                        <button type="button" onclick="setFilter('active')" id="tab-active" class="font-mono text-[10px] font-black border-2 border-[var(--text-color)] bg-[var(--card-bg)] px-2.5 py-1 rounded-lg transition-all">待办</button>
+                        <button type="button" onclick="setFilter('done')" id="tab-done" class="font-mono text-[10px] font-black border-2 border-[var(--text-color)] bg-[var(--card-bg)] px-2.5 py-1 rounded-lg transition-all">已完成</button>
+                    </div>
+                    <span class="hidden sm:inline font-mono text-[10px] text-[var(--text-muted)]">双击或点 ✎ 可编辑</span>
+                </div>
+
+                <div id="todoList" class="flex-1 overflow-y-auto custom-scrollbar space-y-2.5 max-h-[300px] pr-1"></div>
             </div>
 
         </main>
 
+        <!-- 丰富版 DIY 控制台 -->
         <section id="studioDrawer" class="w-full mt-6 select-none">
-            <button onclick="toggleStudioDrawer()" class="w-full border-3 border-[var(--text-color)] bg-[var(--card-bg)] shadow-[3px_3px_0px_0px_var(--shadow-color)] p-3 rounded-2xl font-bold text-xs flex items-center justify-between hover:bg-slate-50/5 transition-colors">
+            <button type="button" onclick="toggleStudioDrawer()" class="cel-surface w-full p-3 rounded-2xl font-bold text-xs flex items-center justify-between hover:opacity-95 transition-opacity">
                 <div class="flex items-center space-x-2">
                     <span>🎨</span>
-                    <span id="drawer-title" data-i18n="drawer_title">马卡龙对决色素舱控制台 (点击展开/折叠)</span>
+                    <span>DIY 马卡龙色素与画布控制台 (点击展开/折叠)</span>
                 </div>
                 <span id="drawerArrow" class="transform transition-transform duration-300">▲</span>
             </button>
             
-            <div id="drawerContent" class="hidden mt-3 bg-[var(--card-bg)] border-3 border-[var(--text-color)] shadow-[4px_4px_0px_0px_var(--shadow-color)] rounded-2xl p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <p class="text-[11px] font-mono font-bold text-[var(--text-muted)] mb-2">● 切换马卡龙主色素阵营 // MACARON INK</p>
-                    <div class="grid grid-cols-3 gap-2">
-                        <button id="palette-c1" onclick="changePalette('c1')" class="border-2 border-slate-300 px-2 py-2 bg-[#FFB7B2] rounded-xl text-xs font-bold">樱花粉 粉</button>
-                        <button id="palette-c2" onclick="changePalette('c2')" class="border-2 border-slate-300 px-2 py-2 bg-[#BFFCC6] rounded-xl text-xs font-bold">薄荷绿 绿</button>
-                        <button id="palette-c3" onclick="changePalette('c3')" class="border-2 border-slate-300 px-2 py-2 bg-[#FFDAC1] rounded-xl text-xs font-bold">奶酪黄 黄</button>
+            <div id="drawerContent" class="hidden mt-3 cel-surface p-4 space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-[11px] font-mono font-bold text-[var(--text-muted)] mb-2">● 切换马卡龙主色素 + 自定义背景</p>
+                        <div class="grid grid-cols-3 gap-2 mb-2.5">
+                            <button type="button" id="palette-c1" onclick="changePalette('c1')" class="border-2 border-slate-300 px-2 py-2 bg-[#FFB7B2] text-[#1E2229] rounded-xl text-xs font-bold">樱花粉</button>
+                            <button type="button" id="palette-c2" onclick="changePalette('c2')" class="border-2 border-slate-300 px-2 py-2 bg-[#BFFCC6] text-[#1A241C] rounded-xl text-xs font-bold">薄荷绿</button>
+                            <button type="button" id="palette-c3" onclick="changePalette('c3')" class="border-2 border-slate-300 px-2 py-2 bg-[#FFDAC1] text-[#26261A] rounded-xl text-xs font-bold">奶酪黄</button>
+                        </div>
+                        <div class="flex items-center gap-3 text-[11px] font-mono">
+                            <label class="flex items-center gap-1.5 cursor-pointer">
+                                <span>自定义底色</span>
+                                <input id="customBgPicker" type="color" value="#FFF9FA" onchange="applyCustomBg(this.value)" class="w-7 h-7 rounded-lg border-2 border-[var(--text-color)] cursor-pointer bg-transparent">
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer">
+                                <span>高亮色素</span>
+                                <input id="customInkPicker" type="color" value="#FFB7B2" onchange="applyCustomInk(this.value)" class="w-7 h-7 rounded-lg border-2 border-[var(--text-color)] cursor-pointer bg-transparent">
+                            </label>
+                        </div>
                     </div>
-                </div>
-                <div>
-                    <p class="text-[11px] font-mono font-bold text-[var(--text-muted)] mb-2">● 覆盖画布底层纹理 // CANVAS PATTERN</p>
-                    <div class="grid grid-cols-3 gap-2">
-                        <button onclick="changePattern('dots')" id="pattern-btn-dots" data-i18n="opt_dots" class="border-2 border-slate-300 py-1.5 bg-[var(--card-bg)] rounded-xl text-xs font-bold">波普圆点</button>
-                        <button onclick="changePattern('grid')" id="pattern-btn-grid" data-i18n="opt_grid" class="border-2 border-slate-300 py-1.5 bg-[var(--card-bg)] rounded-xl text-xs font-bold">复古方格</button>
-                        <button onclick="changePattern('none')" id="pattern-btn-none" data-i18n="opt_none" class="border-2 border-slate-300 py-1.5 bg-[var(--card-bg)] rounded-xl text-xs font-bold">极简空白</button>
+                    <div>
+                        <p class="text-[11px] font-mono font-bold text-[var(--text-muted)] mb-2">● 覆盖画布底层纹理（5种）</p>
+                        <div class="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                            <button type="button" onclick="changePattern('dots')" id="pattern-btn-dots" class="border-2 border-slate-300 py-1.5 bg-[var(--card-bg)] rounded-xl text-xs font-bold">圆点</button>
+                            <button type="button" onclick="changePattern('grid')" id="pattern-btn-grid" class="border-2 border-slate-300 py-1.5 bg-[var(--card-bg)] rounded-xl text-xs font-bold">方格</button>
+                            <button type="button" onclick="changePattern('stripes')" id="pattern-btn-stripes" class="border-2 border-slate-300 py-1.5 bg-[var(--card-bg)] rounded-xl text-xs font-bold">斜纹</button>
+                            <button type="button" onclick="changePattern('lines')" id="pattern-btn-lines" class="border-2 border-slate-300 py-1.5 bg-[var(--card-bg)] rounded-xl text-xs font-bold">横线</button>
+                            <button type="button" onclick="changePattern('none')" id="pattern-btn-none" class="border-2 border-slate-300 py-1.5 bg-[var(--card-bg)] rounded-xl text-xs font-bold">空白</button>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-[11px] font-mono font-bold text-[var(--text-muted)] mb-2">● 卡片圆角 & 阴影厚度</p>
+                        <div class="grid grid-cols-3 gap-2 mb-2">
+                            <button type="button" onclick="changeRadius('28px')" id="rad-28px" class="border-2 border-slate-300 py-1.5 bg-[var(--card-bg)] rounded-xl text-xs font-bold">果冻圆角</button>
+                            <button type="button" onclick="changeRadius('16px')" id="rad-16px" class="border-2 border-slate-300 py-1.5 bg-[var(--card-bg)] rounded-xl text-xs font-bold">标准手账</button>
+                            <button type="button" onclick="changeRadius('4px')" id="rad-4px" class="border-2 border-slate-300 py-1.5 bg-[var(--card-bg)] rounded-xl text-xs font-bold">硬核像素</button>
+                        </div>
+                        <div class="grid grid-cols-4 gap-2">
+                            <button type="button" onclick="changeShadow('0px')" id="shd-0px" class="border-2 border-slate-300 py-1.5 bg-[var(--card-bg)] rounded-xl text-[11px] font-bold">扁平</button>
+                            <button type="button" onclick="changeShadow('3px')" id="shd-3px" class="border-2 border-slate-300 py-1.5 bg-[var(--card-bg)] rounded-xl text-[11px] font-bold">轻盈</button>
+                            <button type="button" onclick="changeShadow('5px')" id="shd-5px" class="border-2 border-slate-300 py-1.5 bg-[var(--card-bg)] rounded-xl text-[11px] font-bold">标准</button>
+                            <button type="button" onclick="changeShadow('9px')" id="shd-9px" class="border-2 border-slate-300 py-1.5 bg-[var(--card-bg)] rounded-xl text-[11px] font-bold">厚重</button>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-[11px] font-mono font-bold text-[var(--text-muted)] mb-2">● 背景喷漆交互</p>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button type="button" onclick="toggleSplatFx(true)" id="splat-on" class="border-2 border-slate-300 py-2 bg-[var(--card-bg)] rounded-xl text-xs font-bold">喷漆水花：开</button>
+                            <button type="button" onclick="toggleSplatFx(false)" id="splat-off" class="border-2 border-slate-300 py-2 bg-[var(--card-bg)] rounded-xl text-xs font-bold">喷漆水花：关</button>
+                        </div>
                     </div>
                 </div>
             </div>
         </section>
     </div>
 
-    <div class="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 select-none">
-        <button onclick="toggleLanguage()" class="cel-btn flex items-center space-x-1.5 bg-[var(--card-bg)] border-3 border-[var(--text-color)] px-4 py-2.5 rounded-2xl font-mono text-xs font-black shadow-[3px_3px_0px_0px_var(--shadow-color)]">
-            <span>🌐</span> <span id="langBtnLabel">LANG: 中文</span>
-        </button>
-    </div>
-
     <script>
-        const i18nTokens = {
-            zh: {
-                back_btn: "← 返回枢纽", page_title: "☑ MACARON_CHECKLIST // ARCH_03",
-                purge_btn: "一键清除已完成", sub_title: "核心任务自动化序列集",
-                add_btn: "注入", drawer_title: "马卡龙对决色素舱控制台 (点击展开/折叠)",
-                opt_dots: "波普圆点", opt_grid: "复古方格", opt_none: "极简空白"
-            },
-            en: {
-                back_btn: "← PORTAL HUB", page_title: "☑ MACARON_CHECKLIST // ARCH_03",
-                purge_btn: "PURGE_COMPLETED", sub_title: "Mission Registry Pipeline",
-                add_btn: "ADD", drawer_title: "MACARON COLOR MATCHUP DRAWERS (Click to open)",
-                opt_dots: "Pop Dots", opt_grid: "Retro Grid", opt_none: "Pure Cream"
-            }
-        };
-
         let todos = JSON.parse(localStorage.getItem('eris_cel_todos')) || [];
-        let currentLang = localStorage.getItem('eris_cel_lang') || 'zh';
         let currentPalette = localStorage.getItem('eris_cel_palette_todo') || 'c1';
         let currentPattern = localStorage.getItem('eris_cel_pattern') || 'dots';
+        let currentRadius = localStorage.getItem('eris_cel_radius') || '20px';
+        let currentShadow = localStorage.getItem('eris_cel_shadow') || '5px';
+        let splatEnabled = localStorage.getItem('eris_cel_fx') !== 'off';
+        let soundActive = localStorage.getItem('eris_cel_sound') !== 'false';
+        let currentFilter = 'all';
+        let editingId = null;
         let isDrawerOpen = false;
 
-        function applyLanguage(lang) {
-            currentLang = lang; localStorage.setItem('eris_cel_lang', lang);
-            const body = document.getElementById('canvasBody'); const label = document.getElementById('langBtnLabel');
-            if (lang === 'zh') { body.classList.remove('lang-en'); body.classList.add('lang-zh'); label.textContent = "LANG: 中文"; } 
-            else { body.classList.remove('lang-zh'); body.classList.add('lang-en'); label.textContent = "LANG: EN"; }
-            document.querySelectorAll('[data-i18n]').forEach(el => {
-                const token = el.getAttribute('data-i18n'); if (i18nTokens[lang][token]) el.textContent = i18nTokens[lang][token];
-            });
+        function escapeHtml(str) {
+            return String(str).replace(/[&<>"']/g, s => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[s]));
         }
-        function toggleLanguage() { applyLanguage(currentLang === 'zh' ? 'en' : 'zh'); playSquishBleep(true); }
+
+        function applySharedBasePalette() {
+            const shared = localStorage.getItem('eris_cel_palette');
+            const root = document.documentElement;
+            if (shared === 'monochrome') {
+                root.style.setProperty('--bg-color', '#131824');
+                root.style.setProperty('--text-color', '#FFFDF6');
+                root.style.setProperty('--text-muted', '#94A1B8');
+                root.style.setProperty('--card-bg', '#1E2638');
+                root.style.setProperty('--shadow-color', '#070A10');
+            } else if (shared === 'custom') {
+                const bg = localStorage.getItem('eris_cel_custom_bg');
+                if (bg) root.style.setProperty('--bg-color', bg);
+            }
+        }
+
+        function setFilter(filter) {
+            currentFilter = filter;
+            ['all', 'active', 'done'].forEach(f => {
+                const tab = document.getElementById(`tab-${f}`);
+                if (tab) tab.classList.toggle('filter-tab-active', f === filter);
+            });
+            renderTodos();
+            playSquishBleep(false);
+        }
 
         function renderTodos() {
-            const container = document.getElementById('todoList'); const badge = document.getElementById('todoCount'); container.innerHTML = '';
-            const doneCount = todos.filter(t => t.completed).length; badge.textContent = `${doneCount} / ${todos.length} DONE`;
-            
-            if(todos.length === 0) {
-                container.innerHTML = `<div class="text-center py-12 font-mono text-xs text-[var(--text-muted)] border-2 border-dashed border-[var(--text-color)] rounded-xl bg-slate-50/5">清单已经全面清空归零。</div>`;
+            const container = document.getElementById('todoList');
+            const badge = document.getElementById('todoCount');
+            const progressBar = document.getElementById('todoProgressBar');
+            container.innerHTML = '';
+
+            const doneCount = todos.filter(t => t.completed).length;
+            const total = todos.length;
+            const pct = total === 0 ? 0 : Math.round((doneCount / total) * 100);
+            badge.textContent = `${doneCount} / ${total} 完成`;
+            if (progressBar) progressBar.style.width = `${pct}%`;
+
+            const filtered = todos.filter(t => {
+                if (currentFilter === 'active') return !t.completed;
+                if (currentFilter === 'done') return t.completed;
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                const emptyText = total === 0 ? '清单已经全面清空归零。' : '当前筛选条件下没有任务。';
+                container.innerHTML = `<div class="text-center py-12 font-mono text-xs text-[var(--text-muted)] border-2 border-dashed border-[var(--text-color)] rounded-xl bg-slate-50/5">${emptyText}</div>`;
                 return;
             }
-            todos.forEach(todo => {
+
+            filtered.forEach(todo => {
                 const item = document.createElement('div');
-                // 【核心细节优化】：清单的复选块小盒子与图标完全对称对齐
-                item.className = `flex items-center justify-between p-3 rounded-xl border-2 border-[var(--text-color)] transition-all ${todo.completed ? 'bg-slate-100/40 text-slate-400 line-through' : 'bg-[var(--card-bg)] shadow-[2px_2px_0px_0px_var(--shadow-color)]'}`;
-                item.innerHTML = `
-                    <div class="flex items-center space-x-3 flex-1 cursor-pointer select-none" onclick="toggleTodo(${todo.id})">
-                        <span class="w-5 h-5 rounded-md border-2 border-[var(--text-color)] flex items-center justify-center font-display font-black text-xs transition-colors ${todo.completed ? 'bg-[var(--ink-2)] text-black' : 'bg-white'}">${todo.completed ? '✓' : ''}</span>
-                        <span class="leading-relaxed font-mono text-xs font-bold break-all">${todo.text}</span>
-                    </div>
-                    <button onclick="deleteTodo(${todo.id})" class="font-display font-black text-[10px] border-2 border-[var(--text-color)] bg-[var(--ink-1)] px-2 py-0.5 rounded-lg shadow-[1px_1px_0px_0px_var(--shadow-color)] active:translate-y-px transition-all ml-2">X</button>
-                `;
+                item.className = `flex items-center justify-between p-3 rounded-xl border-2 border-[var(--text-color)] transition-all ${todo.completed ? 'opacity-65 bg-slate-200/30 line-through' : 'bg-[var(--card-bg)] shadow-[2px_2px_0px_0px_var(--shadow-color)]'}`;
+
+                if (editingId === todo.id) {
+                    item.innerHTML = `
+                        <div class="flex items-center space-x-2 flex-1">
+                            <input id="edit-input-${todo.id}" type="text" value="${escapeHtml(todo.text)}" class="flex-1 cel-input rounded-lg px-2.5 py-1 text-xs font-mono" />
+                            <button type="button" onclick="saveEdit(${todo.id})" class="font-mono font-black text-[10px] border-2 border-[var(--text-color)] bg-[var(--ink-2)] text-[#1E2229] px-2.5 py-1 rounded-lg">保存</button>
+                            <button type="button" onclick="cancelEdit()" class="font-mono font-black text-[10px] border-2 border-[var(--text-color)] bg-white text-[#1E2229] px-2 py-1 rounded-lg">取消</button>
+                        </div>
+                    `;
+                } else {
+                    item.innerHTML = `
+                        <div class="flex items-center space-x-3 flex-1 min-w-0">
+                            <button type="button" onclick="toggleTodo(${todo.id})" aria-label="切换完成状态" class="w-5 h-5 shrink-0 rounded-md border-2 border-[var(--text-color)] flex items-center justify-center font-display font-black text-xs transition-colors ${todo.completed ? 'bg-[var(--ink-2)] text-black' : 'bg-white text-black'}">${todo.completed ? '✓' : ''}</button>
+                            <span ondblclick="startEdit(${todo.id})" class="leading-relaxed font-mono text-xs font-bold break-all cursor-pointer flex-1">${escapeHtml(todo.text)}</span>
+                        </div>
+                        <div class="flex items-center space-x-1.5 ml-2 shrink-0">
+                            <button type="button" onclick="startEdit(${todo.id})" class="font-display font-black text-[10px] border-2 border-[var(--text-color)] bg-[var(--ink-3)] text-[#1E2229] px-2 py-0.5 rounded-lg shadow-[1px_1px_0px_0px_var(--shadow-color)] active:translate-y-px transition-all">✎</button>
+                            <button type="button" onclick="deleteTodo(${todo.id})" class="font-display font-black text-[10px] border-2 border-[var(--text-color)] bg-[var(--ink-1)] text-[#1E2229] px-2 py-0.5 rounded-lg shadow-[1px_1px_0px_0px_var(--shadow-color)] active:translate-y-px transition-all">X</button>
+                        </div>
+                    `;
+                }
                 container.appendChild(item);
+
+                if (editingId === todo.id) {
+                    const input = document.getElementById(`edit-input-${todo.id}`);
+                    if (input) {
+                        input.focus();
+                        input.setSelectionRange(input.value.length, input.value.length);
+                        input.addEventListener('keydown', (e) => {
+                            if (e.key === 'Enter') saveEdit(todo.id);
+                            if (e.key === 'Escape') cancelEdit();
+                        });
+                    }
+                }
             });
         }
 
+        function startEdit(id) { editingId = id; renderTodos(); playSquishBleep(false); }
+        function saveEdit(id) {
+            const input = document.getElementById(`edit-input-${id}`);
+            if (!input) return;
+            const val = input.value.trim();
+            if (val) {
+                todos = todos.map(t => t.id === id ? { ...t, text: val } : t);
+                localStorage.setItem('eris_cel_todos', JSON.stringify(todos));
+            }
+            editingId = null; renderTodos(); playSquishBleep(true);
+        }
+        function cancelEdit() { editingId = null; renderTodos(); }
+
         document.getElementById('todoForm').addEventListener('submit', (e) => {
-            e.preventDefault(); const input = document.getElementById('todoInput'); if(!input.value.trim()) return;
+            e.preventDefault();
+            const input = document.getElementById('todoInput');
+            if (!input.value.trim()) return;
             todos.unshift({ id: Date.now(), text: input.value.trim(), completed: false });
-            input.value = ''; localStorage.setItem('eris_cel_todos', JSON.stringify(todos)); renderTodos(); playSquishBleep(true);
+            input.value = '';
+            localStorage.setItem('eris_cel_todos', JSON.stringify(todos));
+            if (currentFilter === 'done') setFilter('all');
+            else renderTodos();
+            playSquishBleep(true);
         });
 
-        function toggleTodo(id) { todos = todos.map(t => t.id === id ? {...t, completed: !t.completed} : t); localStorage.setItem('eris_cel_todos', JSON.stringify(todos)); renderTodos(); playSquishBleep(false); }
+        function toggleTodo(id) { todos = todos.map(t => t.id === id ? { ...t, completed: !t.completed } : t); localStorage.setItem('eris_cel_todos', JSON.stringify(todos)); renderTodos(); playSquishBleep(false); }
         function deleteTodo(id) { todos = todos.filter(t => t.id !== id); localStorage.setItem('eris_cel_todos', JSON.stringify(todos)); renderTodos(); playSquishBleep(false); }
         function purgeCompleted() { todos = todos.filter(t => !t.completed); localStorage.setItem('eris_cel_todos', JSON.stringify(todos)); renderTodos(); playSquishBleep(true); }
-        function toggleStudioDrawer() { isDrawerOpen = !isDrawerOpen; const content = document.getElementById('drawerContent'); const arrow = document.getElementById('drawerArrow'); if (isDrawerOpen) { content.classList.remove('hidden'); arrow.textContent = '▼'; } else { content.classList.add('hidden'); arrow.textContent = '▲'; } playSquishBleep(false); }
 
-        function changePalette(type) {
-            currentPalette = type; localStorage.setItem('eris_cel_palette_todo', type);
-            const root = document.documentElement;
-            if(type === 'c1') {
-                root.style.setProperty('--bg-color', '#FFF9FA'); root.style.setProperty('--text-color', '#1E2229'); root.style.setProperty('--card-bg', '#FFFFFF'); root.style.setProperty('--shadow-color', '#1E2229');
-            } else if(type === 'c2') {
-                root.style.setProperty('--bg-color', '#F5FFF7'); root.style.setProperty('--text-color', '#1A241C'); root.style.setProperty('--card-bg', '#FFFFFF'); root.style.setProperty('--shadow-color', '#1A241C');
-            } else if(type === 'c3') {
-                root.style.setProperty('--bg-color', '#FFFFF2'); root.style.setProperty('--text-color', '#26261A'); root.style.setProperty('--card-bg', '#FFFFFF'); root.style.setProperty('--shadow-color', '#26261A');
-            }
-            document.querySelectorAll('[id^="palette-"]').forEach(btn => btn.classList.remove('active-option'));
-            const act = document.getElementById(`palette-${type}`); if(act) act.classList.add('active-option');
+        function toggleStudioDrawer() {
+            isDrawerOpen = !isDrawerOpen;
+            const content = document.getElementById('drawerContent');
+            const arrow = document.getElementById('drawerArrow');
+            if (isDrawerOpen) { content.classList.remove('hidden'); arrow.textContent = '▼'; } 
+            else { content.classList.add('hidden'); arrow.textContent = '▲'; }
             playSquishBleep(false);
         }
 
-        function changePattern(pattern) {
-            currentPattern = pattern; localStorage.setItem('eris_cel_pattern', pattern);
-            const body = document.getElementById('canvasBody'); body.classList.remove('pattern-dots', 'pattern-grid', 'pattern-none'); body.classList.add(`pattern-${pattern}`);
-            document.querySelectorAll('[id^="pattern-btn-"]').forEach(btn => btn.classList.remove('active-option'));
-            const act = document.getElementById(`pattern-btn-${pattern}`); if(act) act.classList.add('active-option');
+        function changePalette(type, silent = false) {
+            currentPalette = type;
+            localStorage.setItem('eris_cel_palette_todo', type);
+            const root = document.documentElement;
+            const shared = localStorage.getItem('eris_cel_palette');
+            if (shared !== 'monochrome' && shared !== 'custom') {
+                if (type === 'c1') { root.style.setProperty('--bg-color', '#FFF9FA'); root.style.setProperty('--text-color', '#1E2229'); root.style.setProperty('--card-bg', '#FFFFFF'); root.style.setProperty('--shadow-color', '#1E2229'); document.getElementById('customBgPicker').value = '#FFF9FA'; }
+                else if (type === 'c2') { root.style.setProperty('--bg-color', '#F5FFF7'); root.style.setProperty('--text-color', '#1A241C'); root.style.setProperty('--card-bg', '#FFFFFF'); root.style.setProperty('--shadow-color', '#1A241C'); document.getElementById('customBgPicker').value = '#F5FFF7'; }
+                else if (type === 'c3') { root.style.setProperty('--bg-color', '#FFFFF2'); root.style.setProperty('--text-color', '#26261A'); root.style.setProperty('--card-bg', '#FFFFFF'); root.style.setProperty('--shadow-color', '#26261A'); document.getElementById('customBgPicker').value = '#FFFFF2'; }
+            }
+            const inkMap = { c1: '#FFB7B2', c2: '#BFFCC6', c3: '#FFDAC1' };
+            const ink = inkMap[type] || '#FFB7B2';
+            root.style.setProperty('--ink-active', ink);
+            document.getElementById('customInkPicker').value = ink;
+            document.querySelectorAll('[id^="palette-"]').forEach(btn => btn.classList.remove('active-option'));
+            const act = document.getElementById(`palette-${type}`);
+            if (act) act.classList.add('active-option');
+            if (!silent) playSquishBleep(false);
+        }
+
+        function applyCustomBg(val) {
+            document.documentElement.style.setProperty('--bg-color', val);
+            localStorage.setItem('eris_cel_palette', 'custom');
+            localStorage.setItem('eris_cel_custom_bg', val);
             playSquishBleep(false);
+        }
+
+        function applyCustomInk(val) {
+            document.documentElement.style.setProperty('--ink-active', val);
+            localStorage.setItem('eris_cel_custom_todo_ink', val);
+            playSquishBleep(false);
+        }
+
+        function changePattern(pattern, silent = false) {
+            currentPattern = pattern;
+            localStorage.setItem('eris_cel_pattern', pattern);
+            const body = document.getElementById('canvasBody');
+            body.classList.remove('pattern-dots', 'pattern-grid', 'pattern-stripes', 'pattern-lines', 'pattern-none');
+            body.classList.add(`pattern-${pattern}`);
+            document.querySelectorAll('[id^="pattern-btn-"]').forEach(btn => btn.classList.remove('active-option'));
+            const act = document.getElementById(`pattern-btn-${pattern}`);
+            if (act) act.classList.add('active-option');
+            if (!silent) playSquishBleep(false);
+        }
+
+        function changeRadius(rad, silent = false) {
+            currentRadius = rad;
+            localStorage.setItem('eris_cel_radius', rad);
+            document.documentElement.style.setProperty('--card-radius', rad);
+            document.querySelectorAll('[id^="rad-"]').forEach(btn => btn.classList.remove('active-option'));
+            const act = document.getElementById(`rad-${rad}`);
+            if (act) act.classList.add('active-option');
+            if (!silent) playSquishBleep(false);
+        }
+
+        function changeShadow(shd, silent = false) {
+            currentShadow = shd;
+            localStorage.setItem('eris_cel_shadow', shd);
+            document.documentElement.style.setProperty('--shadow-offset', shd);
+            document.querySelectorAll('[id^="shd-"]').forEach(btn => btn.classList.remove('active-option'));
+            const act = document.getElementById(`shd-${shd}`);
+            if (act) act.classList.add('active-option');
+            if (!silent) playSquishBleep(false);
+        }
+
+        function toggleSplatFx(enabled, silent = false) {
+            splatEnabled = enabled;
+            localStorage.setItem('eris_cel_fx', enabled ? 'random' : 'off');
+            document.getElementById('splat-on').classList.toggle('active-option', enabled);
+            document.getElementById('splat-off').classList.toggle('active-option', !enabled);
+            if (!silent) playSquishBleep(false);
         }
 
         // --- AUDIO SCENARIOS ---
         let audioCtx = null;
+        const soundToggleBtn = document.getElementById('soundToggle');
+        const soundStatusSpan = document.getElementById('soundStatus');
+
+        function syncSoundUI() {
+            if (soundActive) { soundStatusSpan.textContent = 'SFX: ON'; soundToggleBtn.style.opacity = '1'; soundToggleBtn.classList.remove('sound-muted'); }
+            else { soundStatusSpan.textContent = 'SFX: OFF'; soundToggleBtn.style.opacity = '0.6'; soundToggleBtn.classList.add('sound-muted'); }
+        }
+
+        soundToggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            soundActive = !soundActive;
+            localStorage.setItem('eris_cel_sound', soundActive);
+            syncSoundUI();
+            if (soundActive) playSquishBleep(false);
+        });
+
         function playSquishBleep(isSpecial = false) {
+            if (!soundActive) return;
             try {
                 if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 if (audioCtx.state === 'suspended') audioCtx.resume();
-                const now = audioCtx.currentTime; const osc = audioCtx.createOscillator();
-                osc.type = 'sine'; osc.frequency.setValueAtTime(isSpecial ? 480 : 320, now);
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(isSpecial ? 480 : 320, now);
                 osc.frequency.exponentialRampToValueAtTime(70, now + 0.16);
-                const gainNode = audioCtx.createGain(); gainNode.gain.setValueAtTime(0.07, now);
+                const gainNode = audioCtx.createGain();
+                gainNode.gain.setValueAtTime(0.07, now);
                 gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
                 osc.connect(gainNode); gainNode.connect(audioCtx.destination);
                 osc.start(now); osc.stop(now + 0.18);
             } catch (e) {}
         }
 
-        // --- SPLATOON INK GRAFFITI GENERATOR (马卡龙涂鸦大水花) ---
-        const canvas = document.getElementById('splatCanvas'); const ctx = canvas.getContext('2d');
-        let dpr = window.devicePixelRatio || 1; let splats = [];
+        // --- SPLATOON INK GRAFFITI GENERATOR ---
+        const canvas = document.getElementById('splatCanvas');
+        const ctx = canvas.getContext('2d');
+        let dpr = window.devicePixelRatio || 1;
+        let splats = [];
 
-        function initCanvas() { dpr = window.devicePixelRatio || 1; canvas.width = window.innerWidth * dpr; canvas.height = window.innerHeight * dpr; ctx.scale(dpr, dpr); }
+        function initCanvas() {
+            dpr = window.devicePixelRatio || 1;
+            canvas.width = window.innerWidth * dpr;
+            canvas.height = window.innerHeight * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
 
         class InkSplat {
             constructor(x, y) {
                 this.x = x; this.y = y; this.radius = 0; this.maxRadius = Math.random() * 22 + 22;
-                this.opacity = 0.85; this.growthSpeed = 2.0; // 缓步向外溢出开花
+                this.opacity = 0.85; this.growthSpeed = 2.0;
                 const macaronInks = ['#FFB7B2', '#BFFCC6', '#FFDAC1', '#FFC6FF', '#B5E2FA'];
                 this.color = macaronInks[Math.floor(Math.random() * macaronInks.length)];
                 this.drops = [];
                 let dropCount = Math.floor(Math.random() * 4) + 5;
-                for(let i=0; i<dropCount; i++) {
+                for (let i = 0; i < dropCount; i++) {
                     let angle = (i / dropCount) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
                     let targetDist = Math.random() * 38 + 28;
-                    this.drops.push({ cx: 0, cy: 0, tx: Math.cos(angle)*targetDist, ty: Math.sin(angle)*targetDist, r: 0, mr: Math.random()*5 + 3.5 });
+                    this.drops.push({ cx: 0, cy: 0, tx: Math.cos(angle) * targetDist, ty: Math.sin(angle) * targetDist, r: 0, mr: Math.random() * 5 + 3.5 });
                 }
             }
             update() {
-                if(this.radius < this.maxRadius) this.radius += this.growthSpeed;
-                this.drops.forEach(d => {
-                    d.cx += (d.tx - d.cx) * 0.08; d.cy += (d.ty - d.cy) * 0.08;
-                    if(d.r < d.mr) d.r += this.growthSpeed * 0.15;
-                });
-                if(this.radius >= this.maxRadius) this.opacity -= 0.005;
+                if (this.radius < this.maxRadius) this.radius += this.growthSpeed;
+                this.drops.forEach(d => { d.cx += (d.tx - d.cx) * 0.08; d.cy += (d.ty - d.cy) * 0.08; if (d.r < d.mr) d.r += this.growthSpeed * 0.15; });
+                if (this.radius >= this.maxRadius) this.opacity -= 0.005;
             }
             draw() {
-                ctx.save(); ctx.globalAlpha = this.opacity; ctx.fillStyle = this.color;
+                ctx.save(); ctx.globalAlpha = Math.max(0, this.opacity); ctx.fillStyle = this.color;
                 ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fill();
                 this.drops.forEach(d => {
                     ctx.beginPath(); ctx.arc(this.x + d.cx, this.y + d.cy, d.r, 0, Math.PI * 2); ctx.fill();
@@ -302,17 +529,31 @@
         }
 
         window.addEventListener('mousedown', (e) => {
-            if (e.target.closest('header') || e.target.closest('main') || e.target.closest('button') || e.target.closest('section') || e.target.closest('input')) return;
-            playSquishBleep(false); splats.push(new InkSplat(e.clientX, e.clientY));
+            if (!splatEnabled) return;
+            if (e.target.closest('header') || e.target.closest('main') || e.target.closest('button') || e.target.closest('section') || e.target.closest('input') || e.target.closest('a')) return;
+            playSquishBleep(false);
+            splats.push(new InkSplat(e.clientX, e.clientY));
         });
 
         function animate() {
             ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
-            splats = splats.filter(s => s.opacity > 0); splats.forEach(s => { s.update(); s.draw(); });
+            splats = splats.filter(s => s.opacity > 0);
+            splats.forEach(s => { s.update(); s.draw(); });
             requestAnimationFrame(animate);
         }
 
-        applyLanguage(currentLang); changePalette(currentPalette); changePattern(currentPattern); renderTodos(); initCanvas(); animate();
+        applySharedBasePalette();
+        changePalette(currentPalette, true);
+        const savedInk = localStorage.getItem('eris_cel_custom_todo_ink');
+        if (savedInk) { document.documentElement.style.setProperty('--ink-active', savedInk); document.getElementById('customInkPicker').value = savedInk; }
+        changePattern(currentPattern, true);
+        changeRadius(currentRadius, true);
+        changeShadow(currentShadow, true);
+        toggleSplatFx(splatEnabled, true);
+        syncSoundUI();
+        renderTodos();
+        initCanvas();
+        animate();
         window.addEventListener('resize', initCanvas);
     </script>
 </body>
