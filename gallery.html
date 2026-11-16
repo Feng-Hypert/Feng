@@ -24,47 +24,61 @@
     </script>
     
     <style>
-        /* 全局动态自适应配色系统 */
+        /* 全局动态自适应配色与 DIY 变量系统 */
         :root {
             --bg-color: #FFFDF6;       /* 香草奶糕底 */
             --text-color: #1A1C23;     /* 炭黑粗线条色 */
             --text-muted: #5A5E6D;     /* 描述文本色 */
             --card-bg: #FFFFFF;        /* 动态卡片容器底 */
             --shadow-color: #1A1C23;   /* 固体投影色 */
-            --accent-main: #A8E6CF;    /* 奶香抹茶 */
-            --accent-sub: #FFD3B6;     /* 蜜桃欧蕾 */
-            --accent-third: #DCE5F7;   /* 浅空燕麦 */
-            --solid-shadow: 5px 5px 0px 0px var(--shadow-color);
+            --accent-main: #A8E6CF;    /* 主强调色 */
+            --accent-sub: #FFD3B6;     /* 次强调色 */
+            --accent-third: #DCE5F7;   /* 第三强调色 */
+            --card-radius: 24px;
+            --shadow-offset: 5px;
+            --solid-shadow: var(--shadow-offset) var(--shadow-offset) 0px 0px var(--shadow-color);
             --solid-shadow-sm: 3px 3px 0px 0px var(--shadow-color);
-            --solid-shadow-lg: 10px 10px 0px 0px var(--shadow-color);
+            --solid-shadow-lg: calc(var(--shadow-offset) + 4px) calc(var(--shadow-offset) + 4px) 0px 0px var(--shadow-color);
         }
 
         body {
             background-color: var(--bg-color);
             color: var(--text-color);
-            transition: background-color 0.35s ease, color 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+            font-family: 'Fredoka', 'system-ui', "-apple-system", "PingFang SC", "Microsoft YaHei", sans-serif;
+            font-weight: 700;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
-        /* 动态语境字族流 */
-        .lang-en { font-family: 'Fredoka', sans-serif; }
-        .lang-zh { font-family: 'Fredoka', 'system-ui', "-apple-system", "SimHei", "Microsoft YaHei", sans-serif; font-weight: 700; }
+        .border-3 { border-width: 3px; border-style: solid; }
+        .border-t-3 { border-top-width: 3px; border-top-style: solid; }
 
-        /* 手账动态底纹覆盖层 */
+        /* 手账动态底纹（5种） */
         .pattern-dots { background-image: radial-gradient(var(--text-color) 1.5px, transparent 1.5px); background-size: 24px 24px; }
         .pattern-grid { background-image: linear-gradient(var(--text-color) 1px, transparent 1px), linear-gradient(90deg, var(--text-color) 1px, transparent 1px); background-size: 20px 20px; }
+        .pattern-stripes { background-image: repeating-linear-gradient(45deg, transparent, transparent 14px, rgba(128,128,128,0.12) 14px, rgba(128,128,128,0.12) 16px); }
+        .pattern-lines { background-image: linear-gradient(transparent 23px, rgba(128,128,128,0.18) 24px); background-size: 100% 24px; }
         .pattern-none { background-image: none; }
 
         /* 赛璐璐双向触控主入口卡片 */
         .cel-portal-card {
             background-color: var(--card-bg);
             border: 4px solid var(--text-color);
+            border-radius: var(--card-radius);
             box-shadow: var(--solid-shadow);
             transform: translate(0px, 0px);
             transition: all 0.2s steps(4);
         }
-        .cel-portal-card:hover {
+        .cel-portal-card:hover, .cel-portal-card:focus-visible {
             transform: translate(-4px, -4px);
             box-shadow: var(--solid-shadow-lg);
+            outline: none;
+        }
+
+        .cel-surface {
+            background-color: var(--card-bg);
+            border: 3px solid var(--text-color);
+            border-radius: calc(var(--card-radius) * 0.75);
+            box-shadow: var(--solid-shadow);
         }
 
         .cel-btn {
@@ -76,221 +90,397 @@
         .cel-btn:hover { transform: translate(-1px, -1px); box-shadow: var(--solid-shadow); }
         .cel-btn:active { transform: translate(3px, 3px); box-shadow: 0px 0px 0px 0px var(--text-color); }
 
-        /* DIY 工作室激活选项的高反差赛璐璐框 */
         .active-option {
             border-color: var(--text-color) !important;
             transform: scale(1.04);
             box-shadow: 3px 3px 0px 0px var(--text-color) !important;
         }
 
-        @keyframes bleepBounce { 0%, 100% { height: 6px; } 50% { height: 22px; } }
+        @keyframes bleepBounce { 0%, 100% { height: 6px; } 50% { height: 18px; } }
         .bar-1 { animation: bleepBounce 0.4s steps(3) infinite alternate; }
         .bar-2 { animation: bleepBounce 0.3s steps(3) infinite alternate 0.05s; }
         .bar-3 { animation: bleepBounce 0.5s steps(4) infinite alternate 0.1s; }
+        .sound-muted .bar-1, .sound-muted .bar-2, .sound-muted .bar-3 {
+            animation: none !important;
+            height: 4px !important;
+        }
     </style>
 </head>
-<body class="font-sans relative min-h-screen overflow-x-hidden p-4 sm:p-6 md:p-8 pattern-dots lang-zh" id="canvasBody">
+<body class="font-sans relative min-h-screen overflow-x-hidden p-4 sm:p-6 md:p-8 pattern-dots" id="canvasBody">
 
     <canvas id="popCanvas" class="fixed inset-0 w-full h-full block z-[14] pointer-events-none"></canvas>
 
-    <div class="relative min-h-screen flex flex-col justify-between z-20 max-w-5xl mx-auto pb-24 md:pb-32">
+    <div class="relative min-h-screen flex flex-col justify-between z-20 max-w-5xl mx-auto pb-16 md:pb-24">
         
-        <header class="w-full flex justify-between items-center bg-[var(--card-bg)] border-3 border-[var(--text-color)] shadow-[4px_4px_0px_0px_var(--shadow-color)] p-3 sm:p-4 rounded-2xl mb-8 md:mb-12 select-none">
-            <div class="flex items-center space-x-3 sm:space-x-4">
-                <a href="./index.html" id="btn-exit" data-i18n="exit_btn" class="cel-btn font-bold text-[11px] sm:text-xs bg-[var(--accent-sub)] text-[var(--text-color)] px-3 sm:px-4 py-2 rounded-xl tracking-wider sm:tracking-widest">
-                    ← 返回首页
-                </a>
-                <span id="txt-hub-title" data-i18n="hub_title" class="hidden md:inline-block font-display font-black text-sm tracking-wider uppercase">CREAMY_PORTAL // ARCH_03</span>
+        <!-- 顶栏：已去掉返回首页入口 -->
+        <header class="cel-surface w-full flex justify-between items-center p-3 sm:p-4 mb-8 md:mb-12 select-none">
+            <div class="flex items-center space-x-3">
+                <span id="hubSticker" class="w-9 h-9 flex items-center justify-center text-lg bg-[var(--accent-sub)] border-2 border-[var(--text-color)] rounded-xl shadow-[2px_2px_0px_0px_var(--shadow-color)]">🦑</span>
+                <div>
+                    <span class="block font-display font-black text-sm tracking-wider uppercase">CREAMY_PORTAL // ARCH_03</span>
+                    <span id="hubMottoDisplay" class="block font-mono text-[10px] text-[var(--text-muted)]">随心记录 · 收集灵感碎片</span>
+                </div>
             </div>
             
-            <button id="soundToggle" class="cel-btn flex items-center space-x-2 font-mono text-[11px] sm:text-xs font-bold bg-[var(--accent-third)] text-[var(--text-color)] px-2.5 sm:px-3 py-1.5 rounded-xl">
+            <button id="soundToggle" type="button" class="cel-btn flex items-center space-x-2 font-mono text-[11px] sm:text-xs font-bold bg-[var(--accent-third)] text-[#1A1C23] px-2.5 sm:px-3 py-1.5 rounded-xl">
                 <span id="soundStatus">BEEP: ON</span>
                 <div class="flex items-end space-x-0.5 h-3.5 w-3.5">
-                    <div class="w-0.5 bg-[var(--text-color)] bar-1"></div>
-                    <div class="w-0.5 bg-[var(--text-color)] bar-2"></div>
-                    <div class="w-0.5 bg-[var(--text-color)] bar-3"></div>
+                    <div class="w-0.5 bg-[#1A1C23] bar-1"></div>
+                    <div class="w-0.5 bg-[#1A1C23] bar-2"></div>
+                    <div class="w-0.5 bg-[#1A1C23] bar-3"></div>
                 </div>
             </button>
         </header>
 
         <main class="w-full grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 md:gap-10 items-center justify-center my-auto py-4">
             
-            <div onclick="navigateToPage('notebook')" class="cel-portal-card rounded-3xl p-6 sm:p-8 flex flex-col justify-between min-h-[260px] md:h-[300px] cursor-pointer group select-none">
+            <div tabindex="0" role="button" onclick="navigateToPage('notebook')" onkeydown="handleCardKey(event, 'notebook')" class="cel-portal-card p-6 sm:p-8 flex flex-col justify-between min-h-[260px] md:h-[300px] cursor-pointer group select-none">
                 <div class="space-y-3 sm:space-y-4">
                     <div class="flex justify-between items-center">
                         <div class="w-14 h-14 flex items-center justify-center text-2xl sm:text-3xl bg-[var(--accent-sub)] border-3 border-[var(--text-color)] rounded-2xl shadow-[3px_3px_0px_0px_var(--shadow-color)]">
                             <span>📓</span>
                         </div>
-                        <span class="font-mono text-[10px] sm:text-xs font-black opacity-30">MODULE_01 // MEMO_JOURNAL</span>
+                        <span id="badge-notes-count" class="font-mono text-[10px] sm:text-xs font-black bg-[var(--accent-sub)]/40 border-2 border-[var(--text-color)] px-2.5 py-0.5 rounded-lg">0 篇记录</span>
                     </div>
-                    <h3 id="card-notes-title" data-i18n="notes_title" class="text-xl sm:text-2xl font-display font-black tracking-wide">记事本</h3>
-                    <p id="card-notes-desc" data-i18n="notes_desc" class="text-xs font-medium leading-relaxed text-[var(--text-muted)] max-w-sm">随心所想，随事所记</p>
+                    <h3 class="text-xl sm:text-2xl font-display font-black tracking-wide">记事本</h3>
+                    <p class="text-xs font-medium leading-relaxed text-[var(--text-muted)] max-w-sm">随心所想，随事所记</p>
                 </div>
-                <div class="flex justify-end pt-4">
-                    <span id="card-notes-action" data-i18n="notes_action" class="font-mono text-[11px] sm:text-xs font-black bg-[var(--text-color)] text-[var(--card-bg)] px-3.5 sm:px-4 py-1.5 rounded-xl border-2 border-[var(--text-color)] group-hover:bg-[var(--accent-sub)] group-hover:text-[var(--text-color)] transition-colors">进入 →</span>
+                <div class="flex justify-between items-center pt-4">
+                    <span class="font-mono text-[10px] font-black opacity-40">MODULE_01 // JOURNAL</span>
+                    <span class="font-mono text-[11px] sm:text-xs font-black bg-[var(--text-color)] text-[var(--card-bg)] px-3.5 sm:px-4 py-1.5 rounded-xl border-2 border-[var(--text-color)] group-hover:bg-[var(--accent-sub)] group-hover:text-[#1A1C23] transition-colors">进入 →</span>
                 </div>
             </div>
 
-            <div onclick="navigateToPage('checklist')" class="cel-portal-card rounded-3xl p-6 sm:p-8 flex flex-col justify-between min-h-[260px] md:h-[300px] cursor-pointer group select-none">
+            <div tabindex="0" role="button" onclick="navigateToPage('checklist')" onkeydown="handleCardKey(event, 'checklist')" class="cel-portal-card p-6 sm:p-8 flex flex-col justify-between min-h-[260px] md:h-[300px] cursor-pointer group select-none">
                 <div class="space-y-3 sm:space-y-4">
                     <div class="flex justify-between items-center">
                         <div class="w-14 h-14 flex items-center justify-center text-2xl sm:text-3xl bg-[var(--accent-main)] border-3 border-[var(--text-color)] rounded-2xl shadow-[3px_3px_0px_0px_var(--shadow-color)]">
                             <span>☑</span>
                         </div>
-                        <span class="font-mono text-[10px] sm:text-xs font-black opacity-30">MODULE_02 // REQUIREMENT</span>
+                        <span id="badge-todos-count" class="font-mono text-[10px] sm:text-xs font-black bg-[var(--accent-main)]/40 border-2 border-[var(--text-color)] px-2.5 py-0.5 rounded-lg">0 / 0 完成</span>
                     </div>
-                    <h3 id="card-todo-title" data-i18n="todo_title" class="text-xl sm:text-2xl font-display font-black tracking-wide">清单</h3>
-                    <p id="card-todo-desc" data-i18n="todo_desc" class="text-xs font-medium leading-relaxed text-[var(--text-muted)] max-w-sm">整理思绪，量化记忆</p>
+                    <h3 class="text-xl sm:text-2xl font-display font-black tracking-wide">清单</h3>
+                    <p class="text-xs font-medium leading-relaxed text-[var(--text-muted)] max-w-sm">整理思绪，量化记忆</p>
                 </div>
-                <div class="flex justify-end pt-4">
-                    <span id="card-todo-action" data-i18n="todo_action" class="font-mono text-[11px] sm:text-xs font-black bg-[var(--text-color)] text-[var(--card-bg)] px-3.5 sm:px-4 py-1.5 rounded-xl border-2 border-[var(--text-color)] group-hover:bg-[var(--accent-main)] group-hover:text-[var(--text-color)] transition-colors">进入 →</span>
+                <div class="flex justify-between items-center pt-4">
+                    <span class="font-mono text-[10px] font-black opacity-40">MODULE_02 // CHECKLIST</span>
+                    <span class="font-mono text-[11px] sm:text-xs font-black bg-[var(--text-color)] text-[var(--card-bg)] px-3.5 sm:px-4 py-1.5 rounded-xl border-2 border-[var(--text-color)] group-hover:bg-[var(--accent-main)] group-hover:text-[#1A1C23] transition-colors">进入 →</span>
                 </div>
             </div>
 
         </main>
 
+        <!-- 升级版 DIY 工作室面板 -->
         <section id="studioDrawer" class="w-full mt-8 md:mt-12 select-none">
-            <button onclick="toggleStudioDrawer()" class="w-full border-3 border-[var(--text-color)] bg-[var(--card-bg)] shadow-[3px_3px_0px_0px_var(--shadow-color)] p-3 rounded-2xl font-bold text-xs flex items-center justify-between hover:bg-slate-50/5 transition-colors">
+            <button type="button" onclick="toggleStudioDrawer()" class="cel-surface w-full p-3.5 font-bold text-xs flex items-center justify-between hover:opacity-95 transition-opacity">
                 <div class="flex items-center space-x-2">
                     <span>🛠️</span>
-                    <span id="drawer-title" data-i18n="drawer_title">DIY 工作室面板 (点击-展开/折叠)</span>
+                    <span>DIY 工作室面板（配色 / 底纹 / 圆角 / 阴影 / 特效 / 贴纸）</span>
                 </div>
                 <span id="drawerArrow" class="transform transition-transform duration-300">▲</span>
             </button>
             
-            <div id="drawerContent" class="hidden mt-4 bg-[var(--card-bg)] border-3 border-[var(--text-color)] shadow-[4px_4px_0px_0px_var(--shadow-color)] rounded-2xl p-4 sm:p-5 grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <p id="drawer-p-color" data-i18n="drawer_p_color" class="text-[11px] font-mono font-bold text-[var(--text-muted)] mb-2">● 手账配色盘 // PALETTE CONFIG</p>
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                        <button id="palette-matcha" onclick="changePalette('matcha')" class="border-2 border-slate-300 px-2 py-2 bg-[#A8E6CF] text-[#1A1C23] rounded-xl text-xs font-bold transition-all">抹茶 🍵</button>
-                        <button id="palette-peach" onclick="changePalette('peach')" class="border-2 border-slate-300 px-2 py-2 bg-[#FFD3B6] text-[#231A1A] rounded-xl text-xs font-bold transition-all">蜜桃 🍑</button>
-                        <button id="palette-taro" onclick="changePalette('taro')" class="border-2 border-slate-300 px-2 py-2 bg-[#E8D7FF] text-[#1C1924] rounded-xl text-xs font-bold transition-all">芋泥 🧋</button>
-                        <button id="palette-monochrome" onclick="changePalette('monochrome')" class="border-2 border-slate-700 px-2 py-2 bg-[#2C3545] text-white rounded-xl text-xs font-bold transition-all">深空 🌌</button>
+            <div id="drawerContent" class="hidden mt-4 cel-surface p-4 sm:p-5 space-y-5">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <!-- 1. 预设配色 + 自定义取色 -->
+                    <div>
+                        <p class="text-[11px] font-mono font-bold text-[var(--text-muted)] mb-2">● 主题配色盘（三页联动）</p>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+                            <button type="button" id="palette-matcha" onclick="changePalette('matcha')" class="border-2 border-slate-300 px-2 py-2 bg-[#A8E6CF] text-[#1A1C23] rounded-xl text-xs font-bold transition-all">抹茶 🍵</button>
+                            <button type="button" id="palette-peach" onclick="changePalette('peach')" class="border-2 border-slate-300 px-2 py-2 bg-[#FFD3B6] text-[#231A1A] rounded-xl text-xs font-bold transition-all">蜜桃 🍑</button>
+                            <button type="button" id="palette-taro" onclick="changePalette('taro')" class="border-2 border-slate-300 px-2 py-2 bg-[#E8D7FF] text-[#1C1924] rounded-xl text-xs font-bold transition-all">芋泥 🧋</button>
+                            <button type="button" id="palette-monochrome" onclick="changePalette('monochrome')" class="border-2 border-slate-700 px-2 py-2 bg-[#2C3545] text-white rounded-xl text-xs font-bold transition-all">深空 🌌</button>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-3 text-[11px] font-mono">
+                            <label class="flex items-center gap-1.5 cursor-pointer">
+                                <span>自定义底色</span>
+                                <input id="customBgPicker" type="color" value="#FFFDF6" onchange="applyCustomColors()" class="w-7 h-7 rounded-lg border-2 border-[var(--text-color)] cursor-pointer bg-transparent">
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer">
+                                <span>自定义主色</span>
+                                <input id="customAccentPicker" type="color" value="#A8E6CF" onchange="applyCustomColors()" class="w-7 h-7 rounded-lg border-2 border-[var(--text-color)] cursor-pointer bg-transparent">
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 2. 手账底纹（5种） -->
+                    <div>
+                        <p class="text-[11px] font-mono font-bold text-[var(--text-muted)] mb-2">● 手账底纹样式（5种）</p>
+                        <div class="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                            <button type="button" onclick="changePattern('dots')" id="pattern-btn-dots" class="border-2 border-slate-300 py-2 bg-[var(--card-bg)] rounded-xl text-xs font-bold transition-all">圆点</button>
+                            <button type="button" onclick="changePattern('grid')" id="pattern-btn-grid" class="border-2 border-slate-300 py-2 bg-[var(--card-bg)] rounded-xl text-xs font-bold transition-all">方格</button>
+                            <button type="button" onclick="changePattern('stripes')" id="pattern-btn-stripes" class="border-2 border-slate-300 py-2 bg-[var(--card-bg)] rounded-xl text-xs font-bold transition-all">斜纹</button>
+                            <button type="button" onclick="changePattern('lines')" id="pattern-btn-lines" class="border-2 border-slate-300 py-2 bg-[var(--card-bg)] rounded-xl text-xs font-bold transition-all">横线</button>
+                            <button type="button" onclick="changePattern('none')" id="pattern-btn-none" class="border-2 border-slate-300 py-2 bg-[var(--card-bg)] rounded-xl text-xs font-bold transition-all">空白</button>
+                        </div>
+                    </div>
+
+                    <!-- 3. 卡片圆角 & 立体阴影 -->
+                    <div>
+                        <p class="text-[11px] font-mono font-bold text-[var(--text-muted)] mb-2">● 卡片圆角 & 立体阴影</p>
+                        <div class="grid grid-cols-3 gap-2 mb-2.5">
+                            <button type="button" onclick="changeRadius('28px')" id="rad-28px" class="border-2 border-slate-300 py-1.5 bg-[var(--card-bg)] rounded-xl text-xs font-bold">果冻大圆角</button>
+                            <button type="button" onclick="changeRadius('16px')" id="rad-16px" class="border-2 border-slate-300 py-1.5 bg-[var(--card-bg)] rounded-xl text-xs font-bold">标准手账</button>
+                            <button type="button" onclick="changeRadius('4px')" id="rad-4px" class="border-2 border-slate-300 py-1.5 bg-[var(--card-bg)] rounded-xl text-xs font-bold">硬核像素</button>
+                        </div>
+                        <div class="grid grid-cols-4 gap-2">
+                            <button type="button" onclick="changeShadow('0px')" id="shd-0px" class="border-2 border-slate-300 py-1.5 bg-[var(--card-bg)] rounded-xl text-[11px] font-bold">扁平</button>
+                            <button type="button" onclick="changeShadow('3px')" id="shd-3px" class="border-2 border-slate-300 py-1.5 bg-[var(--card-bg)] rounded-xl text-[11px] font-bold">轻盈</button>
+                            <button type="button" onclick="changeShadow('5px')" id="shd-5px" class="border-2 border-slate-300 py-1.5 bg-[var(--card-bg)] rounded-xl text-[11px] font-bold">标准</button>
+                            <button type="button" onclick="changeShadow('9px')" id="shd-9px" class="border-2 border-slate-300 py-1.5 bg-[var(--card-bg)] rounded-xl text-[11px] font-bold">厚重</button>
+                        </div>
+                    </div>
+
+                    <!-- 4. 点击背景粒子特效 & 贴纸签名 -->
+                    <div>
+                        <p class="text-[11px] font-mono font-bold text-[var(--text-muted)] mb-2">● 背景点击特效 & 顶部贴纸</p>
+                        <div class="grid grid-cols-5 gap-1.5 mb-2.5">
+                            <button type="button" onclick="changeFxMode('random')" id="fx-random" class="border-2 border-slate-300 py-1.5 bg-[var(--card-bg)] rounded-xl text-[11px] font-bold">盲盒</button>
+                            <button type="button" onclick="changeFxMode('bubbles')" id="fx-bubbles" class="border-2 border-slate-300 py-1.5 bg-[var(--card-bg)] rounded-xl text-[11px] font-bold">泡泡</button>
+                            <button type="button" onclick="changeFxMode('stars')" id="fx-stars" class="border-2 border-slate-300 py-1.5 bg-[var(--card-bg)] rounded-xl text-[11px] font-bold">星糖</button>
+                            <button type="button" onclick="changeFxMode('splat')" id="fx-splat" class="border-2 border-slate-300 py-1.5 bg-[var(--card-bg)] rounded-xl text-[11px] font-bold">喷漆</button>
+                            <button type="button" onclick="changeFxMode('off')" id="fx-off" class="border-2 border-slate-300 py-1.5 bg-[var(--card-bg)] rounded-xl text-[11px] font-bold">关闭</button>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <div class="flex gap-1">
+                                <button type="button" onclick="changeSticker('🦑')" class="border-2 border-[var(--text-color)] px-2 py-1 rounded-lg text-xs bg-[var(--card-bg)]">🦑</button>
+                                <button type="button" onclick="changeSticker('🎧')" class="border-2 border-[var(--text-color)] px-2 py-1 rounded-lg text-xs bg-[var(--card-bg)]">🎧</button>
+                                <button type="button" onclick="changeSticker('🎮')" class="border-2 border-[var(--text-color)] px-2 py-1 rounded-lg text-xs bg-[var(--card-bg)]">🎮</button>
+                                <button type="button" onclick="changeSticker('🛹')" class="border-2 border-[var(--text-color)] px-2 py-1 rounded-lg text-xs bg-[var(--card-bg)]">🛹</button>
+                                <button type="button" onclick="changeSticker('☕')" class="border-2 border-[var(--text-color)] px-2 py-1 rounded-lg text-xs bg-[var(--card-bg)]">☕</button>
+                            </div>
+                            <input id="mottoInput" type="text" maxlength="28" oninput="changeMotto(this.value)" placeholder="自定义顶部签名..." class="flex-1 min-w-[120px] border-2 border-[var(--text-color)] rounded-lg px-2.5 py-1 text-xs font-mono bg-white text-[#1A1C23]">
+                        </div>
                     </div>
                 </div>
-                <div>
-                    <p id="drawer-p-pattern" data-i18n="drawer_p_pattern" class="text-[11px] font-mono font-bold text-[var(--text-muted)] mb-2">● 手账底纹盘 // BACKDROP PATTERN</p>
-                    <div class="grid grid-cols-3 gap-2">
-                        <button onclick="changePattern('dots')" id="pattern-btn-dots" data-i18n="opt_dots" class="border-2 border-slate-300 py-2 bg-[var(--card-bg)] rounded-xl text-xs font-bold transition-all">波普圆点</button>
-                        <button onclick="changePattern('grid')" id="pattern-btn-grid" data-i18n="opt_grid" class="border-2 border-slate-300 py-2 bg-[var(--card-bg)] rounded-xl text-xs font-bold transition-all">复古方格</button>
-                        <button onclick="changePattern('none')" id="pattern-btn-none" data-i18n="opt_none" class="border-2 border-slate-300 py-2 bg-[var(--card-bg)] rounded-xl text-xs font-bold transition-all">极简空白</button>
-                    </div>
+
+                <!-- 快捷操作栏 -->
+                <div class="pt-3 border-t-2 border-dashed border-[var(--text-color)]/20 flex flex-wrap justify-end gap-2">
+                    <button type="button" onclick="randomizeDIY()" class="cel-btn px-3.5 py-1.5 bg-[var(--accent-sub)] text-[#1A1C23] rounded-xl text-xs font-bold">🎲 随机搭配</button>
+                    <button type="button" onclick="resetDIY()" class="cel-btn px-3.5 py-1.5 bg-[var(--card-bg)] rounded-xl text-xs font-bold">↺ 恢复默认</button>
                 </div>
             </div>
         </section>
 
         <footer class="w-full border-t-3 border-[var(--text-color)] pt-4 mt-8 flex flex-col sm:flex-row justify-between items-center text-xs font-bold gap-4 select-none">
-            <p id="txt-footer" data-i18n="footer_text" class="bg-[var(--text-color)] text-[var(--card-bg)] px-3 py-1 rounded-md transform rotate-[-0.3deg]">© 2026 ERIS. PORTAL ARCHIVE COMPLETE.</p>
+            <p class="bg-[var(--text-color)] text-[var(--card-bg)] px-3 py-1 rounded-md transform rotate-[-0.3deg]">© 2026 ERIS. PORTAL ARCHIVE COMPLETE.</p>
+            <span class="font-mono text-[11px] text-[var(--text-muted)]">✨ 点击空白背景可触发盲盒特效</span>
         </footer>
     </div>
 
-    <div class="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 select-none">
-        <button onclick="toggleLanguage()" class="cel-btn flex items-center space-x-1.5 sm:space-x-2 bg-[var(--card-bg)] border-3 border-[var(--text-color)] px-3 sm:px-4 py-2.5 sm:py-3 rounded-2xl font-mono text-[11px] sm:text-xs font-black shadow-[3px_3px_0px_0px_var(--shadow-color)]">
-            <span>🌐</span>
-            <span id="langBtnLabel">LANG: 中文</span>
-        </button>
-    </div>
-
     <script>
-        const i18nTokens = {
-            zh: {
-                exit_btn: "← 返回首页", hub_title: "CREAMY_PORTAL // ARCH_03",
-                notes_title: "记事本", notes_desc: "随心所想，随事所记", notes_action: "进入 →",
-                todo_title: "清单", todo_desc: "整理思绪，量化记忆", todo_action: "进入 →",
-                drawer_title: "DIY 工作室面板 (点击展开/折叠)", drawer_p_color: "● 手账配色盘 // PALETTE CONFIG", drawer_p_pattern: "● 手账底纹盘 // BACKDROP PATTERN",
-                opt_dots: "波普圆点", opt_grid: "复古方格", opt_none: "极简空白", footer_text: "© 2026 ERIS. PORTAL ARCHIVE COMPLETE."
-            },
-            en: {
-                exit_btn: "← EXIT CORE", hub_title: "CREAMY_PORTAL // ARCH_03",
-                notes_title: "Memory Journal", notes_desc: "Think as you wish, record as you go", notes_action: "LAUNCH TERMINAL →",
-                todo_title: "Checklist", todo_desc: "Organize thoughts and quantify memories", todo_action: "LAUNCH PIPELINE →",
-                drawer_title: "DIY STUDIO CUSTOMIZER (Click to expand/collapse)", drawer_p_color: "● Journal color palette // SELECTOR", drawer_p_pattern: "● Journal Texture Palette // STYLE",
-                opt_dots: "Pop Dots", opt_grid: "Retro Grid", opt_none: "Pure Minimal", footer_text: "© 2026 ERIS. PORTAL ARCHIVE COMPLETE."
-            }
-        };
-
-        // 配色方案与底纹状态恢复链（缺省值强锁定为 抹茶-波普圆点）
-        let currentLang = localStorage.getItem('eris_cel_lang') || 'zh';
         let currentPalette = localStorage.getItem('eris_cel_palette') || 'matcha';
         let currentPattern = localStorage.getItem('eris_cel_pattern') || 'dots';
+        let currentRadius = localStorage.getItem('eris_cel_radius') || '24px';
+        let currentShadow = localStorage.getItem('eris_cel_shadow') || '5px';
+        let currentFxMode = localStorage.getItem('eris_cel_fx') || 'random';
+        let currentSticker = localStorage.getItem('eris_cel_sticker') || '🦑';
+        let currentMotto = localStorage.getItem('eris_cel_motto') || '随心记录 · 收集灵感碎片';
+        let soundActive = localStorage.getItem('eris_cel_sound') !== 'false';
         let isDrawerOpen = false;
 
-        function applyLanguage(lang) {
-            currentLang = lang; localStorage.setItem('eris_cel_lang', lang);
-            const body = document.getElementById('canvasBody');
-            const label = document.getElementById('langBtnLabel');
-            
-            if (lang === 'zh') {
-                body.classList.remove('lang-en'); body.classList.add('lang-zh'); label.textContent = "LANG: 中文";
-            } else {
-                body.classList.remove('lang-zh'); body.classList.add('lang-en'); label.textContent = "LANG: EN";
-            }
-            document.querySelectorAll('[data-i18n]').forEach(el => {
-                const token = el.getAttribute('data-i18n');
-                if (i18nTokens[lang][token]) el.textContent = i18nTokens[lang][token];
-            });
+        function updateHubCounts() {
+            try {
+                const notes = JSON.parse(localStorage.getItem('eris_cel_notes')) || [];
+                const todos = JSON.parse(localStorage.getItem('eris_cel_todos')) || [];
+                const doneTodos = todos.filter(t => t.completed).length;
+                document.getElementById('badge-notes-count').textContent = `${notes.length} 篇记录`;
+                document.getElementById('badge-todos-count').textContent = `${doneTodos} / ${todos.length} 完成`;
+            } catch (e) {}
         }
 
-        function toggleLanguage() { applyLanguage(currentLang === 'zh' ? 'en' : 'zh'); playCelBleep(true); }
-        function navigateToPage(target) { playCelBleep(true); setTimeout(() => { window.location.href = `./${target}.html`; }, 180); }
+        function navigateToPage(target) {
+            playCelBleep(true);
+            setTimeout(() => { window.location.href = `./${target}.html`; }, 160);
+        }
+
+        function handleCardKey(e, target) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                navigateToPage(target);
+            }
+        }
 
         function toggleStudioDrawer() {
             isDrawerOpen = !isDrawerOpen;
-            const content = document.getElementById('drawerContent'); const arrow = document.getElementById('drawerArrow');
+            const content = document.getElementById('drawerContent');
+            const arrow = document.getElementById('drawerArrow');
             if (isDrawerOpen) { content.classList.remove('hidden'); arrow.textContent = '▼'; } 
             else { content.classList.add('hidden'); arrow.textContent = '▲'; }
             playCelBleep();
         }
 
-        function changePalette(type) {
-            currentPalette = type; localStorage.setItem('eris_cel_palette', type);
+        function changePalette(type, silent = false) {
+            currentPalette = type;
+            localStorage.setItem('eris_cel_palette', type);
+            localStorage.removeItem('eris_cel_custom_bg');
+            localStorage.removeItem('eris_cel_custom_accent');
             const root = document.documentElement;
             
-            if(type === 'matcha') {
+            if (type === 'matcha') {
                 root.style.setProperty('--bg-color', '#FFFDF6'); root.style.setProperty('--text-color', '#1A1C23'); root.style.setProperty('--text-muted', '#5A5E6D');
                 root.style.setProperty('--card-bg', '#FFFFFF'); root.style.setProperty('--shadow-color', '#1A1C23');
                 root.style.setProperty('--accent-main', '#A8E6CF'); root.style.setProperty('--accent-sub', '#FFD3B6'); root.style.setProperty('--accent-third', '#DCE5F7');
-            } else if(type === 'peach') {
+                document.getElementById('customBgPicker').value = '#FFFDF6';
+                document.getElementById('customAccentPicker').value = '#A8E6CF';
+            } else if (type === 'peach') {
                 root.style.setProperty('--bg-color', '#FFF6F6'); root.style.setProperty('--text-color', '#231A1A'); root.style.setProperty('--text-muted', '#6B5B5B');
                 root.style.setProperty('--card-bg', '#FFFFFF'); root.style.setProperty('--shadow-color', '#231A1A');
                 root.style.setProperty('--accent-main', '#FFB7B2'); root.style.setProperty('--accent-sub', '#FFDAC1'); root.style.setProperty('--accent-third', '#E2F0CB');
-            } else if(type === 'taro') {
+                document.getElementById('customBgPicker').value = '#FFF6F6';
+                document.getElementById('customAccentPicker').value = '#FFB7B2';
+            } else if (type === 'taro') {
                 root.style.setProperty('--bg-color', '#FBF8FF'); root.style.setProperty('--text-color', '#1C1924'); root.style.setProperty('--text-muted', '#5E586E');
                 root.style.setProperty('--card-bg', '#FFFFFF'); root.style.setProperty('--shadow-color', '#1C1924');
                 root.style.setProperty('--accent-main', '#E8D7FF'); root.style.setProperty('--accent-sub', '#BFFCC6'); root.style.setProperty('--accent-third', '#FFC6FF');
-            } else if(type === 'monochrome') {
+                document.getElementById('customBgPicker').value = '#FBF8FF';
+                document.getElementById('customAccentPicker').value = '#E8D7FF';
+            } else if (type === 'monochrome') {
                 root.style.setProperty('--bg-color', '#131824'); root.style.setProperty('--text-color', '#FFFDF6'); root.style.setProperty('--text-muted', '#94A1B8');
                 root.style.setProperty('--card-bg', '#1E2638'); root.style.setProperty('--shadow-color', '#070A10');
                 root.style.setProperty('--accent-main', '#00F5D4'); root.style.setProperty('--accent-sub', '#FF5A5F'); root.style.setProperty('--accent-third', '#FFEE55');
+                document.getElementById('customBgPicker').value = '#131824';
+                document.getElementById('customAccentPicker').value = '#00F5D4';
             }
             
             document.querySelectorAll('[id^="palette-"]').forEach(btn => btn.classList.remove('active-option'));
             const activePaletteBtn = document.getElementById(`palette-${type}`);
-            if(activePaletteBtn) activePaletteBtn.classList.add('active-option');
-            playCelBleep();
+            if (activePaletteBtn) activePaletteBtn.classList.add('active-option');
+            if (!silent) playCelBleep();
         }
 
-        // 刷新 DIY 激活项高亮边框
-        function changePattern(pattern) {
-            currentPattern = pattern; localStorage.setItem('eris_cel_pattern', pattern);
+        function applyCustomColors(silent = false) {
+            const bg = document.getElementById('customBgPicker').value;
+            const accent = document.getElementById('customAccentPicker').value;
+            localStorage.setItem('eris_cel_palette', 'custom');
+            localStorage.setItem('eris_cel_custom_bg', bg);
+            localStorage.setItem('eris_cel_custom_accent', accent);
+            const root = document.documentElement;
+            root.style.setProperty('--bg-color', bg);
+            root.style.setProperty('--accent-main', accent);
+            document.querySelectorAll('[id^="palette-"]').forEach(btn => btn.classList.remove('active-option'));
+            if (!silent) playCelBleep();
+        }
+
+        function restoreCustomColorsIfSet() {
+            if (localStorage.getItem('eris_cel_palette') === 'custom') {
+                const bg = localStorage.getItem('eris_cel_custom_bg');
+                const accent = localStorage.getItem('eris_cel_custom_accent');
+                if (bg) {
+                    document.documentElement.style.setProperty('--bg-color', bg);
+                    document.getElementById('customBgPicker').value = bg;
+                }
+                if (accent) {
+                    document.documentElement.style.setProperty('--accent-main', accent);
+                    document.getElementById('customAccentPicker').value = accent;
+                }
+            }
+        }
+
+        function changePattern(pattern, silent = false) {
+            currentPattern = pattern;
+            localStorage.setItem('eris_cel_pattern', pattern);
             const body = document.getElementById('canvasBody');
-            body.classList.remove('pattern-dots', 'pattern-grid', 'pattern-none');
+            body.classList.remove('pattern-dots', 'pattern-grid', 'pattern-stripes', 'pattern-lines', 'pattern-none');
             body.classList.add(`pattern-${pattern}`);
-            
             document.querySelectorAll('[id^="pattern-btn-"]').forEach(btn => btn.classList.remove('active-option'));
             const activePatternBtn = document.getElementById(`pattern-btn-${pattern}`);
-            if(activePatternBtn) activePatternBtn.classList.add('active-option');
-            playCelBleep();
+            if (activePatternBtn) activePatternBtn.classList.add('active-option');
+            if (!silent) playCelBleep();
+        }
+
+        function changeRadius(rad, silent = false) {
+            currentRadius = rad;
+            localStorage.setItem('eris_cel_radius', rad);
+            document.documentElement.style.setProperty('--card-radius', rad);
+            document.querySelectorAll('[id^="rad-"]').forEach(btn => btn.classList.remove('active-option'));
+            const act = document.getElementById(`rad-${rad}`);
+            if (act) act.classList.add('active-option');
+            if (!silent) playCelBleep();
+        }
+
+        function changeShadow(shd, silent = false) {
+            currentShadow = shd;
+            localStorage.setItem('eris_cel_shadow', shd);
+            document.documentElement.style.setProperty('--shadow-offset', shd);
+            document.querySelectorAll('[id^="shd-"]').forEach(btn => btn.classList.remove('active-option'));
+            const act = document.getElementById(`shd-${shd}`);
+            if (act) act.classList.add('active-option');
+            if (!silent) playCelBleep();
+        }
+
+        function changeFxMode(mode, silent = false) {
+            currentFxMode = mode;
+            localStorage.setItem('eris_cel_fx', mode);
+            document.querySelectorAll('[id^="fx-"]').forEach(btn => btn.classList.remove('active-option'));
+            const act = document.getElementById(`fx-${mode}`);
+            if (act) act.classList.add('active-option');
+            if (!silent) playCelBleep();
+        }
+
+        function changeSticker(emoji, silent = false) {
+            currentSticker = emoji;
+            localStorage.setItem('eris_cel_sticker', emoji);
+            document.getElementById('hubSticker').textContent = emoji;
+            if (!silent) playCelBleep(true);
+        }
+
+        function changeMotto(text) {
+            const val = text.trim() || '随心记录 · 收集灵感碎片';
+            currentMotto = val;
+            localStorage.setItem('eris_cel_motto', val);
+            document.getElementById('hubMottoDisplay').textContent = val;
+        }
+
+        function randomizeDIY() {
+            const palettes = ['matcha', 'peach', 'taro', 'monochrome'];
+            const patterns = ['dots', 'grid', 'stripes', 'lines', 'none'];
+            const radii = ['28px', '16px', '4px'];
+            const shadows = ['3px', '5px', '9px'];
+            const fxModes = ['random', 'bubbles', 'stars', 'splat'];
+            changePalette(palettes[Math.floor(Math.random() * palettes.length)], true);
+            changePattern(patterns[Math.floor(Math.random() * patterns.length)], true);
+            changeRadius(radii[Math.floor(Math.random() * radii.length)], true);
+            changeShadow(shadows[Math.floor(Math.random() * shadows.length)], true);
+            changeFxMode(fxModes[Math.floor(Math.random() * fxModes.length)], true);
+            playCelBleep(true);
+        }
+
+        function resetDIY() {
+            changePalette('matcha', true);
+            changePattern('dots', true);
+            changeRadius('24px', true);
+            changeShadow('5px', true);
+            changeFxMode('random', true);
+            changeSticker('🦑', true);
+            document.getElementById('mottoInput').value = '';
+            changeMotto('');
+            playCelBleep(false);
         }
 
         // --- AUDIO SCENARIOS ---
-        let audioCtx = null; let soundActive = true;
-        const soundToggleBtn = document.getElementById('soundToggle'); const soundStatusSpan = document.getElementById('soundStatus');
+        let audioCtx = null;
+        const soundToggleBtn = document.getElementById('soundToggle');
+        const soundStatusSpan = document.getElementById('soundStatus');
+
+        function syncSoundUI() {
+            if (soundActive) {
+                soundStatusSpan.textContent = 'BEEP: ON';
+                soundToggleBtn.style.opacity = '1';
+                soundToggleBtn.classList.remove('sound-muted');
+            } else {
+                soundStatusSpan.textContent = 'BEEP: OFF';
+                soundToggleBtn.style.opacity = '0.6';
+                soundToggleBtn.classList.add('sound-muted');
+            }
+        }
         
         soundToggleBtn.addEventListener('click', (e) => {
-            e.stopPropagation(); soundActive = !soundActive;
-            if (soundActive) { soundStatusSpan.textContent = 'BEEP: ON'; soundToggleBtn.style.opacity = '1'; } 
-            else { soundStatusSpan.textContent = 'BEEP: OFF'; soundToggleBtn.style.opacity = '0.5'; }
+            e.stopPropagation();
+            soundActive = !soundActive;
+            localStorage.setItem('eris_cel_sound', soundActive);
+            syncSoundUI();
+            if (soundActive) playCelBleep(false);
         });
 
         function playCelBleep(isSpecial = false) {
@@ -298,112 +488,187 @@
             try {
                 if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 if (audioCtx.state === 'suspended') audioCtx.resume();
-                const now = audioCtx.currentTime; const osc = audioCtx.createOscillator();
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
                 osc.type = isSpecial ? 'square' : 'triangle';
                 const creamyNotes = isSpecial ? [659.25, 783.99, 1046.50] : [523.25, 597.33, 783.99];
                 osc.frequency.setValueAtTime(creamyNotes[Math.floor(Math.random() * creamyNotes.length)], now);
-                if(isSpecial) osc.frequency.setValueAtTime(creamyNotes[Math.floor(Math.random() * creamyNotes.length)] * 1.3, now + 0.06);
-                const gainNode = audioCtx.createGain(); gainNode.gain.setValueAtTime(isSpecial ? 0.02 : 0.05, now);
+                if (isSpecial) osc.frequency.setValueAtTime(creamyNotes[Math.floor(Math.random() * creamyNotes.length)] * 1.3, now + 0.06);
+                const gainNode = audioCtx.createGain();
+                gainNode.gain.setValueAtTime(isSpecial ? 0.02 : 0.05, now);
                 gainNode.gain.exponentialRampToValueAtTime(0.001, now + (isSpecial ? 0.3 : 0.1));
                 osc.connect(gainNode); gainNode.connect(audioCtx.destination);
                 osc.start(now); osc.stop(now + (isSpecial ? 0.35 : 0.12));
             } catch (e) {}
         }
 
-        // --- 【大重构细节】：全面下调初速度与衰减系数，打造舒缓优雅的盲盒动画流 ---
-        const canvas = document.getElementById('popCanvas'); const ctx = canvas.getContext('2d');
-        let dpr = window.devicePixelRatio || 1; let fxElements = [];
+        // --- Canvas 粒子引擎 ---
+        const canvas = document.getElementById('popCanvas');
+        const ctx = canvas.getContext('2d');
+        let dpr = window.devicePixelRatio || 1;
+        let fxElements = [];
 
-        function initCanvas() {
-            dpr = window.devicePixelRatio || 1; canvas.width = window.innerWidth * dpr; canvas.height = window.innerHeight * dpr; ctx.scale(dpr, dpr);
+        function getOutlineColor() {
+            return getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim() || '#1A1C23';
         }
 
-        // 33% 概率之一：奶油果冻泡泡（放慢）
+        function initCanvas() {
+            dpr = window.devicePixelRatio || 1;
+            canvas.width = window.innerWidth * dpr;
+            canvas.height = window.innerHeight * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
         class CreamyBubble {
             constructor(x, y) {
                 this.x = x; this.y = y; this.radius = 2; this.maxRadius = Math.random() * 16 + 14;
-                this.vx = (Math.random() - 0.5) * 1.8; // 大幅调低漂移初速度
-                this.vy = (Math.random() - 0.5) * 1.8;
+                this.vx = (Math.random() - 0.5) * 1.8; this.vy = (Math.random() - 0.5) * 1.8;
                 this.opacity = 1;
-                const colors = ['#A8E6CF', '#FFD3B6', '#FFAAA5', '#DCE5F7', '#FFC6FF']; this.color = colors[Math.floor(Math.random() * colors.length)];
+                const colors = ['#A8E6CF', '#FFD3B6', '#FFAAA5', '#DCE5F7', '#FFC6FF'];
+                this.color = colors[Math.floor(Math.random() * colors.length)];
             }
-            update() { 
-                this.x += this.vx; this.y += this.vy; this.vx *= 0.94; this.vy *= 0.94; 
-                this.radius += (this.maxRadius - this.radius) * 0.06; // 放慢膨胀速率
-                this.opacity -= 0.018; // 放慢消失速率
+            update() {
+                this.x += this.vx; this.y += this.vy; this.vx *= 0.94; this.vy *= 0.94;
+                this.radius += (this.maxRadius - this.radius) * 0.06;
+                this.opacity -= 0.018;
             }
-            draw() { ctx.save(); ctx.globalAlpha = this.opacity; ctx.fillStyle = this.color; ctx.strokeStyle = 'var(--text-color)'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.restore(); }
+            draw() {
+                ctx.save(); ctx.globalAlpha = Math.max(0, this.opacity);
+                ctx.fillStyle = this.color; ctx.strokeStyle = getOutlineColor(); ctx.lineWidth = 2.5;
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                ctx.restore();
+            }
         }
 
-        // 33% 概率之二：赛璐璐四角飞星（放慢）
         class ComicStar {
             constructor(x, y) {
                 this.x = x; this.y = y; this.size = Math.random() * 9 + 6; this.angle = Math.random() * Math.PI;
-                this.vx = (Math.random() - 0.5) * 3.2; 
-                this.vy = (Math.random() - 0.5) * 3.2; 
-                this.gravity = 0.07; // 放慢下坠重力
-                this.opacity = 1; this.color = Math.random() > 0.5 ? '#FFEE55' : '#FFFFFF';
+                this.vx = (Math.random() - 0.5) * 3.2; this.vy = (Math.random() - 0.5) * 3.2;
+                this.gravity = 0.07; this.opacity = 1;
+                this.color = Math.random() > 0.5 ? '#FFEE55' : '#FFFFFF';
             }
             update() { this.x += this.vx; this.y += this.vy; this.vy += this.gravity; this.opacity -= 0.015; this.angle += 0.025; }
             draw() {
-                ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.angle); ctx.fillStyle = this.color; ctx.strokeStyle = 'var(--text-color)'; ctx.lineWidth = 2.5; ctx.globalAlpha = this.opacity;
-                ctx.beginPath(); for (let i = 0; i < 4; i++) { ctx.lineTo(0, -this.size); ctx.lineTo(this.size/3.5, -this.size/3.5); ctx.rotate(Math.PI / 2); }
+                ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.angle);
+                ctx.fillStyle = this.color; ctx.strokeStyle = getOutlineColor(); ctx.lineWidth = 2.5;
+                ctx.globalAlpha = Math.max(0, this.opacity);
+                ctx.beginPath();
+                for (let i = 0; i < 4; i++) { ctx.lineTo(0, -this.size); ctx.lineTo(this.size / 3.5, -this.size / 3.5); ctx.rotate(Math.PI / 2); }
                 ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
             }
         }
 
-        // 33% 概率之三：扁平硬壳小糖果（放慢）
         class CreamyCandy {
             constructor(x, y) {
                 this.x = x; this.y = y; this.w = Math.random() * 13 + 10; this.h = this.w * 0.6; this.angle = Math.random() * Math.PI;
-                this.vx = (Math.random() - 0.5) * 2.8; 
-                this.vy = (Math.random() - 0.5) * 2.8; 
+                this.vx = (Math.random() - 0.5) * 2.8; this.vy = (Math.random() - 0.5) * 2.8;
                 this.gravity = 0.06; this.opacity = 1;
-                const colors = ['#FFC6FF', '#FF9AA2', '#BFFCC6', '#FFDAC1']; this.color = colors[Math.floor(Math.random() * colors.length)];
+                const colors = ['#FFC6FF', '#FF9AA2', '#BFFCC6', '#FFDAC1'];
+                this.color = colors[Math.floor(Math.random() * colors.length)];
             }
             update() { this.x += this.vx; this.y += this.vy; this.vy += this.gravity; this.opacity -= 0.015; this.angle += 0.02; }
             draw() {
-                ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.angle); ctx.fillStyle = this.color; ctx.strokeStyle = 'var(--text-color)'; ctx.lineWidth = 2.5; ctx.globalAlpha = this.opacity;
-                ctx.beginPath(); ctx.moveTo(-this.w/2 - 4, -this.h/2); ctx.lineTo(-this.w/2, 0); ctx.lineTo(-this.w/2 - 4, this.h/2); ctx.moveTo(this.w/2 + 4, -this.h/2); ctx.lineTo(this.w/2, 0); ctx.lineTo(this.w/2 + 4, this.h/2); ctx.stroke();
-                ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h); ctx.strokeRect(-this.w/2, -this.h/2, this.w, this.h); ctx.restore();
+                ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.angle);
+                ctx.fillStyle = this.color; ctx.strokeStyle = getOutlineColor(); ctx.lineWidth = 2.5;
+                ctx.globalAlpha = Math.max(0, this.opacity);
+                ctx.beginPath();
+                ctx.moveTo(-this.w / 2 - 4, -this.h / 2); ctx.lineTo(-this.w / 2, 0); ctx.lineTo(-this.w / 2 - 4, this.h / 2);
+                ctx.moveTo(this.w / 2 + 4, -this.h / 2); ctx.lineTo(this.w / 2, 0); ctx.lineTo(this.w / 2 + 4, this.h / 2);
+                ctx.stroke();
+                ctx.fillRect(-this.w / 2, -this.h / 2, this.w, this.h);
+                ctx.strokeRect(-this.w / 2, -this.h / 2, this.w, this.h);
+                ctx.restore();
             }
         }
 
-        // 1% 隐藏概率：满屏漂浮音符（放慢）
+        class InkSplat {
+            constructor(x, y) {
+                this.x = x; this.y = y; this.radius = 0; this.maxRadius = Math.random() * 20 + 20;
+                this.opacity = 0.85; this.growthSpeed = 2.0;
+                const inks = ['#A8E6CF', '#FFD3B6', '#E8D7FF', '#FFB7B2', '#FFEE55'];
+                this.color = inks[Math.floor(Math.random() * inks.length)];
+                this.drops = [];
+                let dropCount = Math.floor(Math.random() * 4) + 5;
+                for (let i = 0; i < dropCount; i++) {
+                    let angle = (i / dropCount) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
+                    let targetDist = Math.random() * 34 + 24;
+                    this.drops.push({ cx: 0, cy: 0, tx: Math.cos(angle) * targetDist, ty: Math.sin(angle) * targetDist, r: 0, mr: Math.random() * 4.5 + 3 });
+                }
+            }
+            update() {
+                if (this.radius < this.maxRadius) this.radius += this.growthSpeed;
+                this.drops.forEach(d => {
+                    d.cx += (d.tx - d.cx) * 0.08; d.cy += (d.ty - d.cy) * 0.08;
+                    if (d.r < d.mr) d.r += this.growthSpeed * 0.14;
+                });
+                if (this.radius >= this.maxRadius) this.opacity -= 0.006;
+            }
+            draw() {
+                ctx.save(); ctx.globalAlpha = Math.max(0, this.opacity); ctx.fillStyle = this.color;
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fill();
+                this.drops.forEach(d => {
+                    ctx.beginPath(); ctx.arc(this.x + d.cx, this.y + d.cy, d.r, 0, Math.PI * 2); ctx.fill();
+                });
+                ctx.restore();
+            }
+        }
+
         class FloatingNote {
             constructor() {
-                this.x = Math.random() * window.innerWidth; this.y = window.innerHeight + Math.random() * 60; this.size = Math.random() * 11 + 9; 
-                this.vy = -(Math.random() * 0.7 + 0.4); // 减缓徐徐升空的初速度
-                this.swaySpeed = 0.001 + Math.random() * 0.0015; // 减缓摆动频率
-                this.swayPhase = Math.random() * 10; this.opacity = 1;
+                this.x = Math.random() * window.innerWidth; this.y = window.innerHeight + Math.random() * 60;
+                this.size = Math.random() * 11 + 11; this.vy = -(Math.random() * 0.7 + 0.4);
+                this.swaySpeed = 0.001 + Math.random() * 0.0015; this.swayPhase = Math.random() * 10; this.opacity = 1;
                 this.chars = ['♩', '♪', '♫', '🎶']; this.char = this.chars[Math.floor(Math.random() * this.chars.length)];
-                const colors = ['#A8E6CF', '#FFD3B6', '#E8D7FF', '#FFC6FF']; this.color = colors[Math.floor(Math.random() * colors.length)];
+                const colors = ['#A8E6CF', '#FFD3B6', '#E8D7FF', '#FFC6FF'];
+                this.color = colors[Math.floor(Math.random() * colors.length)];
             }
-            update() { this.y += this.vy; this.x += Math.sin(Date.now() * this.swaySpeed + this.swayPhase) * 0.5; if(this.y < 40) this.opacity -= 0.008; }
+            update() { this.y += this.vy; this.x += Math.sin(Date.now() * this.swaySpeed + this.swayPhase) * 0.5; if (this.y < 40) this.opacity -= 0.008; }
             draw() {
-                if(this.opacity <= 0) return; ctx.save(); ctx.globalAlpha = this.opacity; ctx.font = `bold ${this.size}px "Fredoka", sans-serif`; ctx.fillStyle = this.color; ctx.strokeStyle = 'var(--text-color)'; ctx.lineWidth = 2.5; ctx.textBaseline = 'middle'; ctx.textAlign = 'center'; ctx.strokeText(this.char, this.x, this.y); ctx.fillText(this.char, this.x, this.y); ctx.restore();
+                if (this.opacity <= 0) return;
+                ctx.save(); ctx.globalAlpha = this.opacity;
+                ctx.font = `bold ${this.size}px "Fredoka", sans-serif`;
+                ctx.fillStyle = this.color; ctx.strokeStyle = getOutlineColor(); ctx.lineWidth = 2.5;
+                ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
+                ctx.strokeText(this.char, this.x, this.y); ctx.fillText(this.char, this.x, this.y);
+                ctx.restore();
             }
         }
 
         window.addEventListener('mousedown', (e) => {
-            if (e.target.closest('header') || e.target.closest('main') || e.target.closest('button') || e.target.closest('section')) return;
+            if (e.target.closest('header') || e.target.closest('main') || e.target.closest('button') || e.target.closest('section') || e.target.closest('a') || e.target.closest('input')) return;
+            if (currentFxMode === 'off') return;
+            if (currentFxMode === 'bubbles') { playCelBleep(false); for (let i = 0; i < 6; i++) fxElements.push(new CreamyBubble(e.clientX, e.clientY)); return; }
+            if (currentFxMode === 'stars') { playCelBleep(false); for (let i = 0; i < 6; i++) fxElements.push(new ComicStar(e.clientX, e.clientY)); return; }
+            if (currentFxMode === 'splat') { playCelBleep(false); fxElements.push(new InkSplat(e.clientX, e.clientY)); return; }
             const dice = Math.random();
-            if (dice < 0.01) { playCelBleep(true); for(let i=0; i<25; i++) fxElements.push(new FloatingNote()); } 
-            else if (dice < 0.34) { playCelBleep(false); for(let i=0; i<5; i++) fxElements.push(new ComicStar(e.clientX, e.clientY)); } 
-            else if (dice < 0.67) { playCelBleep(false); for(let i=0; i<5; i++) fxElements.push(new CreamyBubble(e.clientX, e.clientY)); } 
-            else { playCelBleep(false); for(let i=0; i<4; i++) fxElements.push(new CreamyCandy(e.clientX, e.clientY)); }
+            if (dice < 0.01) { playCelBleep(true); for (let i = 0; i < 25; i++) fxElements.push(new FloatingNote()); } 
+            else if (dice < 0.34) { playCelBleep(false); for (let i = 0; i < 5; i++) fxElements.push(new ComicStar(e.clientX, e.clientY)); } 
+            else if (dice < 0.67) { playCelBleep(false); for (let i = 0; i < 5; i++) fxElements.push(new CreamyBubble(e.clientX, e.clientY)); } 
+            else { playCelBleep(false); for (let i = 0; i < 4; i++) fxElements.push(new CreamyCandy(e.clientX, e.clientY)); }
         });
 
         function animate() {
-            ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr); fxElements = fxElements.filter(el => el.opacity > 0); fxElements.forEach(el => { el.update(); el.draw(); }); requestAnimationFrame(animate);
+            ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
+            fxElements = fxElements.filter(el => el.opacity > 0);
+            fxElements.forEach(el => { el.update(); el.draw(); });
+            requestAnimationFrame(animate);
         }
 
-        // 双向渲染状态机数据绑定初始化
-        applyLanguage(currentLang);
-        changePalette(currentPalette);
-        changePattern(currentPattern);
-        initCanvas(); animate();
+        updateHubCounts();
+        changePalette(currentPalette, true);
+        restoreCustomColorsIfSet();
+        changePattern(currentPattern, true);
+        changeRadius(currentRadius, true);
+        changeShadow(currentShadow, true);
+        changeFxMode(currentFxMode, true);
+        changeSticker(currentSticker, true);
+        document.getElementById('hubMottoDisplay').textContent = currentMotto;
+        if (localStorage.getItem('eris_cel_motto')) document.getElementById('mottoInput').value = currentMotto;
+        syncSoundUI();
+        initCanvas();
+        animate();
         window.addEventListener('resize', initCanvas);
+        window.addEventListener('storage', updateHubCounts);
     </script>
 </body>
 </html>
