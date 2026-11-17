@@ -225,32 +225,28 @@ jobs:
                   }
               }
 
-              func attach(window: UIWindow?) {
-                  guard !isAttached,
-                        let bridgeVC = window?.rootViewController as? CAPBridgeViewController,
-                        let wv = bridgeVC.webView else { return }
-                  isAttached = true
-                  self.webView = wv
-                  wv.configuration.userContentController.add(self, name: "fengMedia")
-                  wv.configuration.userContentController.add(self, name: "fengAudio")
-                  wv.configuration.userContentController.add(self, name: "fengDock")
-                  setupLiquidGlassDock(in: bridgeVC.view)
-              }
+              func attachWithRetry(window: UIWindow?, attempt: Int = 0) {
+                  guard !isAttached else { return }
+                  let rootVC = window?.rootViewController ?? UIApplication.shared.connectedScenes
+                      .compactMap { $0 as? UIWindowScene }
+                      .flatMap { $0.windows }
+                      .first(where: { $0.isKeyWindow })?.rootViewController
 
-              private func makeLiquidGlassEffect() -> (effect: UIVisualEffect, isNativeGlass: Bool) {
-                  if let glassCls = NSClassFromString("UIGlassEffect") as? NSObject.Type {
-                      let sel = NSSelectorFromString("effectWithStyle:")
-                      if glassCls.responds(to: sel),
-                         let unmanaged = glassCls.perform(sel, with: 0),
-                         let effect = unmanaged.takeUnretainedValue() as? UIVisualEffect {
-                          let interactiveSel = NSSelectorFromString("setInteractive:")
-                          if effect.responds(to: interactiveSel) {
-                              effect.setValue(true, forKey: "interactive")
-                          }
-                          return (effect, true)
+                  if let bridgeVC = rootVC as? CAPBridgeViewController,
+                     let wv = bridgeVC.webView {
+                      isAttached = true
+                      self.webView = wv
+                      wv.configuration.userContentController.add(self, name: "fengMedia")
+                      wv.configuration.userContentController.add(self, name: "fengAudio")
+                      wv.configuration.userContentController.add(self, name: "fengDock")
+                      setupLiquidGlassDock(in: bridgeVC.view)
+                      return
+                  }
+                  if attempt < 15 {
+                      DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
+                          self?.attachWithRetry(window: window, attempt: attempt + 1)
                       }
                   }
-                  return (UIBlurEffect(style: .systemChromeMaterialDark), false)
               }
 
               private func setupLiquidGlassDock(in parentView: UIView) {
@@ -264,12 +260,21 @@ jobs:
                   container.layer.shadowRadius = 18
                   container.layer.shadowOffset = CGSize(width: 0, height: 8)
 
-                  let glassPair = makeLiquidGlassEffect()
-                  let effectView = UIVisualEffectView(effect: glassPair.effect)
+                  let effectView: UIVisualEffectView
+                  var isNativeGlass = false
+                  if #available(iOS 26.0, *) {
+                      let glass = UIGlassEffect(style: .regular)
+                      glass.isInteractive = true
+                      effectView = UIVisualEffectView(effect: glass)
+                      isNativeGlass = true
+                  } else {
+                      effectView = UIVisualEffectView(effect: UIBlurEffect(style: .systemChromeMaterialDark))
+                  }
+
                   effectView.translatesAutoresizingMaskIntoConstraints = false
                   effectView.layer.cornerRadius = 29
                   effectView.clipsToBounds = true
-                  if !glassPair.isNativeGlass {
+                  if !isNativeGlass {
                       effectView.layer.borderWidth = 0.6
                       effectView.layer.borderColor = UIColor.white.withAlphaComponent(0.22).cgColor
                   }
@@ -503,11 +508,12 @@ jobs:
 
               func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
                   FengRemoteMediaBridge.shared.configureAudioAndCommands()
+                  FengRemoteMediaBridge.shared.attachWithRetry(window: window)
                   return true
               }
 
               func applicationDidBecomeActive(_ application: UIApplication) {
-                  FengRemoteMediaBridge.shared.attach(window: window)
+                  FengRemoteMediaBridge.shared.attachWithRetry(window: window)
               }
 
               func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
