@@ -114,7 +114,6 @@ node-version: 20
           private var currentAlbum: String = ""
           private var currentArtwork: MPMediaItemArtwork?
 
-          // Native iOS 26 Liquid Glass 4-Tab Dock
           private var dockContainer: UIView?
           private var dockButtons: [(id: String, btn: UIButton)] = []
           private var activeDockTab: String = "library"
