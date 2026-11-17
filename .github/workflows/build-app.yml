@@ -86,7 +86,7 @@ jobs:
           /usr/libexec/PlistBuddy -c "Add :UIBackgroundModes array" "$PLIST" || true
           /usr/libexec/PlistBuddy -c "Add :UIBackgroundModes:0 string audio" "$PLIST" || true
 
-      - name: Enable Native iOS AVPlayer, Lock Screen Controls, UITabBar & Folder Picker
+      - name: Enable Native iOS AVPlayer, Lock Screen Controls, Collapsible UITabBar & Folder Picker
         run: |
           cat << 'EOF' > ios/App/App/AppDelegate.swift
           import UIKit
@@ -115,15 +115,29 @@ jobs:
               private var currentAlbum: String = ""
               private var currentArtwork: MPMediaItemArtwork?
 
-              // Native iOS UITabBar (System Liquid Glass & Interactive Dragging on iOS 26/27+)
+              // Native iOS UITabBar + Collapsed Single-Icon Circle Pill
               private var nativeTabBar: UITabBar?
               private var tabItems: [UITabBarItem] = []
               private let tabIds = ["library", "playlists", "stats", "diy"]
+              private var collapsedPillView: UIView?
+              private var isTabBarCollapsed = false
+              private var isTabBarHidden = false
               private var activeSecurityURL: URL?
+
+              func ensureDocumentsFolderVisible() {
+                  guard let docsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
+                  let musicDir = docsURL.appendingPathComponent("Music", isDirectory: true)
+                  try? FileManager.default.createDirectory(at: musicDir, withIntermediateDirectories: true)
+                  let marker = docsURL.appendingPathComponent("请将本地音乐放入此文件夹.txt")
+                  if !FileManager.default.fileExists(atPath: marker.path) {
+                      try? "将 MP3 / FLAC / M4A 与同名 .lrc 歌词放入此文件夹（或任意子文件夹），打开 FENG MUSIC 即可自动扫描。".write(to: marker, atomically: true, encoding: .utf8)
+                  }
+              }
 
               func configureAudioAndCommands() {
                   guard !isConfigured else { return }
                   isConfigured = true
+                  ensureDocumentsFolderVisible()
                   try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
                   try? AVAudioSession.sharedInstance().setActive(true)
 
@@ -191,8 +205,8 @@ jobs:
                   let rootVC = window?.rootViewController ?? UIApplication.shared.windows.first(where: { $0.isKeyWindow })?.rootViewController
                   guard let bridgeVC = rootVC as? CAPBridgeViewController,
                         let wv = bridgeVC.webView else {
-                      if attempt < 15 {
-                          DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                      if attempt < 25 {
+                          DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                               self.attach(window: window, attempt: attempt + 1)
                           }
                       }
@@ -203,13 +217,29 @@ jobs:
                   self.hostViewController = bridgeVC
 
                   wv.scrollView.contentInsetAdjustmentBehavior = .never
-                  wv.configuration.userContentController.add(self, name: "fengMedia")
-                  wv.configuration.userContentController.add(self, name: "fengAudio")
-                  wv.configuration.userContentController.add(self, name: "fengDock")
-                  wv.configuration.userContentController.add(self, name: "fengFolder")
+                  let ucc = wv.configuration.userContentController
+                  ucc.removeScriptMessageHandler(forName: "fengMedia")
+                  ucc.removeScriptMessageHandler(forName: "fengAudio")
+                  ucc.removeScriptMessageHandler(forName: "fengDock")
+                  ucc.removeScriptMessageHandler(forName: "fengFolder")
+                  ucc.add(self, name: "fengMedia")
+                  ucc.add(self, name: "fengAudio")
+                  ucc.add(self, name: "fengDock")
+                  ucc.add(self, name: "fengFolder")
+
+                  let earlyScript = WKUserScript(
+                      source: "document.documentElement.classList.add('is-native-ios');",
+                      injectionTime: .atDocumentStart,
+                      forMainFrameOnly: true
+                  )
+                  ucc.addUserScript(earlyScript)
 
                   setupNativeTabBar(in: bridgeVC.view)
                   restoreBookmarkedFolderAccess()
+
+                  DispatchQueue.main.async {
+                      wv.evaluateJavaScript("document.documentElement.classList.add('is-native-ios'); var d=document.getElementById('bottom-tab-dock'); if(d) d.classList.add('hidden'); var b=document.getElementById('btn-pick-native-folder'); if(b) b.classList.remove('hidden');", completionHandler: nil)
+                  }
               }
 
               private func setupNativeTabBar(in parentView: UIView) {
@@ -256,6 +286,58 @@ jobs:
                   ])
 
                   self.nativeTabBar = tabBar
+
+                  // Collapsed Single Circle Pill (bottom-left when scrolling down library)
+                  let pill = UIView()
+                  pill.translatesAutoresizingMaskIntoConstraints = false
+                  pill.layer.cornerRadius = 27
+                  pill.layer.shadowColor = UIColor.black.cgColor
+                  pill.layer.shadowOpacity = 0.28
+                  pill.layer.shadowRadius = 12
+                  pill.layer.shadowOffset = CGSize(width: 0, height: 4)
+                  pill.alpha = 0.0
+                  pill.isUserInteractionEnabled = false
+
+                  let blur = UIVisualEffectView(effect: UIBlurEffect(style: .systemChromeMaterialDark))
+                  blur.translatesAutoresizingMaskIntoConstraints = false
+                  blur.layer.cornerRadius = 27
+                  blur.clipsToBounds = true
+                  blur.layer.borderWidth = 0.6
+                  blur.layer.borderColor = UIColor.white.withAlphaComponent(0.24).cgColor
+
+                  let iconBtn = UIButton(type: .system)
+                  iconBtn.translatesAutoresizingMaskIntoConstraints = false
+                  iconBtn.setImage(UIImage(systemName: "music.note", withConfiguration: UIImage.SymbolConfiguration(pointSize: 19, weight: .semibold)), for: .normal)
+                  iconBtn.tintColor = UIColor(red: 0.22, green: 0.74, blue: 0.97, alpha: 1.0)
+                  iconBtn.addTarget(self, action: #selector(handleCollapsedPillTap), for: .touchUpInside)
+
+                  blur.contentView.addSubview(iconBtn)
+                  pill.addSubview(blur)
+                  parentView.addSubview(pill)
+
+                  NSLayoutConstraint.activate([
+                      pill.leadingAnchor.constraint(equalTo: parentView.leadingAnchor, constant: 16),
+                      pill.bottomAnchor.constraint(equalTo: parentView.safeAreaLayoutGuide.bottomAnchor, constant: -10),
+                      pill.widthAnchor.constraint(equalToConstant: 54),
+                      pill.heightAnchor.constraint(equalToConstant: 54),
+
+                      blur.topAnchor.constraint(equalTo: pill.topAnchor),
+                      blur.bottomAnchor.constraint(equalTo: pill.bottomAnchor),
+                      blur.leadingAnchor.constraint(equalTo: pill.leadingAnchor),
+                      blur.trailingAnchor.constraint(equalTo: pill.trailingAnchor),
+
+                      iconBtn.topAnchor.constraint(equalTo: blur.contentView.topAnchor),
+                      iconBtn.bottomAnchor.constraint(equalTo: blur.contentView.bottomAnchor),
+                      iconBtn.leadingAnchor.constraint(equalTo: blur.contentView.leadingAnchor),
+                      iconBtn.trailingAnchor.constraint(equalTo: blur.contentView.trailingAnchor)
+                  ])
+
+                  self.collapsedPillView = pill
+              }
+
+              @objc private func handleCollapsedPillTap() {
+                  setDockVisibility(hidden: false, collapsed: false)
+                  webView?.evaluateJavaScript("window.__fengSwitchTab && window.__fengSwitchTab('library')", completionHandler: nil)
               }
 
               func tabBar(_ tabBar: UITabBar, didSelect item: UITabBarItem) {
@@ -274,30 +356,43 @@ jobs:
                   }
               }
 
-              private func setTabBarHidden(_ hidden: Bool) {
-                  guard let tb = nativeTabBar else { return }
+              private func setDockVisibility(hidden: Bool, collapsed: Bool) {
+                  isTabBarHidden = hidden
+                  isTabBarCollapsed = collapsed
+                  guard let tb = nativeTabBar, let pill = collapsedPillView else { return }
                   DispatchQueue.main.async {
-                      UIView.animate(withDuration: 0.24, delay: 0, options: [.curveEaseOut]) {
-                          tb.alpha = hidden ? 0.0 : 1.0
-                          tb.transform = hidden ? CGAffineTransform(translationX: 0, y: 40) : .identity
+                      let showFullBar = !hidden && !collapsed
+                      let showCirclePill = !hidden && collapsed
+                      UIView.animate(withDuration: 0.26, delay: 0, options: [.curveEaseOut]) {
+                          tb.alpha = showFullBar ? 1.0 : 0.0
+                          tb.transform = showFullBar ? .identity : CGAffineTransform(translationX: 0, y: 40)
+
+                          pill.alpha = showCirclePill ? 1.0 : 0.0
+                          pill.transform = showCirclePill ? .identity : CGAffineTransform(scaleX: 0.72, y: 0.72)
                       }
-                      tb.isUserInteractionEnabled = !hidden
+                      tb.isUserInteractionEnabled = showFullBar
+                      pill.isUserInteractionEnabled = showCirclePill
                   }
               }
 
-              // MARK: - Native iOS Files App Folder Picker
+              // MARK: - Native iOS Files App Folder / Multi-File Picker
               private func presentFolderPicker() {
                   DispatchQueue.main.async {
                       guard let vc = self.hostViewController else { return }
                       if #available(iOS 14.0, *) {
-                          let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.folder], asCopy: false)
+                          // Allow selecting either folders OR audio/lrc files directly
+                          let types: [UTType] = [.folder, .audio, .mp3, .mpeg4Audio, .wav]
+                          let picker = UIDocumentPickerViewController(forOpeningContentTypes: types, asCopy: false)
                           picker.delegate = self
-                          picker.allowsMultipleSelection = false
+                          picker.allowsMultipleSelection = true
+                          if let docsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
+                              picker.directoryURL = docsURL
+                          }
                           vc.present(picker, animated: true)
                       } else {
-                          let picker = UIDocumentPickerViewController(documentTypes: ["public.folder"], in: .open)
+                          let picker = UIDocumentPickerViewController(documentTypes: ["public.folder", "public.audio"], in: .open)
                           picker.delegate = self
-                          picker.allowsMultipleSelection = false
+                          picker.allowsMultipleSelection = true
                           vc.present(picker, animated: true)
                       }
                   }
@@ -319,34 +414,50 @@ jobs:
               }
 
               func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
-                  guard let folderURL = urls.first else { return }
-                  if folderURL.startAccessingSecurityScopedResource() {
-                      activeSecurityURL?.stopAccessingSecurityScopedResource()
-                      activeSecurityURL = folderURL
-                      if let bookmark = try? folderURL.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil) {
-                          UserDefaults.standard.set(bookmark, forKey: "feng_picked_folder_bookmark")
-                      }
-                  }
-
-                  let folderName = folderURL.lastPathComponent
+                  guard !urls.isEmpty else { return }
                   let audioExts = Set(["mp3", "flac", "m4a", "wav", "ogg", "aac"])
                   var lrcByBase: [String: String] = [:]
                   var audioURLs: [URL] = []
+                  var folderName = urls.count == 1 ? urls[0].lastPathComponent : "所选项目(\(urls.count))"
 
-                  if let enumerator = FileManager.default.enumerator(
-                      at: folderURL,
-                      includingPropertiesForKeys: [.isRegularFileKey],
-                      options: [.skipsHiddenFiles]
-                  ) {
-                      for case let fileURL as URL in enumerator {
-                          let ext = fileURL.pathExtension.lowercased()
+                  for pickedURL in urls {
+                      let accessed = pickedURL.startAccessingSecurityScopedResource()
+                      var isDir: ObjCBool = false
+                      if FileManager.default.fileExists(atPath: pickedURL.path, isDirectory: &isDir), isDir.boolValue {
+                          if accessed {
+                              activeSecurityURL?.stopAccessingSecurityScopedResource()
+                              activeSecurityURL = pickedURL
+                              if let bookmark = try? pickedURL.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil) {
+                                  UserDefaults.standard.set(bookmark, forKey: "feng_picked_folder_bookmark")
+                              }
+                          }
+                          if let enumerator = FileManager.default.enumerator(
+                              at: pickedURL,
+                              includingPropertiesForKeys: [.isRegularFileKey],
+                              options: [.skipsHiddenFiles]
+                          ) {
+                              for case let fileURL as URL in enumerator {
+                                  let ext = fileURL.pathExtension.lowercased()
+                                  if ext == "lrc" {
+                                      let base = fileURL.deletingPathExtension().lastPathComponent.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+                                      if let txt = try? String(contentsOf: fileURL, encoding: .utf8) {
+                                          lrcByBase[base] = txt
+                                      }
+                                  } else if audioExts.contains(ext) {
+                                      audioURLs.append(fileURL)
+                                  }
+                              }
+                          }
+                      } else {
+                          folderName = pickedURL.deletingLastPathComponent().lastPathComponent
+                          let ext = pickedURL.pathExtension.lowercased()
                           if ext == "lrc" {
-                              let base = fileURL.deletingPathExtension().lastPathComponent.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-                              if let txt = try? String(contentsOf: fileURL, encoding: .utf8) {
+                              let base = pickedURL.deletingPathExtension().lastPathComponent.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+                              if let txt = try? String(contentsOf: pickedURL, encoding: .utf8) {
                                   lrcByBase[base] = txt
                               }
                           } else if audioExts.contains(ext) {
-                              audioURLs.append(fileURL)
+                              audioURLs.append(pickedURL)
                           }
                       }
                   }
@@ -438,9 +549,9 @@ jobs:
                       if let tab = body["tab"] as? String {
                           DispatchQueue.main.async { self.updateTabBarSelection(tab: tab) }
                       }
-                      if let hidden = body["hidden"] as? Bool {
-                          setTabBarHidden(hidden)
-                      }
+                      let hidden = (body["hidden"] as? Bool) ?? isTabBarHidden
+                      let collapsed = (body["collapsed"] as? Bool) ?? isTabBarCollapsed
+                      setDockVisibility(hidden: hidden, collapsed: collapsed)
                       return
                   }
 
@@ -533,7 +644,7 @@ jobs:
 
               func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
                   FengRemoteMediaBridge.shared.configureAudioAndCommands()
-                  DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                  DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
                       FengRemoteMediaBridge.shared.attach(window: self.window)
                   }
                   return true
