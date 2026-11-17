@@ -206,20 +206,24 @@ jobs:
                   container.layer.shadowOffset = CGSize(width: 0, height: 8)
 
                   let effectView: UIVisualEffectView
+                  #if compiler(>=6.2)
                   if #available(iOS 26.0, *) {
                       let glass = UIGlassEffect(style: .regular)
                       glass.isInteractive = true
                       effectView = UIVisualEffectView(effect: glass)
                   } else {
                       effectView = UIVisualEffectView(effect: UIBlurEffect(style: .systemChromeMaterialDark))
-                  }
-                  effectView.translatesAutoresizingMaskIntoConstraints = false
-                  effectView.layer.cornerRadius = 29
-                  effectView.clipsToBounds = true
-                  if #unavailable(iOS 26.0) {
                       effectView.layer.borderWidth = 0.6
                       effectView.layer.borderColor = UIColor.white.withAlphaComponent(0.22).cgColor
                   }
+                  #else
+                  effectView = UIVisualEffectView(effect: UIBlurEffect(style: .systemChromeMaterialDark))
+                  effectView.layer.borderWidth = 0.6
+                  effectView.layer.borderColor = UIColor.white.withAlphaComponent(0.22).cgColor
+                  #endif
+                  effectView.translatesAutoresizingMaskIntoConstraints = false
+                  effectView.layer.cornerRadius = 29
+                  effectView.clipsToBounds = true
 
                   let stack = UIStackView()
                   stack.translatesAutoresizingMaskIntoConstraints = false
