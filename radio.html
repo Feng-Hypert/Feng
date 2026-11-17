@@ -37,6 +37,45 @@
       --safe-bottom: max(env(safe-area-inset-bottom, 0px), 24px);
     }
 
+    /* Collapsed Bottom Bar Layout (Matches iOS 26/27 Minimized TabBar + Compact Mini Player) */
+    #mini-player-wrapper {
+      transition: padding-left 0.28s cubic-bezier(0.22, 1, 0.36, 1), padding-right 0.28s cubic-bezier(0.22, 1, 0.36, 1), bottom 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    html.dock-collapsed #mini-player-wrapper {
+      padding-left: 84px !important;
+      padding-right: 14px !important;
+      bottom: calc(var(--safe-bottom) + 10px) !important;
+    }
+    html.dock-collapsed #mini-player-bar .px-3 {
+      padding-top: 0.45rem;
+      padding-bottom: 0.45rem;
+    }
+    html.dock-collapsed #mini-cover {
+      width: 2.25rem;
+      height: 2.25rem;
+      border-radius: 0.75rem;
+    }
+    html.dock-collapsed #btn-mini-next,
+    html.dock-collapsed #btn-mini-queue {
+      display: none;
+    }
+    html.dock-collapsed #bottom-tab-dock {
+      width: 74px;
+      right: auto;
+      padding-left: 14px;
+      padding-right: 0;
+    }
+    html.dock-collapsed #bottom-tab-dock .dock-nav-btn:not([data-nav="library"]) {
+      display: none;
+    }
+    html.dock-collapsed #bottom-tab-dock .dock-nav-btn[data-nav="library"] span {
+      display: none;
+    }
+    html.dock-collapsed #bottom-tab-dock .grid-cols-4 {
+      grid-template-columns: repeat(1, minmax(0, 1fr));
+      padding: 0.35rem;
+    }
+
     * {
       box-sizing: border-box;
       -webkit-tap-highlight-color: transparent;
@@ -2449,6 +2488,23 @@
         document.documentElement.classList.add('is-native-ios');
       }
 
+      function enforceNativeBridgeVisibility() {
+        if (hasNativeDockBridge() || hasNativeFolderPicker()) {
+          document.documentElement.classList.add('is-native-ios');
+        }
+        if (hasNativeDockBridge()) {
+          const webDock = $('bottom-tab-dock');
+          if (webDock) webDock.classList.add('hidden');
+        }
+        if (hasNativeFolderPicker()) {
+          const nativePickBtn = $('btn-pick-native-folder');
+          if (nativePickBtn) nativePickBtn.classList.remove('hidden');
+        }
+      }
+      enforceNativeBridgeVisibility();
+      setTimeout(enforceNativeBridgeVisibility, 150);
+      setTimeout(enforceNativeBridgeVisibility, 600);
+
       async function resolveNativeRawFileUri(nativePath, customUri = '') {
         if (customUri) return customUri;
         if (!isCapacitorNative() || !nativePath) return '';
@@ -3180,21 +3236,29 @@
       // 4-TAB DOCK & NATIVE iOS UITabBar LIQUID GLASS DOCK BRIDGE
       // =========================================================================
       function syncNativeDockState() {
-        if (!hasNativeDockBridge()) return;
+        enforceNativeBridgeVisibility();
         const npOpen = !nowPlayingModal.classList.contains('translate-y-full');
         const backdropOpen = !modalBackdrop.classList.contains('pointer-events-none');
         const isMainTab = ['library', 'playlists', 'stats', 'diy'].includes(state.activeView);
         const hidden = npOpen || backdropOpen || !isMainTab;
+        const canCollapse = state.activeView === 'library' && !hidden;
+        const collapsed = Boolean(state.dockCollapsed && canCollapse);
+        document.documentElement.classList.toggle('dock-collapsed', collapsed);
+        if (!hasNativeDockBridge()) return;
         try {
           window.webkit.messageHandlers.fengDock.postMessage({
             action: 'state',
             tab: state.activeView,
-            hidden
+            hidden,
+            collapsed
           });
         } catch {}
       }
 
       window.__fengSwitchTab = (tabName) => {
+        if (state.dockCollapsed) {
+          state.dockCollapsed = false;
+        }
         closeAllBottomSheets();
         closeNowPlaying();
         switchView(tabName);
@@ -3202,6 +3266,8 @@
 
       function setLibraryTab(tabName) {
         state.libTab = tabName || 'songs';
+        state.dockCollapsed = false;
+        syncNativeDockState();
         document.querySelectorAll('.lib-tab-btn').forEach((btn) => {
           const active = btn.dataset.libTab === state.libTab;
           btn.classList.toggle('bg-white', active);
@@ -3229,6 +3295,9 @@
           state.groupReturnView = state.activeView || 'library';
         }
         state.activeView = viewName;
+        if (viewName !== 'library') {
+          state.dockCollapsed = false;
+        }
 
         document.querySelectorAll('.app-view').forEach((v) => v.classList.add('hidden'));
         const target = $(`view-${viewName}`);
@@ -5453,13 +5522,44 @@
       // BIND ALL UI EVENTS
       // =========================================================================
       function bindEvents() {
-        // 4-Tab Dock Navigation
-        if (hasNativeDockBridge()) {
-          const webDock = $('bottom-tab-dock');
-          if (webDock) webDock.classList.add('hidden');
-        }
+        // 4-Tab Dock Navigation & Scroll-to-Collapse Behavior in Library
+        enforceNativeBridgeVisibility();
         document.querySelectorAll('.dock-nav-btn').forEach((btn) => {
-          on(btn, 'click', () => switchView(btn.dataset.nav));
+          on(btn, 'click', () => {
+            if (state.dockCollapsed) {
+              state.dockCollapsed = false;
+              syncNativeDockState();
+              return;
+            }
+            switchView(btn.dataset.nav);
+          });
+        });
+
+        ['library-list-container', 'albums-grid', 'artists-grid'].forEach((scrollId) => {
+          const el = $(scrollId);
+          if (!el) return;
+          let lastScrollTop = 0;
+          on(el, 'scroll', () => {
+            if (state.activeView !== 'library') return;
+            const st = el.scrollTop;
+            if (st <= 16) {
+              if (state.dockCollapsed) {
+                state.dockCollapsed = false;
+                syncNativeDockState();
+              }
+            } else if (st - lastScrollTop > 22 && st > 48) {
+              if (!state.dockCollapsed) {
+                state.dockCollapsed = true;
+                syncNativeDockState();
+              }
+            } else if (lastScrollTop - st > 24) {
+              if (state.dockCollapsed) {
+                state.dockCollapsed = false;
+                syncNativeDockState();
+              }
+            }
+            lastScrollTop = st;
+          }, { passive: true });
         });
 
         // Library Filter Tabs (全部 | 专辑 | 歌手) & Header Import
@@ -6256,7 +6356,10 @@
           if (nativePickBtn) nativePickBtn.classList.remove('hidden');
         }
         on('btn-pick-native-folder', () => {
-          if (!hasNativeFolderPicker()) return;
+          if (!hasNativeFolderPicker()) {
+            showToast('请在原生 iOS App 中使用此功能');
+            return;
+          }
           try {
             window.webkit.messageHandlers.fengFolder.postMessage({ action: 'pickFolder' });
           } catch {}
