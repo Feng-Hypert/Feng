@@ -194,6 +194,22 @@ jobs:
                   setupLiquidGlassDock(in: bridgeVC.view)
               }
 
+              private func makeLiquidGlassEffect() -> (effect: UIVisualEffect, isNativeGlass: Bool) {
+                  if let glassCls = NSClassFromString("UIGlassEffect") as? NSObject.Type {
+                      let sel = NSSelectorFromString("effectWithStyle:")
+                      if glassCls.responds(to: sel),
+                         let unmanaged = glassCls.perform(sel, with: 0),
+                         let effect = unmanaged.takeUnretainedValue() as? UIVisualEffect {
+                          let interactiveSel = NSSelectorFromString("setInteractive:")
+                          if effect.responds(to: interactiveSel) {
+                              effect.setValue(true, forKey: "interactive")
+                          }
+                          return (effect, true)
+                      }
+                  }
+                  return (UIBlurEffect(style: .systemChromeMaterialDark), false)
+              }
+
               private func setupLiquidGlassDock(in parentView: UIView) {
                   guard dockContainer == nil else { return }
 
@@ -205,25 +221,15 @@ jobs:
                   container.layer.shadowRadius = 18
                   container.layer.shadowOffset = CGSize(width: 0, height: 8)
 
-                  let effectView: UIVisualEffectView
-                  #if compiler(>=6.2)
-                  if #available(iOS 26.0, *) {
-                      let glass = UIGlassEffect(style: .regular)
-                      glass.isInteractive = true
-                      effectView = UIVisualEffectView(effect: glass)
-                  } else {
-                      effectView = UIVisualEffectView(effect: UIBlurEffect(style: .systemChromeMaterialDark))
-                      effectView.layer.borderWidth = 0.6
-                      effectView.layer.borderColor = UIColor.white.withAlphaComponent(0.22).cgColor
-                  }
-                  #else
-                  effectView = UIVisualEffectView(effect: UIBlurEffect(style: .systemChromeMaterialDark))
-                  effectView.layer.borderWidth = 0.6
-                  effectView.layer.borderColor = UIColor.white.withAlphaComponent(0.22).cgColor
-                  #endif
+                  let glassPair = makeLiquidGlassEffect()
+                  let effectView = UIVisualEffectView(effect: glassPair.effect)
                   effectView.translatesAutoresizingMaskIntoConstraints = false
                   effectView.layer.cornerRadius = 29
                   effectView.clipsToBounds = true
+                  if !glassPair.isNativeGlass {
+                      effectView.layer.borderWidth = 0.6
+                      effectView.layer.borderColor = UIColor.white.withAlphaComponent(0.22).cgColor
+                  }
 
                   let stack = UIStackView()
                   stack.translatesAutoresizingMaskIntoConstraints = false
@@ -508,6 +514,7 @@ jobs:
 
       - name: Build Unsigned iOS IPA
         run: |
+          set -o pipefail
           if [ -d "ios/App/App.xcworkspace" ]; then
             TARGET="-workspace ios/App/App.xcworkspace"
           else
@@ -521,7 +528,7 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
-            clean build
+            clean build | tee xcodebuild.log || (grep -E "error:" xcodebuild.log | tail -n 30; exit 1)
           mkdir -p Payload
           cp -r build/Build/Products/Release-iphoneos/App.app Payload/
           zip -qr FENG_MUSIC_iOS.ipa Payload
