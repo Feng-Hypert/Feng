@@ -1,0 +1,399 @@
+name: Build Offline Android APK & iOS IPA
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Prepare Web Assets & Android
+        run: |
+          mkdir -p www
+          cp radio.html www/index.html
+          cp icon-512.png www/icon-512.png
+          sed -i 's|"/icon-512.png"|"./icon-512.png"|g' www/index.html
+          cat << 'EOF' > capacitor.config.json
+          {
+            "appId": "com.feng.music",
+            "appName": "FENG MUSIC",
+            "webDir": "www",
+            "bundledWebRuntime": false
+          }
+          EOF
+          npm init -y
+          npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6 @capacitor/filesystem@6
+          npx cap add android
+          for dir in mipmap-mdpi mipmap-hdpi mipmap-xhdpi mipmap-xxhdpi mipmap-xxxhdpi; do
+            mkdir -p "android/app/src/main/res/$dir"
+            cp icon-512.png "android/app/src/main/res/$dir/ic_launcher.png"
+            cp icon-512.png "android/app/src/main/res/$dir/ic_launcher_round.png"
+            cp icon-512.png "android/app/src/main/res/$dir/ic_launcher_foreground.png"
+          done
+
+      - name: Build Android APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: FENG_MUSIC_Android_APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+
+  build-ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Prepare Web Assets & Capacitor iOS
+        run: |
+          mkdir -p www
+          cp radio.html www/index.html
+          cp icon-512.png www/icon-512.png
+          sed -i '' 's|"/icon-512.png"|"./icon-512.png"|g' www/index.html
+          cat << 'EOF' > capacitor.config.json
+          {
+            "appId": "com.feng.music",
+            "appName": "FENG MUSIC",
+            "webDir": "www",
+            "bundledWebRuntime": false
+          }
+          EOF
+          npm init -y
+          npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/ios@6 @capacitor/filesystem@6
+          npx cap add ios
+
+      - name: Configure iOS Files App Sharing & Background Audio
+        run: |
+          PLIST="ios/App/App/Info.plist"
+          /usr/libexec/PlistBuddy -c "Add :UIFileSharingEnabled bool true" "$PLIST" || /usr/libexec/PlistBuddy -c "Set :UIFileSharingEnabled true" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :LSSupportsOpeningDocumentsInPlace bool true" "$PLIST" || /usr/libexec/PlistBuddy -c "Set :LSSupportsOpeningDocumentsInPlace true" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :UIBackgroundModes array" "$PLIST" || true
+          /usr/libexec/PlistBuddy -c "Add :UIBackgroundModes:0 string audio" "$PLIST" || true
+
+      - name: Enable Native iOS AVPlayer & Lock Screen Prev/Next Controls
+        run: |
+          cat << 'EOF' > ios/App/App/AppDelegate.swift
+          import UIKit
+          import Capacitor
+          import MediaPlayer
+          import AVFoundation
+          import WebKit
+
+          final class FengRemoteMediaBridge: NSObject, WKScriptMessageHandler {
+              static let shared = FengRemoteMediaBridge()
+              private var isConfigured = false
+              private var isAttached = false
+              weak var webView: WKWebView?
+
+              private var player: AVPlayer?
+              private var timeObserver: Any?
+              private var endObserver: NSObjectProtocol?
+              private var didSendMeta = false
+              private var pendingResumeTime: Double = 0
+              private var currentDuration: Double = 0
+              private var currentRate: Float = 1.0
+              private var currentTitle: String = "FENG MUSIC"
+              private var currentArtist: String = ""
+              private var currentAlbum: String = ""
+              private var currentArtwork: MPMediaItemArtwork?
+
+              func configureAudioAndCommands() {
+                  guard !isConfigured else { return }
+                  isConfigured = true
+                  try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
+                  try? AVAudioSession.sharedInstance().setActive(true)
+
+                  let cmd = MPRemoteCommandCenter.shared()
+                  cmd.skipBackwardCommand.isEnabled = false
+                  cmd.skipForwardCommand.isEnabled = false
+                  cmd.previousTrackCommand.isEnabled = true
+                  cmd.nextTrackCommand.isEnabled = true
+                  cmd.playCommand.isEnabled = true
+                  cmd.pauseCommand.isEnabled = true
+                  cmd.changePlaybackPositionCommand.isEnabled = true
+
+                  cmd.previousTrackCommand.addTarget { [weak self] _ in
+                      DispatchQueue.main.async {
+                          self?.webView?.evaluateJavaScript("window.__fengPrevTrack && window.__fengPrevTrack()", completionHandler: nil)
+                      }
+                      return .success
+                  }
+
+                  cmd.nextTrackCommand.addTarget { [weak self] _ in
+                      DispatchQueue.main.async {
+                          self?.webView?.evaluateJavaScript("window.__fengNextTrack && window.__fengNextTrack()", completionHandler: nil)
+                      }
+                      return .success
+                  }
+
+                  cmd.playCommand.addTarget { [weak self] _ in
+                      DispatchQueue.main.async {
+                          guard let self = self, let p = self.player else { return }
+                          p.play()
+                          p.rate = self.currentRate
+                          self.updateNowPlayingInfo()
+                          self.sendEvent("play", extra: [:])
+                      }
+                      return .success
+                  }
+
+                  cmd.pauseCommand.addTarget { [weak self] _ in
+                      DispatchQueue.main.async {
+                          guard let self = self, let p = self.player else { return }
+                          p.pause()
+                          self.updateNowPlayingInfo()
+                          self.sendEvent("pause", extra: [:])
+                      }
+                      return .success
+                  }
+
+                  cmd.changePlaybackPositionCommand.addTarget { [weak self] event in
+                      guard let self = self,
+                            let posEvent = event as? MPChangePlaybackPositionCommandEvent,
+                            let p = self.player else { return .commandFailed }
+                      let target = CMTime(seconds: posEvent.positionTime, preferredTimescale: 600)
+                      p.seek(to: target) { _ in
+                          DispatchQueue.main.async {
+                              self.updateNowPlayingInfo()
+                              self.sendEvent("timeupdate", extra: ["currentTime": posEvent.positionTime, "duration": self.currentDuration])
+                          }
+                      }
+                      return .success
+                  }
+              }
+
+              func attach(window: UIWindow?) {
+                  guard !isAttached,
+                        let bridgeVC = window?.rootViewController as? CAPBridgeViewController,
+                        let wv = bridgeVC.webView else { return }
+                  isAttached = true
+                  self.webView = wv
+                  wv.configuration.userContentController.add(self, name: "fengMedia")
+                  wv.configuration.userContentController.add(self, name: "fengAudio")
+              }
+
+              private func sendEvent(_ type: String, extra: [String: Any]) {
+                  var jsonStr = "{}"
+                  if let data = try? JSONSerialization.data(withJSONObject: extra, options: []),
+                     let s = String(data: data, encoding: .utf8) {
+                      jsonStr = s
+                  }
+                  DispatchQueue.main.async {
+                      self.webView?.evaluateJavaScript("window.__fengNativeAudioEvent && window.__fengNativeAudioEvent('\(type)', \(jsonStr))", completionHandler: nil)
+                  }
+              }
+
+              private func updateNowPlayingInfo() {
+                  var info: [String: Any] = [
+                      MPMediaItemPropertyTitle: currentTitle,
+                      MPMediaItemPropertyArtist: currentArtist,
+                      MPMediaItemPropertyAlbumTitle: currentAlbum,
+                      MPNowPlayingInfoPropertyElapsedPlaybackTime: player.map { CMTimeGetSeconds($0.currentTime()) } ?? 0,
+                      MPMediaItemPropertyPlaybackDuration: currentDuration,
+                      MPNowPlayingInfoPropertyPlaybackRate: (player?.rate ?? 0) > 0 ? Double(currentRate) : 0.0
+                  ]
+                  if let art = currentArtwork {
+                      info[MPMediaItemPropertyArtwork] = art
+                  }
+                  MPNowPlayingInfoCenter.default().nowPlayingInfo = info
+              }
+
+              private func cleanupPlayer() {
+                  if let obs = timeObserver, let p = player {
+                      p.removeTimeObserver(obs)
+                  }
+                  timeObserver = nil
+                  if let eObs = endObserver {
+                      NotificationCenter.default.removeObserver(eObs)
+                  }
+                  endObserver = nil
+                  player?.pause()
+                  player = nil
+              }
+
+              private func decodeArtwork(from coverStr: String) -> MPMediaItemArtwork? {
+                  if coverStr.hasPrefix("data:image"),
+                     let comma = coverStr.firstIndex(of: ",") {
+                      let b64 = String(coverStr[coverStr.index(after: comma)...])
+                      if let data = Data(base64Encoded: b64, options: .ignoreUnknownCharacters),
+                         let img = UIImage(data: data) {
+                          return MPMediaItemArtwork(boundsSize: img.size) { _ in img }
+                      }
+                  }
+                  if let img = UIImage(named: "AppIcon") ?? UIImage(contentsOfFile: Bundle.main.path(forResource: "icon-512", ofType: "png", inDirectory: "public") ?? "") {
+                      return MPMediaItemArtwork(boundsSize: img.size) { _ in img }
+                  }
+                  return nil
+              }
+
+              func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+                  guard message.name == "fengAudio",
+                        let body = message.body as? [String: Any],
+                        let action = body["action"] as? String else { return }
+
+                  if action == "load" {
+                      guard let urlStr = body["url"] as? String,
+                            let url = URL(string: urlStr) else { return }
+                      cleanupPlayer()
+                      currentTitle = (body["title"] as? String) ?? "FENG MUSIC"
+                      currentArtist = (body["artist"] as? String) ?? ""
+                      currentAlbum = (body["album"] as? String) ?? ""
+                      currentRate = Float((body["rate"] as? Double) ?? 1.0)
+                      pendingResumeTime = (body["resumeTime"] as? Double) ?? 0
+                      currentDuration = 0
+                      didSendMeta = false
+                      currentArtwork = decodeArtwork(from: (body["cover"] as? String) ?? "")
+
+                      let item = AVPlayerItem(url: url)
+                      let newPlayer = AVPlayer(playerItem: item)
+                      self.player = newPlayer
+
+                      endObserver = NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime, object: item, queue: .main) { [weak self] _ in
+                          self?.updateNowPlayingInfo()
+                          self?.sendEvent("ended", extra: [:])
+                      }
+
+                      timeObserver = newPlayer.addPeriodicTimeObserver(forInterval: CMTime(seconds: 0.25, preferredTimescale: 600), queue: .main) { [weak self] cmTime in
+                          guard let self = self else { return }
+                          if !self.didSendMeta && item.status == .readyToPlay {
+                              let dur = CMTimeGetSeconds(item.duration)
+                              if dur.isFinite && dur > 0 {
+                                  self.didSendMeta = true
+                                  self.currentDuration = dur
+                                  if self.pendingResumeTime > 0 && self.pendingResumeTime < dur - 1 {
+                                      newPlayer.seek(to: CMTime(seconds: self.pendingResumeTime, preferredTimescale: 600))
+                                      self.pendingResumeTime = 0
+                                  }
+                                  self.sendEvent("loadedmetadata", extra: ["duration": dur])
+                              }
+                          }
+                          let cur = CMTimeGetSeconds(cmTime)
+                          if cur.isFinite {
+                              self.updateNowPlayingInfo()
+                              self.sendEvent("timeupdate", extra: ["currentTime": cur, "duration": self.currentDuration])
+                          }
+                      }
+
+                      let autoPlay = (body["autoPlay"] as? Bool) ?? false
+                      if autoPlay {
+                          newPlayer.play()
+                          newPlayer.rate = currentRate
+                          updateNowPlayingInfo()
+                          sendEvent("play", extra: [:])
+                          sendEvent("playing", extra: [:])
+                      } else {
+                          updateNowPlayingInfo()
+                      }
+                  } else if action == "play" {
+                      player?.play()
+                      player?.rate = currentRate
+                      updateNowPlayingInfo()
+                  } else if action == "pause" {
+                      player?.pause()
+                      updateNowPlayingInfo()
+                  } else if action == "seek" {
+                      let t = (body["time"] as? Double) ?? 0
+                      player?.seek(to: CMTime(seconds: t, preferredTimescale: 600)) { [weak self] _ in
+                          DispatchQueue.main.async { self?.updateNowPlayingInfo() }
+                      }
+                  } else if action == "rate" {
+                      currentRate = Float((body["rate"] as? Double) ?? 1.0)
+                      if (player?.rate ?? 0) != 0 {
+                          player?.rate = currentRate
+                      }
+                      updateNowPlayingInfo()
+                  } else if action == "stop" {
+                      cleanupPlayer()
+                      MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+                  }
+              }
+          }
+
+          @UIApplicationMain
+          class AppDelegate: UIResponder, UIApplicationDelegate {
+
+              var window: UIWindow?
+
+              func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+                  FengRemoteMediaBridge.shared.configureAudioAndCommands()
+                  return true
+              }
+
+              func applicationDidBecomeActive(_ application: UIApplication) {
+                  FengRemoteMediaBridge.shared.attach(window: window)
+              }
+
+              func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
+                  return ApplicationDelegateProxy.shared.application(app, open: url, options: options)
+              }
+
+              func application(_ application: UIApplication, continue userActivity: NSUserActivity, restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void) -> Bool {
+                  return ApplicationDelegateProxy.shared.application(application, continue: userActivity, restorationHandler: restorationHandler)
+              }
+          }
+          EOF
+
+      - name: Force Replace iOS App Icon
+        run: |
+          ICON_DIR="ios/App/App/Assets.xcassets/AppIcon.appiconset"
+          rm -rf "$ICON_DIR"
+          mkdir -p "$ICON_DIR"
+          sips -s format png -z 1024 1024 icon-512.png --out "$ICON_DIR/AppIcon-512@2x.png"
+          cat << 'EOF' > "$ICON_DIR/Contents.json"
+          {
+            "images" : [
+              {
+                "filename" : "AppIcon-512@2x.png",
+                "idiom" : "universal",
+                "platform" : "ios",
+                "size" : "1024x1024"
+              }
+            ],
+            "info" : {
+              "author" : "xcode",
+              "version" : 1
+            }
+          }
+          EOF
+
+      - name: Build Unsigned iOS IPA
+        run: |
+          if [ -d "ios/App/App.xcworkspace" ]; then
+            TARGET="-workspace ios/App/App.xcworkspace"
+          else
+            TARGET="-project ios/App/App.xcodeproj"
+          fi
+          xcodebuild $TARGET \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            clean build
+          mkdir -p Payload
+          cp -r build/Build/Products/Release-iphoneos/App.app Payload/
+          zip -qr FENG_MUSIC_iOS.ipa Payload
+
+      - name: Upload iOS IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: FENG_MUSIC_iOS_IPA
+          path: FENG_MUSIC_iOS.ipa
