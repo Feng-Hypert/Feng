@@ -5539,20 +5539,44 @@
           const el = $(scrollId);
           if (!el) return;
           let lastScrollTop = 0;
-          on(el, 'scroll', () => {
-            if (state.activeView !== 'library') return;
-            const st = el.scrollTop;
-            if (st <= 16) {
-              if (state.dockCollapsed) {
-                state.dockCollapsed = false;
-                syncNativeDockState();
-              }
-            } else if (st - lastScrollTop > 22 && st > 48) {
+          let touchStartY = 0;
+
+          on(el, 'touchstart', (e) => {
+            if (e.touches && e.touches[0]) {
+              touchStartY = e.touches[0].clientY;
+            }
+          }, { passive: true });
+
+          on(el, 'touchmove', (e) => {
+            if (state.activeView !== 'library' || !e.touches || !e.touches[0]) return;
+            const dy = e.touches[0].clientY - touchStartY;
+            if (dy < -28 && el.scrollTop > 12) {
               if (!state.dockCollapsed) {
                 state.dockCollapsed = true;
                 syncNativeDockState();
               }
-            } else if (lastScrollTop - st > 24) {
+            } else if (dy > 32) {
+              if (state.dockCollapsed) {
+                state.dockCollapsed = false;
+                syncNativeDockState();
+              }
+            }
+          }, { passive: true });
+
+          on(el, 'scroll', () => {
+            if (state.activeView !== 'library') return;
+            const st = el.scrollTop;
+            if (st <= 10) {
+              if (state.dockCollapsed) {
+                state.dockCollapsed = false;
+                syncNativeDockState();
+              }
+            } else if (st - lastScrollTop > 16 && st > 30) {
+              if (!state.dockCollapsed) {
+                state.dockCollapsed = true;
+                syncNativeDockState();
+              }
+            } else if (lastScrollTop - st > 18) {
               if (state.dockCollapsed) {
                 state.dockCollapsed = false;
                 syncNativeDockState();
