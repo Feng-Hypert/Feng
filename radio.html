@@ -34,12 +34,14 @@
 
     html.is-native-ios {
       --safe-top: max(env(safe-area-inset-top, 0px), 47px);
-      --safe-bottom: max(env(safe-area-inset-bottom, 0px), 24px);
     }
 
-    /* Collapsed Bottom Bar Layout (Matches iOS 26/27 Minimized TabBar + Compact Mini Player) */
+    /* Collapsed & Hidden Bottom Bar Layout */
     #mini-player-wrapper {
       transition: padding-left 0.28s cubic-bezier(0.22, 1, 0.36, 1), padding-right 0.28s cubic-bezier(0.22, 1, 0.36, 1), bottom 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    html.dock-hidden #mini-player-wrapper {
+      bottom: calc(var(--safe-bottom) + 12px) !important;
     }
     html.dock-collapsed #mini-player-wrapper {
       padding-left: 84px !important;
@@ -65,10 +67,10 @@
       padding-left: 14px;
       padding-right: 0;
     }
-    html.dock-collapsed #bottom-tab-dock .dock-nav-btn:not([data-nav="library"]) {
+    html.dock-collapsed #bottom-tab-dock .dock-nav-btn:not(.is-active-tab) {
       display: none;
     }
-    html.dock-collapsed #bottom-tab-dock .dock-nav-btn[data-nav="library"] span {
+    html.dock-collapsed #bottom-tab-dock .dock-nav-btn.is-active-tab span {
       display: none;
     }
     html.dock-collapsed #bottom-tab-dock .grid-cols-4 {
@@ -662,7 +664,7 @@
           </div>
         </div>
       </header>
-      <div class="flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 space-y-4">
+      <div id="stats-scroll-container" class="flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 space-y-4">
         <div class="grid grid-cols-3 gap-2.5">
           <div class="liquid-panel rounded-3xl p-3.5">
             <div class="text-[11px] text-white/55 mb-1">累计听歌次数</div>
@@ -705,7 +707,7 @@
         </div>
       </header>
 
-      <div class="flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 space-y-4">
+      <div id="diy-scroll-container" class="flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 space-y-4">
         <!-- 1. Home Background Wallpaper -->
         <div class="liquid-panel rounded-3xl p-4 space-y-3.5">
           <div>
@@ -1644,6 +1646,7 @@
         sortMode: 'default',
         activeView: 'library',
         libTab: 'songs',
+        dockCollapsed: false,
         previousView: 'library',
         activePlaylistId: null,
         activeGroup: null,
@@ -1897,9 +1900,7 @@
               document.documentElement.style.setProperty('--aurora-2', pick(samples[Math.floor(samples.length / 3)]));
               document.documentElement.style.setProperty('--aurora-3', pick(samples[Math.floor((samples.length * 2) / 3)]));
             }
-          } catch {
-            // Keep current palette on tainted image
-          }
+          } catch {}
         };
         img.src = coverUrl;
       }
@@ -3241,9 +3242,14 @@
         const backdropOpen = !modalBackdrop.classList.contains('pointer-events-none');
         const isMainTab = ['library', 'playlists', 'stats', 'diy'].includes(state.activeView);
         const hidden = npOpen || backdropOpen || !isMainTab;
-        const canCollapse = state.activeView === 'library' && !hidden;
+        const canCollapse = isMainTab && !hidden;
         const collapsed = Boolean(state.dockCollapsed && canCollapse);
+        document.documentElement.classList.toggle('dock-hidden', hidden);
         document.documentElement.classList.toggle('dock-collapsed', collapsed);
+        const webDock = $('bottom-tab-dock');
+        if (webDock) {
+          webDock.classList.toggle('hidden', hasNativeDockBridge() || hidden);
+        }
         if (!hasNativeDockBridge()) return;
         try {
           window.webkit.messageHandlers.fengDock.postMessage({
@@ -3295,9 +3301,7 @@
           state.groupReturnView = state.activeView || 'library';
         }
         state.activeView = viewName;
-        if (viewName !== 'library') {
-          state.dockCollapsed = false;
-        }
+        state.dockCollapsed = false;
 
         document.querySelectorAll('.app-view').forEach((v) => v.classList.add('hidden'));
         const target = $(`view-${viewName}`);
@@ -3305,6 +3309,7 @@
 
         document.querySelectorAll('.dock-nav-btn').forEach((btn) => {
           const active = btn.dataset.nav === viewName;
+          btn.classList.toggle('is-active-tab', active);
           btn.classList.toggle('bg-white/15', active);
           btn.classList.toggle('text-white', active);
           btn.classList.toggle('text-white/65', !active);
@@ -5522,7 +5527,7 @@
       // BIND ALL UI EVENTS
       // =========================================================================
       function bindEvents() {
-        // 4-Tab Dock Navigation & Scroll-to-Collapse Behavior in Library
+        // 4-Tab Dock Navigation & Scroll-to-Collapse Behavior across All Main Tabs
         enforceNativeBridgeVisibility();
         document.querySelectorAll('.dock-nav-btn').forEach((btn) => {
           on(btn, 'click', () => {
@@ -5534,12 +5539,12 @@
             switchView(btn.dataset.nav);
           });
         });
-
-        ['library-list-container', 'albums-grid', 'artists-grid'].forEach((scrollId) => {
+        ['library-list-container', 'albums-grid', 'artists-grid', 'playlists-grid', 'stats-scroll-container', 'diy-scroll-container'].forEach((scrollId) => {
           const el = $(scrollId);
           if (!el) return;
           let lastScrollTop = 0;
           let touchStartY = 0;
+          const isMainTabView = () => ['library', 'playlists', 'stats', 'diy'].includes(state.activeView);
 
           on(el, 'touchstart', (e) => {
             if (e.touches && e.touches[0]) {
@@ -5548,9 +5553,9 @@
           }, { passive: true });
 
           on(el, 'touchmove', (e) => {
-            if (state.activeView !== 'library' || !e.touches || !e.touches[0]) return;
+            if (!isMainTabView() || !e.touches || !e.touches[0]) return;
             const dy = e.touches[0].clientY - touchStartY;
-            if (dy < -28 && el.scrollTop > 12) {
+            if (dy < -28 && el.scrollTop > 10) {
               if (!state.dockCollapsed) {
                 state.dockCollapsed = true;
                 syncNativeDockState();
@@ -5564,14 +5569,14 @@
           }, { passive: true });
 
           on(el, 'scroll', () => {
-            if (state.activeView !== 'library') return;
+            if (!isMainTabView()) return;
             const st = el.scrollTop;
             if (st <= 10) {
               if (state.dockCollapsed) {
                 state.dockCollapsed = false;
                 syncNativeDockState();
               }
-            } else if (st - lastScrollTop > 16 && st > 30) {
+            } else if (st - lastScrollTop > 16 && st > 28) {
               if (!state.dockCollapsed) {
                 state.dockCollapsed = true;
                 syncNativeDockState();
