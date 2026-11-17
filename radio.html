@@ -909,7 +909,7 @@
 
     <!-- =========================================================================
          4-TAB LIQUID GLASS BOTTOM DOCK (曲库 - 歌单 - 听歌足迹 - 设置)
-         Hidden automatically when native iOS 26 UIGlassEffect Dock is active
+         Hidden automatically when native iOS UITabBar Liquid Glass Dock is active
          ========================================================================= -->
     <nav id="bottom-tab-dock" class="fixed left-0 right-0 z-30 px-4 sm:px-6 pointer-events-none" style="bottom: calc(var(--safe-bottom) + 10px);" aria-label="主导航">
       <div class="liquid-dock pointer-events-auto max-w-md mx-auto rounded-full px-2 py-1.5 grid grid-cols-4 gap-1">
@@ -2464,6 +2464,20 @@
         const rawUri = await resolveNativeRawFileUri(nativePath, customUri);
         return rawUri ? window.Capacitor.convertFileSrc(rawUri) : '';
       }
+
+      function hashNativeKey(str) {
+        let h1 = 0x811c9dc5;
+        for (let i = 0; i < str.length; i++) {
+          h1 ^= str.charCodeAt(i);
+          h1 = Math.imul(h1, 0x01000193);
+        }
+        return (h1 >>> 0).toString(36);
+      }
+
+      function normTrackKey(str) {
+        return String(str || '').trim().toLowerCase().replace(/\s+/g, ' ');
+      }
+
       function findDuplicateTrack({ nativePath = '', nativeUri = '', fileName = '', title = '', artist = '' }) {
         const baseFileName = fileName ? fileName.split('/').pop() : '';
         const nTitle = normTrackKey(title);
@@ -3163,7 +3177,7 @@
       }
 
       // =========================================================================
-      // 4-TAB DOCK & NATIVE iOS 26 LIQUID GLASS DOCK BRIDGE
+      // 4-TAB DOCK & NATIVE iOS UITabBar LIQUID GLASS DOCK BRIDGE
       // =========================================================================
       function syncNativeDockState() {
         if (!hasNativeDockBridge()) return;
@@ -3894,8 +3908,10 @@
         document.documentElement.style.setProperty('--song-card-alpha', (songAlphaVal / 100).toFixed(2));
         $('diy-song-alpha').value = songAlphaVal;
         $('diy-song-alpha-val').textContent = `${songAlphaVal}%`;
+
         const scanInput = $('diy-scan-subdir');
         if (scanInput) scanInput.value = d.scanSubdir || '';
+
         applyPlaylistLayoutUI();
         updatePlayerEffectButtons();
       }
