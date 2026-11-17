@@ -27,9 +27,14 @@
       --song-card-alpha: 0.11;
       --glass-border: 0.18;
       --lyric-font-px: 21px;
-      --safea-top: env(safe-area-inset-top, 0px);
+      --safe-top: env(safe-area-inset-top, 0px);
       --safe-bottom: env(safe-area-inset-bottom, 0px);
       --app-full-height: 100lvh;
+    }
+
+    html.is-native-ios {
+      --safe-top: max(env(safe-area-inset-top, 0px), 47px);
+      --safe-bottom: max(env(safe-area-inset-bottom, 0px), 24px);
     }
 
     * {
@@ -801,10 +806,13 @@
         <div class="liquid-panel rounded-3xl p-4 space-y-3">
           <div>
             <h2 class="text-sm font-semibold text-white">指定扫描文件夹与去重</h2>
-            <p class="text-xs text-white/50">指定 iOS「FENG MUSIC」下的子文件夹（支持子目录递归），发现重复歌曲自动跳过不再添加</p>
+            <p class="text-xs text-white/50">可直接打开系统「文件」App 选择任意文件夹递归扫描，或指定 iOS「FENG MUSIC」下的子目录，重复歌曲自动跳过</p>
           </div>
+          <button id="btn-pick-native-folder" class="hidden w-full py-2.5 px-3.5 rounded-xl bg-sky-500/25 hover:bg-sky-500/35 border border-sky-400/30 text-xs font-semibold text-sky-200 flex items-center justify-center gap-1.5 transition">
+            <span>打开“文件”选择文件夹扫描</span>
+          </button>
           <div class="flex items-center gap-2">
-            <input id="diy-scan-subdir" type="text" placeholder="留空扫描根目录，如：Music" class="flex-1 px-3.5 py-2 rounded-xl bg-white/10 border border-white/15 text-xs text-white placeholder-white/40 outline-none focus:border-sky-400" />
+            <input id="diy-scan-subdir" type="text" placeholder="或填入 FENG MUSIC 子目录，如：Music" class="flex-1 px-3.5 py-2 rounded-xl bg-white/10 border border-white/15 text-xs text-white placeholder-white/40 outline-none focus:border-sky-400" />
             <button id="btn-diy-save-scan-dir" class="liquid-pill px-3.5 py-2 rounded-xl text-xs font-semibold text-white shrink-0">保存并扫描</button>
           </div>
           <button id="btn-pick-web-folder" class="hidden w-full py-2 px-3.5 rounded-xl bg-white/8 hover:bg-white/14 text-xs font-medium text-sky-200 transition">选择本地文件夹导入（桌面/安卓浏览器）</button>
@@ -2429,7 +2437,20 @@
         );
       }
 
-      async function resolveNativeRawFileUri(nativePath) {
+      function hasNativeFolderPicker() {
+        return Boolean(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.fengFolder);
+      }
+
+      function hasNativeDockBridge() {
+        return Boolean(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.fengDock);
+      }
+
+      if (hasNativeDockBridge() || hasNativeFolderPicker()) {
+        document.documentElement.classList.add('is-native-ios');
+      }
+
+      async function resolveNativeRawFileUri(nativePath, customUri = '') {
+        if (customUri) return customUri;
         if (!isCapacitorNative() || !nativePath) return '';
         try {
           const Filesystem = window.Capacitor.Plugins.Filesystem;
@@ -2439,25 +2460,11 @@
         return '';
       }
 
-      async function resolveNativeDocUrl(nativePath) {
-        const rawUri = await resolveNativeRawFileUri(nativePath);
+      async function resolveNativeDocUrl(nativePath, customUri = '') {
+        const rawUri = await resolveNativeRawFileUri(nativePath, customUri);
         return rawUri ? window.Capacitor.convertFileSrc(rawUri) : '';
       }
-
-      function hashNativeKey(str) {
-        let h1 = 0x811c9dc5;
-        for (let i = 0; i < str.length; i++) {
-          h1 ^= str.charCodeAt(i);
-          h1 = Math.imul(h1, 0x01000193);
-        }
-        return (h1 >>> 0).toString(36);
-      }
-
-      function normTrackKey(str) {
-        return String(str || '').trim().toLowerCase().replace(/\s+/g, ' ');
-      }
-
-      function findDuplicateTrack({ nativePath = '', fileName = '', title = '', artist = '' }) {
+      function findDuplicateTrack({ nativePath = '', nativeUri = '', fileName = '', title = '', artist = '' }) {
         const baseFileName = fileName ? fileName.split('/').pop() : '';
         const nTitle = normTrackKey(title);
         const nArtist = normTrackKey(artist);
@@ -2465,6 +2472,7 @@
 
         return state.tracks.find((t) => {
           if (t.isRemote) return false;
+          if (nativeUri && t.nativeUri && t.nativeUri === nativeUri) return true;
           if (nativePath && t.isNativeDoc && t.nativePath === nativePath) return true;
           if (baseFileName && t.fileName && t.fileName.split('/').pop() === baseFileName) return true;
           if (canCompareMeta) {
@@ -2474,6 +2482,101 @@
           return false;
         });
       }
+
+      window.__fengPickedFolderFiles = async (payload) => {
+        if (!payload || payload.cancelled) return;
+        const folderName = payload.folderName || '所选文件夹';
+        const files = Array.isArray(payload.files) ? payload.files : [];
+        if (!files.length) {
+          showToast(`「${folderName}」内未发现音频文件`);
+          return;
+        }
+        showToast(`正在从「${folderName}」导入 ${files.length} 首歌曲...`);
+        let addedCount = 0;
+        let skippedCount = 0;
+
+        for (const item of files) {
+          const fileName = item.name || '未知曲目';
+          const fileUri = item.uri || '';
+          const externalLrc = item.lrc || '';
+          if (!fileUri) continue;
+
+          let existing = findDuplicateTrack({ nativeUri: fileUri, fileName });
+          if (existing) {
+            let dirty = false;
+            if (existing.nativeUri !== fileUri) {
+              existing.nativeUri = fileUri;
+              existing.isNativeDoc = true;
+              dirty = true;
+            }
+            if (externalLrc && !existing.lrc) {
+              existing.lrc = externalLrc;
+              dirty = true;
+            }
+            if (dirty) await dbPut('tracks', toStorableTrackRecord(existing));
+            skippedCount++;
+            continue;
+          }
+
+          let meta = {
+            title: fileName.replace(/\.[^/.]+$/, '').trim() || '未知曲目',
+            artist: '未知歌手',
+            album: '未知专辑',
+            lrc: '',
+            cover: ''
+          };
+          try {
+            const webUrl = window.Capacitor ? window.Capacitor.convertFileSrc(fileUri) : fileUri;
+            const resp = await fetch(webUrl, { headers: { Range: 'bytes=0-2097151' } });
+            if (resp.ok || resp.status === 206) {
+              const buf = await resp.arrayBuffer();
+              const sliceBuf = buf.byteLength > 3 * 1024 * 1024 ? buf.slice(0, 3 * 1024 * 1024) : buf;
+              meta = await extractEmbeddedMetadata(sliceBuf, fileName);
+            }
+          } catch {}
+
+          existing = findDuplicateTrack({ nativeUri: fileUri, fileName, title: meta.title, artist: meta.artist });
+          if (existing) {
+            if (externalLrc && !existing.lrc) {
+              existing.lrc = externalLrc;
+              await dbPut('tracks', toStorableTrackRecord(existing));
+            }
+            skippedCount++;
+            continue;
+          }
+
+          const trk = {
+            id: `pick_${hashNativeKey(fileUri)}_${fileName.length}`,
+            isNativeDoc: true,
+            nativeUri: fileUri,
+            nativePath: '',
+            fileName,
+            title: meta.title,
+            artist: meta.artist,
+            album: meta.album,
+            cover: meta.cover || DEFAULT_APP_COVER,
+            hasEmbeddedCover: Boolean(meta.cover),
+            lrc: externalLrc || meta.lrc || '',
+            duration: 0,
+            addedAt: Date.now()
+          };
+          state.tracks.unshift(trk);
+          await dbPut('tracks', toStorableTrackRecord(trk));
+          addedCount++;
+          await new Promise((r) => setTimeout(r, 15));
+        }
+
+        state.queue = getSortedTracks().map((t) => t.id);
+        renderLibrary();
+        if (!state.currentTrackId && state.tracks.length) {
+          await loadTrack(state.tracks[0].id, false);
+        }
+        showToast(
+          addedCount > 0
+            ? `已从「${folderName}」新增 ${addedCount} 首，跳过 ${skippedCount} 首重复`
+            : `「${folderName}」扫描完成（无新增，跳过 ${skippedCount} 首重复）`
+        );
+      };
 
       let isScanningNativeDocs = false;
       async function scanNativeDocumentsFolder(showFeedback = false) {
@@ -2521,7 +2624,7 @@
           const currentPathSet = new Set(audioPaths);
           for (let i = state.tracks.length - 1; i >= 0; i--) {
             const trk = state.tracks[i];
-            if (trk.isNativeDoc && !currentPathSet.has(trk.nativePath)) {
+            if (trk.isNativeDoc && !trk.nativeUri && trk.nativePath && !currentPathSet.has(trk.nativePath)) {
               state.tracks.splice(i, 1);
               await dbDelete('tracks', trk.id);
             }
@@ -2904,11 +3007,11 @@
         if (rawTrack.src) {
           playableUrl = rawTrack.src;
           if (/^https?:\/\//i.test(rawTrack.src)) nativeRawUrl = rawTrack.src;
-        } else if (rawTrack.isNativeDoc && rawTrack.nativePath) {
-          nativeRawUrl = await resolveNativeRawFileUri(rawTrack.nativePath);
+        } else if (rawTrack.isNativeDoc && (rawTrack.nativeUri || rawTrack.nativePath)) {
+          nativeRawUrl = await resolveNativeRawFileUri(rawTrack.nativePath, rawTrack.nativeUri || '');
           playableUrl = nativeRawUrl ? window.Capacitor.convertFileSrc(nativeRawUrl) : '';
           if (!playableUrl && autoPlay) {
-            showToast('未在 FENG MUSIC 文件夹找到该音频文件');
+            showToast('未找到该音频文件，请重新选择文件夹授权');
             return;
           }
         } else {
@@ -3062,10 +3165,6 @@
       // =========================================================================
       // 4-TAB DOCK & NATIVE iOS 26 LIQUID GLASS DOCK BRIDGE
       // =========================================================================
-      function hasNativeDockBridge() {
-        return Boolean(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.fengDock);
-      }
-
       function syncNativeDockState() {
         if (!hasNativeDockBridge()) return;
         const npOpen = !nowPlayingModal.classList.contains('translate-y-full');
@@ -6136,6 +6235,17 @@
           }
         });
 
+        if (hasNativeFolderPicker()) {
+          const nativePickBtn = $('btn-pick-native-folder');
+          if (nativePickBtn) nativePickBtn.classList.remove('hidden');
+        }
+        on('btn-pick-native-folder', () => {
+          if (!hasNativeFolderPicker()) return;
+          try {
+            window.webkit.messageHandlers.fengFolder.postMessage({ action: 'pickFolder' });
+          } catch {}
+        });
+
         if (typeof window.showDirectoryPicker === 'function') {
           const webFolderBtn = $('btn-pick-web-folder');
           if (webFolderBtn) webFolderBtn.classList.remove('hidden');
@@ -6334,7 +6444,7 @@
             storedTracks.sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
             const seenNativeKeys = new Set();
             for (const trk of storedTracks) {
-              const dedupeKey = trk.isNativeDoc ? (trk.nativePath || trk.fileName) : null;
+              const dedupeKey = trk.isNativeDoc ? (trk.nativeUri || trk.nativePath || trk.fileName) : null;
               if (dedupeKey) {
                 if (seenNativeKeys.has(dedupeKey)) {
                   await dbDelete('tracks', trk.id);
