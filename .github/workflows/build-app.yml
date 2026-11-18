@@ -1,4 +1,4 @@
-name: Build Offline Android APK & iOS IPA (PROBE)
+name: Build Offline Android APK & iOS IPA
 
 on:
   workflow_dispatch:
@@ -86,7 +86,7 @@ jobs:
           /usr/libexec/PlistBuddy -c "Add :UIBackgroundModes array" "$PLIST" || true
           /usr/libexec/PlistBuddy -c "Add :UIBackgroundModes:0 string audio" "$PLIST" || true
 
-      - name: Stamp Build Version (PROBE)
+      - name: Stamp Build Version
         run: |
           PLIST="ios/App/App/Info.plist"
           /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0.${{ github.run_number }}" "$PLIST" || /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string 1.0.${{ github.run_number }}" "$PLIST"
@@ -464,17 +464,6 @@ jobs:
                   }
               }
 
-              // PROBE: visible native alert that does not depend on the WebView JS channel.
-              // Used to prove whether the document-picker delegate ever fires in this build.
-              private func probeAlert(_ title: String, _ message: String) {
-                  DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { [weak self] in
-                      guard let self = self, let presenter = self.topMostViewController() else { return }
-                      let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-                      alert.addAction(UIAlertAction(title: "知道了", style: .default, handler: nil))
-                      presenter.present(alert, animated: true, completion: nil)
-                  }
-              }
-
               private func presentFolderPicker() {
                   DispatchQueue.main.async {
                       guard self.activeFolderPicker == nil else {
@@ -507,7 +496,6 @@ jobs:
 
               func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
                   self.activeFolderPicker = nil
-                  self.probeAlert("【探针】选择器被取消", "documentPickerWasCancelled 已触发：选择器回调通道是通的，问题出在“确认选择”那一步。")
                   dispatchFolderPayloadToWeb(["cancelled": true])
               }
 
@@ -532,8 +520,8 @@ jobs:
                       UserDefaults.standard.set(dict, forKey: bookmarkDefaultsKey)
                   }
 
+                  pushBoundFoldersSummary()
                   let folderName = pickedURL.lastPathComponent
-                  self.probeAlert("【探针】已收到文件夹", "名称：\(folderName)\n路径：\(pickedURL.path)\n访问授权：\(granted ? "成功" : "失败")")
                   DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                       if #available(iOS 14.0, *) {
                           self.webView?.callAsyncJavaScript(
@@ -550,7 +538,6 @@ jobs:
                       let payload = self.enumerateFolderURL(pickedURL, folderName: folderName, silent: false, granted: granted)
                       let probeCount = (payload["files"] as? [[String: String]])?.count ?? -1
                       let probeErr = (payload["error"] as? String) ?? ""
-                      self.probeAlert("【探针】枚举完成", "音频文件：\(probeCount) 个\(probeErr.isEmpty ? "" : "\n读取错误：\(probeErr)")")
                       DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
                           self.dispatchFolderPayloadToWeb(payload)
                       }
@@ -586,6 +573,7 @@ jobs:
               }
 
               private func rescanAllBookmarkedFolders(silent: Bool) {
+                  pushBoundFoldersSummary()
                   let urls = Array(activeScopedURLs.values)
                   guard !urls.isEmpty else { return }
                   DispatchQueue.global(qos: .userInitiated).async {
@@ -628,7 +616,7 @@ jobs:
                       }
                   }
 
-                  // PROBE BUILD: no NSFileCoordinator — enumerate the granted
+                  // No NSFileCoordinator — enumerate the granted
                   // security-scoped URL directly and surface read errors.
                   scanDirectory(url)
                   var enumError = ""
@@ -674,6 +662,44 @@ jobs:
                           wv.evaluateJavaScript("window.__fengPickedFolderFiles && window.__fengPickedFolderFiles(\(jsonStr))", completionHandler: nil)
                       }
                   }
+              }
+
+              private func dispatchNamedPayloadToWeb(_ fnName: String, payload: [String: Any]) {
+                  DispatchQueue.main.async {
+                      guard let wv = self.webView else { return }
+                      if #available(iOS 14.0, *) {
+                          wv.callAsyncJavaScript(
+                              "if (typeof window[fnName] === 'function') { window[fnName](payload); }",
+                              arguments: ["fnName": fnName, "payload": payload],
+                              in: nil,
+                              in: .page,
+                              completionHandler: nil
+                          )
+                      }
+                  }
+              }
+
+              // Bound-folder list for the settings UI. Keys are the standardized
+              // folder paths used everywhere else in this bridge (v3 store).
+              private func pushBoundFoldersSummary() {
+                  let dict = UserDefaults.standard.dictionary(forKey: bookmarkDefaultsKey) as? [String: Data] ?? [:]
+                  var folders: [[String: Any]] = []
+                  for key in dict.keys.sorted() {
+                      let name = (key as NSString).lastPathComponent
+                      let active = activeScopedURLs[key] != nil
+                      folders.append(["key": key, "name": name, "active": active])
+                  }
+                  dispatchNamedPayloadToWeb("__fengBoundFolders", payload: ["folders": folders])
+              }
+
+              private func removeBookmarkedFolder(key: String) {
+                  if let u = activeScopedURLs.removeValue(forKey: key) {
+                      u.stopAccessingSecurityScopedResource()
+                  }
+                  var dict = UserDefaults.standard.dictionary(forKey: bookmarkDefaultsKey) as? [String: Data] ?? [:]
+                  dict.removeValue(forKey: key)
+                  UserDefaults.standard.set(dict, forKey: bookmarkDefaultsKey)
+                  pushBoundFoldersSummary()
               }
 
               private func sendEvent(_ type: String, extra: [String: Any]) {
@@ -733,10 +759,17 @@ jobs:
               func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
                   if message.name == "fengFolder" {
                       if let body = message.body as? [String: Any],
-                         let action = body["action"] as? String,
-                         action == "rescanBookmarks" {
-                          let silent = (body["silent"] as? Bool) ?? true
-                          rescanAllBookmarkedFolders(silent: silent)
+                         let action = body["action"] as? String {
+                          if action == "rescanBookmarks" {
+                              let silent = (body["silent"] as? Bool) ?? true
+                              rescanAllBookmarkedFolders(silent: silent)
+                          } else if action == "listBookmarks" {
+                              pushBoundFoldersSummary()
+                          } else if action == "removeBookmark", let key = body["key"] as? String {
+                              removeBookmarkedFolder(key: key)
+                          } else {
+                              presentFolderPicker()
+                          }
                       } else {
                           presentFolderPicker()
                       }
