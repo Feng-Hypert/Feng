@@ -89,7 +89,7 @@ jobs:
       - name: Stamp Build Version
         run: |
           PLIST="ios/App/App/Info.plist"
-          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0.${{ github.run_number }}" "$PLIST" || /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string 1.0.${{ github.run_number }}" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0.1" "$PLIST" || /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string 1.0.1" "$PLIST"
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${{ github.run_number }}" "$PLIST" || /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string ${{ github.run_number }}" "$PLIST"
 
       - name: Enable Native iOS AVPlayer, Lock Screen Controls, UITabBar Liquid Glass Dock & Security-Scoped Bookmarks
@@ -110,6 +110,7 @@ jobs:
 
               // Keep strong reference to active picker & security-scoped folder URLs across app lifecycle
               private var activeFolderPicker: UIDocumentPickerViewController?
+              private var isExportingDocument = false
               private var activeScopedURLs: [String: URL] = [:]
               private let bookmarkDefaultsKey = "feng_security_scoped_folder_bookmarks_v3"
 
@@ -251,6 +252,7 @@ jobs:
                       ucc.add(self, name: "fengAudio")
                       ucc.add(self, name: "fengDock")
                       ucc.add(self, name: "fengFolder")
+                      ucc.add(self, name: "fengExport")
                       let bootScript = WKUserScript(
                           source: "document.documentElement.classList.add('is-native-ios');",
                           injectionTime: .atDocumentStart,
@@ -464,6 +466,54 @@ jobs:
                   }
               }
 
+              // Backup export: the web hands us the JSON text; we write it to a
+              // temp file and present the system Files export picker so the
+              // user chooses the destination. The shared picker delegate
+              // checks isExportingDocument first, so an export confirmation is
+              // never mistaken for a music-folder pick.
+              private func exportDocument(filename: String, content: String) {
+                  DispatchQueue.main.async {
+                      let safeName = (filename as NSString).lastPathComponent
+                      let fileName = safeName.isEmpty ? "FENG-MUSIC-backup.json" : safeName
+                      let tmpURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+                      do {
+                          try content.write(to: tmpURL, atomically: true, encoding: .utf8)
+                      } catch {
+                          self.reportExportResult(false)
+                          return
+                      }
+                      guard let presenter = self.topMostViewController() else {
+                          self.reportExportResult(false)
+                          return
+                      }
+                      if #available(iOS 14.0, *) {
+                          let picker = UIDocumentPickerViewController(forExporting: [tmpURL], asCopy: true)
+                          picker.delegate = self
+                          self.isExportingDocument = true
+                          presenter.present(picker, animated: true, completion: nil)
+                      } else {
+                          let share = UIActivityViewController(activityItems: [tmpURL], applicationActivities: nil)
+                          share.popoverPresentationController?.sourceView = presenter.view
+                          presenter.present(share, animated: true, completion: nil)
+                      }
+                  }
+              }
+
+              private func reportExportResult(_ ok: Bool) {
+                  DispatchQueue.main.async {
+                      guard let wv = self.webView else { return }
+                      if #available(iOS 14.0, *) {
+                          wv.callAsyncJavaScript(
+                              "window.__fengExportResult && window.__fengExportResult(ok);",
+                              arguments: ["ok": ok],
+                              in: nil,
+                              in: .page,
+                              completionHandler: nil
+                          )
+                      }
+                  }
+              }
+
               private func presentFolderPicker() {
                   DispatchQueue.main.async {
                       guard self.activeFolderPicker == nil else {
@@ -495,11 +545,21 @@ jobs:
               }
 
               func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+                  if isExportingDocument {
+                      isExportingDocument = false
+                      reportExportResult(false)
+                      return
+                  }
                   self.activeFolderPicker = nil
                   dispatchFolderPayloadToWeb(["cancelled": true])
               }
 
               func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+                  if isExportingDocument {
+                      isExportingDocument = false
+                      reportExportResult(true)
+                      return
+                  }
                   self.activeFolderPicker = nil
                   guard let pickedURL = urls.first else { return }
 
@@ -757,6 +817,15 @@ jobs:
               }
 
               func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+                  if message.name == "fengExport" {
+                      if let body = message.body as? [String: Any],
+                         let filename = body["filename"] as? String,
+                         let content = body["content"] as? String {
+                          exportDocument(filename: filename, content: content)
+                      }
+                      return
+                  }
+
                   if message.name == "fengFolder" {
                       if let body = message.body as? [String: Any],
                          let action = body["action"] as? String {
