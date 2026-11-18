@@ -1,806 +1,800 @@
 name: Build Offline Android APK & iOS IPA
 
 on:
-workflow_dispatch:
+  workflow_dispatch:
 
 jobs:
-build-android:
-runs-on: ubuntu-latest
-steps:
-\- uses: actions/checkout@v4
-\- uses: actions/setup-node@v4
-with:
-node-version: 20
-\- uses: actions/setup-java@v4
-with:
-distribution: temurin
-java-version: 17
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
 
-```
-  - name: Prepare Web Assets & Android
-    run: |
-      mkdir -p www
-      cp radio.html www/index.html
-      cp icon-512.png www/icon-512.png
-      sed -i 's|"/icon-512.png"|"./icon-512.png"|g' www/index.html
-      cat << 'EOF' > capacitor.config.json
-      {
-        "appId": "com.feng.music",
-        "appName": "FENG MUSIC",
-        "webDir": "www",
-        "bundledWebRuntime": false
-      }
-      EOF
-      npm init -y
-      npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6 @capacitor/filesystem@6
-      npx cap add android
-      for dir in mipmap-mdpi mipmap-hdpi mipmap-xhdpi mipmap-xxhdpi mipmap-xxxhdpi; do
-        mkdir -p "android/app/src/main/res/$dir"
-        cp icon-512.png "android/app/src/main/res/$dir/ic_launcher.png"
-        cp icon-512.png "android/app/src/main/res/$dir/ic_launcher_round.png"
-        cp icon-512.png "android/app/src/main/res/$dir/ic_launcher_foreground.png"
-      done
+      - name: Prepare Web Assets & Android
+        run: |
+          mkdir -p www
+          cp radio.html www/index.html
+          cp icon-512.png www/icon-512.png
+          sed -i 's|"/icon-512.png"|"./icon-512.png"|g' www/index.html
+          cat << 'EOF' > capacitor.config.json
+          {
+            "appId": "com.feng.music",
+            "appName": "FENG MUSIC",
+            "webDir": "www",
+            "bundledWebRuntime": false
+          }
+          EOF
+          npm init -y
+          npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6 @capacitor/filesystem@6
+          npx cap add android
+          for dir in mipmap-mdpi mipmap-hdpi mipmap-xhdpi mipmap-xxhdpi mipmap-xxxhdpi; do
+            mkdir -p "android/app/src/main/res/$dir"
+            cp icon-512.png "android/app/src/main/res/$dir/ic_launcher.png"
+            cp icon-512.png "android/app/src/main/res/$dir/ic_launcher_round.png"
+            cp icon-512.png "android/app/src/main/res/$dir/ic_launcher_foreground.png"
+          done
 
-  - name: Build Android APK
-    run: |
-      cd android
-      chmod +x gradlew
-      ./gradlew assembleDebug
+      - name: Build Android APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
 
-  - name: Upload Android APK
-    uses: actions/upload-artifact@v4
-    with:
-      name: FENG_MUSIC_Android_APK
-      path: android/app/build/outputs/apk/debug/app-debug.apk
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: FENG_MUSIC_Android_APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
 
-```
+  build-ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
-build-ios:
-runs-on: macos-latest
-steps:
-\- uses: actions/checkout@v4
-\- uses: actions/setup-node@v4
-with:
-node-version: 20
+      - name: Prepare Web Assets & Capacitor iOS
+        run: |
+          mkdir -p www
+          cp radio.html www/index.html
+          cp icon-512.png www/icon-512.png
+          sed -i '' 's|"/icon-512.png"|"./icon-512.png"|g' www/index.html
+          cat << 'EOF' > capacitor.config.json
+          {
+            "appId": "com.feng.music",
+            "appName": "FENG MUSIC",
+            "webDir": "www",
+            "bundledWebRuntime": false
+          }
+          EOF
+          npm init -y
+          npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/ios@6 @capacitor/filesystem@6
+          npx cap add ios
 
-```
-  - name: Prepare Web Assets & Capacitor iOS
-    run: |
-      mkdir -p www
-      cp radio.html www/index.html
-      cp icon-512.png www/icon-512.png
-      sed -i '' 's|"/icon-512.png"|"./icon-512.png"|g' www/index.html
-      cat << 'EOF' > capacitor.config.json
-      {
-        "appId": "com.feng.music",
-        "appName": "FENG MUSIC",
-        "webDir": "www",
-        "bundledWebRuntime": false
-      }
-      EOF
-      npm init -y
-      npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/ios@6 @capacitor/filesystem@6
-      npx cap add ios
+      - name: Configure iOS Files App Sharing & Background Audio
+        run: |
+          PLIST="ios/App/App/Info.plist"
+          /usr/libexec/PlistBuddy -c "Add :UIFileSharingEnabled bool true" "$PLIST" || /usr/libexec/PlistBuddy -c "Set :UIFileSharingEnabled true" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :LSSupportsOpeningDocumentsInPlace bool true" "$PLIST" || /usr/libexec/PlistBuddy -c "Set :LSSupportsOpeningDocumentsInPlace true" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :UIBackgroundModes array" "$PLIST" || true
+          /usr/libexec/PlistBuddy -c "Add :UIBackgroundModes:0 string audio" "$PLIST" || true
 
-  - name: Configure iOS Files App Sharing & Background Audio
-    run: |
-      PLIST="ios/App/App/Info.plist"
-      /usr/libexec/PlistBuddy -c "Add :UIFileSharingEnabled bool true" "$PLIST" || /usr/libexec/PlistBuddy -c "Set :UIFileSharingEnabled true" "$PLIST"
-      /usr/libexec/PlistBuddy -c "Add :LSSupportsOpeningDocumentsInPlace bool true" "$PLIST" || /usr/libexec/PlistBuddy -c "Set :LSSupportsOpeningDocumentsInPlace true" "$PLIST"
-      /usr/libexec/PlistBuddy -c "Add :UIBackgroundModes array" "$PLIST" || true
-      /usr/libexec/PlistBuddy -c "Add :UIBackgroundModes:0 string audio" "$PLIST" || true
+      - name: Enable Native iOS AVPlayer, Lock Screen Controls, UITabBar Liquid Glass Dock & Security-Scoped Bookmarks
+        run: |
+          cat << 'EOF' > ios/App/App/AppDelegate.swift
+          import UIKit
+          import Capacitor
+          import MediaPlayer
+          import AVFoundation
+          import WebKit
+          import UniformTypeIdentifiers
 
-  - name: Enable Native iOS AVPlayer, Lock Screen Controls, UITabBar Liquid Glass Dock & Security-Scoped Bookmarks
-    run: |
-      cat << 'EOF' > ios/App/App/AppDelegate.swift
-      import UIKit
-      import Capacitor
-      import MediaPlayer
-      import AVFoundation
-      import WebKit
-      import UniformTypeIdentifiers
+          final class FengRemoteMediaBridge: NSObject, WKScriptMessageHandler, UITabBarDelegate, UIDocumentPickerDelegate {
+              static let shared = FengRemoteMediaBridge()
+              private var isConfigured = false
+              private var isAttached = false
+              weak var webView: WKWebView?
 
-      final class FengRemoteMediaBridge: NSObject, WKScriptMessageHandler, UITabBarDelegate, UIDocumentPickerDelegate {
-          static let shared = FengRemoteMediaBridge()
-          private var isConfigured = false
-          private var isAttached = false
-          weak var webView: WKWebView?
+              // Keep security-scoped folder URLs alive across app lifecycle so AVPlayer & WebView retain read access
+              private var activeScopedURLs: [String: URL] = [:]
+              private let bookmarkDefaultsKey = "feng_security_scoped_folder_bookmarks_v2"
 
-          // Keep security-scoped folder URLs alive across app lifecycle so AVPlayer & WebView retain read access
-          private var activeScopedURLs: [String: URL] = [:]
-          private let bookmarkDefaultsKey = "feng_security_scoped_folder_bookmarks_v2"
+              private var player: AVPlayer?
+              private var timeObserver: Any?
+              private var endObserver: NSObjectProtocol?
+              private var didSendMeta = false
+              private var pendingResumeTime: Double = 0
+              private var currentDuration: Double = 0
+              private var currentRate: Float = 1.0
+              private var currentTitle: String = "FENG MUSIC"
+              private var currentArtist: String = ""
+              private var currentAlbum: String = ""
+              private var currentArtwork: MPMediaItemArtwork?
 
-          private var player: AVPlayer?
-          private var timeObserver: Any?
-          private var endObserver: NSObjectProtocol?
-          private var didSendMeta = false
-          private var pendingResumeTime: Double = 0
-          private var currentDuration: Double = 0
-          private var currentRate: Float = 1.0
-          private var currentTitle: String = "FENG MUSIC"
-          private var currentArtist: String = ""
-          private var currentAlbum: String = ""
-          private var currentArtwork: MPMediaItemArtwork?
+              // Native iOS UITabBar Liquid Glass Dock + Collapsed Circle Pill
+              private var nativeTabBar: UITabBar?
+              private var collapsedPillView: UIView?
+              private var collapsedPillBtn: UIButton?
+              private var tabItems: [UITabBarItem] = []
+              private let tabIds = ["library", "playlists", "stats", "diy"]
+              private let tabSymbols = ["music.note", "rectangle.stack.fill", "chart.bar.fill", "gearshape.fill"]
+              private var activeTabId = "library"
+              private var isTabBarHidden = false
+              private var isTabBarCollapsed = false
 
-          // Native iOS UITabBar Liquid Glass Dock + Collapsed Circle Pill
-          private var nativeTabBar: UITabBar?
-          private var collapsedPillView: UIView?
-          private var collapsedPillBtn: UIButton?
-          private var tabItems: [UITabBarItem] = []
-          private let tabIds = ["library", "playlists", "stats", "diy"]
-          private let tabSymbols = ["music.note", "rectangle.stack.fill", "chart.bar.fill", "gearshape.fill"]
-          private var activeTabId = "library"
-          private var isTabBarHidden = false
-          private var isTabBarCollapsed = false
+              func configureAudioAndCommands() {
+                  guard !isConfigured else { return }
+                  isConfigured = true
+                  ensureDefaultDocumentsFolder()
+                  try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
+                  try? AVAudioSession.sharedInstance().setActive(true)
 
-          func configureAudioAndCommands() {
-              guard !isConfigured else { return }
-              isConfigured = true
-              ensureDefaultDocumentsFolder()
-              try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
-              try? AVAudioSession.sharedInstance().setActive(true)
+                  let cmd = MPRemoteCommandCenter.shared()
+                  cmd.skipBackwardCommand.isEnabled = false
+                  cmd.skipForwardCommand.isEnabled = false
+                  cmd.previousTrackCommand.isEnabled = true
+                  cmd.nextTrackCommand.isEnabled = true
+                  cmd.playCommand.isEnabled = true
+                  cmd.pauseCommand.isEnabled = true
+                  cmd.changePlaybackPositionCommand.isEnabled = true
 
-              let cmd = MPRemoteCommandCenter.shared()
-              cmd.skipBackwardCommand.isEnabled = false
-              cmd.skipForwardCommand.isEnabled = false
-              cmd.previousTrackCommand.isEnabled = true
-              cmd.nextTrackCommand.isEnabled = true
-              cmd.playCommand.isEnabled = true
-              cmd.pauseCommand.isEnabled = true
-              cmd.changePlaybackPositionCommand.isEnabled = true
-
-              cmd.previousTrackCommand.addTarget { [weak self] _ in
-                  DispatchQueue.main.async {
-                      self?.webView?.evaluateJavaScript("window.__fengPrevTrack && window.__fengPrevTrack()", completionHandler: nil)
-                  }
-                  return .success
-              }
-
-              cmd.nextTrackCommand.addTarget { [weak self] _ in
-                  DispatchQueue.main.async {
-                      self?.webView?.evaluateJavaScript("window.__fengNextTrack && window.__fengNextTrack()", completionHandler: nil)
-                  }
-                  return .success
-              }
-
-              cmd.playCommand.addTarget { [weak self] _ in
-                  DispatchQueue.main.async {
-                      guard let self = self, let p = self.player else { return }
-                      p.play()
-                      p.rate = self.currentRate
-                      self.updateNowPlayingInfo()
-                      self.sendEvent("play", extra: [:])
-                  }
-                  return .success
-              }
-
-              cmd.pauseCommand.addTarget { [weak self] _ in
-                  DispatchQueue.main.async {
-                      guard let self = self, let p = self.player else { return }
-                      p.pause()
-                      self.updateNowPlayingInfo()
-                      self.sendEvent("pause", extra: [:])
-                  }
-                  return .success
-              }
-
-              cmd.changePlaybackPositionCommand.addTarget { [weak self] event in
-                  guard let self = self,
-                        let posEvent = event as? MPChangePlaybackPositionCommandEvent,
-                        let p = self.player else { return .commandFailed }
-                  let target = CMTime(seconds: posEvent.positionTime, preferredTimescale: 600)
-                  p.seek(to: target) { _ in
+                  cmd.previousTrackCommand.addTarget { [weak self] _ in
                       DispatchQueue.main.async {
+                          self?.webView?.evaluateJavaScript("window.__fengPrevTrack && window.__fengPrevTrack()", completionHandler: nil)
+                      }
+                      return .success
+                  }
+
+                  cmd.nextTrackCommand.addTarget { [weak self] _ in
+                      DispatchQueue.main.async {
+                          self?.webView?.evaluateJavaScript("window.__fengNextTrack && window.__fengNextTrack()", completionHandler: nil)
+                      }
+                      return .success
+                  }
+
+                  cmd.playCommand.addTarget { [weak self] _ in
+                      DispatchQueue.main.async {
+                          guard let self = self, let p = self.player else { return }
+                          p.play()
+                          p.rate = self.currentRate
                           self.updateNowPlayingInfo()
-                          self.sendEvent("timeupdate", extra: ["currentTime": posEvent.positionTime, "duration": self.currentDuration])
+                          self.sendEvent("play", extra: [:])
                       }
+                      return .success
                   }
-                  return .success
-              }
-          }
 
-          private func ensureDefaultDocumentsFolder() {
-              guard let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
-              let musicDir = docs.appendingPathComponent("Music", isDirectory: true)
-              if !FileManager.default.fileExists(atPath: musicDir.path) {
-                  try? FileManager.default.createDirectory(at: musicDir, withIntermediateDirectories: true)
-              }
-              let keepFile = musicDir.appendingPathComponent(".keep")
-              if !FileManager.default.fileExists(atPath: keepFile.path) {
-                  FileManager.default.createFile(atPath: keepFile.path, contents: Data("FENG MUSIC".utf8))
-              }
-          }
-
-          func attach(window: UIWindow?) {
-              let activeWin = window ?? UIApplication.shared.connectedScenes
-                  .compactMap { $0 as? UIWindowScene }
-                  .flatMap { $0.windows }
-                  .first(where: { $0.isKeyWindow }) ?? UIApplication.shared.windows.first
-
-              guard let bridgeVC = activeWin?.rootViewController as? CAPBridgeViewController,
-                    let wv = bridgeVC.webView else {
-                  DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
-                      self?.attach(window: activeWin)
-                  }
-                  return
-              }
-
-              if !isAttached {
-                  isAttached = true
-                  self.webView = wv
-                  let ucc = wv.configuration.userContentController
-                  ucc.add(self, name: "fengMedia")
-                  ucc.add(self, name: "fengAudio")
-                  ucc.add(self, name: "fengDock")
-                  ucc.add(self, name: "fengFolder")
-                  let bootScript = WKUserScript(
-                      source: "document.documentElement.classList.add('is-native-ios');",
-                      injectionTime: .atDocumentStart,
-                      forMainFrameOnly: true
-                  )
-                  ucc.addUserScript(bootScript)
-              }
-              wv.evaluateJavaScript("document.documentElement.classList.add('is-native-ios'); var d = document.getElementById('bottom-tab-dock'); if(d) d.classList.add('hidden'); var b = document.getElementById('btn-pick-native-folder'); if(b) b.classList.remove('hidden');", completionHandler: nil)
-              setupNativeTabBar(in: bridgeVC.view)
-              if let tabBar = nativeTabBar {
-                  bridgeVC.view.bringSubviewToFront(tabBar)
-              }
-              if let pill = collapsedPillView {
-                  bridgeVC.view.bringSubviewToFront(pill)
-              }
-          }
-
-          private func setupNativeTabBar(in parentView: UIView) {
-              guard nativeTabBar == nil else { return }
-
-              let tabBar = UITabBar()
-              tabBar.translatesAutoresizingMaskIntoConstraints = false
-              tabBar.delegate = self
-              tabBar.tintColor = UIColor(red: 0.22, green: 0.74, blue: 0.97, alpha: 1.0)
-              tabBar.unselectedItemTintColor = UIColor.white.withAlphaComponent(0.75)
-
-              let appearance = UITabBarAppearance()
-              appearance.configureWithDefaultBackground()
-              appearance.backgroundEffect = UIBlurEffect(style: .systemChromeMaterialDark)
-              appearance.backgroundColor = UIColor(white: 0.08, alpha: 0.42)
-              tabBar.standardAppearance = appearance
-              if #available(iOS 15.0, *) {
-                  tabBar.scrollEdgeAppearance = appearance
-              }
-
-              let specs: [(title: String, symbol: String, selectedSymbol: String)] = [
-                  ("曲库", "music.note.list", "music.note.list"),
-                  ("歌单", "rectangle.stack", "rectangle.stack.fill"),
-                  ("足迹", "chart.bar", "chart.bar.fill"),
-                  ("设置", "gearshape", "gearshape.fill")
-              ]
-
-              tabItems.removeAll()
-              for (idx, spec) in specs.enumerated() {
-                  let item = UITabBarItem(
-                      title: spec.title,
-                      image: UIImage(systemName: spec.symbol),
-                      selectedImage: UIImage(systemName: spec.selectedSymbol)
-                  )
-                  item.tag = idx
-                  tabItems.append(item)
-              }
-              tabBar.items = tabItems
-              tabBar.selectedItem = tabItems.first
-
-              let pill = UIView()
-              pill.translatesAutoresizingMaskIntoConstraints = false
-              pill.layer.cornerRadius = 27
-              pill.layer.shadowColor = UIColor.black.cgColor
-              pill.layer.shadowOpacity = 0.35
-              pill.layer.shadowRadius = 14
-              pill.layer.shadowOffset = CGSize(width: 0, height: 6)
-              pill.alpha = 0
-              pill.isUserInteractionEnabled = false
-
-              let blur: UIVisualEffectView
-              if #available(iOS 26.0, *) {
-                  let glass = UIGlassEffect(style: .regular)
-                  glass.isInteractive = true
-                  blur = UIVisualEffectView(effect: glass)
-              } else {
-                  blur = UIVisualEffectView(effect: UIBlurEffect(style: .systemChromeMaterialDark))
-              }
-              blur.translatesAutoresizingMaskIntoConstraints = false
-              blur.layer.cornerRadius = 27
-              blur.clipsToBounds = true
-              if #unavailable(iOS 26.0) {
-                  blur.layer.borderWidth = 0.6
-                  blur.layer.borderColor = UIColor.white.withAlphaComponent(0.24).cgColor
-              }
-
-              let iconBtn = UIButton(type: .system)
-              iconBtn.translatesAutoresizingMaskIntoConstraints = false
-              iconBtn.setImage(UIImage(systemName: "music.note", withConfiguration: UIImage.SymbolConfiguration(pointSize: 19, weight: .semibold)), for: .normal)
-              iconBtn.tintColor = UIColor(red: 0.22, green: 0.74, blue: 0.97, alpha: 1.0)
-              iconBtn.addTarget(self, action: #selector(handleCollapsedPillTap), for: .touchUpInside)
-              self.collapsedPillBtn = iconBtn
-
-              blur.contentView.addSubview(iconBtn)
-              pill.addSubview(blur)
-
-              parentView.addSubview(tabBar)
-              parentView.addSubview(pill)
-
-              NSLayoutConstraint.activate([
-                  tabBar.leadingAnchor.constraint(equalTo: parentView.leadingAnchor),
-                  tabBar.trailingAnchor.constraint(equalTo: parentView.trailingAnchor),
-                  tabBar.bottomAnchor.constraint(equalTo: parentView.bottomAnchor),
-
-                  pill.leadingAnchor.constraint(equalTo: parentView.leadingAnchor, constant: 16),
-                  pill.bottomAnchor.constraint(equalTo: parentView.safeAreaLayoutGuide.bottomAnchor, constant: -10),
-                  pill.widthAnchor.constraint(equalToConstant: 54),
-                  pill.heightAnchor.constraint(equalToConstant: 54),
-
-                  blur.topAnchor.constraint(equalTo: pill.topAnchor),
-                  blur.bottomAnchor.constraint(equalTo: pill.bottomAnchor),
-                  blur.leadingAnchor.constraint(equalTo: pill.leadingAnchor),
-                  blur.trailingAnchor.constraint(equalTo: pill.trailingAnchor),
-
-                  iconBtn.topAnchor.constraint(equalTo: blur.contentView.topAnchor),
-                  iconBtn.bottomAnchor.constraint(equalTo: blur.contentView.bottomAnchor),
-                  iconBtn.leadingAnchor.constraint(equalTo: blur.contentView.leadingAnchor),
-                  iconBtn.trailingAnchor.constraint(equalTo: blur.contentView.trailingAnchor)
-              ])
-
-              self.nativeTabBar = tabBar
-              self.collapsedPillView = pill
-          }
-
-          @objc private func handleCollapsedPillTap() {
-              setDockVisibility(hidden: false, collapsed: false)
-              webView?.evaluateJavaScript("window.__fengSwitchTab && window.__fengSwitchTab('\(activeTabId)')", completionHandler: nil)
-          }
-
-          func tabBar(_ tabBar: UITabBar, didSelect item: UITabBarItem) {
-              let idx = item.tag
-              guard idx >= 0 && idx < tabIds.count else { return }
-              let tabId = tabIds[idx]
-              activeTabId = tabId
-              updateCollapsedPillIcon()
-              setDockVisibility(hidden: isTabBarHidden, collapsed: false)
-              webView?.evaluateJavaScript("window.__fengSwitchTab && window.__fengSwitchTab('\(tabId)')", completionHandler: nil)
-          }
-
-          private func updateCollapsedPillIcon() {
-              let idx = tabIds.firstIndex(of: activeTabId) ?? 0
-              let sym = idx < tabSymbols.count ? tabSymbols[idx] : "music.note"
-              collapsedPillBtn?.setImage(
-                  UIImage(systemName: sym, withConfiguration: UIImage.SymbolConfiguration(pointSize: 19, weight: .semibold)),
-                  for: .normal
-              )
-          }
-
-          private func selectNativeTab(_ tabId: String) {
-              activeTabId = tabId
-              updateCollapsedPillIcon()
-              if let idx = tabIds.firstIndex(of: tabId), idx < tabItems.count {
-                  nativeTabBar?.selectedItem = tabItems[idx]
-              }
-          }
-
-          private func setDockVisibility(hidden: Bool, collapsed: Bool) {
-              isTabBarHidden = hidden
-              isTabBarCollapsed = collapsed
-              DispatchQueue.main.async {
-                  guard let tabBar = self.nativeTabBar, let pill = self.collapsedPillView else { return }
-                  if let superview = tabBar.superview {
-                      superview.bringSubviewToFront(tabBar)
-                      superview.bringSubviewToFront(pill)
-                  }
-                  let showFullBar = !hidden && !collapsed
-                  let showCollapsedPill = !hidden && collapsed
-                  UIView.animate(withDuration: 0.25, delay: 0, options: [.curveEaseOut]) {
-                      tabBar.alpha = showFullBar ? 1.0 : 0.0
-                      tabBar.transform = showFullBar ? .identity : CGAffineTransform(translationX: 0, y: 24)
-                      pill.alpha = showCollapsedPill ? 1.0 : 0.0
-                      pill.transform = showCollapsedPill ? .identity : CGAffineTransform(scaleX: 0.72, y: 0.72)
-                  }
-                  tabBar.isUserInteractionEnabled = showFullBar
-                  pill.isUserInteractionEnabled = showCollapsedPill
-              }
-          }
-
-          // MARK: - Security-Scoped Bookmark Persistence & Folder Enumeration
-          private func topMostViewController() -> UIViewController? {
-              var top = UIApplication.shared.connectedScenes
-                  .compactMap { $0 as? UIWindowScene }
-                  .flatMap { $0.windows }
-                  .first(where: { $0.isKeyWindow })?.rootViewController
-              while let presented = top?.presentedViewController {
-                  top = presented
-              }
-              return top
-          }
-
-          private func presentFolderPicker() {
-              DispatchQueue.main.async {
-                  guard let presenter = self.topMostViewController() else { return }
-                  if #available(iOS 14.0, *) {
-                      let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.folder], asCopy: false)
-                      picker.delegate = self
-                      picker.allowsMultipleSelection = false
-                      presenter.present(picker, animated: true)
-                  }
-              }
-          }
-
-          func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
-              DispatchQueue.main.async {
-                  self.webView?.evaluateJavaScript("window.__fengPickedFolderFiles && window.__fengPickedFolderFiles({cancelled:true})", completionHandler: nil)
-              }
-          }
-
-          func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
-              guard let pickedURL = urls.first else { return }
-
-              let granted = pickedURL.startAccessingSecurityScopedResource()
-              let canonicalKey = pickedURL.standardizedFileURL.path
-              if let old = activeScopedURLs[canonicalKey], old != pickedURL {
-                  old.stopAccessingSecurityScopedResource()
-              }
-              activeScopedURLs[canonicalKey] = pickedURL
-
-              if let bookmarkData = try? pickedURL.bookmarkData(
-                  options: [],
-                  includingResourceValuesForKeys: nil,
-                  relativeTo: nil
-              ) {
-                  var dict = UserDefaults.standard.dictionary(forKey: bookmarkDefaultsKey) as? [String: Data] ?? [:]
-                  dict[canonicalKey] = bookmarkData
-                  UserDefaults.standard.set(dict, forKey: bookmarkDefaultsKey)
-              }
-
-              let folderName = pickedURL.lastPathComponent
-              let isSilent = false
-              DispatchQueue.main.async {
-                  self.webView?.evaluateJavaScript("window.__fengFolderScanning && window.__fengFolderScanning('\(folderName.replacingOccurrences(of: "'", with: "\\'"))')", completionHandler: nil)
-              }
-
-              DispatchQueue.global(qos: .userInitiated).async {
-                  let payload = self.enumerateFolderURL(pickedURL, folderName: folderName, silent: isSilent, granted: granted)
-                  self.dispatchFolderPayloadToWeb(payload)
-              }
-          }
-
-          func restoreSecurityScopedBookmarks() {
-              guard let dict = UserDefaults.standard.dictionary(forKey: bookmarkDefaultsKey) as? [String: Data],
-                    !dict.isEmpty else { return }
-              var updatedDict = dict
-              var didRefreshStale = false
-
-              for (key, bmData) in dict {
-                  var isStale = false
-                  if let resolvedURL = try? URL(
-                      resolvingBookmarkData: bmData,
-                      options: [],
-                      relativeTo: nil,
-                      bookmarkDataIsStale: &isStale
-                  ) {
-                      _ = resolvedURL.startAccessingSecurityScopedResource()
-                      activeScopedURLs[resolvedURL.standardizedFileURL.path] = resolvedURL
-                      if isStale,
-                         let freshData = try? resolvedURL.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil) {
-                          updatedDict[key] = freshData
-                          didRefreshStale = true
+                  cmd.pauseCommand.addTarget { [weak self] _ in
+                      DispatchQueue.main.async {
+                          guard let self = self, let p = self.player else { return }
+                          p.pause()
+                          self.updateNowPlayingInfo()
+                          self.sendEvent("pause", extra: [:])
                       }
+                      return .success
+                  }
+
+                  cmd.changePlaybackPositionCommand.addTarget { [weak self] event in
+                      guard let self = self,
+                            let posEvent = event as? MPChangePlaybackPositionCommandEvent,
+                            let p = self.player else { return .commandFailed }
+                      let target = CMTime(seconds: posEvent.positionTime, preferredTimescale: 600)
+                      p.seek(to: target) { _ in
+                          DispatchQueue.main.async {
+                              self.updateNowPlayingInfo()
+                              self.sendEvent("timeupdate", extra: ["currentTime": posEvent.positionTime, "duration": self.currentDuration])
+                          }
+                      }
+                      return .success
                   }
               }
-              if didRefreshStale {
-                  UserDefaults.standard.set(updatedDict, forKey: bookmarkDefaultsKey)
-              }
-          }
 
-          private func rescanAllBookmarkedFolders(silent: Bool) {
-              let urls = Array(activeScopedURLs.values)
-              guard !urls.isEmpty else { return }
-              DispatchQueue.global(qos: .userInitiated).async {
-                  for folderURL in urls {
-                      let payload = self.enumerateFolderURL(
-                          folderURL,
-                          folderName: folderURL.lastPathComponent,
-                          silent: silent,
-                          granted: true
+              private func ensureDefaultDocumentsFolder() {
+                  guard let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
+                  let musicDir = docs.appendingPathComponent("Music", isDirectory: true)
+                  if !FileManager.default.fileExists(atPath: musicDir.path) {
+                      try? FileManager.default.createDirectory(at: musicDir, withIntermediateDirectories: true)
+                  }
+                  let keepFile = musicDir.appendingPathComponent(".keep")
+                  if !FileManager.default.fileExists(atPath: keepFile.path) {
+                      FileManager.default.createFile(atPath: keepFile.path, contents: Data("FENG MUSIC".utf8))
+                  }
+              }
+
+              func attach(window: UIWindow?) {
+                  let activeWin = window ?? UIApplication.shared.connectedScenes
+                      .compactMap { $0 as? UIWindowScene }
+                      .flatMap { $0.windows }
+                      .first(where: { $0.isKeyWindow }) ?? UIApplication.shared.windows.first
+
+                  guard let bridgeVC = activeWin?.rootViewController as? CAPBridgeViewController,
+                        let wv = bridgeVC.webView else {
+                      DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
+                          self?.attach(window: activeWin)
+                      }
+                      return
+                  }
+
+                  if !isAttached {
+                      isAttached = true
+                      self.webView = wv
+                      let ucc = wv.configuration.userContentController
+                      ucc.add(self, name: "fengMedia")
+                      ucc.add(self, name: "fengAudio")
+                      ucc.add(self, name: "fengDock")
+                      ucc.add(self, name: "fengFolder")
+                      let bootScript = WKUserScript(
+                          source: "document.documentElement.classList.add('is-native-ios');",
+                          injectionTime: .atDocumentStart,
+                          forMainFrameOnly: true
                       )
+                      ucc.addUserScript(bootScript)
+                  }
+                  wv.evaluateJavaScript("document.documentElement.classList.add('is-native-ios'); var d = document.getElementById('bottom-tab-dock'); if(d) d.classList.add('hidden'); var b = document.getElementById('btn-pick-native-folder'); if(b) b.classList.remove('hidden');", completionHandler: nil)
+                  setupNativeTabBar(in: bridgeVC.view)
+                  if let tabBar = nativeTabBar {
+                      bridgeVC.view.bringSubviewToFront(tabBar)
+                  }
+                  if let pill = collapsedPillView {
+                      bridgeVC.view.bringSubviewToFront(pill)
+                  }
+              }
+
+              private func setupNativeTabBar(in parentView: UIView) {
+                  guard nativeTabBar == nil else { return }
+
+                  let tabBar = UITabBar()
+                  tabBar.translatesAutoresizingMaskIntoConstraints = false
+                  tabBar.delegate = self
+                  tabBar.tintColor = UIColor(red: 0.22, green: 0.74, blue: 0.97, alpha: 1.0)
+                  tabBar.unselectedItemTintColor = UIColor.white.withAlphaComponent(0.75)
+
+                  let appearance = UITabBarAppearance()
+                  appearance.configureWithDefaultBackground()
+                  appearance.backgroundEffect = UIBlurEffect(style: .systemChromeMaterialDark)
+                  appearance.backgroundColor = UIColor(white: 0.08, alpha: 0.42)
+                  tabBar.standardAppearance = appearance
+                  if #available(iOS 15.0, *) {
+                      tabBar.scrollEdgeAppearance = appearance
+                  }
+
+                  let specs: [(title: String, symbol: String, selectedSymbol: String)] = [
+                      ("曲库", "music.note.list", "music.note.list"),
+                      ("歌单", "rectangle.stack", "rectangle.stack.fill"),
+                      ("足迹", "chart.bar", "chart.bar.fill"),
+                      ("设置", "gearshape", "gearshape.fill")
+                  ]
+
+                  tabItems.removeAll()
+                  for (idx, spec) in specs.enumerated() {
+                      let item = UITabBarItem(
+                          title: spec.title,
+                          image: UIImage(systemName: spec.symbol),
+                          selectedImage: UIImage(systemName: spec.selectedSymbol)
+                      )
+                      item.tag = idx
+                      tabItems.append(item)
+                  }
+                  tabBar.items = tabItems
+                  tabBar.selectedItem = tabItems.first
+
+                  let pill = UIView()
+                  pill.translatesAutoresizingMaskIntoConstraints = false
+                  pill.layer.cornerRadius = 27
+                  pill.layer.shadowColor = UIColor.black.cgColor
+                  pill.layer.shadowOpacity = 0.35
+                  pill.layer.shadowRadius = 14
+                  pill.layer.shadowOffset = CGSize(width: 0, height: 6)
+                  pill.alpha = 0
+                  pill.isUserInteractionEnabled = false
+
+                  let blur: UIVisualEffectView
+                  if #available(iOS 26.0, *) {
+                      let glass = UIGlassEffect(style: .regular)
+                      glass.isInteractive = true
+                      blur = UIVisualEffectView(effect: glass)
+                  } else {
+                      blur = UIVisualEffectView(effect: UIBlurEffect(style: .systemChromeMaterialDark))
+                  }
+                  blur.translatesAutoresizingMaskIntoConstraints = false
+                  blur.layer.cornerRadius = 27
+                  blur.clipsToBounds = true
+                  if #unavailable(iOS 26.0) {
+                      blur.layer.borderWidth = 0.6
+                      blur.layer.borderColor = UIColor.white.withAlphaComponent(0.24).cgColor
+                  }
+
+                  let iconBtn = UIButton(type: .system)
+                  iconBtn.translatesAutoresizingMaskIntoConstraints = false
+                  iconBtn.setImage(UIImage(systemName: "music.note", withConfiguration: UIImage.SymbolConfiguration(pointSize: 19, weight: .semibold)), for: .normal)
+                  iconBtn.tintColor = UIColor(red: 0.22, green: 0.74, blue: 0.97, alpha: 1.0)
+                  iconBtn.addTarget(self, action: #selector(handleCollapsedPillTap), for: .touchUpInside)
+                  self.collapsedPillBtn = iconBtn
+
+                  blur.contentView.addSubview(iconBtn)
+                  pill.addSubview(blur)
+
+                  parentView.addSubview(tabBar)
+                  parentView.addSubview(pill)
+
+                  NSLayoutConstraint.activate([
+                      tabBar.leadingAnchor.constraint(equalTo: parentView.leadingAnchor),
+                      tabBar.trailingAnchor.constraint(equalTo: parentView.trailingAnchor),
+                      tabBar.bottomAnchor.constraint(equalTo: parentView.bottomAnchor),
+
+                      pill.leadingAnchor.constraint(equalTo: parentView.leadingAnchor, constant: 16),
+                      pill.bottomAnchor.constraint(equalTo: parentView.safeAreaLayoutGuide.bottomAnchor, constant: -10),
+                      pill.widthAnchor.constraint(equalToConstant: 54),
+                      pill.heightAnchor.constraint(equalToConstant: 54),
+
+                      blur.topAnchor.constraint(equalTo: pill.topAnchor),
+                      blur.bottomAnchor.constraint(equalTo: pill.bottomAnchor),
+                      blur.leadingAnchor.constraint(equalTo: pill.leadingAnchor),
+                      blur.trailingAnchor.constraint(equalTo: pill.trailingAnchor),
+
+                      iconBtn.topAnchor.constraint(equalTo: blur.contentView.topAnchor),
+                      iconBtn.bottomAnchor.constraint(equalTo: blur.contentView.bottomAnchor),
+                      iconBtn.leadingAnchor.constraint(equalTo: blur.contentView.leadingAnchor),
+                      iconBtn.trailingAnchor.constraint(equalTo: blur.contentView.trailingAnchor)
+                  ])
+
+                  self.nativeTabBar = tabBar
+                  self.collapsedPillView = pill
+              }
+
+              @objc private func handleCollapsedPillTap() {
+                  setDockVisibility(hidden: false, collapsed: false)
+                  webView?.evaluateJavaScript("window.__fengSwitchTab && window.__fengSwitchTab('\(activeTabId)')", completionHandler: nil)
+              }
+
+              func tabBar(_ tabBar: UITabBar, didSelect item: UITabBarItem) {
+                  let idx = item.tag
+                  guard idx >= 0 && idx < tabIds.count else { return }
+                  let tabId = tabIds[idx]
+                  activeTabId = tabId
+                  updateCollapsedPillIcon()
+                  setDockVisibility(hidden: isTabBarHidden, collapsed: false)
+                  webView?.evaluateJavaScript("window.__fengSwitchTab && window.__fengSwitchTab('\(tabId)')", completionHandler: nil)
+              }
+
+              private func updateCollapsedPillIcon() {
+                  let idx = tabIds.firstIndex(of: activeTabId) ?? 0
+                  let sym = idx < tabSymbols.count ? tabSymbols[idx] : "music.note"
+                  collapsedPillBtn?.setImage(
+                      UIImage(systemName: sym, withConfiguration: UIImage.SymbolConfiguration(pointSize: 19, weight: .semibold)),
+                      for: .normal
+                  )
+              }
+
+              private func selectNativeTab(_ tabId: String) {
+                  activeTabId = tabId
+                  updateCollapsedPillIcon()
+                  if let idx = tabIds.firstIndex(of: tabId), idx < tabItems.count {
+                      nativeTabBar?.selectedItem = tabItems[idx]
+                  }
+              }
+
+              private func setDockVisibility(hidden: Bool, collapsed: Bool) {
+                  isTabBarHidden = hidden
+                  isTabBarCollapsed = collapsed
+                  DispatchQueue.main.async {
+                      guard let tabBar = self.nativeTabBar, let pill = self.collapsedPillView else { return }
+                      if let superview = tabBar.superview {
+                          superview.bringSubviewToFront(tabBar)
+                          superview.bringSubviewToFront(pill)
+                      }
+                      let showFullBar = !hidden && !collapsed
+                      let showCollapsedPill = !hidden && collapsed
+                      UIView.animate(withDuration: 0.25, delay: 0, options: [.curveEaseOut]) {
+                          tabBar.alpha = showFullBar ? 1.0 : 0.0
+                          tabBar.transform = showFullBar ? .identity : CGAffineTransform(translationX: 0, y: 24)
+                          pill.alpha = showCollapsedPill ? 1.0 : 0.0
+                          pill.transform = showCollapsedPill ? .identity : CGAffineTransform(scaleX: 0.72, y: 0.72)
+                      }
+                      tabBar.isUserInteractionEnabled = showFullBar
+                      pill.isUserInteractionEnabled = showCollapsedPill
+                  }
+              }
+
+              // MARK: - Security-Scoped Bookmark Persistence & Folder Enumeration
+              private func topMostViewController() -> UIViewController? {
+                  var top = UIApplication.shared.connectedScenes
+                      .compactMap { $0 as? UIWindowScene }
+                      .flatMap { $0.windows }
+                      .first(where: { $0.isKeyWindow })?.rootViewController
+                  while let presented = top?.presentedViewController {
+                      top = presented
+                  }
+                  return top
+              }
+
+              private func presentFolderPicker() {
+                  DispatchQueue.main.async {
+                      guard let presenter = self.topMostViewController() else { return }
+                      if #available(iOS 14.0, *) {
+                          let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.folder], asCopy: false)
+                          picker.delegate = self
+                          picker.allowsMultipleSelection = false
+                          presenter.present(picker, animated: true)
+                      }
+                  }
+              }
+
+              func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+                  DispatchQueue.main.async {
+                      self.webView?.evaluateJavaScript("window.__fengPickedFolderFiles && window.__fengPickedFolderFiles({cancelled:true})", completionHandler: nil)
+                  }
+              }
+
+              func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+                  guard let pickedURL = urls.first else { return }
+
+                  let granted = pickedURL.startAccessingSecurityScopedResource()
+                  let canonicalKey = pickedURL.standardizedFileURL.path
+                  if let old = activeScopedURLs[canonicalKey], old != pickedURL {
+                      old.stopAccessingSecurityScopedResource()
+                  }
+                  activeScopedURLs[canonicalKey] = pickedURL
+
+                  if let bookmarkData = try? pickedURL.bookmarkData(
+                      options: [],
+                      includingResourceValuesForKeys: nil,
+                      relativeTo: nil
+                  ) {
+                      var dict = UserDefaults.standard.dictionary(forKey: bookmarkDefaultsKey) as? [String: Data] ?? [:]
+                      dict[canonicalKey] = bookmarkData
+                      UserDefaults.standard.set(dict, forKey: bookmarkDefaultsKey)
+                  }
+
+                  let folderName = pickedURL.lastPathComponent
+                  let isSilent = false
+                  DispatchQueue.main.async {
+                      self.webView?.evaluateJavaScript("window.__fengFolderScanning && window.__fengFolderScanning('\(folderName.replacingOccurrences(of: "'", with: "\\'"))')", completionHandler: nil)
+                  }
+
+                  DispatchQueue.global(qos: .userInitiated).async {
+                      let payload = self.enumerateFolderURL(pickedURL, folderName: folderName, silent: isSilent, granted: granted)
                       self.dispatchFolderPayloadToWeb(payload)
                   }
               }
-          }
 
-          private func enumerateFolderURL(_ url: URL, folderName: String, silent: Bool, granted: Bool) -> [String: Any] {
-              let audioExts: Set<String> = ["mp3", "flac", "m4a", "wav", "ogg", "aac"]
-              var lrcMap: [String: String] = [:]
-              var audioItems: [(name: String, uri: String, base: String)] = []
+              func restoreSecurityScopedBookmarks() {
+                  guard let dict = UserDefaults.standard.dictionary(forKey: bookmarkDefaultsKey) as? [String: Data],
+                        !dict.isEmpty else { return }
+                  var updatedDict = dict
+                  var didRefreshStale = false
 
-              var coordError: NSError?
-              let coordinator = NSFileCoordinator()
-              coordinator.coordinate(readingItemAt: url, options: [.withoutChanges], error: &coordError) { coordinatedURL in
-                  if let enumerator = FileManager.default.enumerator(
-                      at: coordinatedURL,
-                      includingPropertiesForKeys: [.isRegularFileKey, .isDirectoryKey],
-                      options: [.skipsHiddenFiles]
-                  ) {
-                      for case let fileURL as URL in enumerator {
-                          let ext = fileURL.pathExtension.lowercased()
-                          let base = fileURL.deletingPathExtension().lastPathComponent
-                              .trimmingCharacters(in: .whitespacesAndNewlines)
-                              .lowercased()
-                          if ext == "lrc" {
-                              if let txt = try? String(contentsOf: fileURL, encoding: .utf8) {
-                                  lrcMap[base] = txt
-                              }
-                          } else if audioExts.contains(ext) {
-                              audioItems.append((name: fileURL.lastPathComponent, uri: fileURL.absoluteString, base: base))
+                  for (key, bmData) in dict {
+                      var isStale = false
+                      if let resolvedURL = try? URL(
+                          resolvingBookmarkData: bmData,
+                          options: [],
+                          relativeTo: nil,
+                          bookmarkDataIsStale: &isStale
+                      ) {
+                          _ = resolvedURL.startAccessingSecurityScopedResource()
+                          activeScopedURLs[resolvedURL.standardizedFileURL.path] = resolvedURL
+                          if isStale,
+                             let freshData = try? resolvedURL.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil) {
+                              updatedDict[key] = freshData
+                              didRefreshStale = true
                           }
+                      }
+                  }
+                  if didRefreshStale {
+                      UserDefaults.standard.set(updatedDict, forKey: bookmarkDefaultsKey)
+                  }
+              }
+
+              private func rescanAllBookmarkedFolders(silent: Bool) {
+                  let urls = Array(activeScopedURLs.values)
+                  guard !urls.isEmpty else { return }
+                  DispatchQueue.global(qos: .userInitiated).async {
+                      for folderURL in urls {
+                          let payload = self.enumerateFolderURL(
+                              folderURL,
+                              folderName: folderURL.lastPathComponent,
+                              silent: silent,
+                              granted: true
+                          )
+                          self.dispatchFolderPayloadToWeb(payload)
                       }
                   }
               }
 
-              let filesPayload: [[String: String]] = audioItems.map { item in
-                  [
-                      "name": item.name,
-                      "uri": item.uri,
-                      "lrc": lrcMap[item.base] ?? ""
+              private func enumerateFolderURL(_ url: URL, folderName: String, silent: Bool, granted: Bool) -> [String: Any] {
+                  let audioExts: Set<String> = ["mp3", "flac", "m4a", "wav", "ogg", "aac"]
+                  var lrcMap: [String: String] = [:]
+                  var audioItems: [(name: String, uri: String, base: String)] = []
+
+                  var coordError: NSError?
+                  let coordinator = NSFileCoordinator()
+                  coordinator.coordinate(readingItemAt: url, options: [.withoutChanges], error: &coordError) { coordinatedURL in
+                      if let enumerator = FileManager.default.enumerator(
+                          at: coordinatedURL,
+                          includingPropertiesForKeys: [.isRegularFileKey, .isDirectoryKey],
+                          options: [.skipsHiddenFiles]
+                      ) {
+                          for case let fileURL as URL in enumerator {
+                              let ext = fileURL.pathExtension.lowercased()
+                              let base = fileURL.deletingPathExtension().lastPathComponent
+                                  .trimmingCharacters(in: .whitespacesAndNewlines)
+                                  .lowercased()
+                              if ext == "lrc" {
+                                  if let txt = try? String(contentsOf: fileURL, encoding: .utf8) {
+                                      lrcMap[base] = txt
+                                  }
+                              } else if audioExts.contains(ext) {
+                                  audioItems.append((name: fileURL.lastPathComponent, uri: fileURL.absoluteString, base: base))
+                              }
+                          }
+                      }
+                  }
+
+                  let filesPayload: [[String: String]] = audioItems.map { item in
+                      [
+                          "name": item.name,
+                          "uri": item.uri,
+                          "lrc": lrcMap[item.base] ?? ""
+                      ]
+                  }
+
+                  return [
+                      "cancelled": false,
+                      "silent": silent,
+                      "granted": granted,
+                      "folderName": folderName,
+                      "files": filesPayload
                   ]
               }
 
-              return [
-                  "cancelled": false,
-                  "silent": silent,
-                  "granted": granted,
-                  "folderName": folderName,
-                  "files": filesPayload
-              ]
-          }
+              private func dispatchFolderPayloadToWeb(_ payload: [String: Any]) {
+                  guard let data = try? JSONSerialization.data(withJSONObject: payload, options: []),
+                        let jsonStr = String(data: data, encoding: .utf8) else { return }
+                  DispatchQueue.main.async {
+                      self.webView?.evaluateJavaScript("window.__fengPickedFolderFiles && window.__fengPickedFolderFiles(\(jsonStr))", completionHandler: nil)
+                  }
+              }
 
-          private func dispatchFolderPayloadToWeb(_ payload: [String: Any]) {
-              guard let data = try? JSONSerialization.data(withJSONObject: payload, options: []),
-                    let jsonStr = String(data: data, encoding: .utf8) else { return }
-              DispatchQueue.main.async {
-                  self.webView?.evaluateJavaScript("window.__fengPickedFolderFiles && window.__fengPickedFolderFiles(\(jsonStr))", completionHandler: nil)
+              private func sendEvent(_ type: String, extra: [String: Any]) {
+                  var jsonStr = "{}"
+                  if let data = try? JSONSerialization.data(withJSONObject: extra, options: []),
+                     let s = String(data: data, encoding: .utf8) {
+                      jsonStr = s
+                  }
+                  DispatchQueue.main.async {
+                      self.webView?.evaluateJavaScript("window.__fengNativeAudioEvent && window.__fengNativeAudioEvent('\(type)', \(jsonStr))", completionHandler: nil)
+                  }
               }
-          }
 
-          private func sendEvent(_ type: String, extra: [String: Any]) {
-              var jsonStr = "{}"
-              if let data = try? JSONSerialization.data(withJSONObject: extra, options: []),
-                 let s = String(data: data, encoding: .utf8) {
-                  jsonStr = s
+              private func updateNowPlayingInfo() {
+                  var info: [String: Any] = [
+                      MPMediaItemPropertyTitle: currentTitle,
+                      MPMediaItemPropertyArtist: currentArtist,
+                      MPMediaItemPropertyAlbumTitle: currentAlbum,
+                      MPNowPlayingInfoPropertyElapsedPlaybackTime: player.map { CMTimeGetSeconds($0.currentTime()) } ?? 0,
+                      MPMediaItemPropertyPlaybackDuration: currentDuration,
+                      MPNowPlayingInfoPropertyPlaybackRate: (player?.rate ?? 0) > 0 ? Double(currentRate) : 0.0
+                  ]
+                  if let art = currentArtwork {
+                      info[MPMediaItemPropertyArtwork] = art
+                  }
+                  MPNowPlayingInfoCenter.default().nowPlayingInfo = info
               }
-              DispatchQueue.main.async {
-                  self.webView?.evaluateJavaScript("window.__fengNativeAudioEvent && window.__fengNativeAudioEvent('\(type)', \(jsonStr))", completionHandler: nil)
-              }
-          }
 
-          private func updateNowPlayingInfo() {
-              var info: [String: Any] = [
-                  MPMediaItemPropertyTitle: currentTitle,
-                  MPMediaItemPropertyArtist: currentArtist,
-                  MPMediaItemPropertyAlbumTitle: currentAlbum,
-                  MPNowPlayingInfoPropertyElapsedPlaybackTime: player.map { CMTimeGetSeconds($0.currentTime()) } ?? 0,
-                  MPMediaItemPropertyPlaybackDuration: currentDuration,
-                  MPNowPlayingInfoPropertyPlaybackRate: (player?.rate ?? 0) > 0 ? Double(currentRate) : 0.0
-              ]
-              if let art = currentArtwork {
-                  info[MPMediaItemPropertyArtwork] = art
+              private func cleanupPlayer() {
+                  if let obs = timeObserver, let p = player {
+                      p.removeTimeObserver(obs)
+                  }
+                  timeObserver = nil
+                  if let eObs = endObserver {
+                      NotificationCenter.default.removeObserver(eObs)
+                  }
+                  endObserver = nil
+                  player?.pause()
+                  player = nil
               }
-              MPNowPlayingInfoCenter.default().nowPlayingInfo = info
-          }
 
-          private func cleanupPlayer() {
-              if let obs = timeObserver, let p = player {
-                  p.removeTimeObserver(obs)
-              }
-              timeObserver = nil
-              if let eObs = endObserver {
-                  NotificationCenter.default.removeObserver(eObs)
-              }
-              endObserver = nil
-              player?.pause()
-              player = nil
-          }
-
-          private func decodeArtwork(from coverStr: String) -> MPMediaItemArtwork? {
-              if coverStr.hasPrefix("data:image"),
-                 let comma = coverStr.firstIndex(of: ",") {
-                  let b64 = String(coverStr[coverStr.index(after: comma)...])
-                  if let data = Data(base64Encoded: b64, options: .ignoreUnknownCharacters),
-                     let img = UIImage(data: data) {
+              private func decodeArtwork(from coverStr: String) -> MPMediaItemArtwork? {
+                  if coverStr.hasPrefix("data:image"),
+                     let comma = coverStr.firstIndex(of: ",") {
+                      let b64 = String(coverStr[coverStr.index(after: comma)...])
+                      if let data = Data(base64Encoded: b64, options: .ignoreUnknownCharacters),
+                         let img = UIImage(data: data) {
+                          return MPMediaItemArtwork(boundsSize: img.size) { _ in img }
+                      }
+                  }
+                  if let img = UIImage(named: "AppIcon") ?? UIImage(contentsOfFile: Bundle.main.path(forResource: "icon-512", ofType: "png", inDirectory: "public") ?? "") {
                       return MPMediaItemArtwork(boundsSize: img.size) { _ in img }
                   }
-              }
-              if let img = UIImage(named: "AppIcon") ?? UIImage(contentsOfFile: Bundle.main.path(forResource: "icon-512", ofType: "png", inDirectory: "public") ?? "") {
-                  return MPMediaItemArtwork(boundsSize: img.size) { _ in img }
-              }
-              return nil
-          }
-
-          func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
-              if message.name == "fengFolder" {
-                  if let body = message.body as? [String: Any],
-                     let action = body["action"] as? String,
-                     action == "rescanBookmarks" {
-                      let silent = (body["silent"] as? Bool) ?? true
-                      rescanAllBookmarkedFolders(silent: silent)
-                  } else {
-                      presentFolderPicker()
-                  }
-                  return
+                  return nil
               }
 
-              if message.name == "fengDock", let body = message.body as? [String: Any] {
-                  if let tab = body["tab"] as? String {
-                      DispatchQueue.main.async { self.selectNativeTab(tab) }
-                  }
-                  let hidden = (body["hidden"] as? Bool) ?? isTabBarHidden
-                  let collapsed = (body["collapsed"] as? Bool) ?? isTabBarCollapsed
-                  setDockVisibility(hidden: hidden, collapsed: collapsed)
-                  return
-              }
-
-              guard message.name == "fengAudio",
-                    let body = message.body as? [String: Any],
-                    let action = body["action"] as? String else { return }
-
-              if action == "load" {
-                  guard let urlStr = body["url"] as? String,
-                        let url = URL(string: urlStr) else { return }
-                  cleanupPlayer()
-                  currentTitle = (body["title"] as? String) ?? "FENG MUSIC"
-                  currentArtist = (body["artist"] as? String) ?? ""
-                  currentAlbum = (body["album"] as? String) ?? ""
-                  currentRate = Float((body["rate"] as? Double) ?? 1.0)
-                  pendingResumeTime = (body["resumeTime"] as? Double) ?? 0
-                  currentDuration = 0
-                  didSendMeta = false
-                  currentArtwork = decodeArtwork(from: (body["cover"] as? String) ?? "")
-
-                  let item = AVPlayerItem(url: url)
-                  let newPlayer = AVPlayer(playerItem: item)
-                  self.player = newPlayer
-
-                  endObserver = NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime, object: item, queue: .main) { [weak self] _ in
-                      self?.updateNowPlayingInfo()
-                      self?.sendEvent("ended", extra: [:])
+              func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+                  if message.name == "fengFolder" {
+                      if let body = message.body as? [String: Any],
+                         let action = body["action"] as? String,
+                         action == "rescanBookmarks" {
+                          let silent = (body["silent"] as? Bool) ?? true
+                          rescanAllBookmarkedFolders(silent: silent)
+                      } else {
+                          presentFolderPicker()
+                      }
+                      return
                   }
 
-                  timeObserver = newPlayer.addPeriodicTimeObserver(forInterval: CMTime(seconds: 0.25, preferredTimescale: 600), queue: .main) { [weak self] cmTime in
-                      guard let self = self else { return }
-                      if !self.didSendMeta && item.status == .readyToPlay {
-                          let dur = CMTimeGetSeconds(item.duration)
-                          if dur.isFinite && dur > 0 {
-                              self.didSendMeta = true
-                              self.currentDuration = dur
-                              if self.pendingResumeTime > 0 && self.pendingResumeTime < dur - 1 {
-                                  newPlayer.seek(to: CMTime(seconds: self.pendingResumeTime, preferredTimescale: 600))
-                                  self.pendingResumeTime = 0
+                  if message.name == "fengDock", let body = message.body as? [String: Any] {
+                      if let tab = body["tab"] as? String {
+                          DispatchQueue.main.async { self.selectNativeTab(tab) }
+                      }
+                      let hidden = (body["hidden"] as? Bool) ?? isTabBarHidden
+                      let collapsed = (body["collapsed"] as? Bool) ?? isTabBarCollapsed
+                      setDockVisibility(hidden: hidden, collapsed: collapsed)
+                      return
+                  }
+
+                  guard message.name == "fengAudio",
+                        let body = message.body as? [String: Any],
+                        let action = body["action"] as? String else { return }
+
+                  if action == "load" {
+                      guard let urlStr = body["url"] as? String,
+                            let url = URL(string: urlStr) else { return }
+                      cleanupPlayer()
+                      currentTitle = (body["title"] as? String) ?? "FENG MUSIC"
+                      currentArtist = (body["artist"] as? String) ?? ""
+                      currentAlbum = (body["album"] as? String) ?? ""
+                      currentRate = Float((body["rate"] as? Double) ?? 1.0)
+                      pendingResumeTime = (body["resumeTime"] as? Double) ?? 0
+                      currentDuration = 0
+                      didSendMeta = false
+                      currentArtwork = decodeArtwork(from: (body["cover"] as? String) ?? "")
+
+                      let item = AVPlayerItem(url: url)
+                      let newPlayer = AVPlayer(playerItem: item)
+                      self.player = newPlayer
+
+                      endObserver = NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime, object: item, queue: .main) { [weak self] _ in
+                          self?.updateNowPlayingInfo()
+                          self?.sendEvent("ended", extra: [:])
+                      }
+
+                      timeObserver = newPlayer.addPeriodicTimeObserver(forInterval: CMTime(seconds: 0.25, preferredTimescale: 600), queue: .main) { [weak self] cmTime in
+                          guard let self = self else { return }
+                          if !self.didSendMeta && item.status == .readyToPlay {
+                              let dur = CMTimeGetSeconds(item.duration)
+                              if dur.isFinite && dur > 0 {
+                                  self.didSendMeta = true
+                                  self.currentDuration = dur
+                                  if self.pendingResumeTime > 0 && self.pendingResumeTime < dur - 1 {
+                                      newPlayer.seek(to: CMTime(seconds: self.pendingResumeTime, preferredTimescale: 600))
+                                      self.pendingResumeTime = 0
+                                  }
+                                  self.sendEvent("loadedmetadata", extra: ["duration": dur])
                               }
-                              self.sendEvent("loadedmetadata", extra: ["duration": dur])
+                          }
+                          let cur = CMTimeGetSeconds(cmTime)
+                          if cur.isFinite {
+                              self.updateNowPlayingInfo()
+                              self.sendEvent("timeupdate", extra: ["currentTime": cur, "duration": self.currentDuration])
                           }
                       }
-                      let cur = CMTimeGetSeconds(cmTime)
-                      if cur.isFinite {
-                          self.updateNowPlayingInfo()
-                          self.sendEvent("timeupdate", extra: ["currentTime": cur, "duration": self.currentDuration])
+
+                      let autoPlay = (body["autoPlay"] as? Bool) ?? false
+                      if autoPlay {
+                          newPlayer.play()
+                          newPlayer.rate = currentRate
+                          updateNowPlayingInfo()
+                          sendEvent("play", extra: [:])
+                          sendEvent("playing", extra: [:])
+                      } else {
+                          updateNowPlayingInfo()
                       }
-                  }
-
-                  let autoPlay = (body["autoPlay"] as? Bool) ?? false
-                  if autoPlay {
-                      newPlayer.play()
-                      newPlayer.rate = currentRate
-                      updateNowPlayingInfo()
-                      sendEvent("play", extra: [:])
-                      sendEvent("playing", extra: [:])
-                  } else {
-                      updateNowPlayingInfo()
-                  }
-              } else if action == "play" {
-                  player?.play()
-                  player?.rate = currentRate
-                  updateNowPlayingInfo()
-              } else if action == "pause" {
-                  player?.pause()
-                  updateNowPlayingInfo()
-              } else if action == "seek" {
-                  let t = (body["time"] as? Double) ?? 0
-                  player?.seek(to: CMTime(seconds: t, preferredTimescale: 600)) { [weak self] _ in
-                      DispatchQueue.main.async { self?.updateNowPlayingInfo() }
-                  }
-              } else if action == "rate" {
-                  currentRate = Float((body["rate"] as? Double) ?? 1.0)
-                  if (player?.rate ?? 0) != 0 {
+                  } else if action == "play" {
+                      player?.play()
                       player?.rate = currentRate
+                      updateNowPlayingInfo()
+                  } else if action == "pause" {
+                      player?.pause()
+                      updateNowPlayingInfo()
+                  } else if action == "seek" {
+                      let t = (body["time"] as? Double) ?? 0
+                      player?.seek(to: CMTime(seconds: t, preferredTimescale: 600)) { [weak self] _ in
+                          DispatchQueue.main.async { self?.updateNowPlayingInfo() }
+                      }
+                  } else if action == "rate" {
+                      currentRate = Float((body["rate"] as? Double) ?? 1.0)
+                      if (player?.rate ?? 0) != 0 {
+                          player?.rate = currentRate
+                      }
+                      updateNowPlayingInfo()
+                  } else if action == "stop" {
+                      cleanupPlayer()
+                      MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
                   }
-                  updateNowPlayingInfo()
-              } else if action == "stop" {
-                  cleanupPlayer()
-                  MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
               }
           }
-      }
 
-      @UIApplicationMain
-      class AppDelegate: UIResponder, UIApplicationDelegate {
+          @UIApplicationMain
+          class AppDelegate: UIResponder, UIApplicationDelegate {
 
-          var window: UIWindow?
+              var window: UIWindow?
 
-          func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-              FengRemoteMediaBridge.shared.configureAudioAndCommands()
-              FengRemoteMediaBridge.shared.restoreSecurityScopedBookmarks()
-              DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                  FengRemoteMediaBridge.shared.attach(window: self.window)
+              func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+                  FengRemoteMediaBridge.shared.configureAudioAndCommands()
+                  FengRemoteMediaBridge.shared.restoreSecurityScopedBookmarks()
+                  DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                      FengRemoteMediaBridge.shared.attach(window: self.window)
+                  }
+                  return true
               }
-              return true
-          }
 
-          func applicationDidBecomeActive(_ application: UIApplication) {
-              FengRemoteMediaBridge.shared.restoreSecurityScopedBookmarks()
-              FengRemoteMediaBridge.shared.attach(window: window)
-          }
+              func applicationDidBecomeActive(_ application: UIApplication) {
+                  FengRemoteMediaBridge.shared.restoreSecurityScopedBookmarks()
+                  FengRemoteMediaBridge.shared.attach(window: window)
+              }
 
-          func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
-              return ApplicationDelegateProxy.shared.application(app, open: url, options: options)
-          }
+              func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
+                  return ApplicationDelegateProxy.shared.application(app, open: url, options: options)
+              }
 
-          func application(_ application: UIApplication, continue userActivity: NSUserActivity, restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void) -> Bool {
-              return ApplicationDelegateProxy.shared.application(application, continue: userActivity, restorationHandler: restorationHandler)
+              func application(_ application: UIApplication, continue userActivity: NSUserActivity, restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void) -> Bool {
+                  return ApplicationDelegateProxy.shared.application(application, continue: userActivity, restorationHandler: restorationHandler)
+              }
           }
-      }
-      EOF
+          EOF
 
-  - name: Force Replace iOS App Icon
-    run: |
-      ICON_DIR="ios/App/App/Assets.xcassets/AppIcon.appiconset"
-      rm -rf "$ICON_DIR"
-      mkdir -p "$ICON_DIR"
-      sips -s format png -z 1024 1024 icon-512.png --out "$ICON_DIR/AppIcon-512@2x.png"
-      cat << 'EOF' > "$ICON_DIR/Contents.json"
-      {
-        "images" : [
+      - name: Force Replace iOS App Icon
+        run: |
+          ICON_DIR="ios/App/App/Assets.xcassets/AppIcon.appiconset"
+          rm -rf "$ICON_DIR"
+          mkdir -p "$ICON_DIR"
+          sips -s format png -z 1024 1024 icon-512.png --out "$ICON_DIR/AppIcon-512@2x.png"
+          cat << 'EOF' > "$ICON_DIR/Contents.json"
           {
-            "filename" : "AppIcon-512@2x.png",
-            "idiom" : "universal",
-            "platform" : "ios",
-            "size" : "1024x1024"
+            "images" : [
+              {
+                "filename" : "AppIcon-512@2x.png",
+                "idiom" : "universal",
+                "platform" : "ios",
+                "size" : "1024x1024"
+              }
+            ],
+            "info" : {
+              "author" : "xcode",
+              "version" : 1
+            }
           }
-        ],
-        "info" : {
-          "author" : "xcode",
-          "version" : 1
-        }
-      }
-      EOF
+          EOF
 
-  - name: Build Unsigned iOS IPA
-    run: |
-      if [ -d "ios/App/App.xcworkspace" ]; then
-        TARGET="-workspace ios/App/App.xcworkspace"
-      else
-        TARGET="-project ios/App/App.xcodeproj"
-      fi
-      xcodebuild $TARGET \
-        -scheme App \
-        -configuration Release \
-        -sdk iphoneos \
-        -derivedDataPath build \
-        CODE_SIGN_IDENTITY="" \
-        CODE_SIGNING_REQUIRED=NO \
-        CODE_SIGNING_ALLOWED=NO \
-        clean build | tee xcodebuild.log
-      mkdir -p Payload
-      cp -r build/Build/Products/Release-iphoneos/App.app Payload/
-      zip -qr FENG_MUSIC_iOS.ipa Payload
+      - name: Build Unsigned iOS IPA
+        run: |
+          if [ -d "ios/App/App.xcworkspace" ]; then
+            TARGET="-workspace ios/App/App.xcworkspace"
+          else
+            TARGET="-project ios/App/App.xcodeproj"
+          fi
+          xcodebuild $TARGET \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            clean build | tee xcodebuild.log
+          mkdir -p Payload
+          cp -r build/Build/Products/Release-iphoneos/App.app Payload/
+          zip -qr FENG_MUSIC_iOS.ipa Payload
 
-  - name: Upload iOS IPA
-    uses: actions/upload-artifact@v4
-    with:
-      name: FENG_MUSIC_iOS_IPA
-      path: FENG_MUSIC_iOS.ipa
-
-```
+      - name: Upload iOS IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: FENG_MUSIC_iOS_IPA
+          path: FENG_MUSIC_iOS.ipa
