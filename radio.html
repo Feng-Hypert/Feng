@@ -304,37 +304,121 @@
       animation-play-state: paused;
     }
 
-    /* Depth-of-Field Blurred Synced Lyrics */
+    /* Personalized Synced Lyrics Styles (4 Distinct Modes) */
+    @keyframes lyricShimmerSweep {
+      0% { background-position: 200% 50%; }
+      100% { background-position: -200% 50%; }
+    }
+    @keyframes neonBreathPulse {
+      0%, 100% {
+        text-shadow: 0 0 10px rgba(56, 189, 248, 0.95), 0 0 26px rgba(129, 140, 248, 0.85), 0 0 48px rgba(45, 212, 191, 0.65);
+      }
+      50% {
+        text-shadow: 0 0 18px rgba(255, 255, 255, 1), 0 0 38px rgba(56, 189, 248, 0.95), 0 0 64px rgba(168, 85, 247, 0.85);
+      }
+    }
+    @keyframes charBounceRise {
+      0% {
+        opacity: 0;
+        transform: translateY(16px) scale(0.65);
+      }
+      65% {
+        opacity: 1;
+        transform: translateY(-5px) scale(1.1);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
     .lyric-line {
       font-size: var(--lyric-font-px);
-      transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.35s ease, filter 0.35s ease, color 0.3s ease;
+      transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.35s ease, filter 0.35s ease, color 0.3s ease;
       transform-origin: left center;
     }
     .lyric-active {
       opacity: 1;
       filter: blur(0px);
-      transform: scale(1.04);
+      transform: scale(1.05);
       color: #ffffff;
       text-shadow: 0 0 24px rgba(255, 255, 255, 0.32);
     }
     .lyric-near {
-      opacity: 0.52;
-      filter: blur(0.6px);
-      transform: scale(0.98);
+      opacity: 0.48;
+      filter: blur(0.9px);
+      transform: scale(0.97);
       color: rgba(255, 255, 255, 0.85);
     }
     .lyric-far {
-      opacity: 0.28;
-      filter: blur(1.6px);
-      transform: scale(0.95);
+      opacity: 0.24;
+      filter: blur(2.1px);
+      transform: scale(0.94);
       color: rgba(255, 255, 255, 0.72);
     }
     .lyrics-unblurred .lyric-line {
       filter: blur(0px) !important;
-      opacity: 0.80;
+      opacity: 0.82;
     }
     .lyrics-unblurred .lyric-active {
       opacity: 1;
+    }
+
+    /* Mode 2: Karaoke Aurora Shimmer */
+    .lyrics-style-karaoke .lyric-near,
+    .lyrics-style-karaoke .lyric-far {
+      filter: blur(0px);
+      opacity: 0.38;
+    }
+    .lyrics-style-karaoke .lyric-active {
+      background: linear-gradient(90deg, #ffffff 0%, var(--aurora-1) 25%, #ffffff 50%, var(--aurora-3) 75%, #ffffff 100%);
+      background-size: 220% auto;
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      animation: lyricShimmerSweep 3.2s linear infinite;
+      text-shadow: none;
+    }
+
+    /* Mode 3: Cyber Neon Glow */
+    .lyrics-style-neon .lyric-near,
+    .lyrics-style-neon .lyric-far {
+      filter: blur(0px);
+      opacity: 0.32;
+      color: rgba(186, 230, 253, 0.65);
+    }
+    .lyrics-style-neon .lyric-active {
+      color: #f0f9ff;
+      transform: scale(1.06);
+      animation: neonBreathPulse 2.2s ease-in-out infinite;
+    }
+
+    /* Mode 4: Per-Character Staggered Typewriter Bounce */
+    .lyrics-style-bounce .lyric-near,
+    .lyrics-style-bounce .lyric-far {
+      filter: blur(0px);
+      opacity: 0.36;
+    }
+    .lyrics-style-bounce .lyric-active {
+      transform: scale(1.04);
+      text-shadow: 0 4px 20px rgba(56, 189, 248, 0.35);
+    }
+    .lyric-char {
+      display: inline-block;
+      animation: charBounceRise 0.44s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+      animation-delay: var(--char-delay, 0ms);
+    }
+
+    /* Fortune 3D Flip Card */
+    .fortune-card-stage {
+      perspective: 1100px;
+    }
+    .fortune-card-inner {
+      transition: transform 0.65s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transform-style: preserve-3d;
+    }
+    .fortune-card-flip {
+      transform: rotateY(360deg) scale(1.02);
     }
 
     /* Ensure active Now Playing tab text keeps dark contrast on white pill */
@@ -342,7 +426,7 @@
       color: #09090b !important;
     }
 
-    /* Play/Pause Button Icon Contrast & Visibility Guarantee */
+    /* Play/Pause Button Icon Contrast & Alignment Guarantee */
     .play-toggle-btn {
       background-color: #ffffff;
       color: #09090b;
@@ -350,6 +434,7 @@
     .play-toggle-btn svg {
       color: #09090b;
       fill: currentColor;
+      display: block;
     }
 
     /* Personalized Aurora Progress Bar */
@@ -934,8 +1019,12 @@
           </div>
           <div class="flex items-center gap-1.5 shrink-0">
             <button id="btn-mini-play" class="play-toggle-btn w-10 h-10 rounded-full bg-white text-zinc-950 flex items-center justify-center shadow-md active:scale-90 transition" aria-label="播放/暂停">
-              <svg id="icon-mini-play" class="w-5 h-5 translate-x-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-              <svg id="icon-mini-pause" class="w-5 h-5 hidden" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+              <span id="icon-mini-play" class="flex items-center justify-center">
+                <svg class="w-5 h-5 translate-x-[1px]" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+              </span>
+              <span id="icon-mini-pause" class="hidden items-center justify-center">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+              </span>
             </button>
             <button id="btn-mini-next" class="w-9 h-9 rounded-full hover:bg-white/15 active:scale-90 flex items-center justify-center text-white/90 transition" aria-label="下一首">
               <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
@@ -1102,8 +1191,12 @@
           </button>
 
           <button id="btn-np-play" class="play-toggle-btn w-16 h-16 rounded-full bg-white text-zinc-950 flex items-center justify-center shadow-xl shadow-black/40 active:scale-95 transition" aria-label="播放/暂停">
-            <svg id="icon-np-play" class="w-8 h-8 translate-x-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-            <svg id="icon-np-pause" class="w-8 h-8 hidden" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+            <span id="icon-np-play" class="flex items-center justify-center">
+              <svg class="w-8 h-8 translate-x-[1.5px]" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            </span>
+            <span id="icon-np-pause" class="hidden items-center justify-center">
+              <svg class="w-8 h-8" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+            </span>
           </button>
 
           <button id="btn-np-next" class="w-12 h-12 rounded-full hover:bg-white/10 active:scale-90 flex items-center justify-center text-white transition" aria-label="下一首">
@@ -1122,7 +1215,7 @@
       </div>
     </div>
 
-    <!-- ==================== TAB 2: DEPTH-OF-FIELD LYRICS VIEW (歌词) ==================== -->
+    <!-- ==================== TAB 2: PERSONALIZED LYRICS VIEW (歌词) ==================== -->
     <div id="np-panel-lyrics" class="hidden relative z-10 flex-1 flex flex-col overflow-hidden max-w-2xl w-full mx-auto" style="padding-bottom: calc(var(--safe-bottom) + 16px);">
       <div class="px-5 py-2 flex items-center justify-between gap-2 shrink-0">
         <div class="flex items-center gap-1.5">
@@ -1131,8 +1224,9 @@
           <button id="btn-lyric-offset-plus" class="liquid-pill px-2.5 py-1 rounded-full text-[11px] font-medium text-white/85">+0.5s</button>
         </div>
         <div class="flex items-center gap-1.5">
-          <button id="btn-lyric-edit" class="liquid-pill px-3 py-1 rounded-full text-[11px] font-medium text-white/90">编辑 LRC</button>
-          <button id="btn-lyric-poster" class="liquid-pill px-3 py-1 rounded-full text-[11px] font-semibold text-sky-200 flex items-center gap-1">
+          <button id="btn-lyric-style-cycle" class="liquid-pill px-2.5 py-1 rounded-full text-[11px] font-medium text-amber-200">✨ 景深聚焦</button>
+          <button id="btn-lyric-edit" class="liquid-pill px-2.5 py-1 rounded-full text-[11px] font-medium text-white/90">编辑</button>
+          <button id="btn-lyric-poster" class="liquid-pill px-2.5 py-1 rounded-full text-[11px] font-semibold text-sky-200 flex items-center gap-1">
             <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
             海报
           </button>
@@ -1198,6 +1292,20 @@
         <button data-effect="fireflies" class="effect-opt-btn py-2 rounded-xl text-[11px] font-medium bg-white/8 text-white/75">流光萤火</button>
         <button data-effect="petals" class="effect-opt-btn py-2 rounded-xl text-[11px] font-medium bg-white/8 text-white/75">夜樱花瓣</button>
         <button data-effect="off" class="effect-opt-btn py-2 rounded-xl text-[11px] font-medium bg-white/8 text-white/75">关闭</button>
+      </div>
+    </div>
+
+    <!-- Personalized Lyric Visual Effects -->
+    <div class="space-y-2">
+      <div class="flex justify-between text-xs text-white/70">
+        <span>歌词个性动效</span>
+        <span id="lyric-style-status" class="text-amber-300 font-medium">景深聚焦</span>
+      </div>
+      <div class="grid grid-cols-4 gap-1.5">
+        <button data-lyric-style="focus" class="lyric-style-opt-btn py-2 rounded-xl text-[11px] font-medium bg-white/20 text-white">景深聚焦</button>
+        <button data-lyric-style="karaoke" class="lyric-style-opt-btn py-2 rounded-xl text-[11px] font-medium bg-white/8 text-white/75">流光渐变</button>
+        <button data-lyric-style="neon" class="lyric-style-opt-btn py-2 rounded-xl text-[11px] font-medium bg-white/8 text-white/75">霓虹脉冲</button>
+        <button data-lyric-style="bounce" class="lyric-style-opt-btn py-2 rounded-xl text-[11px] font-medium bg-white/8 text-white/75">逐字弹跳</button>
       </div>
     </div>
 
@@ -1402,24 +1510,59 @@
     </div>
   </div>
 
-  <!-- 11. Daily Musical Fortune Modal (今日音乐签) -->
+  <!-- 11. Daily Musical Fortune Modal (今日音乐签 - 歌词签文 + 双向白噪音开关) -->
   <div id="modal-fortune" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-4">
-    <div class="liquid-sheet rounded-3xl w-full max-w-sm p-6 space-y-4 text-center border border-white/20 relative overflow-hidden">
-      <div class="flex items-center justify-between">
-        <span class="px-2.5 py-1 rounded-full bg-amber-400/20 text-[11px] font-semibold text-amber-200">今日音乐签</span>
-        <button id="btn-fortune-close" class="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-xs text-white/75">✕</button>
-      </div>
-      <img id="fortune-cover" src="" alt="" class="w-36 h-36 rounded-3xl object-cover mx-auto shadow-2xl border border-white/15" />
-      <div class="space-y-1">
-        <h3 id="fortune-title" class="text-base font-bold text-white truncate">歌曲名</h3>
-        <p id="fortune-artist" class="text-xs text-white/55 truncate">歌手</p>
-      </div>
-      <p id="fortune-quote" class="text-xs text-white/80 leading-relaxed bg-white/6 rounded-2xl p-3.5 border border-white/10">
-        “旋律响起的那一刻，所有未说出口的心事都有了回音。”
-      </p>
-      <div class="flex gap-2.5 pt-1">
-        <button id="btn-fortune-redraw" class="flex-1 py-2.5 rounded-2xl bg-white/10 text-xs font-medium text-white/85">换一签</button>
-        <button id="btn-fortune-play" class="flex-1 py-2.5 rounded-2xl bg-white text-zinc-950 text-xs font-semibold">立即聆听</button>
+    <div class="fortune-card-stage w-full max-w-sm">
+      <div id="fortune-card-inner" class="fortune-card-inner liquid-sheet rounded-3xl w-full p-5 space-y-3.5 text-center border border-white/25 relative overflow-hidden">
+        <!-- Header & Date Seal -->
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-1 rounded-full bg-amber-400/20 border border-amber-300/30 text-[11px] font-semibold text-amber-200">今日音乐签</span>
+            <span id="fortune-date-tag" class="text-[11px] text-white/50 tabular-nums"></span>
+          </div>
+          <button id="btn-fortune-close" class="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-xs text-white/75">✕</button>
+        </div>
+
+        <!-- Cover & Track Info -->
+        <div class="relative w-32 h-32 mx-auto pt-1">
+          <img id="fortune-cover" src="" alt="" class="w-32 h-32 rounded-3xl object-cover shadow-2xl border border-white/20" />
+        </div>
+        <div class="space-y-0.5">
+          <h3 id="fortune-title" class="text-base font-bold text-white truncate px-2">歌曲名</h3>
+          <p id="fortune-artist" class="text-xs text-white/55 truncate px-4">歌手</p>
+        </div>
+
+        <!-- Song Lyric Excerpt Quote -->
+        <div class="bg-white/7 rounded-2xl p-3.5 border border-white/12 space-y-1.5">
+          <p id="fortune-lyric-quote" class="text-xs sm:text-[13px] text-white/95 font-medium leading-relaxed whitespace-pre-line">
+            “旋律响起的那一刻，所有未说出口的心事都有了回音。”
+          </p>
+        </div>
+
+        <!-- Lucky Color & Toggleable White Noise Pairing -->
+        <div class="grid grid-cols-2 gap-2 text-left">
+          <div class="rounded-2xl bg-white/6 border border-white/10 px-3 py-2 flex items-center gap-2.5">
+            <span id="fortune-color-dot" class="w-5 h-5 rounded-full shrink-0 border border-white/30 shadow-inner" style="background:#38bdf8;"></span>
+            <div class="min-w-0">
+              <div class="text-[10px] text-white/45">今日灵感色</div>
+              <div id="fortune-color-name" class="text-xs font-semibold text-white truncate">晴空冰蓝</div>
+            </div>
+          </div>
+          <button id="btn-fortune-whitenoise" class="rounded-2xl bg-teal-500/15 hover:bg-teal-500/25 border border-teal-400/25 px-3 py-2 flex items-center gap-2 text-left transition active:scale-95">
+            <span id="fortune-wn-icon" class="text-base shrink-0">🌧️</span>
+            <div class="min-w-0">
+              <div id="fortune-wn-status" class="text-[10px] text-teal-200/75">点击叠加白噪音</div>
+              <div id="fortune-wn-name" class="text-xs font-semibold text-teal-100 truncate">窗边细雨</div>
+            </div>
+          </button>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex gap-2 pt-0.5">
+          <button id="btn-fortune-redraw" class="px-3.5 py-2.5 rounded-2xl bg-white/10 hover:bg-white/15 text-xs font-medium text-white/85 shrink-0">重抽</button>
+          <button id="btn-fortune-add-pl" class="px-3.5 py-2.5 rounded-2xl bg-white/10 hover:bg-white/15 text-xs font-medium text-sky-200 shrink-0">+ 歌单</button>
+          <button id="btn-fortune-play" class="flex-1 py-2.5 rounded-2xl bg-white text-zinc-950 text-xs font-semibold shadow-lg active:scale-95 transition">立即聆听</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1669,6 +1812,7 @@
           showWaves: true,
           waveStyle: 'bars', // 'bars' | 'wave' | 'pulse'
           playerEffect: 'sparks', // 'sparks' | 'snow' | 'fireflies' | 'petals' | 'off'
+          lyricStyle: 'focus', // 'focus' | 'karaoke' | 'neon' | 'bounce'
           lyricFontSize: 21,
           glassAlpha: 11,
           songCardAlpha: 11,
@@ -1691,6 +1835,7 @@
         playlistModalPendingTrackId: null,
         posterTheme: 'aurora',
         fortuneTrackId: null,
+        fortuneWnId: 'rain',
         pendingRelinkTrackId: null
       };
       const sessionFileMap = new Map();
@@ -1796,6 +1941,7 @@
             showWaves: state.diy.showWaves,
             waveStyle: state.diy.waveStyle,
             playerEffect: state.diy.playerEffect,
+            lyricStyle: state.diy.lyricStyle,
             lyricFontSize: state.diy.lyricFontSize,
             glassAlpha: state.diy.glassAlpha,
             songCardAlpha: state.diy.songCardAlpha,
@@ -1837,36 +1983,6 @@
         const m = Math.floor(sec / 60);
         const s = Math.floor(sec % 60);
         return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-      }
-
-      function generateDefaultCover(seedText = 'FM') {
-        let hash = 0;
-        for (let i = 0; i < seedText.length; i++) {
-          hash = (hash * 31 + seedText.charCodeAt(i)) >>> 0;
-        }
-        const palettes = [
-          ['#0ea5e9', '#6366f1', '#14b8a6'],
-          ['#f43f5e', '#8b5cf6', '#fb923c'],
-          ['#10b981', '#06b6d4', '#3b82f6'],
-          ['#eab308', '#ec4899', '#8b5cf6'],
-          ['#38bdf8', '#2dd4bf', '#818cf8']
-        ];
-        const [c1, c2, c3] = palettes[hash % palettes.length];
-        const label = (seedText.trim().slice(0, 2) || 'FM').toUpperCase();
-        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="320" viewBox="0 0 320 320">
-          <defs>
-            <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stop-color="${c1}"/>
-              <stop offset="55%" stop-color="${c2}"/>
-              <stop offset="100%" stop-color="${c3}"/>
-            </linearGradient>
-          </defs>
-          <rect width="320" height="320" fill="url(#g)"/>
-          <circle cx="245" cy="75" r="95" fill="rgba(255,255,255,0.14)"/>
-          <circle cx="75" cy="255" r="110" fill="rgba(0,0,0,0.18)"/>
-          <text x="160" y="176" text-anchor="middle" fill="rgba(255,255,255,0.92)" font-family="Inter, sans-serif" font-size="68" font-weight="700">${escapeHtml(label)}</text>
-        </svg>`;
-        return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
       }
 
       const DEFAULT_APP_COVER = '/icon-512.png';
@@ -2554,15 +2670,20 @@
         });
       }
 
+      window.__fengFolderScanning = (folderName) => {
+        showToast(`正在读取「${folderName || '所选文件夹'}」并保存访问书签...`);
+      };
+
       window.__fengPickedFolderFiles = async (payload) => {
         if (!payload || payload.cancelled) return;
+        const silent = Boolean(payload.silent);
         const folderName = payload.folderName || '所选文件夹';
         const files = Array.isArray(payload.files) ? payload.files : [];
         if (!files.length) {
-          showToast(`「${folderName}」内未发现音频文件`);
+          if (!silent) showToast(`「${folderName}」内未发现音频文件`);
           return;
         }
-        showToast(`正在从「${folderName}」导入 ${files.length} 首歌曲...`);
+        if (!silent) showToast(`正在从「${folderName}」导入 ${files.length} 首歌曲...`);
         let addedCount = 0;
         let skippedCount = 0;
 
@@ -2642,11 +2763,13 @@
         if (!state.currentTrackId && state.tracks.length) {
           await loadTrack(state.tracks[0].id, false);
         }
-        showToast(
-          addedCount > 0
-            ? `已从「${folderName}」新增 ${addedCount} 首，跳过 ${skippedCount} 首重复`
-            : `「${folderName}」扫描完成（无新增，跳过 ${skippedCount} 首重复）`
-        );
+        if (!silent || addedCount > 0) {
+          showToast(
+            addedCount > 0
+              ? `已从「${folderName}」新增 ${addedCount} 首，跳过 ${skippedCount} 首重复`
+              : `「${folderName}」扫描完成（无新增，跳过 ${skippedCount} 首重复）`
+          );
+        }
       };
 
       let isScanningNativeDocs = false;
@@ -2807,7 +2930,7 @@
       }
 
       // =========================================================================
-      // LRC SYNCED LYRICS PARSER & RENDERER
+      // LRC SYNCED LYRICS PARSER & RENDERER (4 PERSONALIZED MODES)
       // =========================================================================
       function parseLrcText(lrcStr) {
         if (!lrcStr || typeof lrcStr !== 'string') return [];
@@ -2847,8 +2970,54 @@
         };
       }
 
+      function buildBounceCharsHtml(text) {
+        const chars = Array.from(String(text || ''));
+        return chars
+          .map((ch, idx) => {
+            const delay = Math.min(idx * 34, 950);
+            const displayChar = ch === ' ' ? '&nbsp;' : escapeHtml(ch);
+            return `<span class="lyric-char" style="--char-delay:${delay}ms;">${displayChar}</span>`;
+          })
+          .join('');
+      }
+
+      function applyLyricStyleUI() {
+        const style = state.diy.lyricStyle || 'focus';
+        const labels = {
+          focus: '✨ 景深聚焦',
+          karaoke: '🌈 流光渐变',
+          neon: '💫 霓虹脉冲',
+          bounce: '⌨️ 逐字弹跳'
+        };
+        const shortNames = {
+          focus: '景深聚焦',
+          karaoke: '流光渐变',
+          neon: '霓虹脉冲',
+          bounce: '逐字弹跳'
+        };
+        const cycleBtn = $('btn-lyric-style-cycle');
+        if (cycleBtn) cycleBtn.textContent = labels[style] || '✨ 景深聚焦';
+        const statusEl = $('lyric-style-status');
+        if (statusEl) statusEl.textContent = shortNames[style] || '景深聚焦';
+
+        const container = $('lyrics-scroll-container');
+        if (container) {
+          container.classList.remove('lyrics-style-focus', 'lyrics-style-karaoke', 'lyrics-style-neon', 'lyrics-style-bounce');
+          container.classList.add(`lyrics-style-${style}`);
+        }
+
+        document.querySelectorAll('.lyric-style-opt-btn').forEach((btn) => {
+          const active = btn.dataset.lyricStyle === style;
+          btn.classList.toggle('bg-white/20', active);
+          btn.classList.toggle('text-white', active);
+          btn.classList.toggle('bg-white/8', !active);
+          btn.classList.toggle('text-white/75', !active);
+        });
+      }
+
       function renderLyricsList() {
         const container = $('lyrics-scroll-container');
+        applyLyricStyleUI();
         const rawTrack = state.tracks.find((t) => t.id === state.currentTrackId);
         const displayTrack = rawTrack ? getTrackDisplay(rawTrack) : null;
 
@@ -2872,7 +3041,7 @@
           container.innerHTML = `
             <div class="text-center py-12 space-y-3">
               <p class="text-base font-medium text-white/60">暂无同步歌词</p>
-              <p class="text-xs text-white/40">可导入同名 .lrc 文件，或点击右上角「编辑 LRC」添加</p>
+              <p class="text-xs text-white/40">可导入同名 .lrc 文件，或点击右上角「编辑」添加</p>
             </div>`;
           $('np-mini-lyric-1').textContent = '暂无同步歌词';
           $('np-mini-lyric-2').textContent = '轻触切换至滚动歌词视图';
@@ -2918,6 +3087,7 @@
         }
 
         if (activeIdx === state.activeLyricIdx && !forceScroll) return;
+        const prevIdx = state.activeLyricIdx;
         state.activeLyricIdx = activeIdx;
 
         const curLine = activeIdx >= 0 ? state.parsedLyrics[activeIdx].text : state.parsedLyrics[0]?.text || '';
@@ -2928,14 +3098,27 @@
         $('np-mini-lyric-1').textContent = curLine;
         $('np-mini-lyric-2').textContent = nextLine;
 
+        const isBounceMode = (state.diy.lyricStyle || 'focus') === 'bounce';
         const container = $('lyrics-scroll-container');
         const lineEls = container.querySelectorAll('.lyric-line');
         lineEls.forEach((el, idx) => {
           const dist = Math.abs(idx - activeIdx);
           el.classList.remove('lyric-active', 'lyric-near', 'lyric-far');
-          if (idx === activeIdx) el.classList.add('lyric-active');
-          else if (dist <= 2) el.classList.add('lyric-near');
-          else el.classList.add('lyric-far');
+          const rawText = state.parsedLyrics[idx]?.text || '';
+          if (idx === activeIdx) {
+            el.classList.add('lyric-active');
+            if (isBounceMode && (prevIdx !== activeIdx || forceScroll)) {
+              el.innerHTML = buildBounceCharsHtml(rawText);
+            } else if (!isBounceMode && el.querySelector('.lyric-char')) {
+              el.textContent = rawText;
+            }
+          } else {
+            if (el.querySelector('.lyric-char')) {
+              el.textContent = rawText;
+            }
+            if (dist <= 2) el.classList.add('lyric-near');
+            else el.classList.add('lyric-far');
+          }
         });
 
         if (activeIdx >= 0 && lineEls[activeIdx] && (!state.lyricsUserScrolling || forceScroll)) {
@@ -2955,14 +3138,14 @@
         const npPause = $('icon-np-pause');
 
         miniPlay.classList.toggle('hidden', playing);
+        miniPlay.classList.toggle('flex', !playing);
         miniPause.classList.toggle('hidden', !playing);
-        npPlay.classList.toggle('hidden', playing);
-        npPause.classList.toggle('hidden', !playing);
+        miniPause.classList.toggle('flex', playing);
 
-        miniPlay.style.display = playing ? 'none' : 'block';
-        miniPause.style.display = playing ? 'block' : 'none';
-        npPlay.style.display = playing ? 'none' : 'block';
-        npPause.style.display = playing ? 'block' : 'none';
+        npPlay.classList.toggle('hidden', playing);
+        npPlay.classList.toggle('flex', !playing);
+        npPause.classList.toggle('hidden', !playing);
+        npPause.classList.toggle('flex', playing);
 
         const progressWrap = $('np-progress-wrap');
         if (progressWrap) progressWrap.classList.toggle('is-playing', playing);
@@ -3797,7 +3980,6 @@
           });
         }
 
-        // Recent Plays List
         const recentContainer = $('stat-recent-tracks');
         const recentItems = (state.stats.recentPlays || [])
           .map((entry) => ({
@@ -3987,6 +4169,7 @@
         if (scanInput) scanInput.value = d.scanSubdir || '';
 
         applyPlaylistLayoutUI();
+        applyLyricStyleUI();
         updatePlayerEffectButtons();
       }
 
@@ -4522,11 +4705,13 @@
           stopWhiteNoiseChannel(chId);
         }
         renderWhiteNoiseGrid();
+        syncFortuneWhiteNoiseUI();
       }
 
       function stopAllWhiteNoise() {
         WN_CHANNELS.forEach((ch) => stopWhiteNoiseChannel(ch.id));
         renderWhiteNoiseGrid();
+        syncFortuneWhiteNoiseUI();
       }
 
       function renderWhiteNoiseGrid() {
@@ -4748,7 +4933,7 @@
       }
 
       // =========================================================================
-      // SHEETS, MODALS, POSTER GENERATOR & FORTUNE CARD
+      // SHEETS, MODALS, POSTER GENERATOR & DAILY MUSICAL FORTUNE
       // =========================================================================
       function closeAllBottomSheets() {
         modalBackdrop.classList.add('opacity-0', 'pointer-events-none');
@@ -5197,16 +5382,59 @@
       }
 
       // =========================================================================
-      // DAILY MUSICAL FORTUNE (今日音乐签)
+      // DAILY MUSICAL FORTUNE (今日音乐签 - 歌词签文 + 双向白噪音开关)
       // =========================================================================
-      const FORTUNE_QUOTES = [
+      const FORTUNE_FALLBACK_QUOTES = [
         '“旋律响起的那一刻，所有未说出口的心事都有了回音。”',
         '“把耳机戴上，世界便自动调成了你喜欢的频道。”',
         '“有些歌不需要刻意单曲循环，它本身就住在记忆里。”',
-        '“愿今天的每一段前奏，都恰好接住你的好心情。”',
-        '“夜色与副歌同样温柔，适合慢下来听完一整首。”',
-        '“好听的旋律像一阵晚风，吹散一整天的喧嚣。”'
+        '“夜色与副歌同样温柔，适合慢下来听完一整首。”'
       ];
+
+      const FORTUNE_COLORS = [
+        { name: '晴空冰蓝', hex: '#38bdf8' },
+        { name: '暮光紫罗兰', hex: '#a78bfa' },
+        { name: '薄荷海盐', hex: '#2dd4bf' },
+        { name: '琥珀晚霞', hex: '#fbbf24' },
+        { name: '玫瑰星云', hex: '#fb7185' }
+      ];
+
+      const FORTUNE_WN_PAIRS = [
+        { id: 'rain', icon: '🌧️', name: '窗边细雨' },
+        { id: 'vinyl', icon: '💿', name: '黑胶底噪' },
+        { id: 'ocean', icon: '🌊', name: '深夜海浪' },
+        { id: 'fireplace', icon: '🔥', name: '壁炉篝火' },
+        { id: 'wind', icon: '🌬️', name: '林间晚风' },
+        { id: 'cafe', icon: '☕', name: '咖啡馆微噪' }
+      ];
+
+      function extractTrackLyricQuote(track) {
+        const rawLrc = (track?.lrc || '').trim();
+        if (!rawLrc) return '';
+        const parsed = parseLrcText(rawLrc);
+        let lines = parsed.length
+          ? parsed.map((item) => item.text.trim())
+          : rawLrc
+              .split(/\r?\n/)
+              .map((l) => l.replace(/\[[^\]]*\]/g, '').trim());
+        lines = lines.filter((l) => l.length >= 4 && !/^(作词|作曲|编曲|混音|制作|词|曲|编|lrc|ti:|ar:|al:)/i.test(l));
+        if (!lines.length) return '';
+        const startIdx = lines.length > 3 ? Math.floor(Math.random() * (lines.length - 1)) : 0;
+        const excerpt = lines.slice(startIdx, startIdx + 2).join('\n');
+        return `“${excerpt}”`;
+      }
+
+      function syncFortuneWhiteNoiseUI() {
+        const btn = $('btn-fortune-whitenoise');
+        const statusEl = $('fortune-wn-status');
+        if (!btn || !statusEl) return;
+        const isActive = Boolean(wnState.channels[state.fortuneWnId]?.active);
+        statusEl.textContent = isActive ? '已叠加 (再点关闭)' : '点击叠加白噪音';
+        btn.classList.toggle('bg-teal-400/35', isActive);
+        btn.classList.toggle('border-teal-300/70', isActive);
+        btn.classList.toggle('bg-teal-500/15', !isActive);
+        btn.classList.toggle('border-teal-400/25', !isActive);
+      }
 
       function openDailyFortuneModal(forceRandom = false) {
         if (!state.tracks.length) {
@@ -5223,12 +5451,36 @@
           pickTrack = pool[Math.floor(Math.random() * pool.length)];
           state.fortuneTrackId = pickTrack.id;
         }
+
         const t = getTrackDisplay(pickTrack);
+        const now = new Date();
+        $('fortune-date-tag').textContent = `${now.getMonth() + 1}月${now.getDate()}日`;
         $('fortune-cover').src = t.cover;
         $('fortune-title').textContent = t.title;
         $('fortune-artist').textContent = `${t.artist} · ${t.album}`;
-        $('fortune-quote').textContent = FORTUNE_QUOTES[Math.floor(Math.random() * FORTUNE_QUOTES.length)];
+
+        const lyricExcerpt = extractTrackLyricQuote(t);
+        $('fortune-lyric-quote').textContent =
+          lyricExcerpt || FORTUNE_FALLBACK_QUOTES[Math.floor(Math.random() * FORTUNE_FALLBACK_QUOTES.length)];
+
+        const color = FORTUNE_COLORS[Math.floor(Math.random() * FORTUNE_COLORS.length)];
+        $('fortune-color-dot').style.backgroundColor = color.hex;
+        $('fortune-color-name').textContent = color.name;
+
+        const wnPair = FORTUNE_WN_PAIRS[Math.floor(Math.random() * FORTUNE_WN_PAIRS.length)];
+        state.fortuneWnId = wnPair.id;
+        $('fortune-wn-icon').textContent = wnPair.icon;
+        $('fortune-wn-name').textContent = wnPair.name;
+        syncFortuneWhiteNoiseUI();
+
         openCenteredModal('modal-fortune');
+
+        if (forceRandom) {
+          const card = $('fortune-card-inner');
+          card.classList.remove('fortune-card-flip');
+          void card.offsetWidth;
+          card.classList.add('fortune-card-flip');
+        }
       }
 
       // =========================================================================
@@ -5527,7 +5779,6 @@
       // BIND ALL UI EVENTS
       // =========================================================================
       function bindEvents() {
-        // 4-Tab Dock Navigation & Scroll-to-Collapse Behavior across All Main Tabs
         enforceNativeBridgeVisibility();
         document.querySelectorAll('.dock-nav-btn').forEach((btn) => {
           on(btn, 'click', () => {
@@ -5785,7 +6036,35 @@
           if (dy > 95) closeNowPlaying();
         });
 
-        // Lyrics View Controls
+        // Lyrics View Controls & Personalized Style Switcher
+        on('btn-lyric-style-cycle', async () => {
+          const order = ['focus', 'karaoke', 'neon', 'bounce'];
+          const names = {
+            focus: '景深聚焦',
+            karaoke: '流光渐变',
+            neon: '霓虹脉冲',
+            bounce: '逐字弹跳'
+          };
+          const cur = state.diy.lyricStyle || 'focus';
+          const next = order[(order.indexOf(cur) + 1) % order.length];
+          state.diy.lyricStyle = next;
+          applyLyricStyleUI();
+          state.activeLyricIdx = -1;
+          syncActiveLyric(true);
+          await saveAppState();
+          showToast(`歌词动效：${names[next]}`);
+        });
+        document.querySelectorAll('.lyric-style-opt-btn').forEach((btn) => {
+          on(btn, 'click', async () => {
+            state.diy.lyricStyle = btn.dataset.lyricStyle;
+            applyLyricStyleUI();
+            state.activeLyricIdx = -1;
+            syncActiveLyric(true);
+            await saveAppState();
+            showToast(`歌词动效已切换为：${btn.textContent.trim()}`);
+          });
+        });
+
         on('btn-lyric-offset-minus', async () => {
           if (!state.currentTrackId) return;
           const next = (state.lyricOffsets[state.currentTrackId] || 0) - 0.5;
@@ -6198,9 +6477,19 @@
           on(btn, 'click', () => generateLyricPoster(btn.dataset.posterTheme));
         });
 
-        // Daily Fortune Modal
+        // Daily Fortune Modal (With Toggleable White Noise)
         on('btn-fortune-close', closeAllBottomSheets);
         on('btn-fortune-redraw', () => openDailyFortuneModal(true));
+        on('btn-fortune-add-pl', () => {
+          if (state.fortuneTrackId) openPickPlaylistSheet(state.fortuneTrackId);
+        });
+        on('btn-fortune-whitenoise', () => {
+          const wnId = state.fortuneWnId || 'rain';
+          const wasActive = Boolean(wnState.channels[wnId]?.active);
+          toggleWhiteNoiseChannel(wnId, !wasActive);
+          const chName = WN_CHANNELS.find((c) => c.id === wnId)?.name || '白噪音';
+          showToast(!wasActive ? `已叠加白噪音：${chName}` : `已关闭白噪音：${chName}`);
+        });
         on('btn-fortune-play', async () => {
           const tid = state.fortuneTrackId;
           closeAllBottomSheets();
@@ -6521,7 +6810,6 @@
           }
         });
 
-        // Media Session Controls for iOS Lock Screen & Dynamic Island
         syncMediaSessionHandlers();
       }
 
@@ -6604,7 +6892,6 @@
             }
           }
 
-          // Optional static songs.json when deployed to a web host
           try {
             const resp = await fetch('./songs.json', { cache: 'no-cache' });
             if (resp.ok) {
@@ -6642,12 +6929,17 @@
             await scanNativeDocumentsFolder(false);
           }
 
+          if (hasNativeFolderPicker()) {
+            try {
+              window.webkit.messageHandlers.fengFolder.postMessage({ action: 'rescanBookmarks', silent: true });
+            } catch {}
+          }
+
           applyDiySettings();
           updatePlayModeButton();
           state.queue = getSortedTracks().map((t) => t.id);
           renderLibrary();
 
-          // Resume last played track & timestamp silently
           if (savedState?.lastTrackId && state.tracks.some((t) => t.id === savedState.lastTrackId)) {
             await loadTrack(savedState.lastTrackId, false, savedState.lastTime || 0);
           } else if (state.tracks.length) {
