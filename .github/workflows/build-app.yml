@@ -489,13 +489,20 @@ jobs:
               }
 
               func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+                  print("FENG_FOLDER_PICKER: documentPickerWasCancelled")
                   self.activeFolderPicker = nil
+                  self.reportFolderPickerStatus("iOS 已返回：用户取消了文件夹选择")
                   dispatchFolderPayloadToWeb(["cancelled": true])
               }
 
               func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+                  print("FENG_FOLDER_PICKER: didPickDocumentsAt count=\(urls.count)")
                   self.activeFolderPicker = nil
-                  guard let pickedURL = urls.first else { return }
+                  guard let pickedURL = urls.first else {
+                      self.reportFolderPickerStatus("iOS 已触发选择回调，但没有返回文件夹 URL")
+                      return
+                  }
+                  self.reportFolderPickerStatus("iOS 已收到文件夹：\(pickedURL.lastPathComponent)，正在读取…")
 
                   let granted = pickedURL.startAccessingSecurityScopedResource()
                   let canonicalKey = pickedURL.standardizedFileURL.path
