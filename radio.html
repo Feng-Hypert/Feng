@@ -2722,6 +2722,10 @@
 
       window.__fengPickedFolderFiles = async (payload) => {
         if (!payload || payload.cancelled) return;
+        if (payload.error) {
+          showToast(`读取文件夹失败：${payload.error}`);
+          if (!Array.isArray(payload.files) || !payload.files.length) return;
+        }
         const silent = Boolean(payload.silent);
         const folderName = payload.folderName || '所选文件夹';
         const files = Array.isArray(payload.files) ? payload.files : [];
