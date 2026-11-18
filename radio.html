@@ -914,7 +914,7 @@
               <span id="diy-wn-badge" class="hidden px-1.5 py-0.5 rounded-full bg-teal-400/25 text-[10px] tabular-nums">0</span>
             </button>
             <button id="btn-diy-import" class="liquid-pill py-2.5 px-3 rounded-2xl text-xs font-medium text-sky-200 flex items-center justify-center gap-1.5">
-              <span>+ 导入本地音乐</span>
+              <span>+ 添加我的音乐</span>
             </button>
             <button id="btn-diy-rescan" class="liquid-pill py-2.5 px-3 rounded-2xl text-xs font-medium text-emerald-200 flex items-center justify-center gap-1.5">
               <span>重扫内嵌元数据</span>
@@ -932,7 +932,7 @@
         <div class="liquid-panel rounded-3xl p-4 space-y-3">
           <div>
             <h2 class="text-sm font-semibold text-white">指定扫描文件夹与去重</h2>
-            <p class="text-xs text-white/50">可直接打开系统「文件」App 选择任意文件夹递归扫描，或指定 iOS「FENG MUSIC」下的子目录，重复歌曲自动跳过</p>
+            <p class="text-xs text-white/50">从「文件」App 或 iCloud Drive 选择文件夹原位读取音乐，不复制或修改原始文件，重复歌曲自动跳过</p>
           </div>
           <button id="btn-pick-native-folder" class="hidden w-full py-2.5 px-3.5 rounded-xl bg-sky-500/25 hover:bg-sky-500/35 border border-sky-400/30 text-xs font-semibold text-sky-200 flex items-center justify-center gap-1.5 transition">
             <span>打开“文件”选择文件夹扫描</span>
@@ -1217,20 +1217,12 @@
 
     <!-- ==================== TAB 2: PERSONALIZED LYRICS VIEW (歌词) ==================== -->
     <div id="np-panel-lyrics" class="hidden relative z-10 flex-1 flex flex-col overflow-hidden max-w-2xl w-full mx-auto" style="padding-bottom: calc(var(--safe-bottom) + 16px);">
-      <div class="px-5 py-2 flex items-center justify-between gap-2 shrink-0">
-        <div class="flex items-center gap-1.5">
-          <button id="btn-lyric-offset-minus" class="liquid-pill px-2.5 py-1 rounded-full text-[11px] font-medium text-white/85">-0.5s</button>
-          <span id="lyric-offset-badge" class="text-[11px] text-white/60 tabular-nums px-1">0.0s</span>
-          <button id="btn-lyric-offset-plus" class="liquid-pill px-2.5 py-1 rounded-full text-[11px] font-medium text-white/85">+0.5s</button>
-        </div>
-        <div class="flex items-center gap-1.5">
-          <button id="btn-lyric-style-cycle" class="liquid-pill px-2.5 py-1 rounded-full text-[11px] font-medium text-amber-200">✨ 景深聚焦</button>
-          <button id="btn-lyric-edit" class="liquid-pill px-2.5 py-1 rounded-full text-[11px] font-medium text-white/90">编辑</button>
-          <button id="btn-lyric-poster" class="liquid-pill px-2.5 py-1 rounded-full text-[11px] font-semibold text-sky-200 flex items-center gap-1">
-            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-            海报
-          </button>
-        </div>
+      <div class="px-5 py-2 flex items-center justify-end gap-2 shrink-0">
+        <button id="btn-lyric-style-cycle" class="liquid-pill px-3 py-1.5 rounded-full text-xs font-medium text-amber-200 whitespace-nowrap">✨ 景深聚焦</button>
+        <button id="btn-lyric-poster" class="liquid-pill px-3 py-1.5 rounded-full text-xs font-semibold text-sky-200 flex items-center gap-1 whitespace-nowrap">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          海报
+        </button>
       </div>
 
       <div id="lyrics-scroll-container" class="flex-1 overflow-y-auto no-scrollbar px-6 py-[35vh] space-y-5"></div>
@@ -1243,7 +1235,7 @@
   <div id="modal-backdrop" class="fixed inset-0 z-50 bg-black/65 backdrop-blur-xs opacity-0 pointer-events-none transition-opacity duration-250"></div>
 
   <!-- 1. Now Playing Top-Right Settings Drawer -->
-  <div id="sheet-np-settings" class="fixed left-0 right-0 bottom-0 z-50 liquid-sheet rounded-t-[32px] translate-y-full transition-transform duration-300 max-w-xl mx-auto p-5 space-y-4" style="padding-bottom: calc(var(--safe-bottom) + 22px);">
+  <div id="sheet-np-settings" class="fixed left-0 right-0 bottom-0 z-50 liquid-sheet rounded-t-[32px] translate-y-full transition-transform duration-300 max-w-xl mx-auto p-5 space-y-4 max-h-[85vh] overflow-y-auto no-scrollbar" style="padding-bottom: calc(var(--safe-bottom) + 22px);">
     <div class="w-10 h-1 rounded-full bg-white/25 mx-auto"></div>
     <div class="flex items-center justify-between">
       <h3 class="text-base font-bold text-white">播放设置与工具</h3>
@@ -1306,6 +1298,19 @@
         <button data-lyric-style="karaoke" class="lyric-style-opt-btn py-2 rounded-xl text-[11px] font-medium bg-white/8 text-white/75">流光渐变</button>
         <button data-lyric-style="neon" class="lyric-style-opt-btn py-2 rounded-xl text-[11px] font-medium bg-white/8 text-white/75">霓虹脉冲</button>
         <button data-lyric-style="bounce" class="lyric-style-opt-btn py-2 rounded-xl text-[11px] font-medium bg-white/8 text-white/75">逐字弹跳</button>
+      </div>
+    </div>
+
+    <!-- Lyric Timeline Offset Calibration -->
+    <div class="space-y-2">
+      <div class="flex justify-between text-xs text-white/70">
+        <span>歌词时间轴校正</span>
+        <span id="lyric-offset-badge" class="text-sky-300 font-medium tabular-nums">0.0s</span>
+      </div>
+      <div class="grid grid-cols-3 gap-2">
+        <button id="btn-lyric-offset-minus" class="py-2 rounded-xl text-xs font-medium bg-white/8 hover:bg-white/15 text-white/85 active:scale-95 transition">延后 -0.5s</button>
+        <button id="btn-lyric-offset-reset" class="py-2 rounded-xl text-xs font-medium bg-white/8 hover:bg-white/15 text-white/70 active:scale-95 transition">重置 0.0s</button>
+        <button id="btn-lyric-offset-plus" class="py-2 rounded-xl text-xs font-medium bg-white/8 hover:bg-white/15 text-white/85 active:scale-95 transition">提前 +0.5s</button>
       </div>
     </div>
 
@@ -1439,10 +1444,13 @@
   <div id="modal-edit-lrc" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-4" style="padding-top: calc(var(--safe-top) + 16px); padding-bottom: calc(var(--safe-bottom) + 16px);">
     <div class="liquid-sheet rounded-3xl w-full max-w-md p-5 flex flex-col gap-3 max-h-[82vh] border border-white/20">
       <div class="flex items-center justify-between">
-        <h3 class="text-base font-bold text-white">编辑 LRC 歌词</h3>
-        <button id="btn-edit-lrc-cancel" class="text-xs text-white/65 hover:text-white px-2.5 py-1 rounded-full bg-white/10">关闭</button>
+        <div class="min-w-0">
+          <h3 class="text-base font-bold text-white">编辑 LRC 歌词</h3>
+          <p id="edit-lrc-track-label" class="text-[11px] text-white/50 truncate"></p>
+        </div>
+        <button id="btn-edit-lrc-cancel" class="text-xs text-white/65 hover:text-white px-2.5 py-1 rounded-full bg-white/10 shrink-0">关闭</button>
       </div>
-      <textarea id="textarea-edit-lrc" rows="10" placeholder="[00:12.34] 在此粘贴或修改 LRC 歌词..." class="w-full flex-1 p-3.5 rounded-2xl bg-white/8 border border-white/15 text-xs leading-relaxed text-white placeholder-white/35 outline-none resize-none font-mono"></textarea>
+      <textarea id="textarea-edit-lrc" rows="12" placeholder="[00:12.34] 在此粘贴或修改 LRC 歌词..." class="w-full flex-1 min-h-[220px] p-3.5 rounded-2xl bg-white/10 border border-white/20 text-xs leading-relaxed text-white placeholder-white/40 outline-none resize-none font-mono"></textarea>
       <button id="btn-edit-lrc-save" class="w-full py-3 rounded-2xl bg-sky-500 text-sm font-semibold text-zinc-950">保存歌词</button>
     </div>
   </div>
@@ -1619,6 +1627,40 @@
         <button id="btn-edit-pl-cancel" class="flex-1 py-2.5 rounded-2xl bg-white/10 text-sm font-medium text-white/80">取消</button>
         <button id="btn-edit-pl-save" class="flex-1 py-2.5 rounded-2xl bg-sky-500 text-sm font-semibold text-zinc-950">保存</button>
       </div>
+    </div>
+  </div>
+
+  <!-- 14. Add My Music Source Sheet (Salt Player Style: Folder vs Files) -->
+  <div id="sheet-add-music" class="fixed left-0 right-0 bottom-0 z-50 liquid-sheet rounded-t-[32px] translate-y-full transition-transform duration-300 max-w-xl mx-auto p-5 space-y-4" style="padding-bottom: calc(var(--safe-bottom) + 22px);">
+    <div class="w-10 h-1 rounded-full bg-white/25 mx-auto"></div>
+    <div class="flex items-center justify-between">
+      <div>
+        <h3 class="text-lg font-bold text-white">添加我的音乐</h3>
+        <p class="text-xs text-white/55 mt-0.5">选择一种添加方式 · 不会复制或修改原始文件</p>
+      </div>
+      <button class="btn-close-sheets w-8 h-8 rounded-full bg-white/12 flex items-center justify-center text-white/80 text-xs">✕</button>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3 pt-1">
+      <button id="btn-add-source-folder" class="liquid-panel rounded-3xl p-4 text-left space-y-3 hover:bg-white/15 active:scale-[0.98] transition border border-sky-400/25">
+        <div class="w-11 h-11 rounded-2xl bg-sky-500/25 border border-sky-400/35 flex items-center justify-center text-sky-300">
+          <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
+        </div>
+        <div class="space-y-1">
+          <div class="text-sm font-bold text-white">文件夹</div>
+          <p class="text-[11px] text-white/55 leading-relaxed">从文件 App 或 iCloud Drive 选择音乐文件夹并持久化关联</p>
+        </div>
+      </button>
+
+      <button id="btn-add-source-files" class="liquid-panel rounded-3xl p-4 text-left space-y-3 hover:bg-white/15 active:scale-[0.98] transition">
+        <div class="w-11 h-11 rounded-2xl bg-emerald-500/25 border border-emerald-400/35 flex items-center justify-center text-emerald-300">
+          <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z"/></svg>
+        </div>
+        <div class="space-y-1">
+          <div class="text-sm font-bold text-white">单曲 / 歌词</div>
+          <p class="text-[11px] text-white/55 leading-relaxed">从「文件」批量选取音频文件（MP3 / FLAC / M4A）与 .lrc</p>
+        </div>
+      </button>
     </div>
   </div>
 
@@ -3041,7 +3083,7 @@
           container.innerHTML = `
             <div class="text-center py-12 space-y-3">
               <p class="text-base font-medium text-white/60">暂无同步歌词</p>
-              <p class="text-xs text-white/40">可导入同名 .lrc 文件，或点击右上角「编辑」添加</p>
+              <p class="text-xs text-white/40">可导入同名 .lrc 文件，或点击右上角设置中的「编辑 LRC 歌词」添加</p>
             </div>`;
           $('np-mini-lyric-1').textContent = '暂无同步歌词';
           $('np-mini-lyric-2').textContent = '轻触切换至滚动歌词视图';
@@ -3598,11 +3640,11 @@
               </div>
               <div class="space-y-1">
                 <h3 class="text-base font-bold text-white">曲库空空如也</h3>
-                <p class="text-xs text-white/55">支持批量导入本地 MP3 / FLAC / M4A 与同名 .lrc 歌词，自动识别内嵌封面与歌词</p>
+                <p class="text-xs text-white/55">支持选择整个音乐文件夹持久关联，或批量导入本地 MP3 / FLAC / M4A 与同名 .lrc 歌词</p>
               </div>
-              <button id="btn-empty-import" class="px-5 py-2.5 rounded-full bg-white text-zinc-950 text-xs font-semibold shadow-lg active:scale-95 transition">立即导入音乐</button>
+              <button id="btn-empty-import" class="px-5 py-2.5 rounded-full bg-white text-zinc-950 text-xs font-semibold shadow-lg active:scale-95 transition">添加我的音乐</button>
             </div>`;
-          on('btn-empty-import', () => triggerMusicImport());
+          on('btn-empty-import', () => openAddMusicSheet());
           return;
         }
 
@@ -4937,7 +4979,7 @@
       // =========================================================================
       function closeAllBottomSheets() {
         modalBackdrop.classList.add('opacity-0', 'pointer-events-none');
-        ['sheet-np-settings', 'sheet-track-actions', 'sheet-queue', 'sheet-pick-playlist', 'sheet-playlist-layout'].forEach((id) => {
+        ['sheet-np-settings', 'sheet-track-actions', 'sheet-queue', 'sheet-pick-playlist', 'sheet-playlist-layout', 'sheet-add-music'].forEach((id) => {
           const el = $(id);
           if (el) el.classList.add('translate-y-full');
         });
@@ -5179,12 +5221,20 @@
       }
 
       function openEditLrcModal(trackId) {
-        const raw = state.tracks.find((t) => t.id === trackId);
-        if (!raw) return;
-        state.actionTargetTrackId = trackId;
+        const targetId = trackId || state.currentTrackId;
+        const raw = state.tracks.find((t) => t.id === targetId);
+        if (!raw) return showToast('未找到当前歌曲');
+        state.actionTargetTrackId = targetId;
         const t = getTrackDisplay(raw);
-        $('textarea-edit-lrc').value = t.lrc || '';
+        const lrcContent = state.customLyrics[targetId] !== undefined ? state.customLyrics[targetId] : (raw.lrc || t.lrc || '');
+        const labelEl = $('edit-lrc-track-label');
+        if (labelEl) labelEl.textContent = `${t.title} · ${t.artist}`;
         openCenteredModal('modal-edit-lrc');
+        const ta = $('textarea-edit-lrc');
+        if (ta) {
+          ta.value = lrcContent;
+          ta.scrollTop = 0;
+        }
       }
 
       async function handleDeleteTrackById(trackId) {
@@ -5484,8 +5534,46 @@
       }
 
       // =========================================================================
-      // IMPORT & RE-SCAN EMBEDDED METADATA
+      // ADD MUSIC SHEET & IMPORT / RE-SCAN EMBEDDED METADATA
       // =========================================================================
+      function openAddMusicSheet() {
+        openBottomSheet('sheet-add-music');
+      }
+
+      async function triggerFolderImportAction() {
+        closeAllBottomSheets();
+        if (hasNativeFolderPicker()) {
+          try {
+            window.webkit.messageHandlers.fengFolder.postMessage({ action: 'pickFolder' });
+          } catch {}
+          return;
+        }
+        if (typeof window.showDirectoryPicker === 'function') {
+          try {
+            const dirHandle = await window.showDirectoryPicker({ mode: 'read' });
+            const entries = [];
+            const walkWebDir = async (dh, depth = 0) => {
+              if (depth > 4) return;
+              for await (const [, handle] of dh.entries()) {
+                if (handle.kind === 'directory') {
+                  await walkWebDir(handle, depth + 1);
+                } else if (handle.kind === 'file') {
+                  const file = await handle.getFile();
+                  entries.push({ file, fileHandle: handle });
+                }
+              }
+            };
+            await walkWebDir(dirHandle, 0);
+            if (entries.length) await handleFileImport(entries);
+            else showToast('所选文件夹内未发现音频文件');
+          } catch (err) {
+            if (!err || err.name !== 'AbortError') showToast('无法读取所选文件夹');
+          }
+          return;
+        }
+        $('file-import-input').click();
+      }
+
       async function triggerMusicImport() {
         if (typeof window.showOpenFilePicker === 'function') {
           try {
@@ -5846,12 +5934,17 @@
         document.querySelectorAll('.lib-tab-btn').forEach((btn) => {
           on(btn, 'click', () => setLibraryTab(btn.dataset.libTab));
         });
-        on('btn-lib-import', () => triggerMusicImport());
+        on('btn-lib-import', () => openAddMusicSheet());
+        on('btn-add-source-folder', () => triggerFolderImportAction());
+        on('btn-add-source-files', () => {
+          closeAllBottomSheets();
+          triggerMusicImport();
+        });
 
         // DIY Tools & White Noise Entry
         on('btn-diy-open-whitenoise', () => switchView('whitenoise'));
         on('btn-wn-back', () => switchView('diy'));
-        on('btn-diy-import', () => triggerMusicImport());
+        on('btn-diy-import', () => openAddMusicSheet());
         on('btn-diy-native-scan', async () => {
           await scanNativeDocumentsFolder(true);
         });
@@ -6072,6 +6165,15 @@
           $('lyric-offset-badge').textContent = `${next >= 0 ? '+' : ''}${next.toFixed(1)}s`;
           syncActiveLyric(true);
           await saveAppState();
+          showToast(`歌词时间轴：${next >= 0 ? '+' : ''}${next.toFixed(1)}s`);
+        });
+        on('btn-lyric-offset-reset', async () => {
+          if (!state.currentTrackId) return;
+          state.lyricOffsets[state.currentTrackId] = 0;
+          $('lyric-offset-badge').textContent = '0.0s';
+          syncActiveLyric(true);
+          await saveAppState();
+          showToast('歌词时间轴已重置为 0.0s');
         });
         on('btn-lyric-offset-plus', async () => {
           if (!state.currentTrackId) return;
@@ -6080,10 +6182,7 @@
           $('lyric-offset-badge').textContent = `${next >= 0 ? '+' : ''}${next.toFixed(1)}s`;
           syncActiveLyric(true);
           await saveAppState();
-        });
-        on('btn-lyric-edit', () => {
-          if (!state.currentTrackId) return;
-          openEditLrcModal(state.currentTrackId);
+          showToast(`歌词时间轴：+${next.toFixed(1)}s`);
         });
         on('btn-lyric-poster', () => generateLyricPoster(state.posterTheme));
 
@@ -6459,13 +6558,19 @@
         // Edit LRC Modal
         on('btn-edit-lrc-cancel', closeAllBottomSheets);
         on('btn-edit-lrc-save', async () => {
-          const tid = state.actionTargetTrackId;
+          const tid = state.actionTargetTrackId || state.currentTrackId;
           if (!tid) return;
-          state.customLyrics[tid] = $('textarea-edit-lrc').value;
+          const newLrc = $('textarea-edit-lrc').value;
+          state.customLyrics[tid] = newLrc;
+          const rawTrk = state.tracks.find((t) => t.id === tid);
+          if (rawTrk) {
+            rawTrk.lrc = newLrc;
+            if (!rawTrk.isRemote) await dbPut('tracks', toStorableTrackRecord(rawTrk));
+          }
           await saveAppState();
           closeAllBottomSheets();
           if (state.currentTrackId === tid) {
-            state.parsedLyrics = parseLrcText(state.customLyrics[tid]);
+            state.parsedLyrics = parseLrcText(newLrc);
             renderLyricsList();
           }
           showToast('LRC 歌词已保存');
@@ -6674,41 +6779,15 @@
           if (nativePickBtn) nativePickBtn.classList.remove('hidden');
         }
         on('btn-pick-native-folder', () => {
-          if (!hasNativeFolderPicker()) {
-            showToast('请在原生 iOS App 中使用此功能');
-            return;
-          }
-          try {
-            window.webkit.messageHandlers.fengFolder.postMessage({ action: 'pickFolder' });
-          } catch {}
+          triggerFolderImportAction();
         });
 
         if (typeof window.showDirectoryPicker === 'function') {
           const webFolderBtn = $('btn-pick-web-folder');
           if (webFolderBtn) webFolderBtn.classList.remove('hidden');
         }
-        on('btn-pick-web-folder', async () => {
-          if (typeof window.showDirectoryPicker !== 'function') return;
-          try {
-            const dirHandle = await window.showDirectoryPicker({ mode: 'read' });
-            const entries = [];
-            const walkWebDir = async (dh, depth = 0) => {
-              if (depth > 4) return;
-              for await (const [, handle] of dh.entries()) {
-                if (handle.kind === 'directory') {
-                  await walkWebDir(handle, depth + 1);
-                } else if (handle.kind === 'file') {
-                  const file = await handle.getFile();
-                  entries.push({ file, fileHandle: handle });
-                }
-              }
-            };
-            await walkWebDir(dirHandle, 0);
-            if (entries.length) await handleFileImport(entries);
-            else showToast('所选文件夹内未发现音频文件');
-          } catch (err) {
-            if (!err || err.name !== 'AbortError') showToast('无法读取所选文件夹');
-          }
+        on('btn-pick-web-folder', () => {
+          triggerFolderImportAction();
         });
 
         // Playlist Card Layout / Size / Shape Controls
