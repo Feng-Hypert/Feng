@@ -594,9 +594,9 @@
           <p id="library-subtitle" class="text-xs text-white/55 truncate">FENG MUSIC · 共 0 首歌曲</p>
         </div>
         <div class="flex items-center gap-2 shrink-0">
-          <button id="btn-lib-import" class="liquid-pill px-3 py-2 rounded-full text-xs font-medium text-sky-200 flex items-center gap-1 shrink-0">
-            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-            <span>导入</span>
+          <button id="btn-lib-multiselect" class="liquid-pill px-3 py-2 rounded-full text-xs font-medium text-sky-200 flex items-center gap-1.5 shrink-0">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span>多选</span>
           </button>
           <button id="btn-open-search" class="liquid-pill px-3.5 py-2 rounded-full text-xs font-medium text-white flex items-center gap-1.5 shrink-0">
             <svg class="w-4 h-4 text-white/85" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
@@ -607,6 +607,21 @@
           </button>
         </div>
       </header>
+
+      <!-- Multi-Select Batch Action Bar -->
+      <div id="library-multiselect-bar" class="hidden px-4 sm:px-6 pb-2.5 shrink-0">
+        <div class="liquid-panel rounded-2xl px-3.5 py-2 flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <button id="btn-ms-select-all" class="px-2.5 py-1 rounded-lg bg-white/12 hover:bg-white/20 text-xs font-medium text-white shrink-0">全选</button>
+            <span id="ms-selected-count" class="text-xs font-medium text-sky-300 tabular-nums truncate">已选 0 首</span>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button id="btn-ms-add-playlist" class="px-2.5 py-1 rounded-lg bg-sky-500/25 hover:bg-sky-500/35 text-xs font-medium text-sky-200">加歌单</button>
+            <button id="btn-ms-delete" class="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-xs font-medium text-rose-300">删除</button>
+            <button id="btn-ms-cancel" class="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/18 text-xs font-medium text-white/80">完成</button>
+          </div>
+        </div>
+      </div>
 
       <!-- Filter Bar: 全部 | 专辑 | 歌手 + Sort -->
       <div class="px-4 sm:px-6 pb-2.5 flex items-center justify-between gap-2 shrink-0">
@@ -701,24 +716,44 @@
           </div>
         </div>
         <div class="flex items-center gap-1.5 shrink-0">
-          <button id="btn-playlist-rename" class="w-9 h-9 rounded-full liquid-pill flex items-center justify-center text-white/85" title="重命名歌单">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+          <button id="btn-playlist-multiselect" class="liquid-pill px-3 py-2 rounded-full text-xs font-medium text-sky-200 flex items-center gap-1.5 shrink-0">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span>多选</span>
           </button>
-          <button id="btn-playlist-delete" class="w-9 h-9 rounded-full liquid-pill flex items-center justify-center text-rose-300" title="删除歌单">
+          <button id="btn-playlist-delete" class="w-9 h-9 rounded-full liquid-pill flex items-center justify-center text-rose-300 transition-all" title="删除歌单">
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
           </button>
         </div>
       </header>
 
-      <div class="px-4 sm:px-6 pb-3 flex items-center gap-2 shrink-0">
-        <button id="btn-playlist-play-all" class="liquid-pill px-4 py-2 rounded-full text-xs font-medium text-white flex items-center gap-1.5">
+      <div id="playlist-quick-actions" class="px-4 sm:px-6 pb-3 flex items-center gap-1.5 sm:gap-2 shrink-0 overflow-x-auto no-scrollbar">
+        <button id="btn-playlist-play-all" class="liquid-pill px-3 py-1.5 rounded-full text-[11px] font-medium text-white flex items-center gap-1 shrink-0">
           <svg class="w-3.5 h-3.5 text-sky-300" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-          播放歌单
+          播放全部
         </button>
-        <button id="btn-playlist-add-songs" class="liquid-pill px-4 py-2 rounded-full text-xs font-medium text-white flex items-center gap-1.5">
+        <button id="btn-playlist-shuffle-all" class="liquid-pill px-3 py-1.5 rounded-full text-[11px] font-medium text-white flex items-center gap-1 shrink-0">
+          <svg class="w-3.5 h-3.5 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+          随心漫步
+        </button>
+        <button id="btn-playlist-add-songs" class="liquid-pill px-3 py-1.5 rounded-full text-[11px] font-medium text-white flex items-center gap-1 shrink-0">
           <svg class="w-3.5 h-3.5 text-emerald-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
           添加歌曲
         </button>
+      </div>
+
+      <!-- Playlist Multi-Select Batch Action Bar -->
+      <div id="playlist-multiselect-bar" class="hidden px-4 sm:px-6 pb-2.5 shrink-0">
+        <div class="liquid-panel rounded-2xl px-3.5 py-2 flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <button id="btn-pl-ms-select-all" class="px-2.5 py-1 rounded-lg bg-white/12 hover:bg-white/20 text-xs font-medium text-white shrink-0">全选</button>
+            <span id="pl-ms-selected-count" class="text-xs font-medium text-sky-300 tabular-nums truncate">已选 0 首</span>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button id="btn-pl-ms-add-playlist" class="px-2.5 py-1 rounded-lg bg-sky-500/25 hover:bg-sky-500/35 text-xs font-medium text-sky-200">加歌单</button>
+            <button id="btn-pl-ms-remove" class="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-xs font-medium text-rose-300">移出</button>
+            <button id="btn-pl-ms-cancel" class="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/18 text-xs font-medium text-white/80">完成</button>
+          </div>
+        </div>
       </div>
 
       <div id="playlist-detail-tracks" class="flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 space-y-2"></div>
@@ -927,22 +962,6 @@
             <span>立即扫描 iOS FENG MUSIC 文件夹</span>
           </button>
         </div>
-
-        <!-- 6. Local Scan Folder & Deduplication Settings -->
-        <div class="liquid-panel rounded-3xl p-4 space-y-3">
-          <div>
-            <h2 class="text-sm font-semibold text-white">指定扫描文件夹与去重</h2>
-            <p class="text-xs text-white/50">从「文件」App 或 iCloud Drive 选择文件夹原位读取音乐，不复制或修改原始文件，重复歌曲自动跳过</p>
-          </div>
-          <button id="btn-pick-native-folder" class="hidden w-full py-2.5 px-3.5 rounded-xl bg-sky-500/25 hover:bg-sky-500/35 border border-sky-400/30 text-xs font-semibold text-sky-200 flex items-center justify-center gap-1.5 transition">
-            <span>打开“文件”选择文件夹扫描</span>
-          </button>
-          <div class="flex items-center gap-2">
-            <input id="diy-scan-subdir" type="text" placeholder="或填入 FENG MUSIC 子目录，如：Music" class="flex-1 px-3.5 py-2 rounded-xl bg-white/10 border border-white/15 text-xs text-white placeholder-white/40 outline-none focus:border-sky-400" />
-            <button id="btn-diy-save-scan-dir" class="liquid-pill px-3.5 py-2 rounded-xl text-xs font-semibold text-white shrink-0">保存并扫描</button>
-          </div>
-          <button id="btn-pick-web-folder" class="hidden w-full py-2 px-3.5 rounded-xl bg-white/8 hover:bg-white/14 text-xs font-medium text-sky-200 transition">选择本地文件夹导入（桌面/安卓浏览器）</button>
-        </div>
       </div>
     </section>
 
@@ -1014,7 +1033,7 @@
             <img id="mini-cover" src="" alt="" class="w-11 h-11 rounded-2xl object-cover bg-white/10 shrink-0 shadow-md" />
             <div class="min-w-0 flex-1">
               <div id="mini-title" class="text-sm font-semibold text-white truncate">FENG MUSIC</div>
-              <div id="mini-artist" class="text-xs text-white/60 truncate">点击右上角「导入」添加本地歌曲</div>
+              <div id="mini-artist" class="text-xs text-white/60 truncate">私人纯享无损音乐空间</div>
             </div>
           </div>
           <div class="flex items-center gap-1.5 shrink-0">
@@ -1831,6 +1850,10 @@
         sortMode: 'default',
         activeView: 'library',
         libTab: 'songs',
+        multiSelectMode: false,
+        selectedTrackIds: new Set(),
+        plMultiSelectMode: false,
+        plSelectedTrackIds: new Set(),
         dockCollapsed: false,
         previousView: 'library',
         activePlaylistId: null,
@@ -1873,8 +1896,11 @@
         actionTargetTrackId: null,
         deleteConfirmTrackId: null,
         deleteConfirmTimer: null,
+        deletePlaylistConfirmId: null,
+        deletePlaylistConfirmTimer: null,
         playlistModalMode: 'create',
         playlistModalPendingTrackId: null,
+        playlistModalPendingTrackIds: null,
         posterTheme: 'aurora',
         fortuneTrackId: null,
         fortuneWnId: 'rain',
@@ -2693,7 +2719,7 @@
         return String(str || '').trim().toLowerCase().replace(/\s+/g, ' ');
       }
 
-      function findDuplicateTrack({ nativePath = '', nativeUri = '', fileName = '', title = '', artist = '' }) {
+      function findDuplicateTrack({ nativePath = '', nativeUri = '', relKey = '', fileName = '', title = '', artist = '' }) {
         const baseFileName = fileName ? fileName.split('/').pop() : '';
         const nTitle = normTrackKey(title);
         const nArtist = normTrackKey(artist);
@@ -2701,6 +2727,7 @@
 
         return state.tracks.find((t) => {
           if (t.isRemote) return false;
+          if (relKey && t.relKey && t.relKey === relKey) return true;
           if (nativeUri && t.nativeUri && t.nativeUri === nativeUri) return true;
           if (nativePath && t.isNativeDoc && t.nativePath === nativePath) return true;
           if (baseFileName && t.fileName && t.fileName.split('/').pop() === baseFileName) return true;
@@ -2712,20 +2739,88 @@
         });
       }
 
-      window.__fengFolderPickerStatus = (message) => {
-        if (message) showToast(String(message));
+      window.__fengBoundFolders = (payload) => {
+        const container = $('bound-folders-container');
+        if (!container) return;
+        const folders = Array.isArray(payload?.folders) ? payload.folders : [];
+        if (!folders.length) {
+          container.classList.add('hidden');
+          container.innerHTML = '';
+          return;
+        }
+        container.classList.remove('hidden');
+        container.innerHTML = folders
+          .map(
+            (f) => `
+            <div class="rounded-2xl bg-white/8 border border-white/12 px-3.5 py-2.5 flex items-center justify-between gap-2">
+              <div class="min-w-0 flex-1">
+                <div class="text-xs font-semibold text-white truncate">📁 ${escapeHtml(f.name || '已关联文件夹')}</div>
+                <div class="text-[10px] ${f.active ? 'text-emerald-300' : 'text-amber-300'} mt-0.5">${f.active ? '已持久化书签 · 重启自动同步' : '授权已过期，请重新选取'}</div>
+              </div>
+              <div class="flex items-center gap-1.5 shrink-0">
+                <button data-rescan-bm="1" class="px-2.5 py-1 rounded-lg bg-sky-500/20 text-[11px] font-medium text-sky-200">重扫</button>
+                <button data-remove-bm="${escapeHtml(f.key)}" class="px-2 py-1 rounded-lg bg-rose-500/15 text-[11px] text-rose-300">移除</button>
+              </div>
+            </div>`
+          )
+          .join('');
+
+        container.querySelectorAll('[data-rescan-bm]').forEach((btn) => {
+          on(btn, 'click', () => {
+            if (hasNativeFolderPicker()) {
+              window.webkit.messageHandlers.fengFolder.postMessage({ action: 'rescanBookmarks', silent: false });
+            }
+          });
+        });
+        container.querySelectorAll('[data-remove-bm]').forEach((btn) => {
+          on(btn, 'click', () => {
+            if (hasNativeFolderPicker()) {
+              window.webkit.messageHandlers.fengFolder.postMessage({ action: 'removeBookmark', key: btn.dataset.removeBm });
+              showToast('已移除该文件夹关联');
+            }
+          });
+        });
       };
 
-      window.__fengFolderScanning = (folderName) => {
-        showToast(`正在读取「${folderName || '所选文件夹'}」并保存访问书签...`);
+      window.__fengFolderScanning = (payload) => {
+        const folderName = typeof payload === 'string' ? payload : (payload?.folderName || '所选文件夹');
+        showToast(`正在读取「${folderName}」并保存访问书签...`);
+      };
+
+      window.__fengPatchTrackCovers = async (payload) => {
+        const items = Array.isArray(payload?.items) ? payload.items : [];
+        if (!items.length) return;
+        let changed = false;
+        for (const item of items) {
+          if (!item.cover) continue;
+          const trk = state.tracks.find(
+            (t) => (item.relKey && t.relKey === item.relKey) || (item.uri && t.nativeUri === item.uri)
+          );
+          if (trk && trk.cover !== item.cover) {
+            trk.cover = item.cover;
+            trk.hasEmbeddedCover = true;
+            await dbPut('tracks', toStorableTrackRecord(trk));
+            changed = true;
+            if (trk.id === state.currentTrackId) {
+              const disp = getTrackDisplay(trk);
+              $('mini-cover').src = disp.cover;
+              $('np-cover-img-rounded').src = disp.cover;
+              $('np-cover-img-vinyl').src = disp.cover;
+              $('np-cover-img-disc').src = disp.cover;
+              $('np-cover-ambient-glow').src = disp.cover;
+              updateAuroraColorsFromCover(disp.cover);
+            }
+          }
+        }
+        if (changed) {
+          renderLibrary();
+          if (state.activeView === 'albums') renderAlbums();
+          if (state.activeView === 'artists') renderArtists();
+        }
       };
 
       window.__fengPickedFolderFiles = async (payload) => {
         if (!payload || payload.cancelled) return;
-        if (payload.error) {
-          showToast(`读取文件夹失败：${payload.error}`);
-          if (!Array.isArray(payload.files) || !payload.files.length) return;
-        }
         const silent = Boolean(payload.silent);
         const folderName = payload.folderName || '所选文件夹';
         const files = Array.isArray(payload.files) ? payload.files : [];
@@ -2733,23 +2828,41 @@
           if (!silent) showToast(`「${folderName}」内未发现音频文件`);
           return;
         }
-        if (!silent) showToast(`正在从「${folderName}」导入 ${files.length} 首歌曲...`);
         let addedCount = 0;
+        let updatedUriCount = 0;
         let skippedCount = 0;
 
         for (const item of files) {
           const fileName = item.name || '未知曲目';
           const fileUri = item.uri || '';
+          const relKey = item.relKey || `${folderName}/${fileName}`;
           const externalLrc = item.lrc || '';
+          const nativeTitle = (item.title || '').trim();
+          const nativeArtist = (item.artist || '').trim();
+          const nativeAlbum = (item.album || '').trim();
           if (!fileUri) continue;
 
-          let existing = findDuplicateTrack({ nativeUri: fileUri, fileName });
+          const fallbackTitle = fileName.replace(/\.[^/.]+$/, '').trim() || '未知曲目';
+          const resolvedTitle = nativeTitle || fallbackTitle;
+          const resolvedArtist = nativeArtist || '未知歌手';
+          const resolvedAlbum = nativeAlbum || '未知专辑';
+
+          let existing = findDuplicateTrack({
+            relKey,
+            nativeUri: fileUri,
+            fileName,
+            title: resolvedTitle,
+            artist: resolvedArtist
+          });
+
           if (existing) {
             let dirty = false;
-            if (existing.nativeUri !== fileUri) {
+            if (existing.nativeUri !== fileUri || existing.relKey !== relKey) {
               existing.nativeUri = fileUri;
+              existing.relKey = relKey;
               existing.isNativeDoc = true;
               dirty = true;
+              updatedUriCount++;
             }
             if (externalLrc && !existing.lrc) {
               existing.lrc = externalLrc;
@@ -2760,52 +2873,25 @@
             continue;
           }
 
-          let meta = {
-            title: fileName.replace(/\.[^/.]+$/, '').trim() || '未知曲目',
-            artist: '未知歌手',
-            album: '未知专辑',
-            lrc: '',
-            cover: ''
-          };
-          try {
-            const webUrl = window.Capacitor ? window.Capacitor.convertFileSrc(fileUri) : fileUri;
-            const resp = await fetch(webUrl, { headers: { Range: 'bytes=0-2097151' } });
-            if (resp.ok || resp.status === 206) {
-              const buf = await resp.arrayBuffer();
-              const sliceBuf = buf.byteLength > 3 * 1024 * 1024 ? buf.slice(0, 3 * 1024 * 1024) : buf;
-              meta = await extractEmbeddedMetadata(sliceBuf, fileName);
-            }
-          } catch {}
-
-          existing = findDuplicateTrack({ nativeUri: fileUri, fileName, title: meta.title, artist: meta.artist });
-          if (existing) {
-            if (externalLrc && !existing.lrc) {
-              existing.lrc = externalLrc;
-              await dbPut('tracks', toStorableTrackRecord(existing));
-            }
-            skippedCount++;
-            continue;
-          }
-
           const trk = {
-            id: `pick_${hashNativeKey(fileUri)}_${fileName.length}`,
+            id: `pick_${hashNativeKey(relKey)}_${fileName.length}`,
             isNativeDoc: true,
+            relKey,
             nativeUri: fileUri,
             nativePath: '',
             fileName,
-            title: meta.title,
-            artist: meta.artist,
-            album: meta.album,
-            cover: meta.cover || DEFAULT_APP_COVER,
-            hasEmbeddedCover: Boolean(meta.cover),
-            lrc: externalLrc || meta.lrc || '',
+            title: resolvedTitle,
+            artist: resolvedArtist,
+            album: resolvedAlbum,
+            cover: DEFAULT_APP_COVER,
+            hasEmbeddedCover: false,
+            lrc: externalLrc || '',
             duration: 0,
             addedAt: Date.now()
           };
           state.tracks.unshift(trk);
           await dbPut('tracks', toStorableTrackRecord(trk));
           addedCount++;
-          await new Promise((r) => setTimeout(r, 15));
         }
 
         state.queue = getSortedTracks().map((t) => t.id);
@@ -2817,7 +2903,7 @@
           showToast(
             addedCount > 0
               ? `已从「${folderName}」新增 ${addedCount} 首，跳过 ${skippedCount} 首重复`
-              : `「${folderName}」扫描完成（无新增，跳过 ${skippedCount} 首重复）`
+              : `「${folderName}」已同步（共 ${files.length} 首，无新增）`
           );
         }
       };
@@ -3505,6 +3591,9 @@
 
       function setLibraryTab(tabName) {
         state.libTab = tabName || 'songs';
+        if (state.libTab !== 'songs' && state.multiSelectMode) {
+          exitMultiSelectMode(false);
+        }
         state.dockCollapsed = false;
         syncNativeDockState();
         document.querySelectorAll('.lib-tab-btn').forEach((btn) => {
@@ -3516,8 +3605,10 @@
         });
 
         const isSongs = state.libTab === 'songs';
-        $('library-quick-actions').classList.toggle('hidden', !isSongs);
+        $('library-quick-actions').classList.toggle('hidden', !isSongs || state.multiSelectMode);
         $('library-sort-select').classList.toggle('hidden', !isSongs);
+        const msBtn = $('btn-lib-multiselect');
+        if (msBtn) msBtn.classList.toggle('hidden', !isSongs);
         $('library-list-container').classList.toggle('hidden', state.libTab !== 'songs');
         $('albums-grid').classList.toggle('hidden', state.libTab !== 'albums');
         $('artists-grid').classList.toggle('hidden', state.libTab !== 'artists');
@@ -3525,6 +3616,211 @@
         if (state.libTab === 'songs') renderLibrary();
         else if (state.libTab === 'albums') renderAlbums();
         else if (state.libTab === 'artists') renderArtists();
+      }
+
+      function switchView(viewName) {
+        if (viewName === 'search' && state.activeView !== 'search') {
+          state.searchReturnView = state.activeView || 'library';
+        } else if (viewName === 'group-detail' && state.activeView !== 'group-detail') {
+          state.groupReturnView = state.activeView || 'library';
+        }
+        state.activeView = viewName;
+        state.dockCollapsed = false;
+
+        document.querySelectorAll('.app-view').forEach((v) => v.classList.add('hidden'));
+        const target = $(`view-${viewName}`);
+        if (target) target.classList.remove('hidden');
+
+        document.querySelectorAll('.dock-nav-btn').forEach((btn) => {
+          const active = btn.dataset.nav === viewName;
+          btn.classList.toggle('is-active-tab', active);
+          btn.classList.toggle('bg-white/15', active);
+          btn.classList.toggle('text-white', active);
+          btn.classList.toggle('text-white/65', !active);
+        });
+
+        if (viewName === 'library') {
+          setLibraryTab(state.libTab || 'songs');
+        } else if (viewName === 'playlists') {
+          if (state.plMultiSelectMode) exitPlaylistMultiSelectMode(false);
+          renderPlaylists();
+        } else if (viewName === 'stats') {
+          renderStats();
+        } else if (viewName === 'search') {
+          renderSearchResults($('search-input').value);
+          setTimeout(() => $('search-input').focus(), 80);
+        }
+        syncNativeDockState();
+      }
+
+      function updateSidebarBadges() {
+        // Badges synced inline per view
+      }
+
+      // =========================================================================
+      // RENDER LIBRARY, ALBUMS, ARTISTS, PLAYLISTS & STATS
+      // =========================================================================
+      function getSortedTracks() {
+        const list = state.tracks.map(getTrackDisplay);
+        if (state.sortMode === 'title') {
+          list.sort((a, b) => a.title.localeCompare(b.title, 'zh-CN'));
+        } else if (state.sortMode === 'artist') {
+          list.sort((a, b) => a.artist.localeCompare(b.artist, 'zh-CN'));
+        }
+        return list;
+      }
+
+      function buildSongRowHtml(track, indexLabel = '', extraActionHtml = '', enableMultiSelect = false) {
+        const isCurrent = track.id === state.currentTrackId;
+        const isChecked = enableMultiSelect && state.selectedTrackIds.has(track.id);
+        return `
+          <div data-track-id="${track.id}" class="song-row song-card-glass rounded-2xl p-2.5 flex items-center justify-between gap-3 cursor-pointer transition hover:bg-white/15 ${isChecked ? 'ring-1 ring-sky-400 bg-sky-500/20' : isCurrent ? 'ring-1 ring-sky-400/65 bg-sky-500/15' : ''}">
+            <div class="flex items-center gap-3 min-w-0 flex-1">
+              ${
+                enableMultiSelect
+                  ? `<div class="w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition ${isChecked ? 'bg-sky-400 border-sky-400 text-zinc-950' : 'border-white/35 bg-white/5 text-transparent'}">
+                      <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                    </div>`
+                  : ''
+              }
+              <div class="relative w-12 h-12 rounded-xl overflow-hidden bg-white/10 shrink-0">
+                <img src="${track.cover}" alt="" class="w-full h-full object-cover" />
+                ${
+                  isCurrent && !enableMultiSelect
+                    ? `<div class="absolute inset-0 bg-black/45 flex items-center justify-center">
+                        <span class="w-2.5 h-2.5 rounded-full bg-sky-400 ${state.isPlaying ? 'animate-ping' : ''}"></span>
+                      </div>`
+                    : ''
+                }
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="text-sm font-semibold truncate ${isCurrent ? 'text-sky-300' : 'text-white'}">${escapeHtml(track.title)}</div>
+                <div class="text-xs text-white/55 truncate mt-0.5">${escapeHtml(track.artist)} · ${escapeHtml(track.album)}${(!track.isRemote && !track.isNativeDoc && !track.fileHandle && !track.blob && !sessionFileMap.has(track.id)) ? ' <span class="text-amber-300/90">· 待定位</span>' : ''}</div>
+              </div>
+            </div>
+            ${
+              enableMultiSelect
+                ? ''
+                : `<div class="flex items-center gap-1.5 shrink-0">
+                    ${track.duration ? `<span class="text-[11px] text-white/40 tabular-nums hidden sm:inline mr-1">${formatTime(track.duration)}</span>` : ''}
+                    ${extraActionHtml}
+                    <button data-quick-add="${track.id}" class="btn-row-quick-add w-8 h-8 rounded-full bg-white/8 hover:bg-white/18 flex items-center justify-center text-white/85" title="加入歌单">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14m7-7H5"/></svg>
+                    </button>
+                    <button data-more-track="${track.id}" class="btn-row-more w-8 h-8 rounded-full bg-white/8 hover:bg-white/18 flex items-center justify-center text-white/85" title="更多操作">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+                    </button>
+                  </div>`
+            }
+          </div>`;
+      }
+
+      function syncMultiSelectBar() {
+        const bar = $('library-multiselect-bar');
+        const quickActions = $('library-quick-actions');
+        const msBtn = $('btn-lib-multiselect');
+        if (bar) bar.classList.toggle('hidden', !state.multiSelectMode);
+        if (quickActions && state.libTab === 'songs') {
+          quickActions.classList.toggle('hidden', state.multiSelectMode);
+        }
+        if (msBtn) {
+          msBtn.classList.toggle('bg-sky-400', state.multiSelectMode);
+          msBtn.classList.toggle('text-zinc-950', state.multiSelectMode);
+          msBtn.classList.toggle('text-sky-200', !state.multiSelectMode);
+        }
+        const countEl = $('ms-selected-count');
+        if (countEl) countEl.textContent = `已选 ${state.selectedTrackIds.size} 首`;
+        const allBtn = $('btn-ms-select-all');
+        if (allBtn) {
+          const allSelected = state.tracks.length > 0 && state.selectedTrackIds.size === state.tracks.length;
+          allBtn.textContent = allSelected ? '取消全选' : '全选';
+        }
+      }
+
+      function enterMultiSelectMode(initialTrackId = null) {
+        if (!state.tracks.length) {
+          showToast('曲库为空，暂无可选歌曲');
+          return;
+        }
+        state.multiSelectMode = true;
+        state.selectedTrackIds.clear();
+        if (initialTrackId) state.selectedTrackIds.add(initialTrackId);
+        syncMultiSelectBar();
+        renderLibrary();
+      }
+
+      function exitMultiSelectMode(shouldRender = true) {
+        state.multiSelectMode = false;
+        state.selectedTrackIds.clear();
+        state.msDeleteConfirm = false;
+        const delBtn = $('btn-ms-delete');
+        if (delBtn) delBtn.textContent = '删除';
+        syncMultiSelectBar();
+        if (shouldRender) renderLibrary();
+      }
+
+      function attachSongRowListeners(container, enableMultiSelect = false) {
+        container.querySelectorAll('.song-row').forEach((row) => {
+          on(row, 'click', (e) => {
+            if (e.target.closest('button')) return;
+            const id = row.dataset.trackId;
+            if (enableMultiSelect) {
+              if (state.selectedTrackIds.has(id)) {
+                state.selectedTrackIds.delete(id);
+              } else {
+                state.selectedTrackIds.add(id);
+              }
+              state.msDeleteConfirm = false;
+              const delBtn = $('btn-ms-delete');
+              if (delBtn) delBtn.textContent = '删除';
+              syncMultiSelectBar();
+              renderLibrary();
+              return;
+            }
+            state.queue = getSortedTracks().map((t) => t.id);
+            loadTrack(id, true);
+          });
+        });
+        container.querySelectorAll('.btn-row-quick-add').forEach((btn) => {
+          on(btn, 'click', (e) => {
+            e.stopPropagation();
+            openPickPlaylistSheet(btn.dataset.quickAdd);
+          });
+        });
+        container.querySelectorAll('.btn-row-more').forEach((btn) => {
+          on(btn, 'click', (e) => {
+            e.stopPropagation();
+            openTrackActionSheet(btn.dataset.moreTrack);
+          });
+        });
+      }
+
+      function renderLibrary() {
+        updateSidebarBadges();
+        const tracks = getSortedTracks();
+        $('library-subtitle').textContent = `FENG MUSIC · 共 ${tracks.length} 首歌曲`;
+        const container = $('library-list-container');
+
+        if (!tracks.length) {
+          if (state.multiSelectMode) exitMultiSelectMode(false);
+          container.innerHTML = `
+            <div class="liquid-panel rounded-3xl p-8 text-center space-y-4 mt-4">
+              <div class="w-16 h-16 rounded-3xl bg-gradient-to-br from-sky-400/25 to-indigo-500/25 border border-white/15 flex items-center justify-center mx-auto">
+                <svg class="w-8 h-8 text-sky-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z"/></svg>
+              </div>
+              <div class="space-y-1">
+                <h3 class="text-base font-bold text-white">曲库空空如也</h3>
+                <p class="text-xs text-white/55">支持选择整个音乐文件夹持久关联，或批量导入本地 MP3 / FLAC / M4A 与同名 .lrc 歌词</p>
+              </div>
+              <button id="btn-empty-import" class="px-5 py-2.5 rounded-full bg-white text-zinc-950 text-xs font-semibold shadow-lg active:scale-95 transition">添加我的音乐</button>
+            </div>`;
+          on('btn-empty-import', () => openAddMusicSheet());
+          return;
+        }
+
+        syncMultiSelectBar();
+        container.innerHTML = tracks.map((t, idx) => buildSongRowHtml(t, idx + 1, '', state.multiSelectMode)).join('');
+        attachSongRowListeners(container, state.multiSelectMode);
       }
 
       function switchView(viewName) {
@@ -3559,105 +3855,6 @@
           setTimeout(() => $('search-input').focus(), 80);
         }
         syncNativeDockState();
-      }
-
-      function updateSidebarBadges() {
-        // Badges synced inline per view
-      }
-
-      // =========================================================================
-      // RENDER LIBRARY, ALBUMS, ARTISTS, PLAYLISTS & STATS
-      // =========================================================================
-      function getSortedTracks() {
-        const list = state.tracks.map(getTrackDisplay);
-        if (state.sortMode === 'title') {
-          list.sort((a, b) => a.title.localeCompare(b.title, 'zh-CN'));
-        } else if (state.sortMode === 'artist') {
-          list.sort((a, b) => a.artist.localeCompare(b.artist, 'zh-CN'));
-        }
-        return list;
-      }
-
-      function buildSongRowHtml(track, indexLabel = '', extraActionHtml = '') {
-        const isCurrent = track.id === state.currentTrackId;
-        return `
-          <div data-track-id="${track.id}" class="song-row song-card-glass rounded-2xl p-2.5 flex items-center justify-between gap-3 cursor-pointer transition hover:bg-white/15 ${isCurrent ? 'ring-1 ring-sky-400/65 bg-sky-500/15' : ''}">
-            <div class="flex items-center gap-3 min-w-0 flex-1">
-              <div class="relative w-12 h-12 rounded-xl overflow-hidden bg-white/10 shrink-0">
-                <img src="${track.cover}" alt="" class="w-full h-full object-cover" />
-                ${
-                  isCurrent
-                    ? `<div class="absolute inset-0 bg-black/45 flex items-center justify-center">
-                        <span class="w-2.5 h-2.5 rounded-full bg-sky-400 ${state.isPlaying ? 'animate-ping' : ''}"></span>
-                      </div>`
-                    : ''
-                }
-              </div>
-              <div class="min-w-0 flex-1">
-                <div class="text-sm font-semibold truncate ${isCurrent ? 'text-sky-300' : 'text-white'}">${escapeHtml(track.title)}</div>
-                <div class="text-xs text-white/55 truncate mt-0.5">${escapeHtml(track.artist)} · ${escapeHtml(track.album)}${(!track.isRemote && !track.isNativeDoc && !track.fileHandle && !track.blob && !sessionFileMap.has(track.id)) ? ' <span class="text-amber-300/90">· 待定位</span>' : ''}</div>
-              </div>
-            </div>
-            <div class="flex items-center gap-1.5 shrink-0">
-              ${track.duration ? `<span class="text-[11px] text-white/40 tabular-nums hidden sm:inline mr-1">${formatTime(track.duration)}</span>` : ''}
-              ${extraActionHtml}
-              <button data-quick-add="${track.id}" class="btn-row-quick-add w-8 h-8 rounded-full bg-white/8 hover:bg-white/18 flex items-center justify-center text-white/85" title="加入歌单">
-                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14m7-7H5"/></svg>
-              </button>
-              <button data-more-track="${track.id}" class="btn-row-more w-8 h-8 rounded-full bg-white/8 hover:bg-white/18 flex items-center justify-center text-white/85" title="更多操作">
-                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
-              </button>
-            </div>
-          </div>`;
-      }
-
-      function attachSongRowListeners(container) {
-        container.querySelectorAll('.song-row').forEach((row) => {
-          on(row, 'click', (e) => {
-            if (e.target.closest('button')) return;
-            const id = row.dataset.trackId;
-            state.queue = getSortedTracks().map((t) => t.id);
-            loadTrack(id, true);
-          });
-        });
-        container.querySelectorAll('.btn-row-quick-add').forEach((btn) => {
-          on(btn, 'click', (e) => {
-            e.stopPropagation();
-            openPickPlaylistSheet(btn.dataset.quickAdd);
-          });
-        });
-        container.querySelectorAll('.btn-row-more').forEach((btn) => {
-          on(btn, 'click', (e) => {
-            e.stopPropagation();
-            openTrackActionSheet(btn.dataset.moreTrack);
-          });
-        });
-      }
-
-      function renderLibrary() {
-        updateSidebarBadges();
-        const tracks = getSortedTracks();
-        $('library-subtitle').textContent = `FENG MUSIC · 共 ${tracks.length} 首歌曲`;
-        const container = $('library-list-container');
-
-        if (!tracks.length) {
-          container.innerHTML = `
-            <div class="liquid-panel rounded-3xl p-8 text-center space-y-4 mt-4">
-              <div class="w-16 h-16 rounded-3xl bg-gradient-to-br from-sky-400/25 to-indigo-500/25 border border-white/15 flex items-center justify-center mx-auto">
-                <svg class="w-8 h-8 text-sky-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z"/></svg>
-              </div>
-              <div class="space-y-1">
-                <h3 class="text-base font-bold text-white">曲库空空如也</h3>
-                <p class="text-xs text-white/55">支持选择整个音乐文件夹持久关联，或批量导入本地 MP3 / FLAC / M4A 与同名 .lrc 歌词</p>
-              </div>
-              <button id="btn-empty-import" class="px-5 py-2.5 rounded-full bg-white text-zinc-950 text-xs font-semibold shadow-lg active:scale-95 transition">添加我的音乐</button>
-            </div>`;
-          on('btn-empty-import', () => openAddMusicSheet());
-          return;
-        }
-
-        container.innerHTML = tracks.map((t, idx) => buildSongRowHtml(t, idx + 1)).join('');
-        attachSongRowListeners(container);
       }
 
       function renderAlbums() {
@@ -3819,6 +4016,8 @@
 
         const shapeClass = shape === 'square' ? 'rounded-none' : shape === 'circle' ? 'rounded-full' : 'rounded-2xl';
         const listImgSize = size === 'sm' ? 'w-12 h-12' : size === 'lg' ? 'w-20 h-20' : 'w-14 h-14';
+        const gridBtnSize = size === 'sm' ? 'w-6 h-6' : 'w-8 h-8';
+        const gridIconSize = size === 'sm' ? 'w-3 h-3' : 'w-3.5 h-3.5';
 
         grid.innerHTML = state.playlists
           .map((pl) => {
@@ -3843,7 +4042,7 @@
 
             if (layout === 'list') {
               return `
-                <div data-playlist-id="${pl.id}" class="playlist-card liquid-panel rounded-3xl p-3 flex items-center justify-between gap-3 cursor-pointer active:scale-[0.985] transition select-none">
+                <div data-playlist-id="${pl.id}" class="playlist-card liquid-panel rounded-3xl p-3 flex items-center justify-between gap-2.5 cursor-pointer active:scale-[0.985] transition select-none">
                   <div class="flex items-center gap-3 min-w-0 flex-1">
                     ${renderCover(listImgSize)}
                     <div class="min-w-0 flex-1">
@@ -3851,20 +4050,94 @@
                       <div class="text-xs text-white/55 mt-0.5">${validTracks.length} 首歌曲</div>
                     </div>
                   </div>
-                  <svg class="w-4 h-4 text-white/40 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                  <div class="flex items-center gap-1.5 shrink-0">
+                    <button data-pl-shuffle="${pl.id}" class="btn-pl-card-shuffle liquid-pill w-8 h-8 rounded-full flex items-center justify-center text-white/85 hover:text-white active:scale-90 transition" aria-label="随机播放">
+                      <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><path stroke-linecap="round" stroke-linejoin="round" d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+                    </button>
+                    <button data-pl-play="${pl.id}" class="btn-pl-card-play liquid-pill w-8 h-8 rounded-full flex items-center justify-center text-white hover:text-sky-200 active:scale-90 transition" aria-label="顺序播放">
+                      <svg class="w-3.5 h-3.5 translate-x-[0.5px]" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                    </button>
+                    <svg class="w-4 h-4 text-white/35 ml-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                  </div>
+                </div>`;
+            }
+
+            if (size === 'sm') {
+              return `
+                <div data-playlist-id="${pl.id}" class="playlist-card liquid-panel rounded-3xl p-2 space-y-1.5 cursor-pointer active:scale-[0.98] transition select-none">
+                  ${renderCover('w-full aspect-square')}
+                  <div class="px-0.5 text-center">
+                    <div class="text-[11px] font-bold text-white truncate">${escapeHtml(pl.name)}</div>
+                    <div class="text-[10px] text-white/55 mt-0.5">${validTracks.length} 首歌曲</div>
+                  </div>
+                  <div class="flex items-center justify-center gap-1.5 pt-0.5">
+                    <button data-pl-shuffle="${pl.id}" class="btn-pl-card-shuffle liquid-pill w-6 h-6 rounded-full flex items-center justify-center text-white/85 hover:text-white active:scale-90 transition" aria-label="随机播放">
+                      <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><path stroke-linecap="round" stroke-linejoin="round" d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+                    </button>
+                    <button data-pl-play="${pl.id}" class="btn-pl-card-play liquid-pill w-6 h-6 rounded-full flex items-center justify-center text-white hover:text-sky-200 active:scale-90 transition" aria-label="顺序播放">
+                      <svg class="w-3 h-3 translate-x-[0.5px]" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                    </button>
+                  </div>
                 </div>`;
             }
 
             return `
-              <div data-playlist-id="${pl.id}" class="playlist-card liquid-panel ${shape === 'circle' ? 'rounded-3xl text-center' : 'rounded-3xl'} ${size === 'sm' ? 'p-2' : 'p-3'} space-y-2 cursor-pointer active:scale-[0.98] transition select-none">
+              <div data-playlist-id="${pl.id}" class="playlist-card liquid-panel rounded-3xl p-3 space-y-2.5 cursor-pointer active:scale-[0.98] transition select-none">
                 ${renderCover('w-full aspect-square')}
-                <div class="px-0.5">
-                  <div class="${size === 'sm' ? 'text-[11px]' : 'text-xs sm:text-sm'} font-bold text-white truncate">${escapeHtml(pl.name)}</div>
-                  <div class="text-[11px] text-white/55 mt-0.5">${validTracks.length} 首歌曲</div>
+                <div class="px-0.5 flex items-center justify-between gap-2">
+                  <div class="min-w-0 flex-1 text-left">
+                    <div class="text-xs sm:text-sm font-bold text-white truncate">${escapeHtml(pl.name)}</div>
+                    <div class="text-[11px] text-white/55 mt-0.5">${validTracks.length} 首歌曲</div>
+                  </div>
+                  <div class="flex items-center gap-1.5 shrink-0">
+                    <button data-pl-shuffle="${pl.id}" class="btn-pl-card-shuffle liquid-pill ${gridBtnSize} rounded-full flex items-center justify-center text-white/85 hover:text-white active:scale-90 transition" aria-label="随机播放">
+                      <svg class="${gridIconSize}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><path stroke-linecap="round" stroke-linejoin="round" d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+                    </button>
+                    <button data-pl-play="${pl.id}" class="btn-pl-card-play liquid-pill ${gridBtnSize} rounded-full flex items-center justify-center text-white hover:text-sky-200 active:scale-90 transition" aria-label="顺序播放">
+                      <svg class="${gridIconSize} translate-x-[0.5px]" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                    </button>
+                  </div>
                 </div>
               </div>`;
           })
           .join('');
+
+        grid.querySelectorAll('.btn-pl-card-play').forEach((btn) => {
+          on(btn, 'click', async (e) => {
+            e.stopPropagation();
+            const pl = state.playlists.find((p) => p.id === btn.dataset.plPlay);
+            if (!pl) return;
+            const validIds = (pl.trackIds || []).filter((id) => state.tracks.some((t) => t.id === id));
+            if (!validIds.length) return showToast('歌单内暂无可播放歌曲');
+            state.playMode = 'loop';
+            updatePlayModeButton();
+            state.queue = [...validIds];
+            await loadTrack(validIds[0], true);
+            saveAppState();
+            showToast(`顺序播放：${pl.name}`);
+          });
+        });
+
+        grid.querySelectorAll('.btn-pl-card-shuffle').forEach((btn) => {
+          on(btn, 'click', async (e) => {
+            e.stopPropagation();
+            const pl = state.playlists.find((p) => p.id === btn.dataset.plShuffle);
+            if (!pl) return;
+            const validIds = (pl.trackIds || []).filter((id) => state.tracks.some((t) => t.id === id));
+            if (!validIds.length) return showToast('歌单内暂无可播放歌曲');
+            const shuffled = [...validIds];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1));
+              [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            state.playMode = 'shuffle';
+            updatePlayModeButton();
+            state.queue = shuffled;
+            await loadTrack(shuffled[0], true);
+            saveAppState();
+            showToast(`随机播放：${pl.name}`);
+          });
+        });
 
         grid.querySelectorAll('.playlist-card').forEach((card) => {
           const plId = card.dataset.playlistId;
@@ -3879,6 +4152,7 @@
           };
 
           on(card, 'touchstart', (e) => {
+            if (e.target.closest('button')) return;
             longPressed = false;
             const t = e.touches[0];
             startX = t.clientX;
@@ -3901,7 +4175,7 @@
           on(card, 'touchcancel', cancelPress);
 
           on(card, 'mousedown', (e) => {
-            if (e.button !== 0) return;
+            if (e.button !== 0 || e.target.closest('button')) return;
             longPressed = false;
             pressTimer = setTimeout(() => {
               longPressed = true;
@@ -3927,9 +4201,25 @@
         });
       }
 
+      function resetDeletePlaylistConfirm() {
+        state.deletePlaylistConfirmId = null;
+        clearTimeout(state.deletePlaylistConfirmTimer);
+        const btn = $('btn-playlist-delete');
+        if (btn) {
+          btn.className = 'w-9 h-9 rounded-full liquid-pill flex items-center justify-center text-rose-300 transition-all';
+          btn.innerHTML = `<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>`;
+        }
+      }
+
       function openPlaylistDetail(playlistId) {
         const pl = state.playlists.find((p) => p.id === playlistId);
         if (!pl) return;
+        if (state.activePlaylistId !== playlistId) {
+          resetDeletePlaylistConfirm();
+          if (state.plMultiSelectMode) {
+            exitPlaylistMultiSelectMode(false);
+          }
+        }
         state.activePlaylistId = playlistId;
         const validTracks = (pl.trackIds || [])
           .map((id) => state.tracks.find((t) => t.id === id))
@@ -3940,19 +4230,27 @@
         $('detail-playlist-count').textContent = `共 ${validTracks.length} 首歌曲`;
         const container = $('playlist-detail-tracks');
 
+        const plMsBtn = $('btn-playlist-multiselect');
+        if (plMsBtn) plMsBtn.classList.toggle('hidden', validTracks.length === 0);
+
         if (!validTracks.length) {
+          if (state.plMultiSelectMode) exitPlaylistMultiSelectMode(false);
           container.innerHTML = `<div class="liquid-panel rounded-3xl p-8 text-center text-xs text-white/55 mt-2">歌单内暂无歌曲，点击上方「添加歌曲」从曲库选入</div>`;
         } else {
+          syncPlaylistMultiSelectBar(validTracks.length);
           container.innerHTML = validTracks
             .map((t, idx) =>
-              buildSongRowHtml(
+              buildPlaylistSongRowHtml(
                 t,
                 idx + 1,
-                `<button data-remove-from-pl="${t.id}" class="btn-remove-pl-song w-8 h-8 rounded-full bg-rose-500/15 hover:bg-rose-500/25 flex items-center justify-center text-rose-300 text-xs" title="移出歌单">✕</button>`
+                state.plMultiSelectMode
+                  ? ''
+                  : `<button data-remove-from-pl="${t.id}" class="btn-remove-pl-song w-8 h-8 rounded-full bg-rose-500/15 hover:bg-rose-500/25 flex items-center justify-center text-rose-300 text-xs" title="移出歌单">✕</button>`,
+                state.plMultiSelectMode
               )
             )
             .join('');
-          attachSongRowListeners(container);
+          attachPlaylistSongRowListeners(container, validTracks, state.plMultiSelectMode);
           container.querySelectorAll('.btn-remove-pl-song').forEach((btn) => {
             on(btn, 'click', async (e) => {
               e.stopPropagation();
@@ -3967,103 +4265,122 @@
         switchView('playlist-detail');
       }
 
-      function formatPlayedAt(ts) {
-        if (!ts) return '';
-        const diffSec = Math.max(0, Math.floor((Date.now() - ts) / 1000));
-        if (diffSec < 60) return '刚刚';
-        if (diffSec < 3600) return `${Math.floor(diffSec / 60)} 分钟前`;
-        const d = new Date(ts);
-        return `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+      function buildPlaylistSongRowHtml(track, indexLabel = '', extraActionHtml = '', enableMultiSelect = false) {
+        const isCurrent = track.id === state.currentTrackId;
+        const isChecked = enableMultiSelect && state.plSelectedTrackIds.has(track.id);
+        return `
+          <div data-track-id="${track.id}" class="song-row song-card-glass rounded-2xl p-2.5 flex items-center justify-between gap-3 cursor-pointer transition hover:bg-white/15 ${isChecked ? 'ring-1 ring-sky-400 bg-sky-500/20' : isCurrent ? 'ring-1 ring-sky-400/65 bg-sky-500/15' : ''}">
+            <div class="flex items-center gap-3 min-w-0 flex-1">
+              ${
+                enableMultiSelect
+                  ? `<div class="w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition ${isChecked ? 'bg-sky-400 border-sky-400 text-zinc-950' : 'border-white/35 bg-white/5 text-transparent'}">
+                      <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                    </div>`
+                  : ''
+              }
+              <div class="relative w-12 h-12 rounded-xl overflow-hidden bg-white/10 shrink-0">
+                <img src="${track.cover}" alt="" class="w-full h-full object-cover" />
+                ${
+                  isCurrent && !enableMultiSelect
+                    ? `<div class="absolute inset-0 bg-black/45 flex items-center justify-center">
+                        <span class="w-2.5 h-2.5 rounded-full bg-sky-400 ${state.isPlaying ? 'animate-ping' : ''}"></span>
+                      </div>`
+                    : ''
+                }
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="text-sm font-semibold truncate ${isCurrent ? 'text-sky-300' : 'text-white'}">${escapeHtml(track.title)}</div>
+                <div class="text-xs text-white/55 truncate mt-0.5">${escapeHtml(track.artist)} · ${escapeHtml(track.album)}</div>
+              </div>
+            </div>
+            ${
+              enableMultiSelect
+                ? ''
+                : `<div class="flex items-center gap-1.5 shrink-0">
+                    ${track.duration ? `<span class="text-[11px] text-white/40 tabular-nums hidden sm:inline mr-1">${formatTime(track.duration)}</span>` : ''}
+                    ${extraActionHtml}
+                    <button data-quick-add="${track.id}" class="btn-row-quick-add w-8 h-8 rounded-full bg-white/8 hover:bg-white/18 flex items-center justify-center text-white/85" title="加入歌单">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14m7-7H5"/></svg>
+                    </button>
+                    <button data-more-track="${track.id}" class="btn-row-more w-8 h-8 rounded-full bg-white/8 hover:bg-white/18 flex items-center justify-center text-white/85" title="更多操作">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+                    </button>
+                  </div>`
+            }
+          </div>`;
       }
 
-      function renderStats() {
-        const mins = Math.floor((state.stats.totalSeconds || 0) / 60);
-        $('stat-total-plays').textContent = `${state.stats.totalPlays || 0} 次`;
-        $('stat-total-minutes').textContent = `${mins} 分钟`;
-
-        const validEntries = Object.entries(state.stats.trackPlays || {})
-          .map(([id, count]) => ({ track: state.tracks.find((t) => t.id === id), count }))
-          .filter((item) => item.track && item.count > 0)
-          .sort((a, b) => b.count - a.count);
-
-        $('stat-unique-tracks').textContent = `${validEntries.length} / ${state.tracks.length}`;
-
-        const top20 = validEntries.slice(0, 20);
-        const maxCount = top20[0]?.count || 1;
-        const container = $('stat-top-tracks');
-
-        if (!top20.length) {
-          container.innerHTML = `<div class="text-xs text-white/45 py-4 text-center">播放歌曲后这里将自动记录听歌次数并生成单曲循环榜 TOP 20</div>`;
-        } else {
-          container.innerHTML = top20
-            .map((item, idx) => {
-              const t = getTrackDisplay(item.track);
-              const pct = Math.max(8, Math.round((item.count / maxCount) * 100));
-              const rankBadge =
-                idx === 0
-                  ? 'bg-amber-400/25 text-amber-300 border border-amber-300/35'
-                  : idx === 1
-                  ? 'bg-slate-300/20 text-slate-200 border border-slate-300/30'
-                  : idx === 2
-                  ? 'bg-orange-400/20 text-orange-300 border border-orange-300/30'
-                  : 'text-white/50';
-              return `
-                <div data-stat-id="${t.id}" class="stat-track-row rounded-2xl p-2 hover:bg-white/10 flex items-center justify-between gap-3 cursor-pointer transition">
-                  <div class="flex items-center gap-3 min-w-0 flex-1">
-                    <span class="w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 tabular-nums ${rankBadge}">${idx + 1}</span>
-                    <img src="${t.cover}" alt="" class="w-10 h-10 rounded-xl object-cover shrink-0 bg-white/10" />
-                    <div class="min-w-0 flex-1">
-                      <div class="text-xs font-semibold text-white truncate">${escapeHtml(t.title)}</div>
-                      <div class="text-[11px] text-white/50 truncate">${escapeHtml(t.artist)}</div>
-                      <div class="w-full h-1 rounded-full bg-white/8 mt-1.5 overflow-hidden">
-                        <div class="h-full rounded-full bg-gradient-to-r from-sky-400 to-indigo-400" style="width: ${pct}%;"></div>
-                      </div>
-                    </div>
-                  </div>
-                  <span class="text-xs font-semibold text-sky-300 tabular-nums shrink-0">${item.count} 次</span>
-                </div>`;
-            })
-            .join('');
-
-          container.querySelectorAll('.stat-track-row').forEach((row) => {
-            on(row, 'click', () => loadTrack(row.dataset.statId, true));
+      function attachPlaylistSongRowListeners(container, validTracks, enableMultiSelect = false) {
+        container.querySelectorAll('.song-row').forEach((row) => {
+          on(row, 'click', (e) => {
+            if (e.target.closest('button')) return;
+            const id = row.dataset.trackId;
+            if (enableMultiSelect) {
+              if (state.plSelectedTrackIds.has(id)) {
+                state.plSelectedTrackIds.delete(id);
+              } else {
+                state.plSelectedTrackIds.add(id);
+              }
+              syncPlaylistMultiSelectBar(validTracks.length);
+              openPlaylistDetail(state.activePlaylistId);
+              return;
+            }
+            state.queue = validTracks.map((t) => t.id);
+            loadTrack(id, true);
           });
+        });
+        container.querySelectorAll('.btn-row-quick-add').forEach((btn) => {
+          on(btn, 'click', (e) => {
+            e.stopPropagation();
+            openPickPlaylistSheet(btn.dataset.quickAdd);
+          });
+        });
+        container.querySelectorAll('.btn-row-more').forEach((btn) => {
+          on(btn, 'click', (e) => {
+            e.stopPropagation();
+            openTrackActionSheet(btn.dataset.moreTrack);
+          });
+        });
+      }
+
+      function syncPlaylistMultiSelectBar(totalCount = 0) {
+        const bar = $('playlist-multiselect-bar');
+        const plQuick = $('playlist-quick-actions');
+        const plMsBtn = $('btn-playlist-multiselect');
+        if (bar) bar.classList.toggle('hidden', !state.plMultiSelectMode);
+        if (plQuick) plQuick.classList.toggle('hidden', state.plMultiSelectMode);
+        if (plMsBtn) {
+          plMsBtn.classList.toggle('bg-sky-400', state.plMultiSelectMode);
+          plMsBtn.classList.toggle('text-zinc-950', state.plMultiSelectMode);
+          plMsBtn.classList.toggle('text-sky-200', !state.plMultiSelectMode);
         }
+        const countEl = $('pl-ms-selected-count');
+        if (countEl) countEl.textContent = `已选 ${state.plSelectedTrackIds.size} 首`;
+        const allBtn = $('btn-pl-ms-select-all');
+        if (allBtn) {
+          const allSelected = totalCount > 0 && state.plSelectedTrackIds.size === totalCount;
+          allBtn.textContent = allSelected ? '取消全选' : '全选';
+        }
+      }
 
-        const recentContainer = $('stat-recent-tracks');
-        const recentItems = (state.stats.recentPlays || [])
-          .map((entry) => ({
-            track: state.tracks.find((t) => t.id === entry.trackId),
-            at: entry.at
-          }))
-          .filter((item) => item.track)
-          .slice(0, 15);
+      function enterPlaylistMultiSelectMode() {
+        const pl = state.playlists.find((p) => p.id === state.activePlaylistId);
+        const validIds = (pl?.trackIds || []).filter((id) => state.tracks.some((t) => t.id === id));
+        if (!validIds.length) {
+          showToast('歌单内暂无可选歌曲');
+          return;
+        }
+        state.plMultiSelectMode = true;
+        state.plSelectedTrackIds.clear();
+        openPlaylistDetail(state.activePlaylistId);
+      }
 
-        $('stat-recent-count').textContent = `最近 ${recentItems.length} 条`;
-        if (!recentItems.length) {
-          recentContainer.innerHTML = `<div class="text-xs text-white/45 py-4 text-center">暂无最近播放记录</div>`;
-        } else {
-          recentContainer.innerHTML = recentItems
-            .map((item) => {
-              const t = getTrackDisplay(item.track);
-              const count = state.stats.trackPlays?.[t.id] || 1;
-              return `
-                <div data-recent-id="${t.id}" class="recent-track-row rounded-2xl px-2.5 py-2 hover:bg-white/10 flex items-center justify-between gap-2.5 cursor-pointer">
-                  <div class="flex items-center gap-2.5 min-w-0">
-                    <img src="${t.cover}" alt="" class="w-9 h-9 rounded-xl object-cover shrink-0 bg-white/10" />
-                    <div class="min-w-0">
-                      <div class="text-xs font-medium text-white truncate">${escapeHtml(t.title)}</div>
-                      <div class="text-[10px] text-white/50 truncate">${escapeHtml(t.artist)} · 累计 ${count} 次</div>
-                    </div>
-                  </div>
-                  <span class="text-[10px] text-white/45 tabular-nums shrink-0">${formatPlayedAt(item.at)}</span>
-                </div>`;
-            })
-            .join('');
-
-          recentContainer.querySelectorAll('.recent-track-row').forEach((row) => {
-            on(row, 'click', () => loadTrack(row.dataset.recentId, true));
-          });
+      function exitPlaylistMultiSelectMode(shouldRender = true) {
+        state.plMultiSelectMode = false;
+        state.plSelectedTrackIds.clear();
+        syncPlaylistMultiSelectBar(0);
+        if (shouldRender && state.activePlaylistId) {
+          openPlaylistDetail(state.activePlaylistId);
         }
       }
 
@@ -5099,7 +5416,7 @@
                 state.currentTrackId = null;
                 state.isPlaying = false;
                 $('mini-title').textContent = 'FENG MUSIC';
-                $('mini-artist').textContent = '点击右上角「导入」添加本地歌曲';
+                $('mini-artist').textContent = '私人纯享无损音乐空间';
                 $('mini-cover').src = DEFAULT_APP_COVER;
                 updatePlayStateUI();
               }
@@ -5128,19 +5445,28 @@
         openBottomSheet('sheet-track-actions');
       }
 
-      function openPickPlaylistSheet(trackId) {
-        state.actionTargetTrackId = trackId;
+      function openPickPlaylistSheet(trackIdsOrSingle) {
+        const targetIds = Array.isArray(trackIdsOrSingle)
+          ? [...new Set(trackIdsOrSingle.filter(Boolean))]
+          : trackIdsOrSingle
+          ? [trackIdsOrSingle]
+          : [];
+        if (!targetIds.length) return;
+        state.actionTargetTrackId = targetIds[0];
+        state.actionTargetTrackIds = targetIds;
         const container = $('pick-playlist-list');
         if (!state.playlists.length) {
           container.innerHTML = `<div class="text-xs text-white/50 text-center py-6">暂无歌单，请点击右上角「+ 新建歌单」</div>`;
         } else {
           container.innerHTML = state.playlists
             .map((pl) => {
-              const hasSong = (pl.trackIds || []).includes(trackId);
+              const existingSet = new Set(pl.trackIds || []);
+              const addedCount = targetIds.filter((id) => existingSet.has(id)).length;
+              const allAdded = addedCount === targetIds.length;
               return `
                 <button data-pick-pl="${pl.id}" class="pick-pl-btn w-full py-3 px-4 rounded-2xl bg-white/8 hover:bg-white/15 flex items-center justify-between text-left">
                   <span class="text-sm font-medium text-white truncate">${escapeHtml(pl.name)}</span>
-                  <span class="text-xs ${hasSong ? 'text-emerald-300' : 'text-white/45'}">${hasSong ? '已添加' : `${(pl.trackIds || []).length} 首`}</span>
+                  <span class="text-xs ${allAdded ? 'text-emerald-300' : 'text-white/45'}">${allAdded ? '已添加' : `${(pl.trackIds || []).length} 首`}</span>
                 </button>`;
             })
             .join('');
@@ -5150,13 +5476,21 @@
               const pl = state.playlists.find((p) => p.id === btn.dataset.pickPl);
               if (!pl) return;
               if (!Array.isArray(pl.trackIds)) pl.trackIds = [];
-              if (!pl.trackIds.includes(trackId)) {
-                pl.trackIds.push(trackId);
-                await saveAppState();
-                showToast(`已添加到「${pl.name}」`);
-              } else {
-                showToast('该歌曲已在歌单中');
+              let newlyAdded = 0;
+              for (const tid of targetIds) {
+                if (!pl.trackIds.includes(tid)) {
+                  pl.trackIds.push(tid);
+                  newlyAdded++;
+                }
               }
+              if (newlyAdded > 0) {
+                await saveAppState();
+                showToast(targetIds.length > 1 ? `已添加 ${newlyAdded} 首歌曲到「${pl.name}」` : `已添加到「${pl.name}」`);
+              } else {
+                showToast(targetIds.length > 1 ? '所选歌曲均已在歌单中' : '该歌曲已在歌单中');
+              }
+              if (state.multiSelectMode) exitMultiSelectMode(true);
+              if (state.plMultiSelectMode) exitPlaylistMultiSelectMode(true);
               closeAllBottomSheets();
               if (state.activeView === 'playlists') renderPlaylists();
             });
@@ -5165,9 +5499,15 @@
         openBottomSheet('sheet-pick-playlist');
       }
 
-      function openPlaylistNameModal(mode = 'create', pendingTrackId = null) {
+      function openPlaylistNameModal(mode = 'create', pendingTrackIds = null) {
         state.playlistModalMode = mode;
-        state.playlistModalPendingTrackId = pendingTrackId;
+        const normalizedIds = Array.isArray(pendingTrackIds)
+          ? [...new Set(pendingTrackIds.filter(Boolean))]
+          : pendingTrackIds
+          ? [pendingTrackIds]
+          : [];
+        state.playlistModalPendingTrackId = normalizedIds[0] || null;
+        state.playlistModalPendingTrackIds = normalizedIds;
         const input = $('input-playlist-name');
         if (mode === 'rename') {
           const pl = state.playlists.find((p) => p.id === state.activePlaylistId);
@@ -5197,17 +5537,24 @@
             showToast('歌单已重命名');
           }
         } else {
+          const pendingIds = state.playlistModalPendingTrackIds?.length
+            ? [...state.playlistModalPendingTrackIds]
+            : state.playlistModalPendingTrackId
+            ? [state.playlistModalPendingTrackId]
+            : [];
           const newPl = {
             id: `pl_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
             name,
-            trackIds: state.playlistModalPendingTrackId ? [state.playlistModalPendingTrackId] : []
+            trackIds: pendingIds
           };
           state.playlists.unshift(newPl);
           await saveAppState();
           updateSidebarBadges();
+          if (state.multiSelectMode) exitMultiSelectMode(true);
+          if (state.plMultiSelectMode) exitPlaylistMultiSelectMode(true);
           closeAllBottomSheets();
-          if (state.playlistModalPendingTrackId) {
-            showToast(`已创建「${name}」并加入歌曲`);
+          if (pendingIds.length) {
+            showToast(`已创建「${name}」并加入 ${pendingIds.length} 首歌曲`);
           } else {
             showToast(`歌单「${name}」已创建`);
           }
@@ -5242,6 +5589,59 @@
         if (ta) {
           ta.value = lrcContent;
           ta.scrollTop = 0;
+        }
+      }
+
+      async function handleDeleteTrackById(trackId, silent = false) {
+        const idx = state.tracks.findIndex((t) => t.id === trackId);
+        if (idx === -1) return;
+        const removed = state.tracks[idx];
+        if (removed.objectUrl) URL.revokeObjectURL(removed.objectUrl);
+
+        state.tracks.splice(idx, 1);
+        state.queue = state.queue.filter((id) => id !== trackId);
+        state.playlists.forEach((pl) => {
+          pl.trackIds = (pl.trackIds || []).filter((id) => id !== trackId);
+        });
+        delete state.customMeta[trackId];
+        delete state.customLyrics[trackId];
+        delete state.lyricOffsets[trackId];
+        if (state.stats.trackPlays) delete state.stats.trackPlays[trackId];
+
+        await dbDelete('tracks', trackId);
+        await saveAppState();
+
+        if (state.currentTrackId === trackId) {
+          if (state.queue.length) {
+            await loadTrack(state.queue[0], state.isPlaying);
+          } else if (state.tracks.length) {
+            await loadTrack(state.tracks[0].id, state.isPlaying);
+          } else {
+            audio.pause();
+            audio.src = '';
+            state.currentTrackId = null;
+            state.isPlaying = false;
+            $('mini-title').textContent = 'FENG MUSIC';
+            $('mini-artist').textContent = '私人纯享无损音乐空间';
+            $('mini-cover').src = DEFAULT_APP_COVER;
+            $('np-title').textContent = '未在播放';
+            $('np-artist').textContent = 'FENG MUSIC';
+            $('np-cover-img-rounded').src = DEFAULT_APP_COVER;
+            $('np-cover-img-vinyl').src = DEFAULT_APP_COVER;
+            $('np-cover-img-disc').src = DEFAULT_APP_COVER;
+            $('np-cover-ambient-glow').src = DEFAULT_APP_COVER;
+            updatePlayStateUI();
+          }
+        }
+
+        if (!silent) {
+          closeAllBottomSheets();
+          renderLibrary();
+          if (state.activeView === 'albums') renderAlbums();
+          if (state.activeView === 'artists') renderArtists();
+          if (state.activeView === 'playlists') renderPlaylists();
+          if (state.activeView === 'stats') renderStats();
+          showToast('已从曲库删除该歌曲');
         }
       }
 
@@ -5552,16 +5952,8 @@
         closeAllBottomSheets();
         if (hasNativeFolderPicker()) {
           try {
-            const handler = window.webkit.messageHandlers.fengFolder;
-            if (!handler || typeof handler.postMessage !== 'function') {
-              showToast('iOS 文件夹选择器未连接，请重新安装当前 IPA');
-              return;
-            }
-            handler.postMessage({ action: 'pickFolder' });
-          } catch (err) {
-            console.error('[FENG MUSIC] folder picker bridge error:', err);
-            showToast('无法调用 iOS 文件夹选择器，请重启 App 后重试');
-          }
+            window.webkit.messageHandlers.fengFolder.postMessage({ action: 'pickFolder' });
+          } catch {}
           return;
         }
         if (typeof window.showDirectoryPicker === 'function') {
@@ -5946,11 +6338,50 @@
           }, { passive: true });
         });
 
-        // Library Filter Tabs (全部 | 专辑 | 歌手) & Header Import
+        // Library Filter Tabs (全部 | 专辑 | 歌手) & Header Multi-Select
         document.querySelectorAll('.lib-tab-btn').forEach((btn) => {
           on(btn, 'click', () => setLibraryTab(btn.dataset.libTab));
         });
-        on('btn-lib-import', () => openAddMusicSheet());
+        on('btn-lib-multiselect', () => {
+          if (state.multiSelectMode) {
+            exitMultiSelectMode(true);
+          } else {
+            enterMultiSelectMode();
+          }
+        });
+        on('btn-ms-select-all', () => {
+          if (state.selectedTrackIds.size === state.tracks.length) {
+            state.selectedTrackIds.clear();
+          } else {
+            state.tracks.forEach((t) => state.selectedTrackIds.add(t.id));
+          }
+          state.msDeleteConfirm = false;
+          const delBtn = $('btn-ms-delete');
+          if (delBtn) delBtn.textContent = '删除';
+          syncMultiSelectBar();
+          renderLibrary();
+        });
+        on('btn-ms-add-playlist', () => {
+          const ids = [...state.selectedTrackIds];
+          if (!ids.length) return showToast('请先勾选歌曲');
+          openPickPlaylistSheet(ids);
+        });
+        on('btn-ms-delete', async () => {
+          const ids = [...state.selectedTrackIds];
+          if (!ids.length) return showToast('请先勾选要删除的歌曲');
+          if (!state.msDeleteConfirm) {
+            state.msDeleteConfirm = true;
+            $('btn-ms-delete').textContent = `确认删(${ids.length})`;
+            showToast(`再次点击「确认删(${ids.length})」将永久移除所选歌曲`);
+            return;
+          }
+          for (const tid of ids) {
+            await handleDeleteTrackById(tid, true);
+          }
+          exitMultiSelectMode(true);
+          showToast(`已从曲库删除 ${ids.length} 首歌曲`);
+        });
+        on('btn-ms-cancel', () => exitMultiSelectMode(true));
         on('btn-add-source-folder', () => triggerFolderImportAction());
         on('btn-add-source-files', () => {
           closeAllBottomSheets();
@@ -6019,11 +6450,27 @@
 
         // Playlists & Playlist Detail
         on('btn-new-playlist', () => openPlaylistNameModal('create', null));
-        on('btn-playlist-back', () => switchView('playlists'));
-        on('btn-playlist-rename', () => openPlaylistNameModal('rename'));
+        on('btn-playlist-back', () => {
+          resetDeletePlaylistConfirm();
+          switchView('playlists');
+        });
         on('btn-playlist-delete', async () => {
           const idx = state.playlists.findIndex((p) => p.id === state.activePlaylistId);
           if (idx === -1) return;
+          const targetId = state.playlists[idx].id;
+          if (state.deletePlaylistConfirmId !== targetId) {
+            state.deletePlaylistConfirmId = targetId;
+            const btn = $('btn-playlist-delete');
+            if (btn) {
+              btn.className = 'px-3 h-9 rounded-full bg-rose-500/30 border border-rose-400/50 flex items-center justify-center text-xs font-semibold text-rose-200 transition-all';
+              btn.textContent = '确认删除';
+            }
+            clearTimeout(state.deletePlaylistConfirmTimer);
+            state.deletePlaylistConfirmTimer = setTimeout(resetDeletePlaylistConfirm, 3500);
+            showToast('再次点击右上角「确认删除」以移除该歌单');
+            return;
+          }
+          resetDeletePlaylistConfirm();
           const name = state.playlists[idx].name;
           state.playlists.splice(idx, 1);
           await saveAppState();
@@ -6036,9 +6483,85 @@
           if (!pl) return;
           const validIds = (pl.trackIds || []).filter((id) => state.tracks.some((t) => t.id === id));
           if (!validIds.length) return showToast('歌单内暂无可播放歌曲');
+          state.playMode = 'loop';
+          updatePlayModeButton();
           state.queue = [...validIds];
           await loadTrack(validIds[0], true);
+          saveAppState();
+          showToast(`已顺序播放歌单「${pl.name}」`);
         });
+        on('btn-playlist-shuffle-all', async () => {
+          const pl = state.playlists.find((p) => p.id === state.activePlaylistId);
+          if (!pl) return;
+          const validIds = (pl.trackIds || []).filter((id) => state.tracks.some((t) => t.id === id));
+          if (!validIds.length) return showToast('歌单内暂无可播放歌曲');
+          const pickId = validIds[Math.floor(Math.random() * validIds.length)];
+          state.queue = [...validIds];
+          await loadTrack(pickId, true);
+          showToast(`随心漫步：${getTrackDisplay(state.tracks.find((t) => t.id === pickId)).title}`);
+        });
+        on('btn-playlist-play-all', async () => {
+          const pl = state.playlists.find((p) => p.id === state.activePlaylistId);
+          if (!pl) return;
+          const validIds = (pl.trackIds || []).filter((id) => state.tracks.some((t) => t.id === id));
+          if (!validIds.length) return showToast('歌单内暂无可播放歌曲');
+          state.playMode = 'loop';
+          updatePlayModeButton();
+          state.queue = [...validIds];
+          await loadTrack(validIds[0], true);
+          saveAppState();
+          showToast(`已顺序播放歌单「${pl.name}」`);
+        });
+        on('btn-playlist-shuffle-all', async () => {
+          const pl = state.playlists.find((p) => p.id === state.activePlaylistId);
+          if (!pl) return;
+          const validIds = (pl.trackIds || []).filter((id) => state.tracks.some((t) => t.id === id));
+          if (!validIds.length) return showToast('歌单内暂无可播放歌曲');
+          const shuffled = [...validIds];
+          for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+          }
+          state.playMode = 'shuffle';
+          updatePlayModeButton();
+          state.queue = shuffled;
+          await loadTrack(shuffled[0], true);
+          saveAppState();
+          showToast(`已随机播放歌单「${pl.name}」`);
+        });
+        on('btn-playlist-multiselect', () => {
+          if (state.plMultiSelectMode) {
+            exitPlaylistMultiSelectMode(true);
+          } else {
+            enterPlaylistMultiSelectMode();
+          }
+        });
+        on('btn-pl-ms-select-all', () => {
+          const pl = state.playlists.find((p) => p.id === state.activePlaylistId);
+          const validIds = (pl?.trackIds || []).filter((id) => state.tracks.some((t) => t.id === id));
+          if (state.plSelectedTrackIds.size === validIds.length) {
+            state.plSelectedTrackIds.clear();
+          } else {
+            validIds.forEach((id) => state.plSelectedTrackIds.add(id));
+          }
+          openPlaylistDetail(state.activePlaylistId);
+        });
+        on('btn-pl-ms-add-playlist', () => {
+          const ids = [...state.plSelectedTrackIds];
+          if (!ids.length) return showToast('请先勾选歌曲');
+          openPickPlaylistSheet(ids);
+        });
+        on('btn-pl-ms-remove', async () => {
+          const pl = state.playlists.find((p) => p.id === state.activePlaylistId);
+          const ids = [...state.plSelectedTrackIds];
+          if (!pl || !ids.length) return showToast('请先勾选要移出的歌曲');
+          const removeSet = new Set(ids);
+          pl.trackIds = (pl.trackIds || []).filter((id) => !removeSet.has(id));
+          await saveAppState();
+          exitPlaylistMultiSelectMode(true);
+          showToast(`已从歌单移出 ${ids.length} 首歌曲`);
+        });
+        on('btn-pl-ms-cancel', () => exitPlaylistMultiSelectMode(true));
         on('btn-playlist-add-songs', () => {
           const pl = state.playlists.find((p) => p.id === state.activePlaylistId);
           if (!pl) return;
@@ -6534,7 +7057,8 @@
           showToast('已清空其余待播列表');
         });
         on('btn-pick-playlist-new', () => {
-          openPlaylistNameModal('create', state.actionTargetTrackId);
+          const ids = state.actionTargetTrackIds?.length ? state.actionTargetTrackIds : state.actionTargetTrackId;
+          openPlaylistNameModal('create', ids);
         });
 
         // Edit Metadata & Cover Modal
