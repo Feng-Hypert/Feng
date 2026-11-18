@@ -208,13 +208,28 @@ jobs:
                   }
               }
 
+              private func findBridgeViewController(in controller: UIViewController?) -> CAPBridgeViewController? {
+                  guard let controller = controller else { return nil }
+                  if let bridge = controller as? CAPBridgeViewController { return bridge }
+                  if let presented = controller.presentedViewController,
+                     let found = findBridgeViewController(in: presented) { return found }
+                  if let nav = controller as? UINavigationController,
+                     let found = findBridgeViewController(in: nav.visibleViewController) { return found }
+                  if let tab = controller as? UITabBarController,
+                     let found = findBridgeViewController(in: tab.selectedViewController) { return found }
+                  for child in controller.children {
+                      if let found = findBridgeViewController(in: child) { return found }
+                  }
+                  return nil
+              }
+
               func attach(window: UIWindow?) {
                   let activeWin = window ?? UIApplication.shared.connectedScenes
                       .compactMap { $0 as? UIWindowScene }
                       .flatMap { $0.windows }
                       .first(where: { $0.isKeyWindow }) ?? UIApplication.shared.windows.first
 
-                  guard let bridgeVC = activeWin?.rootViewController as? CAPBridgeViewController,
+                  guard let bridgeVC = findBridgeViewController(in: activeWin?.rootViewController),
                         let wv = bridgeVC.webView else {
                       DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
                           self?.attach(window: activeWin)
@@ -404,27 +419,71 @@ jobs:
               }
 
               // MARK: - Security-Scoped Bookmark Persistence & Folder Enumeration
+              private func topMostViewController(from controller: UIViewController?) -> UIViewController? {
+                  guard let controller = controller else { return nil }
+                  if let presented = controller.presentedViewController {
+                      return topMostViewController(from: presented)
+                  }
+                  if let nav = controller as? UINavigationController,
+                     let visible = nav.visibleViewController {
+                      return topMostViewController(from: visible)
+                  }
+                  if let tab = controller as? UITabBarController,
+                     let selected = tab.selectedViewController {
+                      return topMostViewController(from: selected)
+                  }
+                  return controller
+              }
+
               private func topMostViewController() -> UIViewController? {
-                  var top = UIApplication.shared.connectedScenes
+                  // Prefer the exact window hosting this WKWebView. This avoids presenting
+                  // the document picker from an unrelated scene/window on iPad or multi-window iOS.
+                  let root = webView?.window?.rootViewController ?? UIApplication.shared.connectedScenes
                       .compactMap { $0 as? UIWindowScene }
                       .flatMap { $0.windows }
                       .first(where: { $0.isKeyWindow })?.rootViewController
-                  while let presented = top?.presentedViewController {
-                      top = presented
+                  return topMostViewController(from: root)
+              }
+
+              private func reportFolderPickerStatus(_ message: String) {
+                  guard let wv = webView else { return }
+                  if #available(iOS 14.0, *) {
+                      wv.callAsyncJavaScript(
+                          "window.__fengFolderPickerStatus && window.__fengFolderPickerStatus(message);",
+                          arguments: ["message": message],
+                          in: nil,
+                          in: .page,
+                          completionHandler: nil
+                      )
                   }
-                  return top
               }
 
               private func presentFolderPicker() {
                   DispatchQueue.main.async {
-                      guard let presenter = self.topMostViewController() else { return }
+                      guard self.activeFolderPicker == nil else {
+                          self.reportFolderPickerStatus("文件夹选择器已经打开")
+                          return
+                      }
+                      guard let presenter = self.topMostViewController(), presenter.viewIfLoaded?.window != nil else {
+                          self.reportFolderPickerStatus("无法定位当前页面，请退出后重新打开 FENG MUSIC")
+                          return
+                      }
                       if #available(iOS 14.0, *) {
-                          let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.folder])
+                          let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.folder], asCopy: false)
                           picker.delegate = self
                           picker.allowsMultipleSelection = false
                           picker.shouldShowFileExtensions = true
                           self.activeFolderPicker = picker
-                          presenter.present(picker, animated: true)
+                          self.reportFolderPickerStatus("正在打开 iOS 文件夹选择器…")
+                          presenter.present(picker, animated: true) { [weak self, weak picker] in
+                              guard let self = self else { return }
+                              if picker?.presentingViewController == nil {
+                                  self.activeFolderPicker = nil
+                                  self.reportFolderPickerStatus("文件夹选择器未能弹出，请重试")
+                              }
+                          }
+                      } else {
+                          self.reportFolderPickerStatus("当前 iOS 版本不支持文件夹选择")
                       }
                   }
               }
