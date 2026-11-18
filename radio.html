@@ -2712,6 +2712,10 @@
         });
       }
 
+      window.__fengFolderPickerStatus = (message) => {
+        if (message) showToast(String(message));
+      };
+
       window.__fengFolderScanning = (folderName) => {
         showToast(`正在读取「${folderName || '所选文件夹'}」并保存访问书签...`);
       };
@@ -5544,8 +5548,16 @@
         closeAllBottomSheets();
         if (hasNativeFolderPicker()) {
           try {
-            window.webkit.messageHandlers.fengFolder.postMessage({ action: 'pickFolder' });
-          } catch {}
+            const handler = window.webkit.messageHandlers.fengFolder;
+            if (!handler || typeof handler.postMessage !== 'function') {
+              showToast('iOS 文件夹选择器未连接，请重新安装当前 IPA');
+              return;
+            }
+            handler.postMessage({ action: 'pickFolder' });
+          } catch (err) {
+            console.error('[FENG MUSIC] folder picker bridge error:', err);
+            showToast('无法调用 iOS 文件夹选择器，请重启 App 后重试');
+          }
           return;
         }
         if (typeof window.showDirectoryPicker === 'function') {
