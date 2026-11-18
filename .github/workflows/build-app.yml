@@ -1,4 +1,4 @@
-name: Build Offline Android APK & iOS IPA
+name: Build Offline Android APK & iOS IPA (PROBE)
 
 on:
   workflow_dispatch:
@@ -85,6 +85,12 @@ jobs:
           /usr/libexec/PlistBuddy -c "Add :LSSupportsOpeningDocumentsInPlace bool true" "$PLIST" || /usr/libexec/PlistBuddy -c "Set :LSSupportsOpeningDocumentsInPlace true" "$PLIST"
           /usr/libexec/PlistBuddy -c "Add :UIBackgroundModes array" "$PLIST" || true
           /usr/libexec/PlistBuddy -c "Add :UIBackgroundModes:0 string audio" "$PLIST" || true
+
+      - name: Stamp Build Version (PROBE)
+        run: |
+          PLIST="ios/App/App/Info.plist"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0.${{ github.run_number }}" "$PLIST" || /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string 1.0.${{ github.run_number }}" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${{ github.run_number }}" "$PLIST" || /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string ${{ github.run_number }}" "$PLIST"
 
       - name: Enable Native iOS AVPlayer, Lock Screen Controls, UITabBar Liquid Glass Dock & Security-Scoped Bookmarks
         run: |
@@ -458,6 +464,17 @@ jobs:
                   }
               }
 
+              // PROBE: visible native alert that does not depend on the WebView JS channel.
+              // Used to prove whether the document-picker delegate ever fires in this build.
+              private func probeAlert(_ title: String, _ message: String) {
+                  DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { [weak self] in
+                      guard let self = self, let presenter = self.topMostViewController() else { return }
+                      let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+                      alert.addAction(UIAlertAction(title: "知道了", style: .default, handler: nil))
+                      presenter.present(alert, animated: true, completion: nil)
+                  }
+              }
+
               private func presentFolderPicker() {
                   DispatchQueue.main.async {
                       guard self.activeFolderPicker == nil else {
@@ -489,20 +506,14 @@ jobs:
               }
 
               func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
-                  print("FENG_FOLDER_PICKER: documentPickerWasCancelled")
                   self.activeFolderPicker = nil
-                  self.reportFolderPickerStatus("iOS 已返回：用户取消了文件夹选择")
+                  self.probeAlert("【探针】选择器被取消", "documentPickerWasCancelled 已触发：选择器回调通道是通的，问题出在“确认选择”那一步。")
                   dispatchFolderPayloadToWeb(["cancelled": true])
               }
 
               func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
-                  print("FENG_FOLDER_PICKER: didPickDocumentsAt count=\(urls.count)")
                   self.activeFolderPicker = nil
-                  guard let pickedURL = urls.first else {
-                      self.reportFolderPickerStatus("iOS 已触发选择回调，但没有返回文件夹 URL")
-                      return
-                  }
-                  self.reportFolderPickerStatus("iOS 已收到文件夹：\(pickedURL.lastPathComponent)，正在读取…")
+                  guard let pickedURL = urls.first else { return }
 
                   let granted = pickedURL.startAccessingSecurityScopedResource()
                   let canonicalKey = pickedURL.standardizedFileURL.path
@@ -522,6 +533,7 @@ jobs:
                   }
 
                   let folderName = pickedURL.lastPathComponent
+                  self.probeAlert("【探针】已收到文件夹", "名称：\(folderName)\n路径：\(pickedURL.path)\n访问授权：\(granted ? "成功" : "失败")")
                   DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                       if #available(iOS 14.0, *) {
                           self.webView?.callAsyncJavaScript(
@@ -536,6 +548,9 @@ jobs:
 
                   DispatchQueue.global(qos: .userInitiated).async {
                       let payload = self.enumerateFolderURL(pickedURL, folderName: folderName, silent: false, granted: granted)
+                      let probeCount = (payload["files"] as? [[String: String]])?.count ?? -1
+                      let probeErr = (payload["error"] as? String) ?? ""
+                      self.probeAlert("【探针】枚举完成", "音频文件：\(probeCount) 个\(probeErr.isEmpty ? "" : "\n读取错误：\(probeErr)")")
                       DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
                           self.dispatchFolderPayloadToWeb(payload)
                       }
@@ -613,13 +628,16 @@ jobs:
                       }
                   }
 
-                  var coordError: NSError?
-                  let coordinator = NSFileCoordinator()
-                  coordinator.coordinate(readingItemAt: url, options: [.withoutChanges], error: &coordError) { coordinatedURL in
-                      scanDirectory(coordinatedURL)
-                  }
+                  // PROBE BUILD: no NSFileCoordinator — enumerate the granted
+                  // security-scoped URL directly and surface read errors.
+                  scanDirectory(url)
+                  var enumError = ""
                   if audioItems.isEmpty {
-                      scanDirectory(url)
+                      do {
+                          _ = try FileManager.default.contentsOfDirectory(atPath: url.path)
+                      } catch {
+                          enumError = error.localizedDescription
+                      }
                   }
 
                   let filesPayload: [[String: String]] = audioItems.map { item in
@@ -635,6 +653,7 @@ jobs:
                       "silent": silent,
                       "granted": granted,
                       "folderName": folderName,
+                      "error": enumError,
                       "files": filesPayload
                   ]
               }
