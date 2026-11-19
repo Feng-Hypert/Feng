@@ -3392,6 +3392,12 @@
 
       window.__fengPrevTrack = () => playPrev();
       window.__fengNextTrack = () => playNext(true);
+      window.__fengOpenNowPlaying = () => {
+        if (state.currentTrackId) {
+          closeAllBottomSheets();
+          openNowPlaying();
+        }
+      };
 
       function syncMediaSessionHandlers() {
         if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.fengMedia) {
