@@ -1324,7 +1324,7 @@ jobs:
           WIDGET_BUNDLE_ID="${BUNDLE_ID}.widget"
 
           mkdir -p ios/App/FengWidgetExtension
-          sips -s format png -z 256 256 icon-512.png --out ios/App/FengWidgetExtension/widget-icon.png
+          sips -s format png -z 320 320 icon-512.png --out ios/App/FengWidgetExtension/widget-icon.png
 
           cat << EOF > ios/App/App/App.entitlements
           <?xml version="1.0" encoding="UTF-8"?>
@@ -1394,13 +1394,6 @@ jobs:
           import UIKit
           import AppIntents
 
-          private func fengWidgetGroupID() -> String {
-              if let id = Bundle.main.object(forInfoDictionaryKey: "FengAppGroup") as? String, !id.isEmpty {
-                  return id
-              }
-              return "group.com.feng.music"
-          }
-
           private func postDarwinWidgetCommand(_ suffix: String) {
               let center = CFNotificationCenterGetDarwinNotifyCenter()
               let name = CFNotificationName("com.feng.music.widget.\(suffix)" as CFString)
@@ -1449,187 +1442,279 @@ jobs:
 
           struct FengWidgetEntry: TimelineEntry {
               let date: Date
-              let title: String
-              let subtitle: String
-              let moodTag: String
-              let isPlaying: Bool
-              let hasLiveSync: Bool
-              let coverImage: UIImage?
+              let iconImage: UIImage?
           }
 
           struct FengWidgetProvider: TimelineProvider {
-              private func timeMood(for date: Date) -> (tag: String, subtitle: String) {
-                  let hour = Calendar.current.component(.hour, from: date)
-                  switch hour {
-                  case 6..<12:
-                      return ("晨光序曲", "开启今日份无损旋律")
-                  case 12..<18:
-                      return ("午后漫游", "私人纯享无损音乐空间")
-                  case 18..<22:
-                      return ("暮色微风", "把世界调成喜欢的频道")
-                  default:
-                      return ("深夜纯享", "夜色与副歌同样温柔")
-                  }
-              }
-
-              private func buildEntry(for date: Date) -> FengWidgetEntry {
-                  let mood = timeMood(for: date)
-                  let groupID = fengWidgetGroupID()
-                  let defaults = UserDefaults(suiteName: groupID)
-                  let syncedTitle = (defaults?.string(forKey: "widget_title") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-                  let syncedArtist = (defaults?.string(forKey: "widget_artist") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-                  let isPlaying = defaults?.bool(forKey: "widget_isPlaying") ?? false
-
-                  var cover: UIImage? = nil
-                  if let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupID) {
-                      let coverURL = containerURL.appendingPathComponent("widget_cover.jpg")
-                      if let data = try? Data(contentsOf: coverURL) {
-                          cover = UIImage(data: data)
-                      }
-                  }
-
-                  let hasLive = !syncedTitle.isEmpty && syncedTitle != "FENG MUSIC"
-                  return FengWidgetEntry(
-                      date: date,
-                      title: hasLive ? syncedTitle : "FENG MUSIC",
-                      subtitle: hasLive ? (syncedArtist.isEmpty ? mood.subtitle : syncedArtist) : mood.subtitle,
-                      moodTag: hasLive ? (isPlaying ? "正在播放" : "已暂停") : mood.tag,
-                      isPlaying: isPlaying,
-                      hasLiveSync: hasLive,
-                      coverImage: cover ?? loadBundledAppIcon()
-                  )
+              private func makeEntry(for date: Date) -> FengWidgetEntry {
+                  FengWidgetEntry(date: date, iconImage: loadBundledAppIcon())
               }
 
               func placeholder(in context: Context) -> FengWidgetEntry {
-                  buildEntry(for: Date())
+                  makeEntry(for: Date())
               }
 
               func getSnapshot(in context: Context, completion: @escaping (FengWidgetEntry) -> Void) {
-                  completion(buildEntry(for: Date()))
+                  completion(makeEntry(for: Date()))
               }
 
               func getTimeline(in context: Context, completion: @escaping (Timeline<FengWidgetEntry>) -> Void) {
-                  let now = Date()
-                  var entries: [FengWidgetEntry] = [buildEntry(for: now)]
-                  for offsetHour in [2, 4, 6] {
-                      if let nextDate = Calendar.current.date(byAdding: .hour, value: offsetHour, to: now) {
-                          entries.append(buildEntry(for: nextDate))
-                      }
-                  }
-                  completion(Timeline(entries: entries, policy: .atEnd))
+                  let entry = makeEntry(for: Date())
+                  let next = Calendar.current.date(byAdding: .hour, value: 6, to: Date()) ?? Date().addingTimeInterval(21600)
+                  completion(Timeline(entries: [entry], policy: .after(next)))
               }
           }
 
-          // MARK: - Liquid Glass Palette & Surfaces (Inspired by FENG MUSIC Icon)
-          private enum FengGlassPalette {
-              static let sky = Color(red: 0.22, green: 0.72, blue: 0.98)
-              static let aqua = Color(red: 0.28, green: 0.88, blue: 0.86)
-              static let ice = Color(red: 0.93, green: 0.97, blue: 1.00)
-              static let deepInk = Color(red: 0.06, green: 0.14, blue: 0.25)
-              static let mutedInk = Color(red: 0.16, green: 0.30, blue: 0.45)
+          // MARK: - A3 Optical Prism Liquid Glass Palette & Shapes
+          private enum A3Glass {
+              static let sky = Color(red: 0.28, green: 0.78, blue: 1.00)
+              static let aqua = Color(red: 0.24, green: 0.90, blue: 0.85)
+              static let deepNavy = Color(red: 0.03, green: 0.07, blue: 0.14)
+              static let midOcean = Color(red: 0.06, green: 0.15, blue: 0.26)
+              static let smokedGlass = Color(red: 0.08, green: 0.13, blue: 0.21)
           }
 
-          struct LiquidGlassBackground: View {
-              let coverImage: UIImage?
-              let hasLiveSync: Bool
+          struct SmoothWaveShape: Shape {
+              func path(in rect: CGRect) -> Path {
+                  var p = Path()
+                  let w = rect.width
+                  let midY = rect.midY
+                  let amp = rect.height * 0.44
+                  p.move(to: CGPoint(x: 0, y: midY))
+                  p.addCurve(
+                      to: CGPoint(x: w * 0.18, y: midY - amp * 0.28),
+                      control1: CGPoint(x: w * 0.06, y: midY),
+                      control2: CGPoint(x: w * 0.12, y: midY - amp * 0.28)
+                  )
+                  p.addCurve(
+                      to: CGPoint(x: w * 0.34, y: midY - amp * 0.92),
+                      control1: CGPoint(x: w * 0.24, y: midY - amp * 0.28),
+                      control2: CGPoint(x: w * 0.27, y: midY - amp * 0.92)
+                  )
+                  p.addCurve(
+                      to: CGPoint(x: w * 0.48, y: midY + amp * 0.86),
+                      control1: CGPoint(x: w * 0.40, y: midY - amp * 0.92),
+                      control2: CGPoint(x: w * 0.42, y: midY + amp * 0.86)
+                  )
+                  p.addCurve(
+                      to: CGPoint(x: w * 0.64, y: midY - amp * 0.72),
+                      control1: CGPoint(x: w * 0.54, y: midY + amp * 0.86),
+                      control2: CGPoint(x: w * 0.58, y: midY - amp * 0.72)
+                  )
+                  p.addCurve(
+                      to: CGPoint(x: w * 0.80, y: midY + amp * 0.36),
+                      control1: CGPoint(x: w * 0.70, y: midY - amp * 0.72),
+                      control2: CGPoint(x: w * 0.74, y: midY + amp * 0.36)
+                  )
+                  p.addCurve(
+                      to: CGPoint(x: w, y: midY),
+                      control1: CGPoint(x: w * 0.88, y: midY + amp * 0.36),
+                      control2: CGPoint(x: w * 0.94, y: midY)
+                  )
+                  return p
+              }
+          }
+
+          struct A3PrismGlassBackground: View {
+              let cornerRadius: CGFloat
 
               var body: some View {
                   GeometryReader { geo in
                       ZStack {
-                          // Crystal ice-glass base
+                          // Deep smoked ocean-aurora base
+                          LinearGradient(
+                              colors: [A3Glass.deepNavy, A3Glass.midOcean, Color(red: 0.04, green: 0.09, blue: 0.17)],
+                              startPoint: .topLeading,
+                              endPoint: .bottomTrailing
+                          )
+
+                          // Translucent aurora caustic pools behind glass
+                          Circle()
+                              .fill(
+                                  RadialGradient(
+                                      colors: [A3Glass.aqua.opacity(0.32), A3Glass.sky.opacity(0.10), .clear],
+                                      center: .center,
+                                      startRadius: 2,
+                                      endRadius: geo.size.width * 0.48
+                                  )
+                              )
+                              .frame(width: geo.size.width * 0.85, height: geo.size.width * 0.85)
+                              .offset(x: geo.size.width * 0.32, y: -geo.size.height * 0.42)
+                              .blur(radius: 22)
+
+                          Circle()
+                              .fill(
+                                  RadialGradient(
+                                      colors: [A3Glass.sky.opacity(0.28), A3Glass.aqua.opacity(0.08), .clear],
+                                      center: .center,
+                                      startRadius: 2,
+                                      endRadius: geo.size.width * 0.45
+                                  )
+                              )
+                              .frame(width: geo.size.width * 0.75, height: geo.size.width * 0.75)
+                              .offset(x: -geo.size.width * 0.30, y: geo.size.height * 0.45)
+                              .blur(radius: 22)
+
+                          // Subtle diagonal liquid-glass surface sheen
                           LinearGradient(
                               colors: [
-                                  Color(red: 0.95, green: 0.98, blue: 1.00),
-                                  Color(red: 0.86, green: 0.95, blue: 1.00),
-                                  Color(red: 0.92, green: 0.97, blue: 1.00)
+                                  Color.white.opacity(0.16),
+                                  Color.white.opacity(0.03),
+                                  Color.clear,
+                                  A3Glass.sky.opacity(0.07)
                               ],
                               startPoint: .topLeading,
                               endPoint: .bottomTrailing
                           )
 
-                          // Subtle blurred cover tint when live album art is synced
-                          if hasLiveSync, let uiImage = coverImage {
-                              Image(uiImage: uiImage)
-                                  .resizable()
-                                  .aspectRatio(contentMode: .fill)
-                                  .frame(width: geo.size.width, height: geo.size.height)
-                                  .blur(radius: 28)
-                                  .scaleEffect(1.25)
-                                  .opacity(0.28)
-                          }
-
-                          // Flowing cyan & sky-blue caustic light ribbons echoing icon-512
-                          Circle()
-                              .fill(
-                                  RadialGradient(
-                                      colors: [FengGlassPalette.aqua.opacity(0.52), FengGlassPalette.sky.opacity(0.18), .clear],
-                                      center: .center,
-                                      startRadius: 4,
-                                      endRadius: geo.size.width * 0.62
-                                  )
+                          // Outer optical prism bevel stroke
+                          RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                              .strokeBorder(
+                                  AngularGradient(
+                                      gradient: Gradient(colors: [
+                                          Color.white.opacity(0.82),
+                                          A3Glass.sky.opacity(0.70),
+                                          Color.white.opacity(0.30),
+                                          A3Glass.aqua.opacity(0.62),
+                                          Color.white.opacity(0.75),
+                                          A3Glass.sky.opacity(0.42),
+                                          Color.white.opacity(0.82)
+                                      ]),
+                                      center: .center
+                                  ),
+                                  lineWidth: 2.0
                               )
-                              .frame(width: geo.size.width * 0.95, height: geo.size.width * 0.95)
-                              .offset(x: geo.size.width * 0.36, y: -geo.size.height * 0.38)
-                              .blur(radius: 16)
+                              .padding(0.5)
 
-                          Circle()
-                              .fill(
-                                  RadialGradient(
-                                      colors: [FengGlassPalette.sky.opacity(0.46), FengGlassPalette.aqua.opacity(0.16), .clear],
-                                      center: .center,
-                                      startRadius: 4,
-                                      endRadius: geo.size.width * 0.58
-                                  )
-                              )
-                              .frame(width: geo.size.width * 0.9, height: geo.size.width * 0.9)
-                              .offset(x: -geo.size.width * 0.38, y: geo.size.height * 0.42)
-                              .blur(radius: 18)
-
-                          // Top-left liquid lens specular sheen
-                          LinearGradient(
-                              colors: [
-                                  Color.white.opacity(0.75),
-                                  Color.white.opacity(0.18),
-                                  Color.clear
-                              ],
-                              startPoint: .topLeading,
-                              endPoint: .center
-                          )
-
-                          // Inner refractive crystal rim
-                          RoundedRectangle(cornerRadius: 24, style: .continuous)
+                          // Inner secondary glass refraction rim
+                          RoundedRectangle(cornerRadius: max(8, cornerRadius - 3), style: .continuous)
                               .strokeBorder(
                                   LinearGradient(
                                       colors: [
-                                          Color.white.opacity(0.95),
-                                          FengGlassPalette.aqua.opacity(0.45),
-                                          FengGlassPalette.sky.opacity(0.40),
-                                          Color.white.opacity(0.80)
+                                          Color.white.opacity(0.36),
+                                          A3Glass.aqua.opacity(0.18),
+                                          Color.white.opacity(0.10),
+                                          A3Glass.sky.opacity(0.26)
                                       ],
                                       startPoint: .topLeading,
                                       endPoint: .bottomTrailing
                                   ),
-                                  lineWidth: 1.5
+                                  lineWidth: 1.0
                               )
-                              .padding(1)
+                              .padding(3.5)
+
+                          // Specular corner star glints (top-left & top-right)
+                          Circle()
+                              .fill(
+                                  RadialGradient(
+                                      colors: [Color.white.opacity(0.95), A3Glass.sky.opacity(0.35), .clear],
+                                      center: .center,
+                                      startRadius: 0,
+                                      endRadius: 16
+                                  )
+                              )
+                              .frame(width: 28, height: 28)
+                              .position(x: geo.size.width - 14, y: 12)
+
+                          Circle()
+                              .fill(
+                                  RadialGradient(
+                                      colors: [Color.white.opacity(0.72), A3Glass.aqua.opacity(0.22), .clear],
+                                      center: .center,
+                                      startRadius: 0,
+                                      endRadius: 14
+                                  )
+                              )
+                              .frame(width: 24, height: 24)
+                              .position(x: 16, y: 12)
                       }
                   }
               }
           }
 
-          struct LiquidGlassIconStage: View {
+          struct SmokedCrystalVinylView: View {
+              let diameter: CGFloat
+
+              var body: some View {
+                  ZStack {
+                      Circle()
+                          .fill(
+                              RadialGradient(
+                                  colors: [
+                                      Color(red: 0.16, green: 0.20, blue: 0.27),
+                                      Color(red: 0.06, green: 0.08, blue: 0.12),
+                                      Color(red: 0.11, green: 0.15, blue: 0.21)
+                                  ],
+                                  center: .center,
+                                  startRadius: diameter * 0.06,
+                                  endRadius: diameter * 0.52
+                              )
+                          )
+
+                      // Glossy diagonal light reflection across vinyl grooves
+                      Circle()
+                          .fill(
+                              AngularGradient(
+                                  gradient: Gradient(colors: [
+                                      .clear,
+                                      Color.white.opacity(0.18),
+                                      .clear,
+                                      .clear,
+                                      A3Glass.sky.opacity(0.14),
+                                      .clear
+                                  ]),
+                                  center: .center,
+                                  angle: .degrees(-35)
+                              )
+                          )
+
+                      // Concentric vinyl micro-grooves
+                      ForEach([0.88, 0.78, 0.68, 0.58, 0.48], id: \.self) { ratio in
+                          Circle()
+                              .stroke(Color.white.opacity(0.10), lineWidth: 0.6)
+                              .frame(width: diameter * ratio, height: diameter * ratio)
+                      }
+
+                      // Center hub
+                      Circle()
+                          .fill(
+                              LinearGradient(
+                                  colors: [Color.white.opacity(0.26), Color.black.opacity(0.65)],
+                                  startPoint: .topLeading,
+                                  endPoint: .bottomTrailing
+                              )
+                          )
+                          .frame(width: diameter * 0.26, height: diameter * 0.26)
+                          .overlay(
+                              Circle().stroke(Color.white.opacity(0.28), lineWidth: 0.8)
+                          )
+
+                      Circle()
+                          .stroke(
+                              LinearGradient(
+                                  colors: [Color.white.opacity(0.32), A3Glass.sky.opacity(0.18), Color.black.opacity(0.45)],
+                                  startPoint: .topLeading,
+                                  endPoint: .bottomTrailing
+                              ),
+                              lineWidth: 1.0
+                          )
+                  }
+                  .frame(width: diameter, height: diameter)
+                  .shadow(color: Color.black.opacity(0.55), radius: 10, x: 4, y: 4)
+              }
+          }
+
+          struct SuperellipseCrystalIcon: View {
               let image: UIImage?
               let size: CGFloat
               let cornerRadius: CGFloat
 
               var body: some View {
                   ZStack {
-                      // Soft sky-blue ambient glow behind icon
                       RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                          .fill(FengGlassPalette.sky.opacity(0.28))
-                          .frame(width: size * 0.92, height: size * 0.92)
+                          .fill(A3Glass.sky.opacity(0.24))
+                          .frame(width: size * 0.94, height: size * 0.94)
                           .blur(radius: 10)
-                          .offset(y: 4)
 
                       Group {
                           if let uiImage = image {
@@ -1639,7 +1724,7 @@ jobs:
                           } else {
                               ZStack {
                                   LinearGradient(
-                                      colors: [Color.white, FengGlassPalette.ice],
+                                      colors: [A3Glass.midOcean, A3Glass.deepNavy],
                                       startPoint: .topLeading,
                                       endPoint: .bottomTrailing
                                   )
@@ -1647,7 +1732,7 @@ jobs:
                                       .font(.system(size: size * 0.44, weight: .bold))
                                       .foregroundStyle(
                                           LinearGradient(
-                                              colors: [FengGlassPalette.sky, FengGlassPalette.aqua],
+                                              colors: [A3Glass.sky, A3Glass.aqua],
                                               startPoint: .topLeading,
                                               endPoint: .bottomTrailing
                                           )
@@ -1658,80 +1743,107 @@ jobs:
                       .frame(width: size, height: size)
                       .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
                       .overlay(
-                          // Specular glass highlight arc on top-left corner
+                          RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                              .fill(
+                                  LinearGradient(
+                                      colors: [Color.white.opacity(0.22), Color.clear, A3Glass.sky.opacity(0.12)],
+                                      startPoint: .topLeading,
+                                      endPoint: .bottomTrailing
+                                  )
+                              )
+                      )
+                      .overlay(
                           RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                               .strokeBorder(
                                   LinearGradient(
-                                      colors: [Color.white.opacity(0.95), FengGlassPalette.sky.opacity(0.32), Color.white.opacity(0.65)],
+                                      colors: [
+                                          Color.white.opacity(0.88),
+                                          A3Glass.aqua.opacity(0.50),
+                                          A3Glass.sky.opacity(0.38),
+                                          Color.white.opacity(0.55)
+                                      ],
                                       startPoint: .topLeading,
                                       endPoint: .bottomTrailing
                                   ),
-                                  lineWidth: 1.4
+                                  lineWidth: 1.5
                               )
                       )
-                      .shadow(color: FengGlassPalette.sky.opacity(0.24), radius: 8, x: 0, y: 4)
+                      .shadow(color: Color.black.opacity(0.50), radius: 10, x: 0, y: 5)
                   }
               }
           }
 
-          struct LiquidGlassWaveGlyph: View {
-              var body: some View {
-                  HStack(alignment: .center, spacing: 3) {
-                      ForEach([0.45, 0.85, 1.0, 0.65, 0.40], id: \.self) { ratio in
-                          Capsule()
-                              .fill(
-                                  LinearGradient(
-                                      colors: [FengGlassPalette.sky, FengGlassPalette.aqua],
-                                      startPoint: .top,
-                                      endPoint: .bottom
-                                  )
-                              )
-                              .frame(width: 3, height: 12 * ratio)
-                      }
-                  }
-              }
-          }
-
-          struct GlassCircleButtonLabel: View {
+          struct LiquidDropletButtonLabel: View {
               let symbol: String
-              let size: CGFloat
+              let width: CGFloat
+              let height: CGFloat
               let primary: Bool
 
               var body: some View {
-                  Image(systemName: symbol)
-                      .font(.system(size: primary ? 14 : 12, weight: .bold))
-                      .foregroundColor(primary ? .white : FengGlassPalette.deepInk)
-                      .frame(width: size, height: size)
-                      .background(
-                          Group {
-                              if primary {
-                                  LinearGradient(
-                                      colors: [FengGlassPalette.sky, Color(red: 0.16, green: 0.58, blue: 0.96)],
-                                      startPoint: .topLeading,
-                                      endPoint: .bottomTrailing
-                                  )
-                              } else {
-                                  LinearGradient(
-                                      colors: [Color.white.opacity(0.86), Color.white.opacity(0.52)],
-                                      startPoint: .topLeading,
-                                      endPoint: .bottomTrailing
-                                  )
-                              }
-                          }
-                      )
-                      .clipShape(Circle())
-                      .overlay(
+                  ZStack {
+                      if primary {
                           Circle()
-                              .strokeBorder(
+                              .fill(
+                                  RadialGradient(
+                                      colors: [
+                                          Color.white.opacity(0.95),
+                                          Color(red: 0.62, green: 0.89, blue: 1.00),
+                                          A3Glass.sky
+                                      ],
+                                      center: .topLeading,
+                                      startRadius: 2,
+                                      endRadius: width * 0.72
+                                  )
+                              )
+                              .overlay(
+                                  Circle()
+                                      .strokeBorder(
+                                          LinearGradient(
+                                              colors: [Color.white.opacity(0.98), A3Glass.aqua.opacity(0.55)],
+                                              startPoint: .topLeading,
+                                              endPoint: .bottomTrailing
+                                          ),
+                                          lineWidth: 1.4
+                                      )
+                              )
+                              .shadow(color: A3Glass.sky.opacity(0.68), radius: 9, x: 0, y: 2)
+                      } else {
+                          Capsule()
+                              .fill(
                                   LinearGradient(
-                                      colors: [Color.white.opacity(primary ? 0.65 : 0.95), FengGlassPalette.sky.opacity(0.28)],
+                                      colors: [
+                                          Color.white.opacity(0.24),
+                                          A3Glass.smokedGlass.opacity(0.75),
+                                          A3Glass.sky.opacity(0.16)
+                                      ],
                                       startPoint: .topLeading,
                                       endPoint: .bottomTrailing
-                                  ),
-                                  lineWidth: 1
+                                  )
                               )
-                      )
-                      .shadow(color: FengGlassPalette.sky.opacity(primary ? 0.36 : 0.14), radius: primary ? 6 : 4, x: 0, y: 3)
+                              .overlay(
+                                  Capsule()
+                                      .strokeBorder(
+                                          LinearGradient(
+                                              colors: [
+                                                  Color.white.opacity(0.76),
+                                                  A3Glass.sky.opacity(0.32),
+                                                  Color.white.opacity(0.45)
+                                              ],
+                                              startPoint: .topLeading,
+                                              endPoint: .bottomTrailing
+                                          ),
+                                          lineWidth: 1.1
+                                      )
+                              )
+                              .shadow(color: Color.black.opacity(0.36), radius: 5, x: 0, y: 3)
+                      }
+
+                      Image(systemName: symbol)
+                          .font(.system(size: primary ? 16 : 12, weight: .bold))
+                          .foregroundColor(primary ? Color(red: 0.05, green: 0.18, blue: 0.34) : Color.white.opacity(0.94))
+                          .offset(x: symbol == "play.fill" ? 1.2 : 0)
+                  }
+                  .frame(width: width, height: height)
               }
           }
 
@@ -1748,159 +1860,109 @@ jobs:
                       }
                   }
                   .widgetURL(URL(string: "fengmusic://nowplaying"))
-                  .modifier(FengWidgetContainerBackground(coverImage: entry.coverImage, hasLiveSync: entry.hasLiveSync))
+                  .modifier(A3PrismContainerBackground(cornerRadius: family == .systemSmall ? 22 : 24))
               }
 
               private var smallBody: some View {
-                  VStack(alignment: .leading, spacing: 8) {
-                      HStack(alignment: .top) {
-                          LiquidGlassIconStage(image: entry.coverImage, size: 54, cornerRadius: 15)
-                          Spacer(minLength: 4)
-                          HStack(spacing: 4) {
-                              LiquidGlassWaveGlyph()
-                          }
-                          .padding(.horizontal, 8)
-                          .padding(.vertical, 6)
-                          .background(Color.white.opacity(0.68))
-                          .clipShape(Capsule())
-                          .overlay(
-                              Capsule().strokeBorder(Color.white.opacity(0.9), lineWidth: 1)
-                          )
-                      }
-
+                  VStack(spacing: 12) {
+                      Spacer(minLength: 2)
+                      SuperellipseCrystalIcon(image: entry.iconImage, size: 78, cornerRadius: 22)
                       Spacer(minLength: 2)
 
-                      VStack(alignment: .leading, spacing: 2) {
-                          Text(entry.title)
-                              .font(.system(size: 13.5, weight: .bold, design: .rounded))
-                              .foregroundColor(FengGlassPalette.deepInk)
-                              .lineLimit(1)
-                          Text(entry.hasLiveSync ? entry.subtitle : entry.moodTag)
-                              .font(.system(size: 11, weight: .medium))
-                              .foregroundColor(FengGlassPalette.mutedInk.opacity(0.85))
-                              .lineLimit(1)
-                      }
-
                       if #available(iOS 17.0, *) {
-                          HStack(spacing: 8) {
+                          HStack(spacing: 10) {
                               Button(intent: FengTogglePlayIntent()) {
-                                  HStack(spacing: 4) {
-                                      Image(systemName: entry.isPlaying ? "pause.fill" : "play.fill")
-                                          .font(.system(size: 11, weight: .bold))
-                                      Text(entry.isPlaying ? "暂停" : "播放")
-                                          .font(.system(size: 11, weight: .semibold))
-                                  }
-                                  .foregroundColor(.white)
-                                  .frame(maxWidth: .infinity, minHeight: 30)
-                                  .background(
-                                      LinearGradient(
-                                          colors: [FengGlassPalette.sky, Color(red: 0.16, green: 0.58, blue: 0.96)],
-                                          startPoint: .topLeading,
-                                          endPoint: .bottomTrailing
-                                      )
-                                  )
-                                  .clipShape(Capsule())
-                                  .overlay(
-                                      Capsule().strokeBorder(Color.white.opacity(0.55), lineWidth: 1)
-                                  )
-                                  .shadow(color: FengGlassPalette.sky.opacity(0.32), radius: 5, x: 0, y: 2)
+                                  LiquidDropletButtonLabel(symbol: "play.fill", width: 52, height: 30, primary: false)
                               }
                               .buttonStyle(.plain)
 
                               Button(intent: FengNextTrackIntent()) {
-                                  GlassCircleButtonLabel(symbol: "forward.fill", size: 30, primary: false)
+                                  LiquidDropletButtonLabel(symbol: "forward.fill", width: 52, height: 30, primary: false)
                               }
                               .buttonStyle(.plain)
                           }
                       }
                   }
-                  .padding(14)
+                  .padding(.horizontal, 14)
+                  .padding(.vertical, 14)
               }
 
               private var mediumBody: some View {
-                  HStack(spacing: 14) {
-                      LiquidGlassIconStage(image: entry.coverImage, size: 110, cornerRadius: 24)
+                  HStack(spacing: 8) {
+                      // Left Stage: Superellipse Icon + Peeking Smoked Crystal Vinyl
+                      ZStack(alignment: .leading) {
+                          SmokedCrystalVinylView(diameter: 106)
+                              .offset(x: 42)
+                          SuperellipseCrystalIcon(image: entry.iconImage, size: 114, cornerRadius: 28)
+                      }
+                      .frame(width: 150, height: 118, alignment: .leading)
 
-                      VStack(alignment: .leading, spacing: 6) {
-                          // Top frosted mood pill
-                          HStack(spacing: 6) {
-                              Circle()
-                                  .fill(
+                      // Right Stage: Editorial Serif Italic Quote + Glowing Cyan Wave + 3 Liquid Glass Buttons
+                      VStack(alignment: .trailing, spacing: 8) {
+                          Text("All the promises I\nmade at sunset were\nas real as any other")
+                              .font(.system(size: 13.5, weight: .regular, design: .serif))
+                              .italic()
+                              .multilineTextAlignment(.trailing)
+                              .lineSpacing(1.5)
+                              .minimumScaleFactor(0.80)
+                              .foregroundColor(Color.white.opacity(0.95))
+                              .shadow(color: A3Glass.sky.opacity(0.32), radius: 5, x: 0, y: 0)
+                              .frame(maxWidth: .infinity, alignment: .trailing)
+
+                          ZStack {
+                              SmoothWaveShape()
+                                  .stroke(A3Glass.sky.opacity(0.65), style: StrokeStyle(lineWidth: 4.5, lineCap: .round))
+                                  .blur(radius: 3.5)
+                              SmoothWaveShape()
+                                  .stroke(
                                       LinearGradient(
-                                          colors: [FengGlassPalette.sky, FengGlassPalette.aqua],
-                                          startPoint: .topLeading,
-                                          endPoint: .bottomTrailing
-                                      )
+                                          colors: [A3Glass.sky.opacity(0.65), Color.white.opacity(0.95), A3Glass.aqua],
+                                          startPoint: .leading,
+                                          endPoint: .trailing
+                                      ),
+                                      style: StrokeStyle(lineWidth: 1.6, lineCap: .round)
                                   )
-                                  .frame(width: 6, height: 6)
-                              Text(entry.moodTag)
-                                  .font(.system(size: 10.5, weight: .semibold))
-                                  .foregroundColor(FengGlassPalette.mutedInk)
-                                  .lineLimit(1)
-                              Spacer(minLength: 4)
-                              LiquidGlassWaveGlyph()
                           }
-                          .padding(.horizontal, 10)
-                          .padding(.vertical, 5)
-                          .background(Color.white.opacity(0.62))
-                          .clipShape(Capsule())
-                          .overlay(
-                              Capsule().strokeBorder(Color.white.opacity(0.92), lineWidth: 1)
-                          )
+                          .frame(height: 18)
+                          .padding(.horizontal, 2)
 
-                          VStack(alignment: .leading, spacing: 2) {
-                              Text(entry.title)
-                                  .font(.system(size: 16, weight: .bold, design: .rounded))
-                                  .foregroundColor(FengGlassPalette.deepInk)
-                                  .lineLimit(1)
-                              Text(entry.subtitle)
-                                  .font(.system(size: 11.5, weight: .medium))
-                                  .foregroundColor(FengGlassPalette.mutedInk.opacity(0.82))
-                                  .lineLimit(1)
-                          }
-                          .padding(.top, 1)
-
-                          Spacer(minLength: 2)
-
-                          // Floating Liquid Glass Control Dock
                           if #available(iOS 17.0, *) {
-                              HStack(spacing: 10) {
+                              HStack(spacing: 12) {
+                                  Spacer(minLength: 0)
                                   Button(intent: FengPrevTrackIntent()) {
-                                      GlassCircleButtonLabel(symbol: "backward.fill", size: 34, primary: false)
+                                      LiquidDropletButtonLabel(symbol: "backward.fill", width: 34, height: 34, primary: false)
                                   }
                                   .buttonStyle(.plain)
 
                                   Button(intent: FengTogglePlayIntent()) {
-                                      GlassCircleButtonLabel(symbol: entry.isPlaying ? "pause.fill" : "play.fill", size: 38, primary: true)
+                                      LiquidDropletButtonLabel(symbol: "play.fill", width: 42, height: 42, primary: true)
                                   }
                                   .buttonStyle(.plain)
 
                                   Button(intent: FengNextTrackIntent()) {
-                                      GlassCircleButtonLabel(symbol: "forward.fill", size: 34, primary: false)
+                                      LiquidDropletButtonLabel(symbol: "forward.fill", width: 34, height: 34, primary: false)
                                   }
                                   .buttonStyle(.plain)
-
-                                  Spacer(minLength: 0)
                               }
                           }
                       }
-                      .frame(maxWidth: .infinity, alignment: .leading)
+                      .frame(maxWidth: .infinity)
                   }
-                  .padding(14)
+                  .padding(.horizontal, 14)
+                  .padding(.vertical, 12)
               }
           }
 
-          struct FengWidgetContainerBackground: ViewModifier {
-              let coverImage: UIImage?
-              let hasLiveSync: Bool
+          struct A3PrismContainerBackground: ViewModifier {
+              let cornerRadius: CGFloat
 
               func body(content: Content) -> some View {
                   if #available(iOS 17.0, *) {
                       content.containerBackground(for: .widget) {
-                          LiquidGlassBackground(coverImage: coverImage, hasLiveSync: hasLiveSync)
+                          A3PrismGlassBackground(cornerRadius: cornerRadius)
                       }
                   } else {
-                      content.background(LiquidGlassBackground(coverImage: coverImage, hasLiveSync: hasLiveSync))
+                      content.background(A3PrismGlassBackground(cornerRadius: cornerRadius))
                   }
               }
           }
@@ -1913,8 +1975,8 @@ jobs:
                   StaticConfiguration(kind: kind, provider: FengWidgetProvider()) { entry in
                       FengWidgetEntryView(entry: entry)
                   }
-                  .configurationDisplayName("FENG MUSIC 液态玻璃")
-                  .description("冰晶液态玻璃音乐胶囊，支持桌面一键播放、暂停与切歌。")
+                  .configurationDisplayName("FENG MUSIC 棱镜玻璃")
+                  .description("深空通透液态玻璃黑胶小组件，支持桌面直接播放、暂停与切歌。")
                   .supportedFamilies([.systemSmall, .systemMedium])
                   .contentMarginsDisabled()
               }
