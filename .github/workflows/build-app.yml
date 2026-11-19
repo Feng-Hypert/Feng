@@ -1316,11 +1316,12 @@ jobs:
           EOF
 
       - name: Add iOS Home Screen Widget Extension (WidgetKit + iOS 17 Interactive Controls)
+        env:
+          BUNDLE_ID: ${{ inputs.bundle_id || 'com.feng.music' }}
+          APP_GROUP: ${{ inputs.app_group_id || 'group.com.feng.music' }}
+          BUILD_NUM: ${{ github.run_number }}
         run: |
-          BUNDLE_ID="${{ inputs.bundle_id || 'com.feng.music' }}"
-          APP_GROUP="${{ inputs.app_group_id || 'group.com.feng.music' }}"
           WIDGET_BUNDLE_ID="${BUNDLE_ID}.widget"
-          BUILD_NUM="${{ github.run_number }}"
 
           mkdir -p ios/App/FengWidgetExtension
           sips -s format png -z 256 256 icon-512.png --out ios/App/FengWidgetExtension/widget-icon.png
@@ -1385,6 +1386,8 @@ jobs:
           </plist>
           EOF
 
+      - name: Write FengWidget.swift (Liquid Glass UI)
+        run: |
           cat << 'EOF' > ios/App/FengWidgetExtension/FengWidget.swift
           import WidgetKit
           import SwiftUI
@@ -1918,6 +1921,11 @@ jobs:
           }
           EOF
 
+      - name: Register FengWidgetExtension Target in Xcode
+        env:
+          BUNDLE_ID: ${{ inputs.bundle_id || 'com.feng.music' }}
+        run: |
+          WIDGET_BUNDLE_ID="${BUNDLE_ID}.widget"
           gem list -i xcodeproj || sudo gem install xcodeproj --no-document || gem install --user-install xcodeproj --no-document
 
           cat << 'EOF' > add_widget_target.rb
