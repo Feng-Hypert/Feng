@@ -32,6 +32,10 @@ jobs:
           EOF
           npm init -y
           npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6 @capacitor/filesystem@6
+          npm install -D tailwindcss@3
+          printf '@tailwind base;\n@tailwind components;\n@tailwind utilities;\n' > tailwind.input.css
+          npx tailwindcss -i tailwind.input.css -o www/app.css --content ./www/index.html --minify
+          node -e 'const fs=require("fs"); let h=fs.readFileSync("www/index.html","utf8"); h=h.replace(/<!-- TAILWIND_CDN_TAG -->[\s\S]*?<!-- \/TAILWIND_CDN_TAG -->/, "<link rel=\"stylesheet\" href=\"./app.css\" />"); fs.writeFileSync("www/index.html",h,"utf8");'
           npx cap add android
           for dir in mipmap-mdpi mipmap-hdpi mipmap-xhdpi mipmap-xxhdpi mipmap-xxxhdpi; do
             mkdir -p "android/app/src/main/res/$dir"
@@ -76,6 +80,10 @@ jobs:
           EOF
           npm init -y
           npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/ios@6 @capacitor/filesystem@6
+          npm install -D tailwindcss@3
+          printf '@tailwind base;\n@tailwind components;\n@tailwind utilities;\n' > tailwind.input.css
+          npx tailwindcss -i tailwind.input.css -o www/app.css --content ./www/index.html --minify
+          node -e 'const fs=require("fs"); let h=fs.readFileSync("www/index.html","utf8"); h=h.replace(/<!-- TAILWIND_CDN_TAG -->[\s\S]*?<!-- \/TAILWIND_CDN_TAG -->/, "<link rel=\"stylesheet\" href=\"./app.css\" />"); fs.writeFileSync("www/index.html",h,"utf8");'
           npx cap add ios
 
       - name: Configure iOS Files App Sharing & Background Audio
@@ -117,7 +125,9 @@ jobs:
               private var player: AVPlayer?
               private var timeObserver: Any?
               private var endObserver: NSObjectProtocol?
+              private var failedObserver: NSObjectProtocol?
               private var didSendMeta = false
+              private var didSendError = false
               private var pendingResumeTime: Double = 0
               private var currentDuration: Double = 0
               private var currentRate: Float = 1.0
@@ -143,6 +153,19 @@ jobs:
                   ensureDefaultDocumentsFolder()
                   try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
                   try? AVAudioSession.sharedInstance().setActive(true)
+
+                  NotificationCenter.default.addObserver(
+                      self,
+                      selector: #selector(handleAudioInterruption(_:)),
+                      name: AVAudioSession.interruptionNotification,
+                      object: nil
+                  )
+                  NotificationCenter.default.addObserver(
+                      self,
+                      selector: #selector(handleRouteChange(_:)),
+                      name: AVAudioSession.routeChangeNotification,
+                      object: nil
+                  )
 
                   let cmd = MPRemoteCommandCenter.shared()
                   cmd.skipBackwardCommand.isEnabled = false
@@ -200,6 +223,46 @@ jobs:
                           }
                       }
                       return .success
+                  }
+              }
+
+              @objc private func handleAudioInterruption(_ notification: Notification) {
+                  guard let info = notification.userInfo,
+                        let typeVal = info[AVAudioSessionInterruptionTypeKey] as? UInt,
+                        let type = AVAudioSession.InterruptionType(rawValue: typeVal) else { return }
+                  DispatchQueue.main.async {
+                      switch type {
+                      case .began:
+                          self.player?.pause()
+                          self.updateNowPlayingInfo()
+                          self.sendEvent("pause", extra: [:])
+                      case .ended:
+                          let optVal = (info[AVAudioSessionInterruptionOptionKey] as? UInt) ?? 0
+                          let options = AVAudioSession.InterruptionOptions(rawValue: optVal)
+                          if options.contains(.shouldResume), let p = self.player {
+                              try? AVAudioSession.sharedInstance().setActive(true)
+                              p.play()
+                              p.rate = self.currentRate
+                              self.updateNowPlayingInfo()
+                              self.sendEvent("play", extra: [:])
+                          }
+                      @unknown default:
+                          break
+                      }
+                  }
+              }
+
+              @objc private func handleRouteChange(_ notification: Notification) {
+                  guard let info = notification.userInfo,
+                        let reasonVal = info[AVAudioSessionRouteChangeReasonKey] as? UInt,
+                        let reason = AVAudioSession.RouteChangeReason(rawValue: reasonVal) else { return }
+                  if reason == .oldDeviceUnavailable {
+                      DispatchQueue.main.async {
+                          guard let p = self.player, p.rate > 0 else { return }
+                          p.pause()
+                          self.updateNowPlayingInfo()
+                          self.sendEvent("pause", extra: [:])
+                      }
                   }
               }
 
@@ -267,6 +330,19 @@ jobs:
                   }
                   if let pill = collapsedPillView {
                       bridgeVC.view.bringSubviewToFront(pill)
+                  }
+                  syncDockInsetToWeb()
+                  pushBoundFoldersSummary()
+              }
+
+              private func syncDockInsetToWeb() {
+                  DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                      guard let tabBar = self.nativeTabBar, let wv = self.webView else { return }
+                      tabBar.layoutIfNeeded()
+                      let safeBottom = tabBar.superview?.safeAreaInsets.bottom ?? 0
+                      let barHeight = tabBar.bounds.height > 0 ? max(50, tabBar.bounds.height - safeBottom) : 56
+                      let insetPx = Int(round(barHeight + 22))
+                      wv.evaluateJavaScript("window.__fengSetDockInset && window.__fengSetDockInset(\(insetPx));", completionHandler: nil)
                   }
               }
 
@@ -571,7 +647,7 @@ jobs:
                   activeScopedURLs[canonicalKey] = pickedURL
 
                   if let bookmarkData = try? pickedURL.bookmarkData(
-                      options: .minimalBookmark,
+                      options: [],
                       includingResourceValuesForKeys: nil,
                       relativeTo: nil
                   ) {
@@ -611,6 +687,7 @@ jobs:
                   var didRefreshStale = false
 
                   for (key, bmData) in dict {
+                      if activeScopedURLs[key] != nil { continue }
                       var isStale = false
                       if let resolvedURL = try? URL(
                           resolvingBookmarkData: bmData,
@@ -618,10 +695,12 @@ jobs:
                           relativeTo: nil,
                           bookmarkDataIsStale: &isStale
                       ) {
+                          let canonicalPath = resolvedURL.standardizedFileURL.path
+                          if activeScopedURLs[canonicalPath] != nil { continue }
                           _ = resolvedURL.startAccessingSecurityScopedResource()
-                          activeScopedURLs[resolvedURL.standardizedFileURL.path] = resolvedURL
+                          activeScopedURLs[canonicalPath] = resolvedURL
                           if isStale,
-                             let freshData = try? resolvedURL.bookmarkData(options: .minimalBookmark, includingResourceValuesForKeys: nil, relativeTo: nil) {
+                             let freshData = try? resolvedURL.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil) {
                               updatedDict[key] = freshData
                               didRefreshStale = true
                           }
@@ -649,10 +728,75 @@ jobs:
                   }
               }
 
+              private func extractTextMetadata(from asset: AVURLAsset) -> (title: String, artist: String, album: String) {
+                  var title = ""
+                  var artist = ""
+                  var album = ""
+                  for item in asset.commonMetadata {
+                      guard let key = item.commonKey else { continue }
+                      let val = (item.stringValue ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+                      if val.isEmpty { continue }
+                      if key == .commonKeyTitle && title.isEmpty { title = val }
+                      else if key == .commonKeyArtist && artist.isEmpty { artist = val }
+                      else if key == .commonKeyAlbumName && album.isEmpty { album = val }
+                  }
+                  return (title, artist, album)
+              }
+
+              private func extractArtworkDataURL(from asset: AVURLAsset) -> String {
+                  for item in asset.commonMetadata where item.commonKey == .commonKeyArtwork {
+                      if let rawData = item.dataValue, let img = UIImage(data: rawData) {
+                          let maxDim: CGFloat = 360
+                          let maxSide = max(img.size.width, img.size.height)
+                          let scale = maxSide > maxDim ? (maxDim / maxSide) : 1.0
+                          let targetSize = CGSize(
+                              width: max(1, round(img.size.width * scale)),
+                              height: max(1, round(img.size.height * scale))
+                          )
+                          let renderer = UIGraphicsImageRenderer(size: targetSize)
+                          let resized = renderer.image { _ in
+                              img.draw(in: CGRect(origin: .zero, size: targetSize))
+                          }
+                          if let jpeg = resized.jpegData(compressionQuality: 0.78) {
+                              return "data:image/jpeg;base64," + jpeg.base64EncodedString()
+                          }
+                      }
+                  }
+                  return ""
+              }
+
+              private func patchCoversInBackground(items: [(url: URL, uri: String, relKey: String)]) {
+                  guard !items.isEmpty else { return }
+                  DispatchQueue.global(qos: .utility).async {
+                      var batch: [[String: String]] = []
+                      for item in items {
+                          let asset = AVURLAsset(url: item.url)
+                          let cover = self.extractArtworkDataURL(from: asset)
+                          if !cover.isEmpty {
+                              batch.append([
+                                  "relKey": item.relKey,
+                                  "uri": item.uri,
+                                  "cover": cover
+                              ])
+                          }
+                          if batch.count >= 8 {
+                              let chunk = batch
+                              batch.removeAll()
+                              self.dispatchNamedPayloadToWeb("__fengPatchTrackCovers", payload: ["items": chunk])
+                          }
+                      }
+                      if !batch.isEmpty {
+                          self.dispatchNamedPayloadToWeb("__fengPatchTrackCovers", payload: ["items": batch])
+                      }
+                  }
+              }
+
               private func enumerateFolderURL(_ url: URL, folderName: String, silent: Bool, granted: Bool) -> [String: Any] {
-                  let audioExts: Set<String> = ["mp3", "flac", "m4a", "wav", "ogg", "aac"]
+                  // iOS AVPlayer natively supports MP3, FLAC, M4A, WAV, AAC (not OGG Vorbis)
+                  let audioExts: Set<String> = ["mp3", "flac", "m4a", "wav", "aac"]
                   var lrcMap: [String: String] = [:]
-                  var audioItems: [(name: String, uri: String, base: String)] = []
+                  var audioItems: [(url: URL, name: String, uri: String, relKey: String, base: String, title: String, artist: String, album: String)] = []
+                  let rootPath = url.standardizedFileURL.path
 
                   let scanDirectory: (URL) -> Void = { targetURL in
                       if let enumerator = FileManager.default.enumerator(
@@ -670,14 +814,29 @@ jobs:
                                       lrcMap[base] = txt
                                   }
                               } else if audioExts.contains(ext) {
-                                  audioItems.append((name: fileURL.lastPathComponent, uri: fileURL.absoluteString, base: base))
+                                  let fullPath = fileURL.standardizedFileURL.path
+                                  let relSuffix = fullPath.hasPrefix(rootPath)
+                                      ? String(fullPath.dropFirst(rootPath.count)).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+                                      : fileURL.lastPathComponent
+                                  let relKey = "\(folderName)/\(relSuffix)"
+                                  let asset = AVURLAsset(url: fileURL)
+                                  let meta = self.extractTextMetadata(from: asset)
+                                  audioItems.append((
+                                      url: fileURL,
+                                      name: fileURL.lastPathComponent,
+                                      uri: fileURL.absoluteString,
+                                      relKey: relKey,
+                                      base: base,
+                                      title: meta.title,
+                                      artist: meta.artist,
+                                      album: meta.album
+                                  ))
                               }
                           }
                       }
                   }
 
-                  // No NSFileCoordinator — enumerate the granted
-                  // security-scoped URL directly and surface read errors.
+                  // Enumerate the granted security-scoped URL directly and surface read errors.
                   scanDirectory(url)
                   var enumError = ""
                   if audioItems.isEmpty {
@@ -692,8 +851,17 @@ jobs:
                       [
                           "name": item.name,
                           "uri": item.uri,
+                          "relKey": item.relKey,
+                          "title": item.title,
+                          "artist": item.artist,
+                          "album": item.album,
                           "lrc": lrcMap[item.base] ?? ""
                       ]
+                  }
+
+                  let coverTargets = audioItems.map { (url: $0.url, uri: $0.uri, relKey: $0.relKey) }
+                  DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+                      self.patchCoversInBackground(items: coverTargets)
                   }
 
                   return [
@@ -797,6 +965,10 @@ jobs:
                       NotificationCenter.default.removeObserver(eObs)
                   }
                   endObserver = nil
+                  if let fObs = failedObserver {
+                      NotificationCenter.default.removeObserver(fObs)
+                  }
+                  failedObserver = nil
                   player?.pause()
                   player = nil
               }
@@ -870,6 +1042,7 @@ jobs:
                       pendingResumeTime = (body["resumeTime"] as? Double) ?? 0
                       currentDuration = 0
                       didSendMeta = false
+                      didSendError = false
                       currentArtwork = decodeArtwork(from: (body["cover"] as? String) ?? "")
 
                       let item = AVPlayerItem(url: url)
@@ -881,23 +1054,41 @@ jobs:
                           self?.sendEvent("ended", extra: [:])
                       }
 
+                      failedObserver = NotificationCenter.default.addObserver(forName: .AVPlayerItemFailedToPlayToEndTime, object: item, queue: .main) { [weak self] note in
+                          guard let self = self, !self.didSendError else { return }
+                          self.didSendError = true
+                          let errMsg = (note.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? Error)?.localizedDescription ?? "音频播放失败"
+                          self.updateNowPlayingInfo()
+                          self.sendEvent("error", extra: ["message": errMsg])
+                      }
+
                       timeObserver = newPlayer.addPeriodicTimeObserver(forInterval: CMTime(seconds: 0.25, preferredTimescale: 600), queue: .main) { [weak self] cmTime in
                           guard let self = self else { return }
+                          if !self.didSendError && item.status == .failed {
+                              self.didSendError = true
+                              let errMsg = item.error?.localizedDescription ?? "无法解码该音频文件或授权已失效"
+                              self.updateNowPlayingInfo()
+                              self.sendEvent("error", extra: ["message": errMsg])
+                              return
+                          }
                           if !self.didSendMeta && item.status == .readyToPlay {
                               let dur = CMTimeGetSeconds(item.duration)
                               if dur.isFinite && dur > 0 {
                                   self.didSendMeta = true
                                   self.currentDuration = dur
                                   if self.pendingResumeTime > 0 && self.pendingResumeTime < dur - 1 {
-                                      newPlayer.seek(to: CMTime(seconds: self.pendingResumeTime, preferredTimescale: 600))
+                                      newPlayer.seek(to: CMTime(seconds: self.pendingResumeTime, preferredTimescale: 600)) { [weak self] _ in
+                                          DispatchQueue.main.async { self?.updateNowPlayingInfo() }
+                                      }
                                       self.pendingResumeTime = 0
+                                  } else {
+                                      self.updateNowPlayingInfo()
                                   }
                                   self.sendEvent("loadedmetadata", extra: ["duration": dur])
                               }
                           }
                           let cur = CMTimeGetSeconds(cmTime)
                           if cur.isFinite {
-                              self.updateNowPlayingInfo()
                               self.sendEvent("timeupdate", extra: ["currentTime": cur, "duration": self.currentDuration])
                           }
                       }
