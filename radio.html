@@ -13,10 +13,9 @@
   <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
   <link rel="manifest" href="/manifest.json" />
 
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <!-- TAILWIND_CDN_TAG -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- /TAILWIND_CDN_TAG -->
 
   <style>
     :root {
@@ -29,6 +28,7 @@
       --lyric-font-px: 21px;
       --safe-top: env(safe-area-inset-top, 0px);
       --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --native-dock-height: 78px;
       --app-full-height: 100lvh;
     }
 
@@ -961,9 +961,13 @@
               <span>备份与部署指南</span>
             </button>
           </div>
+          <button id="btn-pick-native-folder" class="hidden w-full py-2.5 px-3 rounded-2xl bg-sky-500/20 hover:bg-sky-500/30 text-xs font-medium text-sky-200 flex items-center justify-center gap-2 transition">
+            <span>+ 关联新的 iOS 音乐文件夹（持久化书签）</span>
+          </button>
           <button id="btn-diy-native-scan" class="hidden w-full py-2.5 px-3 rounded-2xl bg-teal-500/20 hover:bg-teal-500/30 text-xs font-medium text-teal-200 flex items-center justify-center gap-2 transition">
             <span>立即扫描 iOS FENG MUSIC 文件夹</span>
           </button>
+          <div id="bound-folders-container" class="hidden space-y-2 pt-2 border-t border-white/10"></div>
         </div>
       </div>
     </section>
@@ -1007,7 +1011,7 @@
     <!-- =========================================================================
          FLOATING LIQUID GLASS CAPSULE DOCK MINI-PLAYER
          ========================================================================= -->
-    <div id="mini-player-wrapper" class="fixed left-0 right-0 z-30 px-3.5 sm:px-6 pointer-events-none" style="bottom: calc(var(--safe-bottom) + 78px);">
+    <div id="mini-player-wrapper" class="fixed left-0 right-0 z-30 px-3.5 sm:px-6 pointer-events-none" style="bottom: calc(var(--safe-bottom) + var(--native-dock-height, 78px));">
       <div id="mini-player-bar" class="liquid-dock relative pointer-events-auto max-w-2xl mx-auto rounded-[26px] overflow-hidden cursor-pointer transition-transform duration-200 active:scale-[0.985]">
         <!-- Liquid Glass Specular Rim Progress Bar (Dual-layer glow + specular comet tip) -->
         <svg id="mini-progress-svg" class="absolute inset-0 w-full h-full pointer-events-none z-20 overflow-visible" aria-hidden="true">
@@ -1743,8 +1747,23 @@
         } else if (type === 'ended') {
           nativeAudioState.paused = true;
           nativeAudioState.ended = true;
+        } else if (type === 'error') {
+          nativeAudioState.paused = true;
+          state.isPlaying = false;
+          updatePlayStateUI();
+          showToast(payload.message || '音频解码失败或文件授权已失效，请检查格式或重新关联文件夹');
         }
         emitAudioEvent(type);
+      };
+
+      window.__fengSetDockInset = (px) => {
+        if (Number.isFinite(px) && px > 0) {
+          document.documentElement.style.setProperty('--native-dock-height', `${Math.round(px)}px`);
+        }
+      };
+
+      window.__fengFolderPickerStatus = (msg) => {
+        if (msg) showToast(String(msg));
       };
 
       const audio = {
@@ -2832,7 +2851,10 @@
         const folderName = payload.folderName || '所选文件夹';
         const files = Array.isArray(payload.files) ? payload.files : [];
         if (!files.length) {
-          if (!silent) showToast(`「${folderName}」内未发现音频文件`);
+          if (!silent) {
+            const errSuffix = payload.error ? `（${payload.error}）` : '';
+            showToast(`「${folderName}」内未发现音频文件${errSuffix}`);
+          }
           return;
         }
         let addedCount = 0;
@@ -2847,11 +2869,22 @@
           const nativeTitle = (item.title || '').trim();
           const nativeArtist = (item.artist || '').trim();
           const nativeAlbum = (item.album || '').trim();
+          const nativeCover = (item.cover || '').trim();
           if (!fileUri) continue;
 
           const fallbackTitle = fileName.replace(/\.[^/.]+$/, '').trim() || '未知曲目';
-          const resolvedTitle = nativeTitle || fallbackTitle;
-          const resolvedArtist = nativeArtist || '未知歌手';
+          let resolvedTitle = nativeTitle;
+          let resolvedArtist = nativeArtist;
+          if (!resolvedTitle) {
+            const dashIdx = fallbackTitle.indexOf(' - ');
+            if (dashIdx > 0) {
+              resolvedArtist = resolvedArtist || fallbackTitle.slice(0, dashIdx).trim();
+              resolvedTitle = fallbackTitle.slice(dashIdx + 3).trim();
+            } else {
+              resolvedTitle = fallbackTitle;
+            }
+          }
+          resolvedArtist = resolvedArtist || '未知歌手';
           const resolvedAlbum = nativeAlbum || '未知专辑';
 
           let existing = findDuplicateTrack({
@@ -2870,6 +2903,23 @@
               existing.isNativeDoc = true;
               dirty = true;
               updatedUriCount++;
+            }
+            if (nativeTitle && (!existing.title || existing.title === fallbackTitle || existing.title === '未知曲目')) {
+              existing.title = nativeTitle;
+              dirty = true;
+            }
+            if (nativeArtist && (!existing.artist || existing.artist === '未知歌手')) {
+              existing.artist = nativeArtist;
+              dirty = true;
+            }
+            if (nativeAlbum && (!existing.album || existing.album === '未知专辑')) {
+              existing.album = nativeAlbum;
+              dirty = true;
+            }
+            if (nativeCover && !existing.hasEmbeddedCover) {
+              existing.cover = nativeCover;
+              existing.hasEmbeddedCover = true;
+              dirty = true;
             }
             if (externalLrc && !existing.lrc) {
               existing.lrc = externalLrc;
@@ -2890,8 +2940,8 @@
             title: resolvedTitle,
             artist: resolvedArtist,
             album: resolvedAlbum,
-            cover: DEFAULT_APP_COVER,
-            hasEmbeddedCover: false,
+            cover: nativeCover || DEFAULT_APP_COVER,
+            hasEmbeddedCover: Boolean(nativeCover),
             lrc: externalLrc || '',
             duration: 0,
             addedAt: Date.now()
@@ -6048,6 +6098,8 @@
         const audioEntries = [];
         const lrcMap = new Map();
 
+        let skippedOggOnIos = 0;
+        const isIosEnv = hasNativeAudioBridge() || /iP(hone|ad|od)/i.test(navigator.userAgent || '');
         for (const entry of entries) {
           const f = entry.file;
           if (!f) continue;
@@ -6059,9 +6111,14 @@
               const text = decodeTagBytes(new Uint8Array(buf), 0);
               lrcMap.set(base, text);
             } catch {}
+          } else if (isIosEnv && lower.endsWith('.ogg')) {
+            skippedOggOnIos++;
           } else if (f.type.startsWith('audio/') || /\.(mp3|flac|m4a|wav|ogg|aac)$/i.test(lower)) {
             audioEntries.push(entry);
           }
+        }
+        if (skippedOggOnIos > 0) {
+          showToast(`已跳过 ${skippedOggOnIos} 个 .ogg 文件（iOS 原生解码不支持 OGG，建议转为 FLAC/M4A/MP3）`);
         }
 
         let matchedExistingLrcCount = 0;
@@ -6198,20 +6255,37 @@
 
         for (const trk of targets) {
           try {
-            const file = await resolveTrackFile(trk, true);
-            if (!file) continue;
-            const meta = await readMetadataFromFile(file);
+            let meta = null;
+            if (trk.isNativeDoc && (trk.nativeUri || trk.nativePath)) {
+              const url = await resolveNativeDocUrl(trk.nativePath || '', trk.nativeUri || '');
+              if (url) {
+                const resp = await fetch(url, { headers: { Range: 'bytes=0-2097151' } });
+                if (resp.ok || resp.status === 206) {
+                  const buf = await resp.arrayBuffer();
+                  const sliceBuf = buf.byteLength > 3 * 1024 * 1024 ? buf.slice(0, 3 * 1024 * 1024) : buf;
+                  meta = await extractEmbeddedMetadata(sliceBuf, trk.fileName || trk.title || '');
+                }
+              }
+            } else {
+              const file = await resolveTrackFile(trk, true);
+              if (file) {
+                meta = await readMetadataFromFile(file);
+              }
+            }
+            if (!meta) continue;
             if (meta.cover) {
               trk.cover = meta.cover;
               trk.hasEmbeddedCover = true;
             }
             if (meta.lrc) trk.lrc = meta.lrc;
-            if (meta.title && trk.title === '未知曲目') trk.title = meta.title;
-            if (meta.artist && trk.artist === '未知歌手') trk.artist = meta.artist;
-            if (meta.album && trk.album === '未知专辑') trk.album = meta.album;
+            const baseFallback = (trk.fileName || '').replace(/\.[^/.]+$/, '').trim();
+            if (meta.title && (!trk.title || trk.title === '未知曲目' || trk.title === baseFallback)) trk.title = meta.title;
+            if (meta.artist && (!trk.artist || trk.artist === '未知歌手')) trk.artist = meta.artist;
+            if (meta.album && (!trk.album || trk.album === '未知专辑')) trk.album = meta.album;
 
             await dbPut('tracks', toStorableTrackRecord(trk));
             updatedCount++;
+            await new Promise((r) => setTimeout(r, 10));
           } catch {}
         }
 
