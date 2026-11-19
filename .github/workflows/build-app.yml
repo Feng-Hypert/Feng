@@ -2,6 +2,15 @@ name: Build Offline Android APK & iOS IPA
 
 on:
   workflow_dispatch:
+    inputs:
+      bundle_id:
+        description: 'iOS/Android 主包名（小组件会自动使用 <bundle_id>.widget）'
+        required: false
+        default: 'com.feng.music'
+      app_group_id:
+        description: 'iOS App Group ID（供主 App 与桌面小组件共享播放状态，需与 p12 描述文件匹配）'
+        required: false
+        default: 'group.com.feng.music'
 
 jobs:
   build-android:
@@ -24,7 +33,7 @@ jobs:
           sed -i 's|"/icon-512.png"|"./icon-512.png"|g' www/index.html
           cat << 'EOF' > capacitor.config.json
           {
-            "appId": "com.feng.music",
+            "appId": "${{ inputs.bundle_id || 'com.feng.music' }}",
             "appName": "FENG MUSIC",
             "webDir": "www",
             "bundledWebRuntime": false
@@ -72,7 +81,7 @@ jobs:
           sed -i '' 's|"/icon-512.png"|"./icon-512.png"|g' www/index.html
           cat << 'EOF' > capacitor.config.json
           {
-            "appId": "com.feng.music",
+            "appId": "${{ inputs.bundle_id || 'com.feng.music' }}",
             "appName": "FENG MUSIC",
             "webDir": "www",
             "bundledWebRuntime": false
@@ -93,6 +102,13 @@ jobs:
           /usr/libexec/PlistBuddy -c "Add :LSSupportsOpeningDocumentsInPlace bool true" "$PLIST" || /usr/libexec/PlistBuddy -c "Set :LSSupportsOpeningDocumentsInPlace true" "$PLIST"
           /usr/libexec/PlistBuddy -c "Add :UIBackgroundModes array" "$PLIST" || true
           /usr/libexec/PlistBuddy -c "Add :UIBackgroundModes:0 string audio" "$PLIST" || true
+          APP_GROUP="${{ inputs.app_group_id || 'group.com.feng.music' }}"
+          /usr/libexec/PlistBuddy -c "Add :FengAppGroup string $APP_GROUP" "$PLIST" || /usr/libexec/PlistBuddy -c "Set :FengAppGroup $APP_GROUP" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes array" "$PLIST" || true
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0 dict" "$PLIST" || true
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLName string com.feng.music.url" "$PLIST" || true
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes array" "$PLIST" || true
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string fengmusic" "$PLIST" || true
 
       - name: Stamp Build Version
         run: |
@@ -109,6 +125,7 @@ jobs:
           import AVFoundation
           import WebKit
           import UniformTypeIdentifiers
+          import WidgetKit
 
           final class FengRemoteMediaBridge: NSObject, WKScriptMessageHandler, UITabBarDelegate, UIDocumentPickerDelegate {
               static let shared = FengRemoteMediaBridge()
@@ -135,6 +152,8 @@ jobs:
               private var currentArtist: String = ""
               private var currentAlbum: String = ""
               private var currentArtwork: MPMediaItemArtwork?
+              private var currentCoverImage: UIImage?
+              private var widgetDarwinRegistered = false
 
               // Native iOS UITabBar Liquid Glass Dock + Collapsed Circle Pill
               private var nativeTabBar: UITabBar?
@@ -166,6 +185,7 @@ jobs:
                       name: AVAudioSession.routeChangeNotification,
                       object: nil
                   )
+                  registerWidgetCommandObserver()
 
                   let cmd = MPRemoteCommandCenter.shared()
                   cmd.skipBackwardCommand.isEnabled = false
@@ -941,7 +961,111 @@ jobs:
                   }
               }
 
-              private func updateNowPlayingInfo() {
+              private func resolvedAppGroupID() -> String {
+                  if let id = Bundle.main.object(forInfoDictionaryKey: "FengAppGroup") as? String, !id.isEmpty {
+                      return id
+                  }
+                  return "group.com.feng.music"
+              }
+
+              private func registerWidgetCommandObserver() {
+                  guard !widgetDarwinRegistered else { return }
+                  widgetDarwinRegistered = true
+                  let callback: CFNotificationCallback = { _, observer, _, _, _ in
+                      guard let observer = observer else { return }
+                      let bridge = Unmanaged<FengRemoteMediaBridge>.fromOpaque(observer).takeUnretainedValue()
+                      bridge.handleWidgetCommandNotification()
+                  }
+                  let observerPtr = Unmanaged.passUnretained(self).toOpaque()
+                  CFNotificationCenterAddObserver(
+                      CFNotificationCenterGetDarwinNotifyCenter(),
+                      observerPtr,
+                      callback,
+                      "com.feng.music.widget.cmd" as CFString,
+                      nil,
+                      .deliverImmediately
+                  )
+              }
+
+              func handleWidgetCommandNotification() {
+                  DispatchQueue.main.async {
+                      let groupID = self.resolvedAppGroupID()
+                      guard let defaults = UserDefaults(suiteName: groupID),
+                            let cmd = defaults.string(forKey: "widget_pending_cmd"),
+                            !cmd.isEmpty else { return }
+                      defaults.removeObject(forKey: "widget_pending_cmd")
+                      defaults.synchronize()
+
+                      if cmd == "toggle" {
+                          if let p = self.player {
+                              if p.rate > 0 {
+                                  p.pause()
+                                  self.updateNowPlayingInfo()
+                                  self.sendEvent("pause", extra: [:])
+                              } else {
+                                  try? AVAudioSession.sharedInstance().setActive(true)
+                                  p.play()
+                                  p.rate = self.currentRate
+                                  self.updateNowPlayingInfo()
+                                  self.sendEvent("play", extra: [:])
+                              }
+                          } else {
+                              self.webView?.evaluateJavaScript("var b = document.getElementById('btn-mini-play'); if (b) b.click();", completionHandler: nil)
+                          }
+                      } else if cmd == "next" {
+                          self.webView?.evaluateJavaScript("window.__fengNextTrack && window.__fengNextTrack()", completionHandler: nil)
+                      } else if cmd == "prev" {
+                          self.webView?.evaluateJavaScript("window.__fengPrevTrack && window.__fengPrevTrack()", completionHandler: nil)
+                      }
+                  }
+              }
+
+              func handleDeepLink(_ url: URL) {
+                  guard url.scheme?.lowercased() == "fengmusic" else { return }
+                  DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                      self.webView?.evaluateJavaScript("window.__fengOpenNowPlaying && window.__fengOpenNowPlaying()", completionHandler: nil)
+                  }
+              }
+
+              private func syncWidgetState(saveCover: Bool = false) {
+                  let groupID = resolvedAppGroupID()
+                  guard let defaults = UserDefaults(suiteName: groupID) else { return }
+                  let isPlaying = (player?.rate ?? 0) > 0
+                  defaults.set(currentTitle, forKey: "widget_title")
+                  defaults.set(currentArtist, forKey: "widget_artist")
+                  defaults.set(currentAlbum, forKey: "widget_album")
+                  defaults.set(isPlaying, forKey: "widget_isPlaying")
+                  defaults.set(Date().timeIntervalSince1970, forKey: "widget_updatedAt")
+
+                  if saveCover,
+                     let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupID) {
+                      let coverURL = containerURL.appendingPathComponent("widget_cover.jpg")
+                      if let img = currentCoverImage {
+                          let maxDim: CGFloat = 300
+                          let maxSide = max(img.size.width, img.size.height)
+                          let scale = maxSide > maxDim ? (maxDim / maxSide) : 1.0
+                          let targetSize = CGSize(
+                              width: max(1, round(img.size.width * scale)),
+                              height: max(1, round(img.size.height * scale))
+                          )
+                          let renderer = UIGraphicsImageRenderer(size: targetSize)
+                          let resized = renderer.image { _ in
+                              img.draw(in: CGRect(origin: .zero, size: targetSize))
+                          }
+                          if let data = resized.jpegData(compressionQuality: 0.78) {
+                              try? data.write(to: coverURL, options: .atomic)
+                          }
+                      } else {
+                          try? FileManager.default.removeItem(at: coverURL)
+                      }
+                  }
+                  defaults.synchronize()
+                  if #available(iOS 14.0, *) {
+                      WidgetCenter.shared.reloadTimelines(ofKind: "FengNowPlayingWidget")
+                  }
+              }
+
+              private func updateNowPlayingInfo(saveCoverToWidget: Bool = false) {
                   var info: [String: Any] = [
                       MPMediaItemPropertyTitle: currentTitle,
                       MPMediaItemPropertyArtist: currentArtist,
@@ -954,6 +1078,7 @@ jobs:
                       info[MPMediaItemPropertyArtwork] = art
                   }
                   MPNowPlayingInfoCenter.default().nowPlayingInfo = info
+                  syncWidgetState(saveCover: saveCoverToWidget)
               }
 
               private func cleanupPlayer() {
@@ -979,12 +1104,15 @@ jobs:
                       let b64 = String(coverStr[coverStr.index(after: comma)...])
                       if let data = Data(base64Encoded: b64, options: .ignoreUnknownCharacters),
                          let img = UIImage(data: data) {
+                          self.currentCoverImage = img
                           return MPMediaItemArtwork(boundsSize: img.size) { _ in img }
                       }
                   }
                   if let img = UIImage(named: "AppIcon") ?? UIImage(contentsOfFile: Bundle.main.path(forResource: "icon-512", ofType: "png", inDirectory: "public") ?? "") {
+                      self.currentCoverImage = img
                       return MPMediaItemArtwork(boundsSize: img.size) { _ in img }
                   }
+                  self.currentCoverImage = nil
                   return nil
               }
 
@@ -1097,11 +1225,11 @@ jobs:
                       if autoPlay {
                           newPlayer.play()
                           newPlayer.rate = currentRate
-                          updateNowPlayingInfo()
+                          updateNowPlayingInfo(saveCoverToWidget: true)
                           sendEvent("play", extra: [:])
                           sendEvent("playing", extra: [:])
                       } else {
-                          updateNowPlayingInfo()
+                          updateNowPlayingInfo(saveCoverToWidget: true)
                       }
                   } else if action == "play" {
                       player?.play()
@@ -1148,6 +1276,10 @@ jobs:
               }
 
               func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
+                  if url.scheme?.lowercased() == "fengmusic" {
+                      FengRemoteMediaBridge.shared.handleDeepLink(url)
+                      return true
+                  }
                   return ApplicationDelegateProxy.shared.application(app, open: url, options: options)
               }
 
@@ -1180,6 +1312,483 @@ jobs:
           }
           EOF
 
+      - name: Add iOS Home Screen Widget Extension (WidgetKit + iOS 17 Interactive Controls)
+        run: |
+          BUNDLE_ID="${{ inputs.bundle_id || 'com.feng.music' }}"
+          APP_GROUP="${{ inputs.app_group_id || 'group.com.feng.music' }}"
+          WIDGET_BUNDLE_ID="${BUNDLE_ID}.widget"
+          BUILD_NUM="${{ github.run_number }}"
+
+          mkdir -p ios/App/FengWidgetExtension
+
+          cat << EOF > ios/App/App/App.entitlements
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>com.apple.security.application-groups</key>
+            <array>
+              <string>${APP_GROUP}</string>
+            </array>
+          </dict>
+          </plist>
+          EOF
+
+          cat << EOF > ios/App/FengWidgetExtension/FengWidgetExtension.entitlements
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>com.apple.security.application-groups</key>
+            <array>
+              <string>${APP_GROUP}</string>
+            </array>
+          </dict>
+          </plist>
+          EOF
+
+          cat << EOF > ios/App/FengWidgetExtension/Info.plist
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>CFBundleDevelopmentRegion</key>
+            <string>zh_CN</string>
+            <key>CFBundleDisplayName</key>
+            <string>FENG MUSIC</string>
+            <key>CFBundleExecutable</key>
+            <string>\$(EXECUTABLE_NAME)</string>
+            <key>CFBundleIdentifier</key>
+            <string>\$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+            <key>CFBundleInfoDictionaryVersion</key>
+            <string>6.0</string>
+            <key>CFBundleName</key>
+            <string>\$(PRODUCT_NAME)</string>
+            <key>CFBundlePackageType</key>
+            <string>\$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
+            <key>CFBundleShortVersionString</key>
+            <string>1.0.1</string>
+            <key>CFBundleVersion</key>
+            <string>${BUILD_NUM}</string>
+            <key>FengAppGroup</key>
+            <string>${APP_GROUP}</string>
+            <key>NSExtension</key>
+            <dict>
+              <key>NSExtensionPointIdentifier</key>
+              <string>com.apple.widgetkit-extension</string>
+            </dict>
+          </dict>
+          </plist>
+          EOF
+
+          cat << 'EOF' > ios/App/FengWidgetExtension/FengWidget.swift
+          import WidgetKit
+          import SwiftUI
+          import UIKit
+          import AppIntents
+
+          private func fengWidgetGroupID() -> String {
+              if let id = Bundle.main.object(forInfoDictionaryKey: "FengAppGroup") as? String, !id.isEmpty {
+                  return id
+              }
+              return "group.com.feng.music"
+          }
+
+          private func dispatchWidgetCommand(_ cmd: String) {
+              let groupID = fengWidgetGroupID()
+              if let defaults = UserDefaults(suiteName: groupID) {
+                  defaults.set(cmd, forKey: "widget_pending_cmd")
+                  if cmd == "toggle" {
+                      let cur = defaults.bool(forKey: "widget_isPlaying")
+                      defaults.set(!cur, forKey: "widget_isPlaying")
+                  }
+                  defaults.synchronize()
+              }
+              let center = CFNotificationCenterGetDarwinNotifyCenter()
+              let name = CFNotificationName("com.feng.music.widget.cmd" as CFString)
+              CFNotificationCenterPostNotification(center, name, nil, nil, true)
+          }
+
+          @available(iOS 17.0, *)
+          struct FengTogglePlayIntent: AppIntent {
+              static var title: LocalizedStringResource = "播放/暂停"
+              static var openAppWhenRun: Bool = false
+
+              func perform() async throws -> some IntentResult {
+                  dispatchWidgetCommand("toggle")
+                  return .result()
+              }
+          }
+
+          @available(iOS 17.0, *)
+          struct FengNextTrackIntent: AppIntent {
+              static var title: LocalizedStringResource = "下一首"
+              static var openAppWhenRun: Bool = false
+
+              func perform() async throws -> some IntentResult {
+                  dispatchWidgetCommand("next")
+                  return .result()
+              }
+          }
+
+          @available(iOS 17.0, *)
+          struct FengPrevTrackIntent: AppIntent {
+              static var title: LocalizedStringResource = "上一首"
+              static var openAppWhenRun: Bool = false
+
+              func perform() async throws -> some IntentResult {
+                  dispatchWidgetCommand("prev")
+                  return .result()
+              }
+          }
+
+          struct FengWidgetEntry: TimelineEntry {
+              let date: Date
+              let title: String
+              let artist: String
+              let album: String
+              let isPlaying: Bool
+              let coverImage: UIImage?
+          }
+
+          struct FengWidgetProvider: TimelineProvider {
+              private func loadCurrentEntry() -> FengWidgetEntry {
+                  let groupID = fengWidgetGroupID()
+                  let defaults = UserDefaults(suiteName: groupID)
+                  let title = defaults?.string(forKey: "widget_title") ?? "FENG MUSIC"
+                  let artist = defaults?.string(forKey: "widget_artist") ?? "点击打开本地曲库"
+                  let album = defaults?.string(forKey: "widget_album") ?? ""
+                  let isPlaying = defaults?.bool(forKey: "widget_isPlaying") ?? false
+
+                  var cover: UIImage? = nil
+                  if let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupID) {
+                      let coverURL = containerURL.appendingPathComponent("widget_cover.jpg")
+                      if let data = try? Data(contentsOf: coverURL) {
+                          cover = UIImage(data: data)
+                      }
+                  }
+                  return FengWidgetEntry(
+                      date: Date(),
+                      title: title.isEmpty ? "FENG MUSIC" : title,
+                      artist: artist.isEmpty ? "私人纯享音乐空间" : artist,
+                      album: album,
+                      isPlaying: isPlaying,
+                      coverImage: cover
+                  )
+              }
+
+              func placeholder(in context: Context) -> FengWidgetEntry {
+                  FengWidgetEntry(
+                      date: Date(),
+                      title: "FENG MUSIC",
+                      artist: "私人纯享本地音乐",
+                      album: "",
+                      isPlaying: false,
+                      coverImage: nil
+                  )
+              }
+
+              func getSnapshot(in context: Context, completion: @escaping (FengWidgetEntry) -> Void) {
+                  completion(loadCurrentEntry())
+              }
+
+              func getTimeline(in context: Context, completion: @escaping (Timeline<FengWidgetEntry>) -> Void) {
+                  let entry = loadCurrentEntry()
+                  let nextRefresh = Calendar.current.date(byAdding: .minute, value: 30, to: Date()) ?? Date().addingTimeInterval(1800)
+                  completion(Timeline(entries: [entry], policy: .after(nextRefresh)))
+              }
+          }
+
+          struct FengWidgetCoverView: View {
+              let image: UIImage?
+              let cornerRadius: CGFloat
+
+              var body: some View {
+                  Group {
+                      if let uiImage = image {
+                          Image(uiImage: uiImage)
+                              .resizable()
+                              .aspectRatio(contentMode: .fill)
+                      } else {
+                          ZStack {
+                              LinearGradient(
+                                  colors: [Color(red: 0.22, green: 0.74, blue: 0.97), Color(red: 0.51, green: 0.55, blue: 0.97)],
+                                  startPoint: .topLeading,
+                                  endPoint: .bottomTrailing
+                              )
+                              Image(systemName: "music.note")
+                                  .font(.system(size: 28, weight: .bold))
+                                  .foregroundColor(.white)
+                          }
+                      }
+                  }
+                  .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+                  .overlay(
+                      RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                          .stroke(Color.white.opacity(0.24), lineWidth: 1)
+                  )
+                  .shadow(color: Color.black.opacity(0.35), radius: 8, x: 0, y: 4)
+              }
+          }
+
+          struct FengWidgetBackground: View {
+              let image: UIImage?
+
+              var body: some View {
+                  ZStack {
+                      Color(red: 0.04, green: 0.05, blue: 0.08)
+                      if let uiImage = image {
+                          Image(uiImage: uiImage)
+                              .resizable()
+                              .aspectRatio(contentMode: .fill)
+                              .blur(radius: 26)
+                              .scaleEffect(1.25)
+                              .opacity(0.55)
+                      } else {
+                          LinearGradient(
+                              colors: [
+                                  Color(red: 0.12, green: 0.28, blue: 0.45).opacity(0.85),
+                                  Color(red: 0.06, green: 0.08, blue: 0.14)
+                              ],
+                              startPoint: .topLeading,
+                              endPoint: .bottomTrailing
+                          )
+                      }
+                      LinearGradient(
+                          colors: [Color.black.opacity(0.22), Color.black.opacity(0.58)],
+                          startPoint: .top,
+                          endPoint: .bottom
+                      )
+                  }
+              }
+          }
+
+          struct FengWidgetEntryView: View {
+              @Environment(\.widgetFamily) var family
+              let entry: FengWidgetEntry
+
+              var body: some View {
+                  Group {
+                      if family == .systemSmall {
+                          smallBody
+                      } else {
+                          mediumBody
+                      }
+                  }
+                  .widgetURL(URL(string: "fengmusic://nowplaying"))
+                  .modifier(FengWidgetContainerBackground(image: entry.coverImage))
+              }
+
+              private var smallBody: some View {
+                  VStack(alignment: .leading, spacing: 8) {
+                      HStack(alignment: .top) {
+                          FengWidgetCoverView(image: entry.coverImage, cornerRadius: 14)
+                              .frame(width: 56, height: 56)
+                          Spacer(minLength: 4)
+                          Image(systemName: entry.isPlaying ? "waveform" : "music.note")
+                              .font(.system(size: 12, weight: .semibold))
+                              .foregroundColor(entry.isPlaying ? Color(red: 0.22, green: 0.74, blue: 0.97) : .white.opacity(0.65))
+                              .padding(6)
+                              .background(Color.white.opacity(0.14))
+                              .clipShape(Circle())
+                      }
+
+                      Spacer(minLength: 2)
+
+                      VStack(alignment: .leading, spacing: 2) {
+                          Text(entry.title)
+                              .font(.system(size: 13, weight: .bold))
+                              .foregroundColor(.white)
+                              .lineLimit(1)
+                          Text(entry.artist)
+                              .font(.system(size: 11, weight: .medium))
+                              .foregroundColor(.white.opacity(0.72))
+                              .lineLimit(1)
+                      }
+
+                      if #available(iOS 17.0, *) {
+                          HStack(spacing: 8) {
+                              Button(intent: FengTogglePlayIntent()) {
+                                  Image(systemName: entry.isPlaying ? "pause.fill" : "play.fill")
+                                      .font(.system(size: 12, weight: .bold))
+                                      .foregroundColor(Color(red: 0.05, green: 0.05, blue: 0.07))
+                                      .frame(maxWidth: .infinity, minHeight: 28)
+                                      .background(Color.white)
+                                      .clipShape(Capsule())
+                              }
+                              .buttonStyle(.plain)
+
+                              Button(intent: FengNextTrackIntent()) {
+                                  Image(systemName: "forward.fill")
+                                      .font(.system(size: 11, weight: .semibold))
+                                      .foregroundColor(.white)
+                                      .frame(width: 32, height: 28)
+                                      .background(Color.white.opacity(0.18))
+                                      .clipShape(Capsule())
+                              }
+                              .buttonStyle(.plain)
+                          }
+                      }
+                  }
+                  .padding(14)
+              }
+
+              private var mediumBody: some View {
+                  HStack(spacing: 14) {
+                      FengWidgetCoverView(image: entry.coverImage, cornerRadius: 20)
+                          .frame(width: 112, height: 112)
+
+                      VStack(alignment: .leading, spacing: 6) {
+                          HStack(spacing: 5) {
+                              Circle()
+                                  .fill(entry.isPlaying ? Color(red: 0.22, green: 0.74, blue: 0.97) : Color.white.opacity(0.45))
+                                  .frame(width: 6, height: 6)
+                              Text(entry.isPlaying ? "正在播放" : "FENG MUSIC")
+                                  .font(.system(size: 10, weight: .semibold))
+                                  .foregroundColor(.white.opacity(0.72))
+                                  .lineLimit(1)
+                          }
+
+                          Text(entry.title)
+                              .font(.system(size: 16, weight: .bold))
+                              .foregroundColor(.white)
+                              .lineLimit(1)
+
+                          Text(entry.artist)
+                              .font(.system(size: 12, weight: .medium))
+                              .foregroundColor(.white.opacity(0.70))
+                              .lineLimit(1)
+
+                          Spacer(minLength: 4)
+
+                          if #available(iOS 17.0, *) {
+                              HStack(spacing: 10) {
+                                  Button(intent: FengPrevTrackIntent()) {
+                                      Image(systemName: "backward.fill")
+                                          .font(.system(size: 13, weight: .semibold))
+                                          .foregroundColor(.white)
+                                          .frame(width: 34, height: 34)
+                                          .background(Color.white.opacity(0.16))
+                                          .clipShape(Circle())
+                                  }
+                                  .buttonStyle(.plain)
+
+                                  Button(intent: FengTogglePlayIntent()) {
+                                      Image(systemName: entry.isPlaying ? "pause.fill" : "play.fill")
+                                          .font(.system(size: 15, weight: .bold))
+                                          .foregroundColor(Color(red: 0.05, green: 0.05, blue: 0.07))
+                                          .frame(width: 40, height: 40)
+                                          .background(Color.white)
+                                          .clipShape(Circle())
+                                  }
+                                  .buttonStyle(.plain)
+
+                                  Button(intent: FengNextTrackIntent()) {
+                                      Image(systemName: "forward.fill")
+                                          .font(.system(size: 13, weight: .semibold))
+                                          .foregroundColor(.white)
+                                          .frame(width: 34, height: 34)
+                                          .background(Color.white.opacity(0.16))
+                                          .clipShape(Circle())
+                                  }
+                                  .buttonStyle(.plain)
+                              }
+                          }
+                      }
+                      .frame(maxWidth: .infinity, alignment: .leading)
+                  }
+                  .padding(14)
+              }
+          }
+
+          struct FengWidgetContainerBackground: ViewModifier {
+              let image: UIImage?
+
+              func body(content: Content) -> some View {
+                  if #available(iOS 17.0, *) {
+                      content.containerBackground(for: .widget) {
+                          FengWidgetBackground(image: image)
+                      }
+                  } else {
+                      content.background(FengWidgetBackground(image: image))
+                  }
+              }
+          }
+
+          @main
+          struct FengNowPlayingWidget: Widget {
+              let kind: String = "FengNowPlayingWidget"
+
+              var body: some WidgetConfiguration {
+                  StaticConfiguration(kind: kind, provider: FengWidgetProvider()) { entry in
+                      FengWidgetEntryView(entry: entry)
+                  }
+                  .configurationDisplayName("正在播放")
+                  .description("查看当前歌曲封面，并在桌面直接播放、暂停或切歌。")
+                  .supportedFamilies([.systemSmall, .systemMedium])
+                  .contentMarginsDisabled()
+              }
+          }
+          EOF
+
+          gem list -i xcodeproj || sudo gem install xcodeproj --no-document || gem install --user-install xcodeproj --no-document
+
+          cat << 'EOF' > add_widget_target.rb
+          require 'xcodeproj'
+
+          project_path = 'ios/App/App.xcodeproj'
+          project = Xcodeproj::Project.open(project_path)
+          bundle_id = ENV['BUNDLE_ID'] || 'com.feng.music'
+          widget_bundle_id = ENV['WIDGET_BUNDLE_ID'] || "#{bundle_id}.widget"
+
+          app_target = project.targets.find { |t| t.name == 'App' }
+          raise 'App target not found' unless app_target
+
+          app_group = project.main_group.find_subpath('App', true)
+          app_ent_ref = app_group.new_file('App.entitlements')
+          app_target.build_configurations.each do |config|
+            config.build_settings['PRODUCT_BUNDLE_IDENTIFIER'] = bundle_id
+            config.build_settings['CODE_SIGN_ENTITLEMENTS'] = 'App/App.entitlements'
+          end
+
+          widget_target = project.new_target(:app_extension, 'FengWidgetExtension', :ios, '16.0')
+          widget_group = project.main_group.new_group('FengWidgetExtension', 'FengWidgetExtension')
+          swift_ref = widget_group.new_file('FengWidget.swift')
+          widget_group.new_file('Info.plist')
+          widget_group.new_file('FengWidgetExtension.entitlements')
+          widget_target.add_file_references([swift_ref])
+
+          widget_target.build_configurations.each do |config|
+            config.build_settings['PRODUCT_BUNDLE_IDENTIFIER'] = widget_bundle_id
+            config.build_settings['INFOPLIST_FILE'] = 'FengWidgetExtension/Info.plist'
+            config.build_settings['CODE_SIGN_ENTITLEMENTS'] = 'FengWidgetExtension/FengWidgetExtension.entitlements'
+            config.build_settings['SWIFT_VERSION'] = '5.0'
+            config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
+            config.build_settings['TARGETED_DEVICE_FAMILY'] = '1,2'
+            config.build_settings['GENERATE_INFOPLIST_FILE'] = 'NO'
+            config.build_settings['SKIP_INSTALL'] = 'YES'
+            config.build_settings['LD_RUNPATH_SEARCH_PATHS'] = '$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks'
+            config.build_settings['CODE_SIGN_STYLE'] = 'Manual'
+            config.build_settings['CODE_SIGN_IDENTITY'] = ''
+            config.build_settings['APPLICATION_EXTENSION_API_ONLY'] = 'YES'
+          end
+
+          widget_target.add_system_framework('WidgetKit')
+          widget_target.add_system_framework('SwiftUI')
+
+          app_target.add_dependency(widget_target)
+          embed_phase = app_target.new_copy_files_build_phase('Embed Foundation Extensions')
+          embed_phase.dst_subfolder_spec = '13'
+          embed_phase.dst_path = ''
+          build_file = embed_phase.add_file_reference(widget_target.product_reference)
+          build_file.settings = { 'ATTRIBUTES' => ['RemoveHeadersOnCopy'] }
+
+          project.save
+          puts "Successfully added FengWidgetExtension (#{widget_bundle_id}) to #{project_path}"
+          EOF
+
+          BUNDLE_ID="$BUNDLE_ID" WIDGET_BUNDLE_ID="$WIDGET_BUNDLE_ID" ruby add_widget_target.rb
+
       - name: Build Unsigned iOS IPA
         run: |
           if [ -d "ios/App/App.xcworkspace" ]; then
@@ -1198,6 +1807,7 @@ jobs:
             clean build | tee xcodebuild.log
           mkdir -p Payload
           cp -r build/Build/Products/Release-iphoneos/App.app Payload/
+          ls -la Payload/App.app/PlugIns/ || true
           zip -qr FENG_MUSIC_iOS.ipa Payload
 
       - name: Upload iOS IPA
