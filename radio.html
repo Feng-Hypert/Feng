@@ -6519,28 +6519,6 @@
           if (!pl) return;
           const validIds = (pl.trackIds || []).filter((id) => state.tracks.some((t) => t.id === id));
           if (!validIds.length) return showToast('歌单内暂无可播放歌曲');
-          const pickId = validIds[Math.floor(Math.random() * validIds.length)];
-          state.queue = [...validIds];
-          await loadTrack(pickId, true);
-          showToast(`随心漫步：${getTrackDisplay(state.tracks.find((t) => t.id === pickId)).title}`);
-        });
-        on('btn-playlist-play-all', async () => {
-          const pl = state.playlists.find((p) => p.id === state.activePlaylistId);
-          if (!pl) return;
-          const validIds = (pl.trackIds || []).filter((id) => state.tracks.some((t) => t.id === id));
-          if (!validIds.length) return showToast('歌单内暂无可播放歌曲');
-          state.playMode = 'loop';
-          updatePlayModeButton();
-          state.queue = [...validIds];
-          await loadTrack(validIds[0], true);
-          saveAppState();
-          showToast(`已顺序播放歌单「${pl.name}」`);
-        });
-        on('btn-playlist-shuffle-all', async () => {
-          const pl = state.playlists.find((p) => p.id === state.activePlaylistId);
-          if (!pl) return;
-          const validIds = (pl.trackIds || []).filter((id) => state.tracks.some((t) => t.id === id));
-          if (!validIds.length) return showToast('歌单内暂无可播放歌曲');
           const shuffled = [...validIds];
           for (let i = shuffled.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -6551,7 +6529,7 @@
           state.queue = shuffled;
           await loadTrack(shuffled[0], true);
           saveAppState();
-          showToast(`已随机播放歌单「${pl.name}」`);
+          showToast(`随心漫步：${getTrackDisplay(state.tracks.find((t) => t.id === shuffled[0]))?.title || pl.name}`);
         });
         on('btn-playlist-multiselect', () => {
           if (state.plMultiSelectMode) {
