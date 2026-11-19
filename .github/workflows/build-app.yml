@@ -971,31 +971,34 @@ jobs:
               private func registerWidgetCommandObserver() {
                   guard !widgetDarwinRegistered else { return }
                   widgetDarwinRegistered = true
-                  let callback: CFNotificationCallback = { _, observer, _, _, _ in
-                      guard let observer = observer else { return }
+                  let callback: CFNotificationCallback = { _, observer, name, _, _ in
+                      guard let observer = observer, let cfName = name else { return }
                       let bridge = Unmanaged<FengRemoteMediaBridge>.fromOpaque(observer).takeUnretainedValue()
-                      bridge.handleWidgetCommandNotification()
+                      let str = cfName.rawValue as String
+                      if str.hasSuffix(".toggle") {
+                          bridge.executeWidgetCommand("toggle")
+                      } else if str.hasSuffix(".next") {
+                          bridge.executeWidgetCommand("next")
+                      } else if str.hasSuffix(".prev") {
+                          bridge.executeWidgetCommand("prev")
+                      }
                   }
                   let observerPtr = Unmanaged.passUnretained(self).toOpaque()
-                  CFNotificationCenterAddObserver(
-                      CFNotificationCenterGetDarwinNotifyCenter(),
-                      observerPtr,
-                      callback,
-                      "com.feng.music.widget.cmd" as CFString,
-                      nil,
-                      .deliverImmediately
-                  )
+                  let center = CFNotificationCenterGetDarwinNotifyCenter()
+                  for suffix in ["toggle", "next", "prev"] {
+                      CFNotificationCenterAddObserver(
+                          center,
+                          observerPtr,
+                          callback,
+                          "com.feng.music.widget.\(suffix)" as CFString,
+                          nil,
+                          .deliverImmediately
+                      )
+                  }
               }
 
-              func handleWidgetCommandNotification() {
+              func executeWidgetCommand(_ cmd: String) {
                   DispatchQueue.main.async {
-                      let groupID = self.resolvedAppGroupID()
-                      guard let defaults = UserDefaults(suiteName: groupID),
-                            let cmd = defaults.string(forKey: "widget_pending_cmd"),
-                            !cmd.isEmpty else { return }
-                      defaults.removeObject(forKey: "widget_pending_cmd")
-                      defaults.synchronize()
-
                       if cmd == "toggle" {
                           if let p = self.player {
                               if p.rate > 0 {
@@ -1320,6 +1323,7 @@ jobs:
           BUILD_NUM="${{ github.run_number }}"
 
           mkdir -p ios/App/FengWidgetExtension
+          sips -s format png -z 256 256 icon-512.png --out ios/App/FengWidgetExtension/widget-icon.png
 
           cat << EOF > ios/App/App/App.entitlements
           <?xml version="1.0" encoding="UTF-8"?>
@@ -1394,19 +1398,17 @@ jobs:
               return "group.com.feng.music"
           }
 
-          private func dispatchWidgetCommand(_ cmd: String) {
-              let groupID = fengWidgetGroupID()
-              if let defaults = UserDefaults(suiteName: groupID) {
-                  defaults.set(cmd, forKey: "widget_pending_cmd")
-                  if cmd == "toggle" {
-                      let cur = defaults.bool(forKey: "widget_isPlaying")
-                      defaults.set(!cur, forKey: "widget_isPlaying")
-                  }
-                  defaults.synchronize()
-              }
+          private func postDarwinWidgetCommand(_ suffix: String) {
               let center = CFNotificationCenterGetDarwinNotifyCenter()
-              let name = CFNotificationName("com.feng.music.widget.cmd" as CFString)
+              let name = CFNotificationName("com.feng.music.widget.\(suffix)" as CFString)
               CFNotificationCenterPostNotification(center, name, nil, nil, true)
+          }
+
+          private func loadBundledAppIcon() -> UIImage? {
+              if let path = Bundle.main.path(forResource: "widget-icon", ofType: "png") {
+                  return UIImage(contentsOfFile: path)
+              }
+              return nil
           }
 
           @available(iOS 17.0, *)
@@ -1415,7 +1417,7 @@ jobs:
               static var openAppWhenRun: Bool = false
 
               func perform() async throws -> some IntentResult {
-                  dispatchWidgetCommand("toggle")
+                  postDarwinWidgetCommand("toggle")
                   return .result()
               }
           }
@@ -1426,7 +1428,7 @@ jobs:
               static var openAppWhenRun: Bool = false
 
               func perform() async throws -> some IntentResult {
-                  dispatchWidgetCommand("next")
+                  postDarwinWidgetCommand("next")
                   return .result()
               }
           }
@@ -1437,7 +1439,7 @@ jobs:
               static var openAppWhenRun: Bool = false
 
               func perform() async throws -> some IntentResult {
-                  dispatchWidgetCommand("prev")
+                  postDarwinWidgetCommand("prev")
                   return .result()
               }
           }
@@ -1445,19 +1447,34 @@ jobs:
           struct FengWidgetEntry: TimelineEntry {
               let date: Date
               let title: String
-              let artist: String
-              let album: String
+              let subtitle: String
+              let moodTag: String
               let isPlaying: Bool
+              let hasLiveSync: Bool
               let coverImage: UIImage?
           }
 
           struct FengWidgetProvider: TimelineProvider {
-              private func loadCurrentEntry() -> FengWidgetEntry {
+              private func timeMood(for date: Date) -> (tag: String, subtitle: String) {
+                  let hour = Calendar.current.component(.hour, from: date)
+                  switch hour {
+                  case 6..<12:
+                      return ("晨光序曲", "开启今日份无损旋律")
+                  case 12..<18:
+                      return ("午后漫游", "私人纯享无损音乐空间")
+                  case 18..<22:
+                      return ("暮色微风", "把世界调成喜欢的频道")
+                  default:
+                      return ("深夜纯享", "夜色与副歌同样温柔")
+                  }
+              }
+
+              private func buildEntry(for date: Date) -> FengWidgetEntry {
+                  let mood = timeMood(for: date)
                   let groupID = fengWidgetGroupID()
                   let defaults = UserDefaults(suiteName: groupID)
-                  let title = defaults?.string(forKey: "widget_title") ?? "FENG MUSIC"
-                  let artist = defaults?.string(forKey: "widget_artist") ?? "点击打开本地曲库"
-                  let album = defaults?.string(forKey: "widget_album") ?? ""
+                  let syncedTitle = (defaults?.string(forKey: "widget_title") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+                  let syncedArtist = (defaults?.string(forKey: "widget_artist") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
                   let isPlaying = defaults?.bool(forKey: "widget_isPlaying") ?? false
 
                   var cover: UIImage? = nil
@@ -1467,99 +1484,251 @@ jobs:
                           cover = UIImage(data: data)
                       }
                   }
+
+                  let hasLive = !syncedTitle.isEmpty && syncedTitle != "FENG MUSIC"
                   return FengWidgetEntry(
-                      date: Date(),
-                      title: title.isEmpty ? "FENG MUSIC" : title,
-                      artist: artist.isEmpty ? "私人纯享音乐空间" : artist,
-                      album: album,
+                      date: date,
+                      title: hasLive ? syncedTitle : "FENG MUSIC",
+                      subtitle: hasLive ? (syncedArtist.isEmpty ? mood.subtitle : syncedArtist) : mood.subtitle,
+                      moodTag: hasLive ? (isPlaying ? "正在播放" : "已暂停") : mood.tag,
                       isPlaying: isPlaying,
-                      coverImage: cover
+                      hasLiveSync: hasLive,
+                      coverImage: cover ?? loadBundledAppIcon()
                   )
               }
 
               func placeholder(in context: Context) -> FengWidgetEntry {
-                  FengWidgetEntry(
-                      date: Date(),
-                      title: "FENG MUSIC",
-                      artist: "私人纯享本地音乐",
-                      album: "",
-                      isPlaying: false,
-                      coverImage: nil
-                  )
+                  buildEntry(for: Date())
               }
 
               func getSnapshot(in context: Context, completion: @escaping (FengWidgetEntry) -> Void) {
-                  completion(loadCurrentEntry())
+                  completion(buildEntry(for: Date()))
               }
 
               func getTimeline(in context: Context, completion: @escaping (Timeline<FengWidgetEntry>) -> Void) {
-                  let entry = loadCurrentEntry()
-                  let nextRefresh = Calendar.current.date(byAdding: .minute, value: 30, to: Date()) ?? Date().addingTimeInterval(1800)
-                  completion(Timeline(entries: [entry], policy: .after(nextRefresh)))
-              }
-          }
-
-          struct FengWidgetCoverView: View {
-              let image: UIImage?
-              let cornerRadius: CGFloat
-
-              var body: some View {
-                  Group {
-                      if let uiImage = image {
-                          Image(uiImage: uiImage)
-                              .resizable()
-                              .aspectRatio(contentMode: .fill)
-                      } else {
-                          ZStack {
-                              LinearGradient(
-                                  colors: [Color(red: 0.22, green: 0.74, blue: 0.97), Color(red: 0.51, green: 0.55, blue: 0.97)],
-                                  startPoint: .topLeading,
-                                  endPoint: .bottomTrailing
-                              )
-                              Image(systemName: "music.note")
-                                  .font(.system(size: 28, weight: .bold))
-                                  .foregroundColor(.white)
-                          }
+                  let now = Date()
+                  var entries: [FengWidgetEntry] = [buildEntry(for: now)]
+                  for offsetHour in [2, 4, 6] {
+                      if let nextDate = Calendar.current.date(byAdding: .hour, value: offsetHour, to: now) {
+                          entries.append(buildEntry(for: nextDate))
                       }
                   }
-                  .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-                  .overlay(
-                      RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                          .stroke(Color.white.opacity(0.24), lineWidth: 1)
-                  )
-                  .shadow(color: Color.black.opacity(0.35), radius: 8, x: 0, y: 4)
+                  completion(Timeline(entries: entries, policy: .atEnd))
               }
           }
 
-          struct FengWidgetBackground: View {
-              let image: UIImage?
+          // MARK: - Liquid Glass Palette & Surfaces (Inspired by FENG MUSIC Icon)
+          private enum FengGlassPalette {
+              static let sky = Color(red: 0.22, green: 0.72, blue: 0.98)
+              static let aqua = Color(red: 0.28, green: 0.88, blue: 0.86)
+              static let ice = Color(red: 0.93, green: 0.97, blue: 1.00)
+              static let deepInk = Color(red: 0.06, green: 0.14, blue: 0.25)
+              static let mutedInk = Color(red: 0.16, green: 0.30, blue: 0.45)
+          }
+
+          struct LiquidGlassBackground: View {
+              let coverImage: UIImage?
+              let hasLiveSync: Bool
 
               var body: some View {
-                  ZStack {
-                      Color(red: 0.04, green: 0.05, blue: 0.08)
-                      if let uiImage = image {
-                          Image(uiImage: uiImage)
-                              .resizable()
-                              .aspectRatio(contentMode: .fill)
-                              .blur(radius: 26)
-                              .scaleEffect(1.25)
-                              .opacity(0.55)
-                      } else {
+                  GeometryReader { geo in
+                      ZStack {
+                          // Crystal ice-glass base
                           LinearGradient(
                               colors: [
-                                  Color(red: 0.12, green: 0.28, blue: 0.45).opacity(0.85),
-                                  Color(red: 0.06, green: 0.08, blue: 0.14)
+                                  Color(red: 0.95, green: 0.98, blue: 1.00),
+                                  Color(red: 0.86, green: 0.95, blue: 1.00),
+                                  Color(red: 0.92, green: 0.97, blue: 1.00)
                               ],
                               startPoint: .topLeading,
                               endPoint: .bottomTrailing
                           )
+
+                          // Subtle blurred cover tint when live album art is synced
+                          if hasLiveSync, let uiImage = coverImage {
+                              Image(uiImage: uiImage)
+                                  .resizable()
+                                  .aspectRatio(contentMode: .fill)
+                                  .frame(width: geo.size.width, height: geo.size.height)
+                                  .blur(radius: 28)
+                                  .scaleEffect(1.25)
+                                  .opacity(0.28)
+                          }
+
+                          // Flowing cyan & sky-blue caustic light ribbons echoing icon-512
+                          Circle()
+                              .fill(
+                                  RadialGradient(
+                                      colors: [FengGlassPalette.aqua.opacity(0.52), FengGlassPalette.sky.opacity(0.18), .clear],
+                                      center: .center,
+                                      startRadius: 4,
+                                      endRadius: geo.size.width * 0.62
+                                  )
+                              )
+                              .frame(width: geo.size.width * 0.95, height: geo.size.width * 0.95)
+                              .offset(x: geo.size.width * 0.36, y: -geo.size.height * 0.38)
+                              .blur(radius: 16)
+
+                          Circle()
+                              .fill(
+                                  RadialGradient(
+                                      colors: [FengGlassPalette.sky.opacity(0.46), FengGlassPalette.aqua.opacity(0.16), .clear],
+                                      center: .center,
+                                      startRadius: 4,
+                                      endRadius: geo.size.width * 0.58
+                                  )
+                              )
+                              .frame(width: geo.size.width * 0.9, height: geo.size.width * 0.9)
+                              .offset(x: -geo.size.width * 0.38, y: geo.size.height * 0.42)
+                              .blur(radius: 18)
+
+                          // Top-left liquid lens specular sheen
+                          LinearGradient(
+                              colors: [
+                                  Color.white.opacity(0.75),
+                                  Color.white.opacity(0.18),
+                                  Color.clear
+                              ],
+                              startPoint: .topLeading,
+                              endPoint: .center
+                          )
+
+                          // Inner refractive crystal rim
+                          RoundedRectangle(cornerRadius: 24, style: .continuous)
+                              .strokeBorder(
+                                  LinearGradient(
+                                      colors: [
+                                          Color.white.opacity(0.95),
+                                          FengGlassPalette.aqua.opacity(0.45),
+                                          FengGlassPalette.sky.opacity(0.40),
+                                          Color.white.opacity(0.80)
+                                      ],
+                                      startPoint: .topLeading,
+                                      endPoint: .bottomTrailing
+                                  ),
+                                  lineWidth: 1.5
+                              )
+                              .padding(1)
                       }
-                      LinearGradient(
-                          colors: [Color.black.opacity(0.22), Color.black.opacity(0.58)],
-                          startPoint: .top,
-                          endPoint: .bottom
-                      )
                   }
+              }
+          }
+
+          struct LiquidGlassIconStage: View {
+              let image: UIImage?
+              let size: CGFloat
+              let cornerRadius: CGFloat
+
+              var body: some View {
+                  ZStack {
+                      // Soft sky-blue ambient glow behind icon
+                      RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                          .fill(FengGlassPalette.sky.opacity(0.28))
+                          .frame(width: size * 0.92, height: size * 0.92)
+                          .blur(radius: 10)
+                          .offset(y: 4)
+
+                      Group {
+                          if let uiImage = image {
+                              Image(uiImage: uiImage)
+                                  .resizable()
+                                  .aspectRatio(contentMode: .fill)
+                          } else {
+                              ZStack {
+                                  LinearGradient(
+                                      colors: [Color.white, FengGlassPalette.ice],
+                                      startPoint: .topLeading,
+                                      endPoint: .bottomTrailing
+                                  )
+                                  Image(systemName: "music.note")
+                                      .font(.system(size: size * 0.44, weight: .bold))
+                                      .foregroundStyle(
+                                          LinearGradient(
+                                              colors: [FengGlassPalette.sky, FengGlassPalette.aqua],
+                                              startPoint: .topLeading,
+                                              endPoint: .bottomTrailing
+                                          )
+                                      )
+                              }
+                          }
+                      }
+                      .frame(width: size, height: size)
+                      .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+                      .overlay(
+                          // Specular glass highlight arc on top-left corner
+                          RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                              .strokeBorder(
+                                  LinearGradient(
+                                      colors: [Color.white.opacity(0.95), FengGlassPalette.sky.opacity(0.32), Color.white.opacity(0.65)],
+                                      startPoint: .topLeading,
+                                      endPoint: .bottomTrailing
+                                  ),
+                                  lineWidth: 1.4
+                              )
+                      )
+                      .shadow(color: FengGlassPalette.sky.opacity(0.24), radius: 8, x: 0, y: 4)
+                  }
+              }
+          }
+
+          struct LiquidGlassWaveGlyph: View {
+              var body: some View {
+                  HStack(alignment: .center, spacing: 3) {
+                      ForEach([0.45, 0.85, 1.0, 0.65, 0.40], id: \.self) { ratio in
+                          Capsule()
+                              .fill(
+                                  LinearGradient(
+                                      colors: [FengGlassPalette.sky, FengGlassPalette.aqua],
+                                      startPoint: .top,
+                                      endPoint: .bottom
+                                  )
+                              )
+                              .frame(width: 3, height: 12 * ratio)
+                      }
+                  }
+              }
+          }
+
+          struct GlassCircleButtonLabel: View {
+              let symbol: String
+              let size: CGFloat
+              let primary: Bool
+
+              var body: some View {
+                  Image(systemName: symbol)
+                      .font(.system(size: primary ? 14 : 12, weight: .bold))
+                      .foregroundColor(primary ? .white : FengGlassPalette.deepInk)
+                      .frame(width: size, height: size)
+                      .background(
+                          Group {
+                              if primary {
+                                  LinearGradient(
+                                      colors: [FengGlassPalette.sky, Color(red: 0.16, green: 0.58, blue: 0.96)],
+                                      startPoint: .topLeading,
+                                      endPoint: .bottomTrailing
+                                  )
+                              } else {
+                                  LinearGradient(
+                                      colors: [Color.white.opacity(0.86), Color.white.opacity(0.52)],
+                                      startPoint: .topLeading,
+                                      endPoint: .bottomTrailing
+                                  )
+                              }
+                          }
+                      )
+                      .clipShape(Circle())
+                      .overlay(
+                          Circle()
+                              .strokeBorder(
+                                  LinearGradient(
+                                      colors: [Color.white.opacity(primary ? 0.65 : 0.95), FengGlassPalette.sky.opacity(0.28)],
+                                      startPoint: .topLeading,
+                                      endPoint: .bottomTrailing
+                                  ),
+                                  lineWidth: 1
+                              )
+                      )
+                      .shadow(color: FengGlassPalette.sky.opacity(primary ? 0.36 : 0.14), radius: primary ? 6 : 4, x: 0, y: 3)
               }
           }
 
@@ -1576,55 +1745,67 @@ jobs:
                       }
                   }
                   .widgetURL(URL(string: "fengmusic://nowplaying"))
-                  .modifier(FengWidgetContainerBackground(image: entry.coverImage))
+                  .modifier(FengWidgetContainerBackground(coverImage: entry.coverImage, hasLiveSync: entry.hasLiveSync))
               }
 
               private var smallBody: some View {
                   VStack(alignment: .leading, spacing: 8) {
                       HStack(alignment: .top) {
-                          FengWidgetCoverView(image: entry.coverImage, cornerRadius: 14)
-                              .frame(width: 56, height: 56)
+                          LiquidGlassIconStage(image: entry.coverImage, size: 54, cornerRadius: 15)
                           Spacer(minLength: 4)
-                          Image(systemName: entry.isPlaying ? "waveform" : "music.note")
-                              .font(.system(size: 12, weight: .semibold))
-                              .foregroundColor(entry.isPlaying ? Color(red: 0.22, green: 0.74, blue: 0.97) : .white.opacity(0.65))
-                              .padding(6)
-                              .background(Color.white.opacity(0.14))
-                              .clipShape(Circle())
+                          HStack(spacing: 4) {
+                              LiquidGlassWaveGlyph()
+                          }
+                          .padding(.horizontal, 8)
+                          .padding(.vertical, 6)
+                          .background(Color.white.opacity(0.68))
+                          .clipShape(Capsule())
+                          .overlay(
+                              Capsule().strokeBorder(Color.white.opacity(0.9), lineWidth: 1)
+                          )
                       }
 
                       Spacer(minLength: 2)
 
                       VStack(alignment: .leading, spacing: 2) {
                           Text(entry.title)
-                              .font(.system(size: 13, weight: .bold))
-                              .foregroundColor(.white)
+                              .font(.system(size: 13.5, weight: .bold, design: .rounded))
+                              .foregroundColor(FengGlassPalette.deepInk)
                               .lineLimit(1)
-                          Text(entry.artist)
+                          Text(entry.hasLiveSync ? entry.subtitle : entry.moodTag)
                               .font(.system(size: 11, weight: .medium))
-                              .foregroundColor(.white.opacity(0.72))
+                              .foregroundColor(FengGlassPalette.mutedInk.opacity(0.85))
                               .lineLimit(1)
                       }
 
                       if #available(iOS 17.0, *) {
                           HStack(spacing: 8) {
                               Button(intent: FengTogglePlayIntent()) {
-                                  Image(systemName: entry.isPlaying ? "pause.fill" : "play.fill")
-                                      .font(.system(size: 12, weight: .bold))
-                                      .foregroundColor(Color(red: 0.05, green: 0.05, blue: 0.07))
-                                      .frame(maxWidth: .infinity, minHeight: 28)
-                                      .background(Color.white)
-                                      .clipShape(Capsule())
+                                  HStack(spacing: 4) {
+                                      Image(systemName: entry.isPlaying ? "pause.fill" : "play.fill")
+                                          .font(.system(size: 11, weight: .bold))
+                                      Text(entry.isPlaying ? "暂停" : "播放")
+                                          .font(.system(size: 11, weight: .semibold))
+                                  }
+                                  .foregroundColor(.white)
+                                  .frame(maxWidth: .infinity, minHeight: 30)
+                                  .background(
+                                      LinearGradient(
+                                          colors: [FengGlassPalette.sky, Color(red: 0.16, green: 0.58, blue: 0.96)],
+                                          startPoint: .topLeading,
+                                          endPoint: .bottomTrailing
+                                      )
+                                  )
+                                  .clipShape(Capsule())
+                                  .overlay(
+                                      Capsule().strokeBorder(Color.white.opacity(0.55), lineWidth: 1)
+                                  )
+                                  .shadow(color: FengGlassPalette.sky.opacity(0.32), radius: 5, x: 0, y: 2)
                               }
                               .buttonStyle(.plain)
 
                               Button(intent: FengNextTrackIntent()) {
-                                  Image(systemName: "forward.fill")
-                                      .font(.system(size: 11, weight: .semibold))
-                                      .foregroundColor(.white)
-                                      .frame(width: 32, height: 28)
-                                      .background(Color.white.opacity(0.18))
-                                      .clipShape(Capsule())
+                                  GlassCircleButtonLabel(symbol: "forward.fill", size: 30, primary: false)
                               }
                               .buttonStyle(.plain)
                           }
@@ -1635,63 +1816,68 @@ jobs:
 
               private var mediumBody: some View {
                   HStack(spacing: 14) {
-                      FengWidgetCoverView(image: entry.coverImage, cornerRadius: 20)
-                          .frame(width: 112, height: 112)
+                      LiquidGlassIconStage(image: entry.coverImage, size: 110, cornerRadius: 24)
 
                       VStack(alignment: .leading, spacing: 6) {
-                          HStack(spacing: 5) {
+                          // Top frosted mood pill
+                          HStack(spacing: 6) {
                               Circle()
-                                  .fill(entry.isPlaying ? Color(red: 0.22, green: 0.74, blue: 0.97) : Color.white.opacity(0.45))
+                                  .fill(
+                                      LinearGradient(
+                                          colors: [FengGlassPalette.sky, FengGlassPalette.aqua],
+                                          startPoint: .topLeading,
+                                          endPoint: .bottomTrailing
+                                      )
+                                  )
                                   .frame(width: 6, height: 6)
-                              Text(entry.isPlaying ? "正在播放" : "FENG MUSIC")
-                                  .font(.system(size: 10, weight: .semibold))
-                                  .foregroundColor(.white.opacity(0.72))
+                              Text(entry.moodTag)
+                                  .font(.system(size: 10.5, weight: .semibold))
+                                  .foregroundColor(FengGlassPalette.mutedInk)
+                                  .lineLimit(1)
+                              Spacer(minLength: 4)
+                              LiquidGlassWaveGlyph()
+                          }
+                          .padding(.horizontal, 10)
+                          .padding(.vertical, 5)
+                          .background(Color.white.opacity(0.62))
+                          .clipShape(Capsule())
+                          .overlay(
+                              Capsule().strokeBorder(Color.white.opacity(0.92), lineWidth: 1)
+                          )
+
+                          VStack(alignment: .leading, spacing: 2) {
+                              Text(entry.title)
+                                  .font(.system(size: 16, weight: .bold, design: .rounded))
+                                  .foregroundColor(FengGlassPalette.deepInk)
+                                  .lineLimit(1)
+                              Text(entry.subtitle)
+                                  .font(.system(size: 11.5, weight: .medium))
+                                  .foregroundColor(FengGlassPalette.mutedInk.opacity(0.82))
                                   .lineLimit(1)
                           }
+                          .padding(.top, 1)
 
-                          Text(entry.title)
-                              .font(.system(size: 16, weight: .bold))
-                              .foregroundColor(.white)
-                              .lineLimit(1)
+                          Spacer(minLength: 2)
 
-                          Text(entry.artist)
-                              .font(.system(size: 12, weight: .medium))
-                              .foregroundColor(.white.opacity(0.70))
-                              .lineLimit(1)
-
-                          Spacer(minLength: 4)
-
+                          // Floating Liquid Glass Control Dock
                           if #available(iOS 17.0, *) {
                               HStack(spacing: 10) {
                                   Button(intent: FengPrevTrackIntent()) {
-                                      Image(systemName: "backward.fill")
-                                          .font(.system(size: 13, weight: .semibold))
-                                          .foregroundColor(.white)
-                                          .frame(width: 34, height: 34)
-                                          .background(Color.white.opacity(0.16))
-                                          .clipShape(Circle())
+                                      GlassCircleButtonLabel(symbol: "backward.fill", size: 34, primary: false)
                                   }
                                   .buttonStyle(.plain)
 
                                   Button(intent: FengTogglePlayIntent()) {
-                                      Image(systemName: entry.isPlaying ? "pause.fill" : "play.fill")
-                                          .font(.system(size: 15, weight: .bold))
-                                          .foregroundColor(Color(red: 0.05, green: 0.05, blue: 0.07))
-                                          .frame(width: 40, height: 40)
-                                          .background(Color.white)
-                                          .clipShape(Circle())
+                                      GlassCircleButtonLabel(symbol: entry.isPlaying ? "pause.fill" : "play.fill", size: 38, primary: true)
                                   }
                                   .buttonStyle(.plain)
 
                                   Button(intent: FengNextTrackIntent()) {
-                                      Image(systemName: "forward.fill")
-                                          .font(.system(size: 13, weight: .semibold))
-                                          .foregroundColor(.white)
-                                          .frame(width: 34, height: 34)
-                                          .background(Color.white.opacity(0.16))
-                                          .clipShape(Circle())
+                                      GlassCircleButtonLabel(symbol: "forward.fill", size: 34, primary: false)
                                   }
                                   .buttonStyle(.plain)
+
+                                  Spacer(minLength: 0)
                               }
                           }
                       }
@@ -1702,15 +1888,16 @@ jobs:
           }
 
           struct FengWidgetContainerBackground: ViewModifier {
-              let image: UIImage?
+              let coverImage: UIImage?
+              let hasLiveSync: Bool
 
               func body(content: Content) -> some View {
                   if #available(iOS 17.0, *) {
                       content.containerBackground(for: .widget) {
-                          FengWidgetBackground(image: image)
+                          LiquidGlassBackground(coverImage: coverImage, hasLiveSync: hasLiveSync)
                       }
                   } else {
-                      content.background(FengWidgetBackground(image: image))
+                      content.background(LiquidGlassBackground(coverImage: coverImage, hasLiveSync: hasLiveSync))
                   }
               }
           }
@@ -1723,8 +1910,8 @@ jobs:
                   StaticConfiguration(kind: kind, provider: FengWidgetProvider()) { entry in
                       FengWidgetEntryView(entry: entry)
                   }
-                  .configurationDisplayName("正在播放")
-                  .description("查看当前歌曲封面，并在桌面直接播放、暂停或切歌。")
+                  .configurationDisplayName("FENG MUSIC 液态玻璃")
+                  .description("冰晶液态玻璃音乐胶囊，支持桌面一键播放、暂停与切歌。")
                   .supportedFamilies([.systemSmall, .systemMedium])
                   .contentMarginsDisabled()
               }
@@ -1754,9 +1941,11 @@ jobs:
           widget_target = project.new_target(:app_extension, 'FengWidgetExtension', :ios, '16.0')
           widget_group = project.main_group.new_group('FengWidgetExtension', 'FengWidgetExtension')
           swift_ref = widget_group.new_file('FengWidget.swift')
+          icon_ref = widget_group.new_file('widget-icon.png')
           widget_group.new_file('Info.plist')
           widget_group.new_file('FengWidgetExtension.entitlements')
           widget_target.add_file_references([swift_ref])
+          widget_target.resources_build_phase.add_file_reference(icon_ref)
 
           widget_target.build_configurations.each do |config|
             config.build_settings['PRODUCT_NAME'] = '$(TARGET_NAME)'
