@@ -127,7 +127,7 @@ jobs:
           import UniformTypeIdentifiers
           import WidgetKit
 
-          final class FengRemoteMediaBridge: NSObject, WKScriptMessageHandler, UITabBarDelegate, UIDocumentPickerDelegate {
+          final class FengRemoteMediaBridge: NSObject, WKScriptMessageHandler, UITabBarDelegate, UIDocumentPickerDelegate, UIAdaptivePresentationControllerDelegate {
               static let shared = FengRemoteMediaBridge()
               private var isConfigured = false
               private var isAttached = false
@@ -136,6 +136,7 @@ jobs:
               // Keep strong reference to active picker & security-scoped folder URLs across app lifecycle
               private var activeFolderPicker: UIDocumentPickerViewController?
               private var isExportingDocument = false
+              private var isPickingAudioFiles = false
               private var activeScopedURLs: [String: URL] = [:]
               private let bookmarkDefaultsKey = "feng_security_scoped_folder_bookmarks_v3"
 
@@ -549,24 +550,39 @@ jobs:
                   return topMostViewController(from: root)
               }
 
-              private func reportFolderPickerStatus(_ message: String) {
-                  guard let wv = webView else { return }
-                  if #available(iOS 14.0, *) {
-                      wv.callAsyncJavaScript(
-                          "window.__fengFolderPickerStatus && window.__fengFolderPickerStatus(message);",
-                          arguments: ["message": message],
-                          in: nil,
-                          in: .page,
-                          completionHandler: nil
-                      )
+              private func dispatchJSONToWeb(_ fnName: String, payload: Any, retryCount: Int = 0) {
+                  DispatchQueue.main.async {
+                      guard let wv = self.webView else { return }
+                      var argJS = "null"
+                      if let str = payload as? String {
+                          if let data = try? JSONSerialization.data(withJSONObject: [str], options: []),
+                             let arrStr = String(data: data, encoding: .utf8),
+                             arrStr.count >= 2 {
+                              argJS = String(arrStr.dropFirst().dropLast())
+                          }
+                      } else if let b = payload as? Bool {
+                          argJS = b ? "true" : "false"
+                      } else if JSONSerialization.isValidJSONObject(payload),
+                                let data = try? JSONSerialization.data(withJSONObject: payload, options: []),
+                                let jsonStr = String(data: data, encoding: .utf8) {
+                          argJS = jsonStr
+                      }
+                      let script = "if (typeof window['\(fnName)'] === 'function') { window['\(fnName)'](\(argJS)); }"
+                      wv.evaluateJavaScript(script) { _, err in
+                          if err != nil && retryCount < 2 {
+                              DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                                  self.dispatchJSONToWeb(fnName, payload: payload, retryCount: retryCount + 1)
+                              }
+                          }
+                      }
                   }
               }
 
-              // Backup export: the web hands us the JSON text; we write it to a
-              // temp file and present the system Files export picker so the
-              // user chooses the destination. The shared picker delegate
-              // checks isExportingDocument first, so an export confirmation is
-              // never mistaken for a music-folder pick.
+              private func reportFolderPickerStatus(_ message: String) {
+                  dispatchJSONToWeb("__fengFolderPickerStatus", payload: message)
+              }
+
+              // Backup export: write JSON to temp file and present system Files export picker.
               private func exportDocument(filename: String, content: String) {
                   DispatchQueue.main.async {
                       let safeName = (filename as NSString).lastPathComponent
@@ -585,6 +601,7 @@ jobs:
                       if #available(iOS 14.0, *) {
                           let picker = UIDocumentPickerViewController(forExporting: [tmpURL], asCopy: true)
                           picker.delegate = self
+                          picker.presentationController?.delegate = self
                           self.isExportingDocument = true
                           presenter.present(picker, animated: true, completion: nil)
                       } else {
@@ -596,22 +613,14 @@ jobs:
               }
 
               private func reportExportResult(_ ok: Bool) {
-                  DispatchQueue.main.async {
-                      guard let wv = self.webView else { return }
-                      if #available(iOS 14.0, *) {
-                          wv.callAsyncJavaScript(
-                              "window.__fengExportResult && window.__fengExportResult(ok);",
-                              arguments: ["ok": ok],
-                              in: nil,
-                              in: .page,
-                              completionHandler: nil
-                          )
-                      }
-                  }
+                  dispatchJSONToWeb("__fengExportResult", payload: ok)
               }
 
               private func presentFolderPicker() {
                   DispatchQueue.main.async {
+                      if let existing = self.activeFolderPicker, existing.presentingViewController == nil {
+                          self.activeFolderPicker = nil
+                      }
                       guard self.activeFolderPicker == nil else {
                           self.reportFolderPickerStatus("文件夹选择器已经打开")
                           return
@@ -623,10 +632,12 @@ jobs:
                       if #available(iOS 14.0, *) {
                           let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.folder], asCopy: false)
                           picker.delegate = self
+                          picker.presentationController?.delegate = self
                           picker.allowsMultipleSelection = false
                           picker.shouldShowFileExtensions = true
+                          self.isExportingDocument = false
+                          self.isPickingAudioFiles = false
                           self.activeFolderPicker = picker
-                          self.reportFolderPickerStatus("正在打开 iOS 文件夹选择器…")
                           presenter.present(picker, animated: true) { [weak self, weak picker] in
                               guard let self = self else { return }
                               if picker?.presentingViewController == nil {
@@ -640,24 +651,82 @@ jobs:
                   }
               }
 
+              private func presentAudioFilesPicker() {
+                  DispatchQueue.main.async {
+                      if let existing = self.activeFolderPicker, existing.presentingViewController == nil {
+                          self.activeFolderPicker = nil
+                      }
+                      guard self.activeFolderPicker == nil else {
+                          self.reportFolderPickerStatus("文件选择器已经打开")
+                          return
+                      }
+                      guard let presenter = self.topMostViewController(), presenter.viewIfLoaded?.window != nil else {
+                          self.reportFolderPickerStatus("无法定位当前页面，请重试")
+                          return
+                      }
+                      if #available(iOS 14.0, *) {
+                          var types: [UTType] = [.audio, .mp3, .mpeg4Audio, .wav, .plainText]
+                          if let flac = UTType(filenameExtension: "flac") { types.append(flac) }
+                          if let lrc = UTType(filenameExtension: "lrc") { types.append(lrc) }
+                          let picker = UIDocumentPickerViewController(forOpeningContentTypes: types, asCopy: true)
+                          picker.delegate = self
+                          picker.presentationController?.delegate = self
+                          picker.allowsMultipleSelection = true
+                          picker.shouldShowFileExtensions = true
+                          self.isExportingDocument = false
+                          self.isPickingAudioFiles = true
+                          self.activeFolderPicker = picker
+                          presenter.present(picker, animated: true) { [weak self, weak picker] in
+                              guard let self = self else { return }
+                              if picker?.presentingViewController == nil {
+                                  self.activeFolderPicker = nil
+                                  self.isPickingAudioFiles = false
+                                  self.reportFolderPickerStatus("文件选择器未能弹出，请重试")
+                              }
+                          }
+                      } else {
+                          self.reportFolderPickerStatus("当前 iOS 版本不支持此导入方式")
+                      }
+                  }
+              }
+
+              func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
+                  self.activeFolderPicker = nil
+                  self.isExportingDocument = false
+                  self.isPickingAudioFiles = false
+              }
+
               func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+                  self.activeFolderPicker = nil
                   if isExportingDocument {
                       isExportingDocument = false
                       reportExportResult(false)
                       return
                   }
-                  self.activeFolderPicker = nil
+                  if isPickingAudioFiles {
+                      isPickingAudioFiles = false
+                      return
+                  }
                   dispatchFolderPayloadToWeb(["cancelled": true])
               }
 
               func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+                  self.activeFolderPicker = nil
                   if isExportingDocument {
                       isExportingDocument = false
                       reportExportResult(true)
                       return
                   }
-                  self.activeFolderPicker = nil
-                  guard let pickedURL = urls.first else { return }
+                  if isPickingAudioFiles {
+                      isPickingAudioFiles = false
+                      handlePickedAudioFilesCopy(urls)
+                      return
+                  }
+
+                  guard let pickedURL = urls.first else {
+                      reportFolderPickerStatus("未获取到所选文件夹路径")
+                      return
+                  }
 
                   let granted = pickedURL.startAccessingSecurityScopedResource()
                   let canonicalKey = pickedURL.standardizedFileURL.path
@@ -678,25 +747,53 @@ jobs:
 
                   pushBoundFoldersSummary()
                   let folderName = pickedURL.lastPathComponent
-                  DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                      if #available(iOS 14.0, *) {
-                          self.webView?.callAsyncJavaScript(
-                              "window.__fengFolderScanning && window.__fengFolderScanning(name);",
-                              arguments: ["name": folderName],
-                              in: nil,
-                              in: .page,
-                              completionHandler: nil
-                          )
-                      }
-                  }
+                  reportFolderPickerStatus("已选中「\(folderName)」，正在扫描音频...")
 
                   DispatchQueue.global(qos: .userInitiated).async {
                       let payload = self.enumerateFolderURL(pickedURL, folderName: folderName, silent: false, granted: granted)
-                      let probeCount = (payload["files"] as? [[String: String]])?.count ?? -1
-                      let probeErr = (payload["error"] as? String) ?? ""
-                      DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                      DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                           self.dispatchFolderPayloadToWeb(payload)
                       }
+                  }
+              }
+
+              private func handlePickedAudioFilesCopy(_ urls: [URL]) {
+                  guard !urls.isEmpty else { return }
+                  reportFolderPickerStatus("正在将 \(urls.count) 个文件永久导入 FENG MUSIC...")
+                  DispatchQueue.global(qos: .userInitiated).async {
+                      guard let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+                          self.dispatchNamedPayloadToWeb("__fengImportedNativeFiles", payload: ["count": 0, "error": "无法访问应用文稿目录"])
+                          return
+                      }
+                      let musicDir = docs.appendingPathComponent("Music", isDirectory: true)
+                      try? FileManager.default.createDirectory(at: musicDir, withIntermediateDirectories: true)
+
+                      let allowedExts: Set<String> = ["mp3", "flac", "m4a", "wav", "aac", "lrc"]
+                      var imported = 0
+                      var skippedOgg = 0
+
+                      for srcURL in urls {
+                          let ext = srcURL.pathExtension.lowercased()
+                          if ext == "ogg" {
+                              skippedOgg += 1
+                              continue
+                          }
+                          guard allowedExts.contains(ext) else { continue }
+                          let accessed = srcURL.startAccessingSecurityScopedResource()
+                          defer { if accessed { srcURL.stopAccessingSecurityScopedResource() } }
+                          let destURL = musicDir.appendingPathComponent(srcURL.lastPathComponent)
+                          do {
+                              if FileManager.default.fileExists(atPath: destURL.path) {
+                                  try FileManager.default.removeItem(at: destURL)
+                              }
+                              try FileManager.default.copyItem(at: srcURL, to: destURL)
+                              imported += 1
+                          } catch {}
+                      }
+                      self.dispatchNamedPayloadToWeb("__fengImportedNativeFiles", payload: [
+                          "count": imported,
+                          "skippedOgg": skippedOgg
+                      ])
                   }
               }
 
@@ -785,21 +882,25 @@ jobs:
                   return ""
               }
 
-              private func patchCoversInBackground(items: [(url: URL, uri: String, relKey: String)]) {
+              private func patchMetadataAndCoversInBackground(items: [(url: URL, uri: String, relKey: String)]) {
                   guard !items.isEmpty else { return }
                   DispatchQueue.global(qos: .utility).async {
                       var batch: [[String: String]] = []
                       for item in items {
                           let asset = AVURLAsset(url: item.url)
+                          let meta = self.extractTextMetadata(from: asset)
                           let cover = self.extractArtworkDataURL(from: asset)
-                          if !cover.isEmpty {
+                          if !meta.title.isEmpty || !meta.artist.isEmpty || !meta.album.isEmpty || !cover.isEmpty {
                               batch.append([
                                   "relKey": item.relKey,
                                   "uri": item.uri,
+                                  "title": meta.title,
+                                  "artist": meta.artist,
+                                  "album": meta.album,
                                   "cover": cover
                               ])
                           }
-                          if batch.count >= 8 {
+                          if batch.count >= 6 {
                               let chunk = batch
                               batch.removeAll()
                               self.dispatchNamedPayloadToWeb("__fengPatchTrackCovers", payload: ["items": chunk])
@@ -812,19 +913,32 @@ jobs:
               }
 
               private func enumerateFolderURL(_ url: URL, folderName: String, silent: Bool, granted: Bool) -> [String: Any] {
-                  // iOS AVPlayer natively supports MP3, FLAC, M4A, WAV, AAC (not OGG Vorbis)
                   let audioExts: Set<String> = ["mp3", "flac", "m4a", "wav", "aac"]
                   var lrcMap: [String: String] = [:]
-                  var audioItems: [(url: URL, name: String, uri: String, relKey: String, base: String, title: String, artist: String, album: String)] = []
-                  let rootPath = url.standardizedFileURL.path
+                  var audioItems: [(url: URL, name: String, uri: String, relKey: String, base: String)] = []
+                  var enumError = ""
+                  var icloudPlaceholderCount = 0
 
                   let scanDirectory: (URL) -> Void = { targetURL in
+                      let rootPath = targetURL.standardizedFileURL.path
                       if let enumerator = FileManager.default.enumerator(
                           at: targetURL,
                           includingPropertiesForKeys: [.isRegularFileKey, .isDirectoryKey],
-                          options: [.skipsHiddenFiles]
+                          options: [],
+                          errorHandler: { _, err -> Bool in
+                              if enumError.isEmpty {
+                                  enumError = err.localizedDescription
+                              }
+                              return true
+                          }
                       ) {
                           for case let fileURL as URL in enumerator {
+                              let fileName = fileURL.lastPathComponent
+                              if fileName.hasSuffix(".icloud") {
+                                  icloudPlaceholderCount += 1
+                                  continue
+                              }
+                              if fileName.hasPrefix(".") { continue }
                               let ext = fileURL.pathExtension.lowercased()
                               let base = fileURL.deletingPathExtension().lastPathComponent
                                   .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -837,51 +951,56 @@ jobs:
                                   let fullPath = fileURL.standardizedFileURL.path
                                   let relSuffix = fullPath.hasPrefix(rootPath)
                                       ? String(fullPath.dropFirst(rootPath.count)).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-                                      : fileURL.lastPathComponent
+                                      : fileName
                                   let relKey = "\(folderName)/\(relSuffix)"
-                                  let asset = AVURLAsset(url: fileURL)
-                                  let meta = self.extractTextMetadata(from: asset)
                                   audioItems.append((
                                       url: fileURL,
-                                      name: fileURL.lastPathComponent,
+                                      name: fileName,
                                       uri: fileURL.absoluteString,
                                       relKey: relKey,
-                                      base: base,
-                                      title: meta.title,
-                                      artist: meta.artist,
-                                      album: meta.album
+                                      base: base
                                   ))
                               }
                           }
                       }
                   }
 
-                  // Enumerate the granted security-scoped URL directly and surface read errors.
-                  scanDirectory(url)
-                  var enumError = ""
-                  if audioItems.isEmpty {
-                      do {
-                          _ = try FileManager.default.contentsOfDirectory(atPath: url.path)
-                      } catch {
-                          enumError = error.localizedDescription
+                  // Use NSFileCoordinator so iOS File Provider & iCloud Drive folders grant read access cleanly.
+                  var coordError: NSError?
+                  var didCoordinate = false
+                  let coordinator = NSFileCoordinator()
+                  coordinator.coordinate(readingItemAt: url, options: [.withoutChanges], error: &coordError) { coordinatedURL in
+                      didCoordinate = true
+                      scanDirectory(coordinatedURL)
+                  }
+                  if !didCoordinate {
+                      if let ce = coordError, enumError.isEmpty {
+                          enumError = ce.localizedDescription
+                      }
+                      scanDirectory(url)
+                  }
+
+                  if audioItems.isEmpty && enumError.isEmpty {
+                      if icloudPlaceholderCount > 0 {
+                          enumError = "发现 \(icloudPlaceholderCount) 个未下载的 iCloud 云端文件，请先在「文件」App 点击下载"
+                      } else if !granted {
+                          enumError = "系统未授予该目录的跨应用读取权限（第三方网盘目录可能不支持，建议使用「单曲/歌词」永久入库）"
                       }
                   }
 
+                  // Return file list immediately (<50ms); extract ID3/FLAC/M4A metadata & covers asynchronously.
                   let filesPayload: [[String: String]] = audioItems.map { item in
                       [
                           "name": item.name,
                           "uri": item.uri,
                           "relKey": item.relKey,
-                          "title": item.title,
-                          "artist": item.artist,
-                          "album": item.album,
                           "lrc": lrcMap[item.base] ?? ""
                       ]
                   }
 
-                  let coverTargets = audioItems.map { (url: $0.url, uri: $0.uri, relKey: $0.relKey) }
-                  DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
-                      self.patchCoversInBackground(items: coverTargets)
+                  let bgTargets = audioItems.map { (url: $0.url, uri: $0.uri, relKey: $0.relKey) }
+                  DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                      self.patchMetadataAndCoversInBackground(items: bgTargets)
                   }
 
                   return [
@@ -895,36 +1014,11 @@ jobs:
               }
 
               private func dispatchFolderPayloadToWeb(_ payload: [String: Any]) {
-                  DispatchQueue.main.async {
-                      guard let wv = self.webView else { return }
-                      if #available(iOS 14.0, *) {
-                          wv.callAsyncJavaScript(
-                              "if (window.__fengPickedFolderFiles) { window.__fengPickedFolderFiles(payload); }",
-                              arguments: ["payload": payload],
-                              in: nil,
-                              in: .page,
-                              completionHandler: nil
-                          )
-                      } else if let data = try? JSONSerialization.data(withJSONObject: payload, options: []),
-                                let jsonStr = String(data: data, encoding: .utf8) {
-                          wv.evaluateJavaScript("window.__fengPickedFolderFiles && window.__fengPickedFolderFiles(\(jsonStr))", completionHandler: nil)
-                      }
-                  }
+                  dispatchJSONToWeb("__fengPickedFolderFiles", payload: payload)
               }
 
               private func dispatchNamedPayloadToWeb(_ fnName: String, payload: [String: Any]) {
-                  DispatchQueue.main.async {
-                      guard let wv = self.webView else { return }
-                      if #available(iOS 14.0, *) {
-                          wv.callAsyncJavaScript(
-                              "if (typeof window[fnName] === 'function') { window[fnName](payload); }",
-                              arguments: ["fnName": fnName, "payload": payload],
-                              in: nil,
-                              in: .page,
-                              completionHandler: nil
-                          )
-                      }
-                  }
+                  dispatchJSONToWeb(fnName, payload: payload)
               }
 
               // Bound-folder list for the settings UI. Keys are the standardized
@@ -1139,6 +1233,8 @@ jobs:
                               pushBoundFoldersSummary()
                           } else if action == "removeBookmark", let key = body["key"] as? String {
                               removeBookmarkedFolder(key: key)
+                          } else if action == "pickAudioFiles" {
+                              presentAudioFilesPicker()
                           } else {
                               presentFolderPicker()
                           }
