@@ -594,16 +594,11 @@
           <p id="library-subtitle" class="text-xs text-white/55 truncate">FENG MUSIC · 共 0 首歌曲</p>
         </div>
         <div class="flex items-center gap-2 shrink-0">
-          <button id="btn-lib-multiselect" class="liquid-pill px-3 py-2 rounded-full text-xs font-medium text-sky-200 flex items-center gap-1.5 shrink-0">
-            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            <span>多选</span>
-          </button>
-          <button id="btn-open-search" class="liquid-pill px-3.5 py-2 rounded-full text-xs font-medium text-white flex items-center gap-1.5 shrink-0">
-            <svg class="w-4 h-4 text-white/85" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <button id="btn-open-search" class="liquid-pill w-9 h-9 rounded-full text-white flex items-center justify-center shrink-0" title="搜索歌曲、专辑或歌手" aria-label="搜索">
+            <svg class="w-4 h-4 text-white/90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
               <circle cx="11" cy="11" r="7" />
               <path stroke-linecap="round" d="M20 20l-3.5-3.5" />
             </svg>
-            <span>搜索</span>
           </button>
         </div>
       </header>
@@ -623,34 +618,32 @@
         </div>
       </div>
 
-      <!-- Filter Bar: 全部 | 专辑 | 歌手 + Sort -->
+      <!-- Custom Order Editing Banner (Library) -->
+      <div id="library-custom-order-bar" class="hidden px-4 sm:px-6 pb-2.5 shrink-0">
+        <div class="liquid-panel rounded-2xl px-3.5 py-2 flex items-center justify-between gap-2 border border-sky-400/30">
+          <span class="text-xs font-medium text-sky-200 truncate">自定义排列 · 轻触右侧 ↑ ↓ 调整顺序</span>
+          <button id="btn-lib-order-done" class="px-3 py-1 rounded-lg bg-sky-400 text-xs font-semibold text-zinc-950 shrink-0">完成</button>
+        </div>
+      </div>
+
+      <!-- Unified Filter & Icon Action Bar: [全部 | 专辑 | 歌手] + [今日音乐签 | 多选 | 排序] -->
       <div class="px-4 sm:px-6 pb-2.5 flex items-center justify-between gap-2 shrink-0">
         <div class="liquid-pill p-1 rounded-full flex items-center gap-1">
           <button data-lib-tab="songs" class="lib-tab-btn px-3.5 py-1 rounded-full text-xs font-semibold bg-white text-zinc-950 transition">全部</button>
           <button data-lib-tab="albums" class="lib-tab-btn px-3.5 py-1 rounded-full text-xs font-semibold text-white/75 hover:text-white transition">专辑</button>
           <button data-lib-tab="artists" class="lib-tab-btn px-3.5 py-1 rounded-full text-xs font-semibold text-white/75 hover:text-white transition">歌手</button>
         </div>
-        <select id="library-sort-select" class="liquid-pill px-2.5 py-1.5 rounded-full text-[11px] font-medium text-white/90 bg-transparent outline-none">
-          <option value="default" class="bg-zinc-900 text-white">默认添加</option>
-          <option value="title" class="bg-zinc-900 text-white">歌曲名称</option>
-          <option value="artist" class="bg-zinc-900 text-white">歌手名称</option>
-        </select>
-      </div>
-
-      <!-- Quick Action Bar (Songs tab) -->
-      <div id="library-quick-actions" class="px-4 sm:px-6 pb-2.5 flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar shrink-0">
-        <button id="btn-play-all" class="liquid-pill px-3 py-1.5 rounded-full text-[11px] font-medium text-white flex items-center gap-1 shrink-0">
-          <svg class="w-3.5 h-3.5 text-sky-300" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-          播放全部
-        </button>
-        <button id="btn-surprise-walk" class="liquid-pill px-3 py-1.5 rounded-full text-[11px] font-medium text-white flex items-center gap-1 shrink-0">
-          <svg class="w-3.5 h-3.5 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
-          随心漫步
-        </button>
-        <button id="btn-daily-fortune" class="liquid-pill px-3 py-1.5 rounded-full text-[11px] font-medium text-white flex items-center gap-1 shrink-0">
-          <svg class="w-3.5 h-3.5 text-rose-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          今日音乐签
-        </button>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <button id="btn-daily-fortune" class="liquid-pill w-9 h-9 rounded-full flex items-center justify-center text-rose-300 shrink-0" title="今日音乐签" aria-label="今日音乐签">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+          </button>
+          <button id="btn-lib-multiselect" class="liquid-pill w-9 h-9 rounded-full flex items-center justify-center text-sky-200 shrink-0" title="多选歌曲" aria-label="多选">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><path stroke-linecap="round" stroke-linejoin="round" d="M9 11l3 3L22 4"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          </button>
+          <button id="btn-lib-sort" class="liquid-pill w-9 h-9 rounded-full flex items-center justify-center text-white/90 shrink-0" title="排序方式" aria-label="排序方式">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
+          </button>
+        </div>
       </div>
 
       <!-- Sub-panel 1: Song List -->
@@ -716,9 +709,11 @@
           </div>
         </div>
         <div class="flex items-center gap-1.5 shrink-0">
-          <button id="btn-playlist-multiselect" class="liquid-pill px-3 py-2 rounded-full text-xs font-medium text-sky-200 flex items-center gap-1.5 shrink-0">
-            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            <span>多选</span>
+          <button id="btn-playlist-multiselect" class="w-9 h-9 rounded-full liquid-pill flex items-center justify-center text-sky-200 shrink-0" title="多选歌曲" aria-label="多选">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><path stroke-linecap="round" stroke-linejoin="round" d="M9 11l3 3L22 4"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          </button>
+          <button id="btn-pl-sort" class="w-9 h-9 rounded-full liquid-pill flex items-center justify-center text-white/90 shrink-0" title="歌单排序" aria-label="歌单排序">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
           </button>
           <button id="btn-playlist-rename" class="w-9 h-9 rounded-full liquid-pill flex items-center justify-center text-white/85" title="重命名歌单">
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
@@ -759,6 +754,14 @@
         </div>
       </div>
 
+      <!-- Custom Order Editing Banner (Playlist) -->
+      <div id="playlist-custom-order-bar" class="hidden px-4 sm:px-6 pb-2.5 shrink-0">
+        <div class="liquid-panel rounded-2xl px-3.5 py-2 flex items-center justify-between gap-2 border border-sky-400/30">
+          <span class="text-xs font-medium text-sky-200 truncate">自定义排列 · 轻触右侧 ↑ ↓ 调整歌单顺序</span>
+          <button id="btn-pl-order-done" class="px-3 py-1 rounded-lg bg-sky-400 text-xs font-semibold text-zinc-950 shrink-0">完成</button>
+        </div>
+      </div>
+
       <div id="playlist-detail-tracks" class="flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 space-y-2"></div>
     </section>
 
@@ -777,45 +780,54 @@
       <div id="search-results-container" class="flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 space-y-5"></div>
     </section>
 
-    <!-- ==================== VIEW 8: LISTENING STATS (听歌足迹) ==================== -->
+    <!-- ==================== VIEW 8: LISTENING STATS (听歌足迹 + 周报/月报) ==================== -->
     <section id="view-stats" class="app-view hidden flex-1 flex flex-col overflow-hidden">
-      <header class="px-4 sm:px-6 pb-3 flex items-center justify-between gap-3 shrink-0" style="padding-top: calc(var(--safe-top) + 12px);">
-        <div class="flex items-center gap-3">
-          <div>
-            <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-white">听歌足迹</h1>
-            <p class="text-xs text-white/55">私人听歌次数与单曲循环榜 TOP 20</p>
-          </div>
+      <header class="px-4 sm:px-6 pb-2.5 flex items-center justify-between gap-3 shrink-0" style="padding-top: calc(var(--safe-top) + 12px);">
+        <div>
+          <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-white">听歌足迹</h1>
+          <p id="stats-subtitle" class="text-xs text-white/55">私人听歌次数、周报月报与单曲循环榜</p>
+        </div>
+        <div class="liquid-pill p-1 rounded-full flex items-center gap-1 shrink-0">
+          <button data-stats-tab="overview" class="stats-tab-btn px-3 py-1 rounded-full text-xs font-semibold bg-white text-zinc-950 transition">总览</button>
+          <button data-stats-tab="weekly" class="stats-tab-btn px-3 py-1 rounded-full text-xs font-semibold text-white/75 hover:text-white transition">周报</button>
+          <button data-stats-tab="monthly" class="stats-tab-btn px-3 py-1 rounded-full text-xs font-semibold text-white/75 hover:text-white transition">月报</button>
         </div>
       </header>
       <div id="stats-scroll-container" class="flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 space-y-4">
-        <div class="grid grid-cols-3 gap-2.5">
-          <div class="liquid-panel rounded-3xl p-3.5">
-            <div class="text-[11px] text-white/55 mb-1">累计听歌次数</div>
-            <div id="stat-total-plays" class="text-xl sm:text-2xl font-bold text-white tabular-nums">0 次</div>
+        <!-- Overview Panel -->
+        <div id="stats-panel-overview" class="space-y-4">
+          <div class="grid grid-cols-3 gap-2.5">
+            <div class="liquid-panel rounded-3xl p-3.5">
+              <div class="text-[11px] text-white/55 mb-1">累计听歌次数</div>
+              <div id="stat-total-plays" class="text-xl sm:text-2xl font-bold text-white tabular-nums">0 次</div>
+            </div>
+            <div class="liquid-panel rounded-3xl p-3.5">
+              <div class="text-[11px] text-white/55 mb-1">累计聆听时长</div>
+              <div id="stat-total-minutes" class="text-xl sm:text-2xl font-bold text-white tabular-nums">0 分钟</div>
+            </div>
+            <div class="liquid-panel rounded-3xl p-3.5">
+              <div class="text-[11px] text-white/55 mb-1">已听曲目</div>
+              <div id="stat-unique-tracks" class="text-xl sm:text-2xl font-bold text-sky-300 tabular-nums">0 / 0</div>
+            </div>
           </div>
-          <div class="liquid-panel rounded-3xl p-3.5">
-            <div class="text-[11px] text-white/55 mb-1">累计聆听时长</div>
-            <div id="stat-total-minutes" class="text-xl sm:text-2xl font-bold text-white tabular-nums">0 分钟</div>
+          <div class="liquid-panel rounded-3xl p-4">
+            <div class="flex items-center justify-between mb-3">
+              <h2 class="text-sm font-semibold text-white">单曲循环榜 TOP 20</h2>
+              <span class="text-[11px] text-white/45">点击立即播放</span>
+            </div>
+            <div id="stat-top-tracks" class="space-y-2"></div>
           </div>
-          <div class="liquid-panel rounded-3xl p-3.5">
-            <div class="text-[11px] text-white/55 mb-1">已听曲目</div>
-            <div id="stat-unique-tracks" class="text-xl sm:text-2xl font-bold text-sky-300 tabular-nums">0 / 0</div>
+          <div class="liquid-panel rounded-3xl p-4">
+            <div class="flex items-center justify-between mb-3">
+              <h2 class="text-sm font-semibold text-white">最近听歌记录</h2>
+              <span id="stat-recent-count" class="text-[11px] text-white/45">最近 15 条</span>
+            </div>
+            <div id="stat-recent-tracks" class="space-y-1.5"></div>
           </div>
         </div>
-        <div class="liquid-panel rounded-3xl p-4">
-          <div class="flex items-center justify-between mb-3">
-            <h2 class="text-sm font-semibold text-white">单曲循环榜 TOP 20</h2>
-            <span class="text-[11px] text-white/45">点击立即播放</span>
-          </div>
-          <div id="stat-top-tracks" class="space-y-2"></div>
-        </div>
-        <div class="liquid-panel rounded-3xl p-4">
-          <div class="flex items-center justify-between mb-3">
-            <h2 class="text-sm font-semibold text-white">最近听歌记录</h2>
-            <span id="stat-recent-count" class="text-[11px] text-white/45">最近 15 条</span>
-          </div>
-          <div id="stat-recent-tracks" class="space-y-1.5"></div>
-        </div>
+
+        <!-- Weekly / Monthly Report Panel -->
+        <div id="stats-panel-report" class="hidden space-y-4"></div>
       </div>
     </section>
 
@@ -825,7 +837,7 @@
         <div class="flex items-center gap-3">
           <div>
             <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-white">界面 DIY 设置</h1>
-            <p class="text-xs text-white/55">自定义壁纸、黑胶形态与玻璃通透度</p>
+            <p class="text-xs text-white/55">FENG MUSIC v1.0.2 · 壁纸、黑胶形态与玻璃通透度</p>
           </div>
         </div>
       </header>
@@ -1690,6 +1702,36 @@
     </div>
   </div>
 
+  <!-- 15. Shared Sort Mode Sheet (Library & Playlist) -->
+  <div id="sheet-sort-menu" class="fixed left-0 right-0 bottom-0 z-50 liquid-sheet rounded-t-[32px] translate-y-full transition-transform duration-300 max-w-xl mx-auto p-5 space-y-3" style="padding-bottom: calc(var(--safe-bottom) + 22px);">
+    <div class="w-10 h-1 rounded-full bg-white/25 mx-auto"></div>
+    <div class="flex items-center justify-between pb-1">
+      <h3 id="sort-sheet-title" class="text-base font-bold text-white">排序方式</h3>
+      <button class="btn-close-sheets text-xs text-white/65 hover:text-white px-2.5 py-1 rounded-full bg-white/10">关闭</button>
+    </div>
+    <div class="space-y-2">
+      <button data-sort-opt="default" class="sort-opt-btn w-full py-3 px-4 rounded-2xl bg-white/8 hover:bg-white/14 flex items-center justify-between text-left transition">
+        <span class="text-sm font-medium text-white">默认添加</span>
+        <span class="sort-opt-check text-xs font-semibold text-sky-300 hidden">✓ 当前</span>
+      </button>
+      <button data-sort-opt="title" class="sort-opt-btn w-full py-3 px-4 rounded-2xl bg-white/8 hover:bg-white/14 flex items-center justify-between text-left transition">
+        <span class="text-sm font-medium text-white">歌曲名称 (A-Z)</span>
+        <span class="sort-opt-check text-xs font-semibold text-sky-300 hidden">✓ 当前</span>
+      </button>
+      <button data-sort-opt="artist" class="sort-opt-btn w-full py-3 px-4 rounded-2xl bg-white/8 hover:bg-white/14 flex items-center justify-between text-left transition">
+        <span class="text-sm font-medium text-white">歌手名称 (A-Z)</span>
+        <span class="sort-opt-check text-xs font-semibold text-sky-300 hidden">✓ 当前</span>
+      </button>
+      <button data-sort-opt="custom" class="sort-opt-btn w-full py-3 px-4 rounded-2xl bg-white/8 hover:bg-white/14 flex items-center justify-between text-left transition">
+        <div>
+          <div class="text-sm font-medium text-white">自定义排列</div>
+          <div class="text-[11px] text-white/50 mt-0.5">手动上移 / 下移歌曲并持久化保存顺序</div>
+        </div>
+        <span class="sort-opt-check text-xs font-semibold text-sky-300 hidden">✓ 当前</span>
+      </button>
+    </div>
+  </div>
+
   <!-- Toast Banner -->
   <div id="toast-banner" class="fixed left-1/2 -translate-x-1/2 z-[70] px-4 py-2.5 rounded-full liquid-dock text-xs font-medium text-white opacity-0 pointer-events-none transition-all duration-300 whitespace-nowrap" style="top: calc(var(--safe-top) + 14px);">
     提示信息
@@ -1869,7 +1911,12 @@
         currentTrackId: null,
         isPlaying: false,
         playMode: 'loop', // 'loop' | 'one' | 'shuffle'
-        sortMode: 'default',
+        sortMode: 'default', // 'default' | 'title' | 'artist' | 'custom'
+        customTrackOrder: [],
+        libCustomEditing: false,
+        plCustomEditing: false,
+        sortSheetContext: 'library',
+        statsTab: 'overview', // 'overview' | 'weekly' | 'monthly'
         activeView: 'library',
         libTab: 'songs',
         multiSelectMode: false,
@@ -1881,7 +1928,7 @@
         activePlaylistId: null,
         activeGroup: null,
         playlists: [],
-        stats: { totalSeconds: 0, totalPlays: 0, trackPlays: {}, recentPlays: [] },
+        stats: { totalSeconds: 0, totalPlays: 0, trackPlays: {}, recentPlays: [], playHistory: [], dailySeconds: {} },
         lyricOffsets: {},
         customMeta: {},
         customLyrics: {},
@@ -2019,6 +2066,8 @@
           customMeta: state.customMeta,
           customLyrics: state.customLyrics,
           playMode: state.playMode,
+          sortMode: state.sortMode,
+          customTrackOrder: state.customTrackOrder,
           lastTrackId: state.currentTrackId,
           lastTime: audio.currentTime || 0,
           diy: {
@@ -3404,15 +3453,26 @@
         discImg.classList.toggle('spin-paused', !playing);
       }
 
+      function toLocalDateKey(ts = Date.now()) {
+        const d = new Date(ts);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      }
+
       function recordTrackPlay(trackId) {
         if (!trackId) return;
+        const now = Date.now();
         state.stats.totalPlays = (state.stats.totalPlays || 0) + 1;
         if (!state.stats.trackPlays) state.stats.trackPlays = {};
         state.stats.trackPlays[trackId] = (state.stats.trackPlays[trackId] || 0) + 1;
         if (!Array.isArray(state.stats.recentPlays)) state.stats.recentPlays = [];
-        state.stats.recentPlays.unshift({ trackId, at: Date.now() });
+        state.stats.recentPlays.unshift({ trackId, at: now });
         if (state.stats.recentPlays.length > 30) {
           state.stats.recentPlays = state.stats.recentPlays.slice(0, 30);
+        }
+        if (!Array.isArray(state.stats.playHistory)) state.stats.playHistory = [];
+        state.stats.playHistory.unshift({ trackId, at: now });
+        if (state.stats.playHistory.length > 2000) {
+          state.stats.playHistory = state.stats.playHistory.slice(0, 2000);
         }
       }
 
@@ -3707,10 +3767,13 @@
         });
 
         const isSongs = state.libTab === 'songs';
-        $('library-quick-actions').classList.toggle('hidden', !isSongs || state.multiSelectMode);
-        $('library-sort-select').classList.toggle('hidden', !isSongs);
+        if (!isSongs && state.libCustomEditing) state.libCustomEditing = false;
+        const sortBtn = $('btn-lib-sort');
+        if (sortBtn) sortBtn.classList.toggle('hidden', !isSongs);
         const msBtn = $('btn-lib-multiselect');
         if (msBtn) msBtn.classList.toggle('hidden', !isSongs);
+        const orderBar = $('library-custom-order-bar');
+        if (orderBar) orderBar.classList.toggle('hidden', !isSongs || !state.libCustomEditing || state.multiSelectMode);
         $('library-list-container').classList.toggle('hidden', state.libTab !== 'songs');
         $('albums-grid').classList.toggle('hidden', state.libTab !== 'albums');
         $('artists-grid').classList.toggle('hidden', state.libTab !== 'artists');
@@ -3762,14 +3825,78 @@
       // =========================================================================
       // RENDER LIBRARY, ALBUMS, ARTISTS, PLAYLISTS & STATS
       // =========================================================================
+      function ensureCustomTrackOrder() {
+        const existingIds = state.tracks.map((t) => t.id);
+        const existingSet = new Set(existingIds);
+        const cleaned = (state.customTrackOrder || []).filter((id) => existingSet.has(id));
+        const cleanedSet = new Set(cleaned);
+        for (const id of existingIds) {
+          if (!cleanedSet.has(id)) cleaned.push(id);
+        }
+        state.customTrackOrder = cleaned;
+        return cleaned;
+      }
+
       function getSortedTracks() {
         const list = state.tracks.map(getTrackDisplay);
         if (state.sortMode === 'title') {
           list.sort((a, b) => a.title.localeCompare(b.title, 'zh-CN'));
         } else if (state.sortMode === 'artist') {
           list.sort((a, b) => a.artist.localeCompare(b.artist, 'zh-CN'));
+        } else if (state.sortMode === 'custom') {
+          const order = ensureCustomTrackOrder();
+          const rank = new Map(order.map((id, idx) => [id, idx]));
+          list.sort((a, b) => (rank.get(a.id) ?? 999999) - (rank.get(b.id) ?? 999999));
         }
         return list;
+      }
+
+      function getSortedPlaylistTracks(pl) {
+        const valid = (pl?.trackIds || [])
+          .map((id) => state.tracks.find((t) => t.id === id))
+          .filter(Boolean)
+          .map(getTrackDisplay);
+        const mode = pl?.sortMode || 'default';
+        if (mode === 'title') {
+          valid.sort((a, b) => a.title.localeCompare(b.title, 'zh-CN'));
+        } else if (mode === 'artist') {
+          valid.sort((a, b) => a.artist.localeCompare(b.artist, 'zh-CN'));
+        }
+        return valid;
+      }
+
+      function syncSortButtonsUI() {
+        const libSortBtn = $('btn-lib-sort');
+        if (libSortBtn) {
+          const active = state.sortMode !== 'default';
+          libSortBtn.classList.toggle('text-sky-300', active);
+          libSortBtn.classList.toggle('text-white/90', !active);
+        }
+        const plSortBtn = $('btn-pl-sort');
+        if (plSortBtn) {
+          const pl = state.playlists.find((p) => p.id === state.activePlaylistId);
+          const active = Boolean(pl && (pl.sortMode || 'default') !== 'default');
+          plSortBtn.classList.toggle('text-sky-300', active);
+          plSortBtn.classList.toggle('text-white/90', !active);
+        }
+      }
+
+      function openSortSheet(context = 'library') {
+        state.sortSheetContext = context;
+        const pl = context === 'playlist' ? state.playlists.find((p) => p.id === state.activePlaylistId) : null;
+        const currentMode = context === 'playlist' ? (pl?.sortMode || 'default') : (state.sortMode || 'default');
+        const titleEl = $('sort-sheet-title');
+        if (titleEl) titleEl.textContent = context === 'playlist' ? '歌单排序方式' : '曲库排序方式';
+        document.querySelectorAll('.sort-opt-btn').forEach((btn) => {
+          const isCur = btn.dataset.sortOpt === currentMode;
+          btn.classList.toggle('ring-1', isCur);
+          btn.classList.toggle('ring-sky-400/60', isCur);
+          btn.classList.toggle('bg-sky-500/15', isCur);
+          btn.classList.toggle('bg-white/8', !isCur);
+          const check = btn.querySelector('.sort-opt-check');
+          if (check) check.classList.toggle('hidden', !isCur);
+        });
+        openBottomSheet('sheet-sort-menu');
       }
 
       function buildSongRowHtml(track, indexLabel = '', extraActionHtml = '', enableMultiSelect = false) {
@@ -3819,12 +3946,10 @@
 
       function syncMultiSelectBar() {
         const bar = $('library-multiselect-bar');
-        const quickActions = $('library-quick-actions');
         const msBtn = $('btn-lib-multiselect');
+        const orderBar = $('library-custom-order-bar');
         if (bar) bar.classList.toggle('hidden', !state.multiSelectMode);
-        if (quickActions && state.libTab === 'songs') {
-          quickActions.classList.toggle('hidden', state.multiSelectMode);
-        }
+        if (orderBar) orderBar.classList.toggle('hidden', !state.libCustomEditing || state.multiSelectMode || state.libTab !== 'songs');
         if (msBtn) {
           msBtn.classList.toggle('bg-sky-400', state.multiSelectMode);
           msBtn.classList.toggle('text-zinc-950', state.multiSelectMode);
@@ -3921,8 +4046,56 @@
         }
 
         syncMultiSelectBar();
-        container.innerHTML = tracks.map((t, idx) => buildSongRowHtml(t, idx + 1, '', state.multiSelectMode)).join('');
-        attachSongRowListeners(container, state.multiSelectMode);
+        syncSortButtonsUI();
+        const isReordering = state.libCustomEditing && state.sortMode === 'custom' && !state.multiSelectMode;
+        container.innerHTML = tracks
+          .map((t, idx) => {
+            if (!isReordering) return buildSongRowHtml(t, idx + 1, '', state.multiSelectMode);
+            const reorderControls = `
+              <button data-lib-move-up="${t.id}" ${idx === 0 ? 'disabled' : ''} class="btn-lib-move-up w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-25 flex items-center justify-center text-white text-xs" title="上移">↑</button>
+              <button data-lib-move-down="${t.id}" ${idx === tracks.length - 1 ? 'disabled' : ''} class="btn-lib-move-down w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-25 flex items-center justify-center text-white text-xs" title="下移">↓</button>`;
+            return `
+              <div data-track-id="${t.id}" class="song-row song-card-glass rounded-2xl p-2.5 flex items-center justify-between gap-3 transition">
+                <div class="flex items-center gap-3 min-w-0 flex-1">
+                  <span class="w-5 text-center text-[11px] font-semibold text-white/45 tabular-nums shrink-0">${idx + 1}</span>
+                  <img src="${t.cover}" alt="" class="w-11 h-11 rounded-xl object-cover bg-white/10 shrink-0" />
+                  <div class="min-w-0 flex-1">
+                    <div class="text-sm font-semibold text-white truncate">${escapeHtml(t.title)}</div>
+                    <div class="text-xs text-white/55 truncate mt-0.5">${escapeHtml(t.artist)}</div>
+                  </div>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">${reorderControls}</div>
+              </div>`;
+          })
+          .join('');
+        if (isReordering) {
+          container.querySelectorAll('.btn-lib-move-up').forEach((btn) => {
+            on(btn, 'click', async (e) => {
+              e.stopPropagation();
+              const order = ensureCustomTrackOrder();
+              const i = order.indexOf(btn.dataset.libMoveUp);
+              if (i > 0) {
+                [order[i - 1], order[i]] = [order[i], order[i - 1]];
+                await saveAppState();
+                renderLibrary();
+              }
+            });
+          });
+          container.querySelectorAll('.btn-lib-move-down').forEach((btn) => {
+            on(btn, 'click', async (e) => {
+              e.stopPropagation();
+              const order = ensureCustomTrackOrder();
+              const i = order.indexOf(btn.dataset.libMoveDown);
+              if (i >= 0 && i < order.length - 1) {
+                [order[i], order[i + 1]] = [order[i + 1], order[i]];
+                await saveAppState();
+                renderLibrary();
+              }
+            });
+          });
+        } else {
+          attachSongRowListeners(container, state.multiSelectMode);
+        }
       }
 
       function renderAlbums() {
@@ -4288,11 +4461,11 @@
             exitPlaylistMultiSelectMode(false);
           }
         }
+        if (state.activePlaylistId !== playlistId) {
+          state.plCustomEditing = false;
+        }
         state.activePlaylistId = playlistId;
-        const validTracks = (pl.trackIds || [])
-          .map((id) => state.tracks.find((t) => t.id === id))
-          .filter(Boolean)
-          .map(getTrackDisplay);
+        const validTracks = getSortedPlaylistTracks(pl);
 
         $('detail-playlist-title').textContent = pl.name;
         $('detail-playlist-count').textContent = `共 ${validTracks.length} 首歌曲`;
@@ -4300,10 +4473,64 @@
 
         const plMsBtn = $('btn-playlist-multiselect');
         if (plMsBtn) plMsBtn.classList.toggle('hidden', validTracks.length === 0);
+        const plSortBtn = $('btn-pl-sort');
+        if (plSortBtn) plSortBtn.classList.toggle('hidden', validTracks.length === 0);
+        syncSortButtonsUI();
+
+        const isPlReordering = state.plCustomEditing && (pl.sortMode || 'default') === 'custom' && !state.plMultiSelectMode;
+        const plOrderBar = $('playlist-custom-order-bar');
+        if (plOrderBar) plOrderBar.classList.toggle('hidden', !isPlReordering || !validTracks.length);
 
         if (!validTracks.length) {
           if (state.plMultiSelectMode) exitPlaylistMultiSelectMode(false);
+          state.plCustomEditing = false;
+          if (plOrderBar) plOrderBar.classList.add('hidden');
           container.innerHTML = `<div class="liquid-panel rounded-3xl p-8 text-center text-xs text-white/55 mt-2">歌单内暂无歌曲，点击上方「添加歌曲」从曲库选入</div>`;
+        } else if (isPlReordering) {
+          syncPlaylistMultiSelectBar(validTracks.length);
+          container.innerHTML = validTracks
+            .map((t, idx) => `
+              <div data-track-id="${t.id}" class="song-row song-card-glass rounded-2xl p-2.5 flex items-center justify-between gap-3 transition">
+                <div class="flex items-center gap-3 min-w-0 flex-1">
+                  <span class="w-5 text-center text-[11px] font-semibold text-white/45 tabular-nums shrink-0">${idx + 1}</span>
+                  <img src="${t.cover}" alt="" class="w-11 h-11 rounded-xl object-cover bg-white/10 shrink-0" />
+                  <div class="min-w-0 flex-1">
+                    <div class="text-sm font-semibold text-white truncate">${escapeHtml(t.title)}</div>
+                    <div class="text-xs text-white/55 truncate mt-0.5">${escapeHtml(t.artist)}</div>
+                  </div>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <button data-pl-move-up="${t.id}" ${idx === 0 ? 'disabled' : ''} class="btn-pl-move-up w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-25 flex items-center justify-center text-white text-xs" title="上移">↑</button>
+                  <button data-pl-move-down="${t.id}" ${idx === validTracks.length - 1 ? 'disabled' : ''} class="btn-pl-move-down w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-25 flex items-center justify-center text-white text-xs" title="下移">↓</button>
+                </div>
+              </div>`)
+            .join('');
+          container.querySelectorAll('.btn-pl-move-up').forEach((btn) => {
+            on(btn, 'click', async (e) => {
+              e.stopPropagation();
+              const ids = (pl.trackIds || []).filter((id) => state.tracks.some((tr) => tr.id === id));
+              const i = ids.indexOf(btn.dataset.plMoveUp);
+              if (i > 0) {
+                [ids[i - 1], ids[i]] = [ids[i], ids[i - 1]];
+                pl.trackIds = ids;
+                await saveAppState();
+                openPlaylistDetail(pl.id);
+              }
+            });
+          });
+          container.querySelectorAll('.btn-pl-move-down').forEach((btn) => {
+            on(btn, 'click', async (e) => {
+              e.stopPropagation();
+              const ids = (pl.trackIds || []).filter((id) => state.tracks.some((tr) => tr.id === id));
+              const i = ids.indexOf(btn.dataset.plMoveDown);
+              if (i >= 0 && i < ids.length - 1) {
+                [ids[i], ids[i + 1]] = [ids[i + 1], ids[i]];
+                pl.trackIds = ids;
+                await saveAppState();
+                openPlaylistDetail(pl.id);
+              }
+            });
+          });
         } else {
           syncPlaylistMultiSelectBar(validTracks.length);
           container.innerHTML = validTracks
@@ -4342,7 +4569,226 @@
         return `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
       }
 
+      function setStatsTab(tab) {
+        state.statsTab = tab || 'overview';
+        document.querySelectorAll('.stats-tab-btn').forEach((btn) => {
+          const active = btn.dataset.statsTab === state.statsTab;
+          btn.classList.toggle('bg-white', active);
+          btn.classList.toggle('text-zinc-950', active);
+          btn.classList.toggle('text-white/75', !active);
+          btn.classList.toggle('hover:text-white', !active);
+        });
+        const isOverview = state.statsTab === 'overview';
+        const ov = $('stats-panel-overview');
+        const rep = $('stats-panel-report');
+        if (ov) ov.classList.toggle('hidden', !isOverview);
+        if (rep) rep.classList.toggle('hidden', isOverview);
+        if (isOverview) {
+          renderStats();
+        } else {
+          renderPeriodReport(state.statsTab);
+        }
+      }
+
+      function renderPeriodReport(period = 'weekly') {
+        const container = $('stats-panel-report');
+        if (!container) return;
+        const isWeekly = period === 'weekly';
+        const days = isWeekly ? 7 : 30;
+        const now = new Date();
+        const endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+        const startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (days - 1), 0, 0, 0, 0);
+        const startMs = startDate.getTime();
+        const fmtMd = (d) => `${d.getMonth() + 1}.${String(d.getDate()).padStart(2, '0')}`;
+        const rangeLabel = `${fmtMd(startDate)} - ${fmtMd(now)}`;
+
+        const rawHistory = (Array.isArray(state.stats.playHistory) && state.stats.playHistory.length)
+          ? state.stats.playHistory
+          : (state.stats.recentPlays || []);
+        const periodEvents = rawHistory.filter((ev) => ev && ev.at >= startMs && ev.at <= endDate.getTime());
+
+        // Daily counts & seconds buckets
+        const dailySecondsMap = state.stats.dailySeconds || {};
+        const dayBuckets = [];
+        let periodSec = 0;
+        let activeDays = 0;
+        const weekNames = ['日', '一', '二', '三', '四', '五', '六'];
+
+        for (let i = 0; i < days; i++) {
+          const d = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + i);
+          const dk = toLocalDateKey(d.getTime());
+          const dayPlays = periodEvents.filter((ev) => toLocalDateKey(ev.at) === dk).length;
+          const daySec = dailySecondsMap[dk] || 0;
+          periodSec += daySec;
+          if (dayPlays > 0 || daySec > 0) activeDays++;
+          dayBuckets.push({
+            key: dk,
+            label: isWeekly ? `周${weekNames[d.getDay()]}` : `${d.getDate()}`,
+            plays: dayPlays,
+            sec: daySec
+          });
+        }
+
+        // Estimate minutes if dailySeconds wasn't recorded yet (approx 3.5 min/play fallback)
+        const periodMinutes = periodSec > 0
+          ? Math.max(1, Math.round(periodSec / 60))
+          : (periodEvents.length > 0 ? Math.round(periodEvents.length * 3.5) : 0);
+
+        // Top tracks & Top artist & Time-of-day persona
+        const trackCounts = new Map();
+        const artistCounts = new Map();
+        const slotCounts = { morning: 0, afternoon: 0, evening: 0, night: 0 };
+
+        for (const ev of periodEvents) {
+          const raw = state.tracks.find((t) => t.id === ev.trackId);
+          if (raw) {
+            trackCounts.set(raw.id, (trackCounts.get(raw.id) || 0) + 1);
+            const disp = getTrackDisplay(raw);
+            if (disp.artist && disp.artist !== '未知歌手') {
+              artistCounts.set(disp.artist, (artistCounts.get(disp.artist) || 0) + 1);
+            }
+          }
+          const hr = new Date(ev.at).getHours();
+          if (hr >= 6 && hr < 12) slotCounts.morning++;
+          else if (hr >= 12 && hr < 18) slotCounts.afternoon++;
+          else if (hr >= 18 && hr < 22) slotCounts.evening++;
+          else slotCounts.night++;
+        }
+
+        const topTracks = [...trackCounts.entries()]
+          .map(([id, count]) => ({ track: state.tracks.find((t) => t.id === id), count }))
+          .filter((item) => item.track)
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 5);
+
+        const topArtistEntry = [...artistCounts.entries()].sort((a, b) => b[1] - a[1])[0] || null;
+        const topArtistTrack = topArtistEntry
+          ? state.tracks.map(getTrackDisplay).find((t) => t.artist === topArtistEntry[0])
+          : null;
+
+        const peakSlot = Object.entries(slotCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'night';
+        const personaMap = {
+          morning: { title: '清晨序曲派', desc: '偏爱在 06:00–12:00 用旋律唤醒一天' },
+          afternoon: { title: '午后漫游者', desc: '12:00–18:00 是你最常沉浸音乐的时段' },
+          evening: { title: '日落微风党', desc: '偏爱在 18:00–22:00 的暮色里循环最爱' },
+          night: { title: '深夜循环家', desc: '22:00 之后的夜色里，耳机是你最安静的陪伴' }
+        };
+        const persona = personaMap[peakSlot];
+
+        // Bar chart buckets (7 daily bars for weekly, 10 3-day bars for monthly)
+        const chartBars = isWeekly
+          ? dayBuckets.map((b) => ({ label: b.label, val: b.plays }))
+          : Array.from({ length: 10 }, (_, idx) => {
+              const slice = dayBuckets.slice(idx * 3, idx * 3 + 3);
+              const sum = slice.reduce((acc, b) => acc + b.plays, 0);
+              return { label: slice[0]?.label || '', val: sum };
+            });
+        const maxBar = Math.max(1, ...chartBars.map((b) => b.val));
+
+        container.innerHTML = `
+          <div class="liquid-panel rounded-3xl p-4 space-y-3 border border-sky-400/20">
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="px-2.5 py-0.5 rounded-full bg-sky-500/20 border border-sky-400/30 text-[10px] font-semibold text-sky-200">${isWeekly ? '听歌周报' : '听歌月报'}</span>
+                <h2 class="text-base font-bold text-white mt-1.5">${isWeekly ? '近 7 天音乐足迹' : '近 30 天音乐足迹'}</h2>
+              </div>
+              <span class="text-xs text-white/55 tabular-nums">${rangeLabel}</span>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2">
+              <div class="rounded-2xl bg-white/6 border border-white/10 p-3">
+                <div class="text-[10px] text-white/50">听歌次数</div>
+                <div class="text-lg font-bold text-white tabular-nums mt-0.5">${periodEvents.length} <span class="text-[10px] font-normal text-white/55">次</span></div>
+              </div>
+              <div class="rounded-2xl bg-white/6 border border-white/10 p-3">
+                <div class="text-[10px] text-white/50">聆听时长</div>
+                <div class="text-lg font-bold text-sky-300 tabular-nums mt-0.5">${periodMinutes} <span class="text-[10px] font-normal text-white/55">分钟</span></div>
+              </div>
+              <div class="rounded-2xl bg-white/6 border border-white/10 p-3">
+                <div class="text-[10px] text-white/50">陪伴天数</div>
+                <div class="text-lg font-bold text-teal-300 tabular-nums mt-0.5">${activeDays} <span class="text-[10px] font-normal text-white/55">/ ${days}天</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="liquid-panel rounded-3xl p-4 flex items-center gap-3">
+              <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-sky-400/30 to-indigo-500/30 border border-white/15 flex items-center justify-center text-lg shrink-0">🌙</div>
+              <div class="min-w-0">
+                <div class="text-[10px] text-white/50">${isWeekly ? '本周' : '本月'}听歌画像</div>
+                <div class="text-sm font-bold text-white mt-0.5">${periodEvents.length ? persona.title : '等待开启聆听'}</div>
+                <div class="text-[11px] text-white/55 truncate mt-0.5">${periodEvents.length ? persona.desc : '播放几首歌后将自动生成你的时段画像'}</div>
+              </div>
+            </div>
+
+            <div class="liquid-panel rounded-3xl p-4 flex items-center gap-3">
+              <img src="${topArtistTrack?.cover || DEFAULT_APP_COVER}" alt="" class="w-11 h-11 rounded-full object-cover border border-white/20 bg-white/10 shrink-0" />
+              <div class="min-w-0">
+                <div class="text-[10px] text-white/50">${isWeekly ? '本周' : '本月'}最爱歌手</div>
+                <div class="text-sm font-bold text-white truncate mt-0.5">${topArtistEntry ? escapeHtml(topArtistEntry[0]) : '暂无数据'}</div>
+                <div class="text-[11px] text-sky-300/90 tabular-nums mt-0.5">${topArtistEntry ? `共聆听 ${topArtistEntry[1]} 次` : '继续探索你的本地曲库'}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="liquid-panel rounded-3xl p-4 space-y-3">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-semibold text-white">${isWeekly ? '每日听歌分布' : '近 30 天听歌趋势'}</h3>
+              <span class="text-[11px] text-white/45">单位：次</span>
+            </div>
+            <div class="h-28 flex items-end justify-between gap-1.5 pt-2">
+              ${chartBars
+                .map((b) => {
+                  const pct = b.val > 0 ? Math.max(14, Math.round((b.val / maxBar) * 100)) : 6;
+                  return `
+                    <div class="flex-1 h-full flex flex-col items-center justify-end gap-1.5">
+                      <span class="text-[9px] text-white/50 tabular-nums">${b.val > 0 ? b.val : ''}</span>
+                      <div class="w-full max-w-[26px] rounded-t-lg transition-all ${b.val > 0 ? 'bg-gradient-to-t from-sky-500/80 to-teal-300/90 shadow-md shadow-sky-500/20' : 'bg-white/10'}" style="height: ${pct}%;"></div>
+                      <span class="text-[10px] text-white/50 tabular-nums">${b.label}</span>
+                    </div>`;
+                })
+                .join('')}
+            </div>
+          </div>
+
+          <div class="liquid-panel rounded-3xl p-4 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-semibold text-white">${isWeekly ? '本周' : '本月'}单曲循环 TOP 5</h3>
+              <span class="text-[11px] text-white/45">点击播放</span>
+            </div>
+            ${
+              topTracks.length
+                ? topTracks
+                    .map((item, idx) => {
+                      const t = getTrackDisplay(item.track);
+                      return `
+                        <div data-report-track="${t.id}" class="report-track-row rounded-2xl p-2 hover:bg-white/10 flex items-center justify-between gap-3 cursor-pointer transition">
+                          <div class="flex items-center gap-3 min-w-0 flex-1">
+                            <span class="w-5 text-center text-xs font-bold tabular-nums ${idx === 0 ? 'text-amber-300' : 'text-white/55'}">${idx + 1}</span>
+                            <img src="${t.cover}" alt="" class="w-10 h-10 rounded-xl object-cover bg-white/10 shrink-0" />
+                            <div class="min-w-0 flex-1">
+                              <div class="text-xs font-semibold text-white truncate">${escapeHtml(t.title)}</div>
+                              <div class="text-[11px] text-white/50 truncate">${escapeHtml(t.artist)}</div>
+                            </div>
+                          </div>
+                          <span class="text-xs font-semibold text-sky-300 tabular-nums shrink-0">${item.count} 次</span>
+                        </div>`;
+                    })
+                    .join('')
+                : `<div class="text-xs text-white/45 py-6 text-center">${isWeekly ? '本周' : '本月'}还没有播放记录，听几首歌再来查看报告吧</div>`
+            }
+          </div>`;
+
+        container.querySelectorAll('.report-track-row').forEach((row) => {
+          on(row, 'click', () => loadTrack(row.dataset.reportTrack, true));
+        });
+      }
+
       function renderStats() {
+        if (state.statsTab && state.statsTab !== 'overview') {
+          renderPeriodReport(state.statsTab);
+          return;
+        }
         const mins = Math.floor((state.stats.totalSeconds || 0) / 60);
         $('stat-total-plays').textContent = `${state.stats.totalPlays || 0} 次`;
         $('stat-total-minutes').textContent = `${mins} 分钟`;
@@ -5476,7 +5922,7 @@
       // =========================================================================
       function closeAllBottomSheets() {
         modalBackdrop.classList.add('opacity-0', 'pointer-events-none');
-        ['sheet-np-settings', 'sheet-track-actions', 'sheet-queue', 'sheet-pick-playlist', 'sheet-playlist-layout', 'sheet-add-music'].forEach((id) => {
+        ['sheet-np-settings', 'sheet-track-actions', 'sheet-queue', 'sheet-pick-playlist', 'sheet-playlist-layout', 'sheet-add-music', 'sheet-sort-menu'].forEach((id) => {
           const el = $(id);
           if (el) el.classList.add('translate-y-full');
         });
@@ -6559,27 +7005,48 @@
           e.target.value = '';
         });
 
-        // Library Header & Action Bar
+        // Library Header & Unified Action Bar
         on('btn-open-search', () => switchView('search'));
-        on('btn-play-all', async () => {
-          const sorted = getSortedTracks();
-          if (!sorted.length) return showToast('曲库为空，请先导入音乐');
-          state.queue = sorted.map((t) => t.id);
-          await loadTrack(sorted[0].id, true);
-        });
-        on('btn-surprise-walk', async () => {
-          if (!state.tracks.length) return showToast('曲库为空，请先导入音乐');
-          const candidates = state.tracks.filter((t) => t.id !== state.currentTrackId);
-          const pool = candidates.length ? candidates : state.tracks;
-          const pick = pool[Math.floor(Math.random() * pool.length)];
-          state.queue = getSortedTracks().map((t) => t.id);
-          await loadTrack(pick.id, true);
-          showToast(`随心漫步：${getTrackDisplay(pick).title}`);
-        });
         on('btn-daily-fortune', () => openDailyFortuneModal(false));
-        on('library-sort-select', 'change', (e) => {
-          state.sortMode = e.target.value;
+        on('btn-lib-sort', () => openSortSheet('library'));
+        on('btn-pl-sort', () => openSortSheet('playlist'));
+        on('btn-lib-order-done', () => {
+          state.libCustomEditing = false;
           renderLibrary();
+          showToast('已锁定自定义曲库顺序');
+        });
+        on('btn-pl-order-done', () => {
+          state.plCustomEditing = false;
+          if (state.activePlaylistId) openPlaylistDetail(state.activePlaylistId);
+          showToast('已锁定自定义歌单顺序');
+        });
+        document.querySelectorAll('.sort-opt-btn').forEach((btn) => {
+          on(btn, 'click', async () => {
+            const mode = btn.dataset.sortOpt || 'default';
+            const modeNames = { default: '默认添加', title: '歌曲名称', artist: '歌手名称', custom: '自定义排列' };
+            if (state.sortSheetContext === 'playlist') {
+              const pl = state.playlists.find((p) => p.id === state.activePlaylistId);
+              if (pl) {
+                pl.sortMode = mode;
+                state.plCustomEditing = mode === 'custom';
+                await saveAppState();
+                closeAllBottomSheets();
+                openPlaylistDetail(pl.id);
+                showToast(mode === 'custom' ? '已进入歌单自定义排列，点 ↑ ↓ 调整顺序' : `歌单已按「${modeNames[mode]}」排列`);
+              }
+            } else {
+              state.sortMode = mode;
+              if (mode === 'custom') ensureCustomTrackOrder();
+              state.libCustomEditing = mode === 'custom';
+              await saveAppState();
+              closeAllBottomSheets();
+              renderLibrary();
+              showToast(mode === 'custom' ? '已进入曲库自定义排列，点 ↑ ↓ 调整顺序' : `曲库已按「${modeNames[mode]}」排列`);
+            }
+          });
+        });
+        document.querySelectorAll('.stats-tab-btn').forEach((btn) => {
+          on(btn, 'click', () => setStatsTab(btn.dataset.statsTab));
         });
 
         // Group Detail (Album / Artist)
@@ -6992,6 +7459,11 @@
           if (state.isPlaying && now - lastStatTick >= 5000) {
             lastStatTick = now;
             state.stats.totalSeconds = (state.stats.totalSeconds || 0) + 5;
+            if (!state.stats.dailySeconds || typeof state.stats.dailySeconds !== 'object') {
+              state.stats.dailySeconds = {};
+            }
+            const dk = toLocalDateKey(now);
+            state.stats.dailySeconds[dk] = (state.stats.dailySeconds[dk] || 0) + 5;
             if (now - lastStatSaveTick >= 15000) {
               lastStatSaveTick = now;
               saveAppState();
@@ -7621,13 +8093,20 @@
               totalPlays: 0,
               trackPlays: {},
               recentPlays: [],
+              playHistory: [],
+              dailySeconds: {},
               ...(savedState.stats || {})
             };
+            if (!state.stats.playHistory.length && state.stats.recentPlays.length) {
+              state.stats.playHistory = [...state.stats.recentPlays];
+            }
             state.lyricOffsets = savedState.lyricOffsets || {};
             state.customMeta = savedState.customMeta || {};
             state.customLyrics = savedState.customLyrics || {};
             if (savedState.diy) state.diy = { ...state.diy, ...savedState.diy };
             if (savedState.playMode) state.playMode = savedState.playMode;
+            if (savedState.sortMode) state.sortMode = savedState.sortMode;
+            if (Array.isArray(savedState.customTrackOrder)) state.customTrackOrder = savedState.customTrackOrder;
           }
 
           const homeBgItem = kvAll.find((item) => item.key === 'homeBgDataUrl');
