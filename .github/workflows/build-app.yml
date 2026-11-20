@@ -113,7 +113,7 @@ jobs:
       - name: Stamp Build Version
         run: |
           PLIST="ios/App/App/Info.plist"
-          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0.1" "$PLIST" || /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string 1.0.1" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0.2" "$PLIST" || /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string 1.0.2" "$PLIST"
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${{ github.run_number }}" "$PLIST" || /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string ${{ github.run_number }}" "$PLIST"
 
       - name: Enable Native iOS AVPlayer, Lock Screen Controls, UITabBar Liquid Glass Dock & Security-Scoped Bookmarks
@@ -630,11 +630,12 @@ jobs:
                           return
                       }
                       if #available(iOS 14.0, *) {
-                          let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.folder], asCopy: false)
+                          // iOS requires the 1-argument init(forOpeningContentTypes:) without asCopy for .folder;
+                          // passing asCopy: false or mutating file-only flags breaks the "Open" button in DOCRemoteViewController.
+                          let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.folder])
                           picker.delegate = self
                           picker.presentationController?.delegate = self
-                          picker.allowsMultipleSelection = false
-                          picker.shouldShowFileExtensions = true
+                          picker.modalPresentationStyle = .formSheet
                           self.isExportingDocument = false
                           self.isPickingAudioFiles = false
                           self.activeFolderPicker = picker
@@ -1468,7 +1469,7 @@ jobs:
             <key>CFBundlePackageType</key>
             <string>XPC!</string>
             <key>CFBundleShortVersionString</key>
-            <string>1.0.1</string>
+            <string>1.0.2</string>
             <key>CFBundleVersion</key>
             <string>${BUILD_NUM}</string>
             <key>FengAppGroup</key>
