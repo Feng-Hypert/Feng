@@ -1684,7 +1684,7 @@
         </div>
         <div class="space-y-1">
           <div class="text-sm font-bold text-white">单曲 / 歌词</div>
-          <p class="text-[11px] text-white/55 leading-relaxed">从「文件」批量选取音频文件（MP3 / FLAC / M4A）与 .lrc</p>
+          <p class="text-[11px] text-white/55 leading-relaxed">批量选取音频（MP3 / FLAC / M4A）与 .lrc 永久入库，重启不丢失</p>
         </div>
       </button>
     </div>
@@ -2818,17 +2818,41 @@
         if (!items.length) return;
         let changed = false;
         for (const item of items) {
-          if (!item.cover) continue;
           const trk = state.tracks.find(
             (t) => (item.relKey && t.relKey === item.relKey) || (item.uri && t.nativeUri === item.uri)
           );
-          if (trk && trk.cover !== item.cover) {
+          if (!trk) continue;
+          let dirty = false;
+          const baseFallback = (trk.fileName || '').replace(/\.[^/.]+$/, '').trim();
+          const nextTitle = (item.title || '').trim();
+          const nextArtist = (item.artist || '').trim();
+          const nextAlbum = (item.album || '').trim();
+          if (nextTitle && (!trk.title || trk.title === '未知曲目' || trk.title === baseFallback)) {
+            trk.title = nextTitle;
+            dirty = true;
+          }
+          if (nextArtist && (!trk.artist || trk.artist === '未知歌手')) {
+            trk.artist = nextArtist;
+            dirty = true;
+          }
+          if (nextAlbum && (!trk.album || trk.album === '未知专辑')) {
+            trk.album = nextAlbum;
+            dirty = true;
+          }
+          if (item.cover && trk.cover !== item.cover) {
             trk.cover = item.cover;
             trk.hasEmbeddedCover = true;
+            dirty = true;
+          }
+          if (dirty) {
             await dbPut('tracks', toStorableTrackRecord(trk));
             changed = true;
             if (trk.id === state.currentTrackId) {
               const disp = getTrackDisplay(trk);
+              $('mini-title').textContent = disp.title;
+              $('mini-artist').textContent = `${disp.artist} · ${disp.album}`;
+              $('np-title').textContent = disp.title;
+              $('np-artist').textContent = `${disp.artist} · ${disp.album}`;
               $('mini-cover').src = disp.cover;
               $('np-cover-img-rounded').src = disp.cover;
               $('np-cover-img-vinyl').src = disp.cover;
@@ -2840,8 +2864,23 @@
         }
         if (changed) {
           renderLibrary();
-          if (state.activeView === 'albums') renderAlbums();
-          if (state.activeView === 'artists') renderArtists();
+          if (state.libTab === 'albums') renderAlbums();
+          if (state.libTab === 'artists') renderArtists();
+        }
+      };
+
+      window.__fengImportedNativeFiles = async (payload) => {
+        const count = Number(payload?.count || 0);
+        const skippedOgg = Number(payload?.skippedOgg || 0);
+        if (skippedOgg > 0 && count === 0) {
+          showToast(`已跳过 ${skippedOgg} 个 .ogg 文件（iOS 不原生支持 OGG）`);
+          return;
+        }
+        if (count > 0) {
+          showToast(`已永久导入 ${count} 个文件到 FENG MUSIC，正在解析曲库...`);
+          await scanNativeDocumentsFolder(true);
+        } else if (payload?.error) {
+          showToast(`导入失败：${payload.error}`);
         }
       };
 
@@ -6062,6 +6101,12 @@
       }
 
       async function triggerMusicImport() {
+        if (hasNativeFolderPicker()) {
+          try {
+            window.webkit.messageHandlers.fengFolder.postMessage({ action: 'pickAudioFiles' });
+          } catch {}
+          return;
+        }
         if (typeof window.showOpenFilePicker === 'function') {
           try {
             const handles = await window.showOpenFilePicker({
