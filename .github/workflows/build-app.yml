@@ -113,7 +113,7 @@ jobs:
       - name: Stamp Build Version
         run: |
           PLIST="ios/App/App/Info.plist"
-          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0.4" "$PLIST" || /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string 1.0.4" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0.5" "$PLIST" || /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string 1.0.5" "$PLIST"
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${{ github.run_number }}" "$PLIST" || /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string ${{ github.run_number }}" "$PLIST"
 
       - name: Enable Native iOS AVPlayer, Lock Screen Controls, UITabBar Liquid Glass Dock & Security-Scoped Bookmarks
@@ -847,10 +847,20 @@ jobs:
                   }
               }
 
-              private func extractTextMetadata(from asset: AVURLAsset) -> (title: String, artist: String, album: String) {
+              private func parseYearString(_ raw: String) -> String {
+                  guard let regex = try? NSRegularExpression(pattern: "\\b(19\\d{2}|20\\d{2})\\b") else { return "" }
+                  let range = NSRange(raw.startIndex..., in: raw)
+                  if let m = regex.firstMatch(in: raw, range: range), let r = Range(m.range(at: 1), in: raw) {
+                      return String(raw[r])
+                  }
+                  return ""
+              }
+
+              private func extractTextMetadata(from asset: AVURLAsset) -> (title: String, artist: String, album: String, year: String) {
                   var title = ""
                   var artist = ""
                   var album = ""
+                  var year = ""
                   for item in asset.commonMetadata {
                       guard let key = item.commonKey else { continue }
                       let val = (item.stringValue ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
@@ -858,8 +868,22 @@ jobs:
                       if key == .commonKeyTitle && title.isEmpty { title = val }
                       else if key == .commonKeyArtist && artist.isEmpty { artist = val }
                       else if key == .commonKeyAlbumName && album.isEmpty { album = val }
+                      else if key == .commonKeyCreationDate && year.isEmpty { year = parseYearString(val) }
                   }
-                  return (title, artist, album)
+                  if year.isEmpty {
+                      for item in asset.metadata {
+                          let keyStr = String(describing: item.key ?? "" as NSString).uppercased()
+                          if keyStr.contains("TYER") || keyStr.contains("TDRC") || keyStr.contains("DATE") || keyStr.contains("YEAR") || keyStr.contains("DAY") {
+                              let val = (item.stringValue ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+                              let parsed = parseYearString(val)
+                              if !parsed.isEmpty {
+                                  year = parsed
+                                  break
+                              }
+                          }
+                      }
+                  }
+                  return (title, artist, album, year)
               }
 
               private func extractArtworkDataURL(from asset: AVURLAsset) -> String {
@@ -892,13 +916,14 @@ jobs:
                           let asset = AVURLAsset(url: item.url)
                           let meta = self.extractTextMetadata(from: asset)
                           let cover = self.extractArtworkDataURL(from: asset)
-                          if !meta.title.isEmpty || !meta.artist.isEmpty || !meta.album.isEmpty || !cover.isEmpty {
+                          if !meta.title.isEmpty || !meta.artist.isEmpty || !meta.album.isEmpty || !meta.year.isEmpty || !cover.isEmpty {
                               batch.append([
                                   "relKey": item.relKey,
                                   "uri": item.uri,
                                   "title": meta.title,
                                   "artist": meta.artist,
                                   "album": meta.album,
+                                  "year": meta.year,
                                   "cover": cover
                               ])
                           }
@@ -1511,7 +1536,7 @@ jobs:
             <key>CFBundlePackageType</key>
             <string>XPC!</string>
             <key>CFBundleShortVersionString</key>
-            <string>1.0.4</string>
+            <string>1.0.5</string>
             <key>CFBundleVersion</key>
             <string>${BUILD_NUM}</string>
             <key>FengAppGroup</key>
