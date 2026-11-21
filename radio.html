@@ -676,15 +676,15 @@
     }
     .cd-jewel-case {
       position: relative;
-      width: 204px;
-      height: 184px;
+      width: 214px;
+      height: 194px;
       transform-style: preserve-3d;
       -webkit-transform-style: preserve-3d;
       transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
       cursor: pointer;
     }
     .cd-jewel-case.is-open {
-      transform: translateX(74px) scale(0.80);
+      transform: translateX(58px) scale(0.90);
     }
     .cd-jewel-tray {
       position: absolute;
@@ -1175,7 +1175,7 @@
         <div class="flex items-center gap-3">
           <div>
             <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-white">界面 DIY 设置</h1>
-            <p class="text-xs text-white/55">FENG MUSIC v1.0.4 · 壁纸、黑胶形态与玻璃通透度</p>
+            <p class="text-xs text-white/55">FENG MUSIC v1.0.5 · 壁纸、黑胶形态与玻璃通透度</p>
           </div>
         </div>
       </header>
@@ -3262,6 +3262,11 @@
             trk.album = nextAlbum;
             dirty = true;
           }
+          const nextYear = extractFourDigitYear(item.year);
+          if (nextYear && !trk.year) {
+            trk.year = nextYear;
+            dirty = true;
+          }
           if (item.cover && trk.cover !== item.cover) {
             trk.cover = item.cover;
             trk.hasEmbeddedCover = true;
@@ -3895,6 +3900,53 @@
 
         const discImg = $('np-cover-img-disc');
         discImg.classList.toggle('spin-paused', !activeVisual);
+        syncActiveSongRowHighlights();
+      }
+
+      function syncActiveSongRowHighlights() {
+        const curId = state.currentTrackId;
+        const playing = state.isPlaying;
+        ['playlist-detail-tracks', 'group-detail-list', 'search-results-container'].forEach((cid) => {
+          const box = $(cid);
+          if (!box) return;
+          const isPlMulti = cid === 'playlist-detail-tracks' && state.plMultiSelectMode;
+          if (isPlMulti) return;
+          box.querySelectorAll('.song-row[data-track-id]').forEach((row) => {
+            const isCur = row.dataset.trackId === curId;
+            row.classList.toggle('ring-1', isCur);
+            row.classList.toggle('ring-sky-400/65', isCur);
+            row.classList.toggle('bg-sky-500/15', isCur);
+            const titleEl = row.querySelector('.text-sm.font-semibold');
+            if (titleEl) {
+              titleEl.classList.toggle('text-sky-300', isCur);
+              titleEl.classList.toggle('text-white', !isCur);
+            }
+            const thumbBox = row.querySelector('.w-12.h-12.rounded-xl');
+            if (thumbBox) {
+              let overlay = thumbBox.querySelector('.active-playing-overlay');
+              if (isCur) {
+                if (!overlay) {
+                  overlay = document.createElement('div');
+                  overlay.className = 'active-playing-overlay absolute inset-0 bg-black/45 flex items-center justify-center';
+                  overlay.innerHTML = '<span class="active-dot w-2.5 h-2.5 rounded-full bg-sky-400"></span>';
+                  thumbBox.appendChild(overlay);
+                }
+                const dot = overlay.querySelector('.active-dot');
+                if (dot) dot.classList.toggle('animate-ping', playing);
+              } else if (overlay) {
+                overlay.remove();
+              }
+            }
+          });
+        });
+        const cdDisc = $('album-cd-disc');
+        if (cdDisc && state.activeGroup?.type === 'album') {
+          const albumName = state.activeGroup.name;
+          const curRaw = state.tracks.find((t) => t.id === curId);
+          const curDisp = curRaw ? getTrackDisplay(curRaw) : null;
+          const isAlbumPlaying = Boolean(playing && curDisp && curDisp.album === albumName);
+          cdDisc.classList.toggle('spin-paused', !isAlbumPlaying);
+        }
       }
 
       function toLocalDateKey(ts = Date.now()) {
@@ -4386,8 +4438,8 @@
                 <img src="${track.cover}" alt="" class="w-full h-full object-cover" />
                 ${
                   isCurrent && !enableMultiSelect
-                    ? `<div class="absolute inset-0 bg-black/45 flex items-center justify-center">
-                        <span class="w-2.5 h-2.5 rounded-full bg-sky-400 ${state.isPlaying ? 'animate-ping' : ''}"></span>
+                    ? `<div class="active-playing-overlay absolute inset-0 bg-black/45 flex items-center justify-center">
+                        <span class="active-dot w-2.5 h-2.5 rounded-full bg-sky-400 ${state.isPlaying ? 'animate-ping' : ''}"></span>
                       </div>`
                     : ''
                 }
@@ -4709,7 +4761,7 @@
                         <div class="space-y-1 text-[10px]">
                           <div class="flex items-center justify-between gap-2">
                             <span class="text-white/45">年份</span>
-                            <span class="text-white/90 font-medium tabular-nums">${escapeHtml(albumYearDisplay)}</span>
+                            <span id="album-lid-year-val" class="text-white/90 font-medium tabular-nums">${escapeHtml(albumYearDisplay)}</span>
                           </div>
                           <div class="flex items-center justify-between gap-2">
                             <span class="text-white/45">曲目</span>
@@ -4732,14 +4784,14 @@
               <div class="space-y-1 px-2 max-w-full">
                 <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight leading-snug">${escapeHtml(name)}</h2>
                 <p class="text-sm text-white/60">${escapeHtml(artist)}</p>
-                ${albumYear ? `<p class="text-xs text-white/45 tabular-nums">${escapeHtml(albumYear)}</p>` : ''}
+                <p id="album-hero-year-val" class="text-xs text-white/45 tabular-nums ${albumYear ? '' : 'hidden'}">${escapeHtml(albumYear)}</p>
               </div>
               <div class="grid grid-cols-2 gap-3 w-full max-w-sm">
                 <button id="btn-album-play" class="py-3 px-4 rounded-full bg-sky-400/25 hover:bg-sky-400/35 border border-sky-300/35 text-sm font-semibold text-white flex items-center justify-center gap-2 active:scale-95 transition">
                   <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
                   <span>播放</span>
                 </button>
-                <button id="btn-album-shuffle" class="py-3 px-4 rounded-full bg-sky-400/25 hover:bg-sky-400/35 border border-sky-300/35 backdrop-blur-xl text-sm font-semibold text-white flex items-center justify-center gap-2 active:scale-95 transition">
+                <button id="btn-album-shuffle" class="py-3 px-4 rounded-full bg-sky-400/25 hover:bg-sky-400/35 border border-sky-300/35 text-sm font-semibold text-white flex items-center justify-center gap-2 active:scale-95 transition">
                   <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><path stroke-linecap="round" stroke-linejoin="round" d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
                   <span>随机</span>
                 </button>
@@ -4781,6 +4833,43 @@
             if (cdDisc) cdDisc.classList.remove('spin-paused');
             saveAppState();
           });
+
+          if (!albumYear && matched.length) {
+            (async () => {
+              for (const t of matched.slice(0, 3)) {
+                const rawT = state.tracks.find((x) => x.id === t.id);
+                if (!rawT || rawT.isRemote) continue;
+                try {
+                  let probed = null;
+                  if (rawT.isNativeDoc && (rawT.nativeUri || rawT.nativePath)) {
+                    const url = await resolveNativeDocUrl(rawT.nativePath || '', rawT.nativeUri || '');
+                    if (url) {
+                      const resp = await fetch(url, { headers: { Range: 'bytes=0-1048575' } });
+                      if (resp.ok || resp.status === 206) {
+                        probed = await extractEmbeddedMetadata(await resp.arrayBuffer(), rawT.fileName || rawT.title || '');
+                      }
+                    }
+                  } else {
+                    const file = await resolveTrackFile(rawT, false);
+                    if (file) probed = await readMetadataFromFile(file);
+                  }
+                  const foundYear = extractFourDigitYear(probed?.year);
+                  if (foundYear) {
+                    rawT.year = foundYear;
+                    await dbPut('tracks', toStorableTrackRecord(rawT));
+                    const lidYr = $('album-lid-year-val');
+                    const heroYr = $('album-hero-year-val');
+                    if (lidYr) lidYr.textContent = foundYear;
+                    if (heroYr) {
+                      heroYr.textContent = foundYear;
+                      heroYr.classList.remove('hidden');
+                    }
+                    break;
+                  }
+                } catch {}
+              }
+            })();
+          }
 
           on('btn-album-shuffle', async () => {
             if (!matched.length) return;
@@ -5587,8 +5676,8 @@
                 <img src="${track.cover}" alt="" class="w-full h-full object-cover" />
                 ${
                   isCurrent && !enableMultiSelect
-                    ? `<div class="absolute inset-0 bg-black/45 flex items-center justify-center">
-                        <span class="w-2.5 h-2.5 rounded-full bg-sky-400 ${state.isPlaying ? 'animate-ping' : ''}"></span>
+                    ? `<div class="active-playing-overlay absolute inset-0 bg-black/45 flex items-center justify-center">
+                        <span class="active-dot w-2.5 h-2.5 rounded-full bg-sky-400 ${state.isPlaying ? 'animate-ping' : ''}"></span>
                       </div>`
                     : ''
                 }
@@ -8687,7 +8776,7 @@
           };
           const backupObj = {
             app: 'FENG MUSIC',
-            version: '1.0.4',
+            version: '1.0.5',
             exportedAt: new Date().toISOString(),
             trackManifest,
             playlists: state.playlists,
