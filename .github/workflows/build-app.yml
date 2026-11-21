@@ -1126,26 +1126,46 @@ jobs:
                   }
               }
 
-              private func scheduleWidgetReload(delay: TimeInterval = 0.18) {
-                  widgetReloadWorkItem?.cancel()
-                  let work = DispatchWorkItem {
-                      if #available(iOS 14.0, *) {
-                          WidgetCenter.shared.reloadAllTimelines()
+              private func triggerTargetedWidgetReloadNow() {
+                  var bgTask: UIBackgroundTaskIdentifier = .invalid
+                  bgTask = UIApplication.shared.beginBackgroundTask(withName: "FengWidgetReload") {
+                      if bgTask != .invalid {
+                          UIApplication.shared.endBackgroundTask(bgTask)
+                          bgTask = .invalid
                       }
                   }
-                  widgetReloadWorkItem = work
-                  DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
+                  if #available(iOS 14.0, *) {
+                      WidgetCenter.shared.reloadTimelines(ofKind: "FengNowPlayingWidget")
+                  }
+                  DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                      if bgTask != .invalid {
+                          UIApplication.shared.endBackgroundTask(bgTask)
+                          bgTask = .invalid
+                      }
+                  }
               }
 
               private func syncWidgetState(saveCover: Bool = false) {
                   let groupID = resolvedAppGroupID()
                   guard let defaults = UserDefaults(suiteName: groupID) else { return }
                   let isPlaying = (player?.rate ?? 0) > 0
+                  let elapsed = player.map { CMTimeGetSeconds($0.currentTime()) } ?? 0
+                  let safeElapsed = elapsed.isFinite && elapsed >= 0 ? elapsed : 0
+                  let rateVal = Double(max(currentRate, 0.5))
+                  let remaining = (isPlaying && currentDuration > safeElapsed + 1.0)
+                      ? ((currentDuration - safeElapsed) / rateVal)
+                      : 0
+
                   defaults.set(currentTitle, forKey: "widget_title")
                   defaults.set(currentArtist, forKey: "widget_artist")
                   defaults.set(currentAlbum, forKey: "widget_album")
                   defaults.set(isPlaying, forKey: "widget_isPlaying")
                   defaults.set(Date().timeIntervalSince1970, forKey: "widget_updatedAt")
+                  if remaining > 0 {
+                      defaults.set(Date().timeIntervalSince1970 + remaining + 1.8, forKey: "widget_expectedEndAt")
+                  } else {
+                      defaults.removeObject(forKey: "widget_expectedEndAt")
+                  }
 
                   if saveCover,
                      let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupID) {
@@ -1170,7 +1190,6 @@ jobs:
                                   if let old = prevFile, old != newName {
                                       try? FileManager.default.removeItem(at: containerURL.appendingPathComponent(old))
                                   }
-                                  // Also maintain legacy filename as fallback
                                   try? data.write(to: containerURL.appendingPathComponent("widget_cover.jpg"), options: .atomic)
                               }
                           }
@@ -1183,7 +1202,7 @@ jobs:
                       }
                   }
                   defaults.synchronize()
-                  scheduleWidgetReload(delay: saveCover ? 0.12 : 0.20)
+                  triggerTargetedWidgetReloadNow()
               }
 
               private func updateNowPlayingInfo(saveCoverToWidget: Bool = false) {
@@ -1632,9 +1651,19 @@ jobs:
               }
 
               func getTimeline(in context: Context, completion: @escaping (Timeline<FengWidgetEntry>) -> Void) {
-                  let entry = loadEntry(for: Date())
-                  let next = Calendar.current.date(byAdding: .minute, value: 30, to: Date()) ?? Date().addingTimeInterval(1800)
-                  completion(Timeline(entries: [entry], policy: .after(next)))
+                  let now = Date()
+                  let entry = loadEntry(for: now)
+                  let groupID = fengWidgetGroupID()
+                  let defaults = UserDefaults(suiteName: groupID)
+                  let expectedEndTs = defaults?.double(forKey: "widget_expectedEndAt") ?? 0
+                  let defaultNext = Calendar.current.date(byAdding: .minute, value: 15, to: now) ?? now.addingTimeInterval(900)
+                  let nextRefresh: Date
+                  if entry.isPlaying && expectedEndTs > now.timeIntervalSince1970 + 2 {
+                      nextRefresh = min(defaultNext, Date(timeIntervalSince1970: expectedEndTs))
+                  } else {
+                      nextRefresh = defaultNext
+                  }
+                  completion(Timeline(entries: [entry], policy: .after(nextRefresh)))
               }
           }
 
