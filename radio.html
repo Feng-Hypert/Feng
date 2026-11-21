@@ -549,6 +549,198 @@
     input[type="range"].feng-slider:active::-webkit-slider-thumb {
       transform: scale(1.25);
     }
+
+    /* iOS 26 Borderless Scroll-Collapsing Floating Header (Library, Playlists & Playlist Detail) */
+    .collapsible-expanded-area {
+      transition: max-height 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.22s ease, transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), padding 0.28s ease;
+      max-height: 220px;
+      opacity: 1;
+      overflow: hidden;
+    }
+    .is-scrolled .collapsible-expanded-area {
+      max-height: 0 !important;
+      opacity: 0;
+      padding-top: 0 !important;
+      padding-bottom: 0 !important;
+      transform: translateY(-10px);
+      pointer-events: none;
+    }
+    .collapsible-compact-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 25;
+      display: flex;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-8px);
+      transition: opacity 0.26s ease, transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+      padding-bottom: 22px;
+      background: linear-gradient(180deg, rgba(9, 11, 16, 0.78) 0%, rgba(9, 11, 16, 0.42) 55%, rgba(9, 11, 16, 0) 100%);
+    }
+    .collapsible-compact-bar::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      backdrop-filter: blur(22px) saturate(165%);
+      -webkit-backdrop-filter: blur(22px) saturate(165%);
+      mask-image: linear-gradient(180deg, rgba(0, 0, 0, 1) 42%, rgba(0, 0, 0, 0) 100%);
+      -webkit-mask-image: linear-gradient(180deg, rgba(0, 0, 0, 1) 42%, rgba(0, 0, 0, 0) 100%);
+      pointer-events: none;
+    }
+    .collapsible-compact-bar button {
+      pointer-events: auto;
+    }
+    .is-scrolled .collapsible-compact-bar {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .is-scrolled .collapsible-scroll-body {
+      padding-top: calc(var(--safe-top) + 56px);
+    }
+
+    /* Interactive 3D CD Jewel Case (Album Detail View) */
+    .cd-jewel-stage {
+      perspective: 1200px;
+      -webkit-perspective: 1200px;
+      padding: 26px 0 12px;
+      overflow: visible;
+    }
+    .cd-jewel-case {
+      position: relative;
+      width: 214px;
+      height: 192px;
+      transform-style: preserve-3d;
+      -webkit-transform-style: preserve-3d;
+      transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+      cursor: pointer;
+    }
+    .cd-jewel-case.is-open {
+      transform: translateX(46px);
+    }
+    .cd-jewel-tray {
+      position: absolute;
+      inset: 0;
+      border-radius: 7px 10px 10px 7px;
+      background: linear-gradient(135deg, rgba(24, 28, 36, 0.94), rgba(10, 12, 18, 0.98));
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      box-shadow: 0 24px 54px rgba(0, 0, 0, 0.62), inset 0 1px 0 rgba(255, 255, 255, 0.24);
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+    }
+    .cd-jewel-spine {
+      width: 24px;
+      height: 100%;
+      flex-shrink: 0;
+      background: repeating-linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.10) 0px,
+        rgba(255, 255, 255, 0.10) 2px,
+        rgba(0, 0, 0, 0.42) 2px,
+        rgba(0, 0, 0, 0.42) 4px
+      );
+      border-right: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: inset -2px 0 6px rgba(0, 0, 0, 0.45);
+    }
+    .cd-jewel-disc-well {
+      position: relative;
+      flex: 1;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at center, rgba(255, 255, 255, 0.08) 0%, rgba(0, 0, 0, 0.55) 70%);
+    }
+    .cd-jewel-disc {
+      position: relative;
+      width: 172px;
+      height: 172px;
+      border-radius: 9999px;
+      background:
+        conic-gradient(
+          from 20deg,
+          rgba(255, 255, 255, 0.52),
+          rgba(56, 189, 248, 0.40),
+          rgba(167, 139, 250, 0.35),
+          rgba(45, 212, 191, 0.42),
+          rgba(255, 255, 255, 0.60),
+          rgba(251, 191, 36, 0.28),
+          rgba(56, 189, 248, 0.42),
+          rgba(255, 255, 255, 0.52)
+        );
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), inset 0 0 0 1.5px rgba(255, 255, 255, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .cd-jewel-disc-art {
+      width: 112px;
+      height: 112px;
+      border-radius: 9999px;
+      object-fit: cover;
+      border: 2px solid rgba(255, 255, 255, 0.35);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+    }
+    .cd-jewel-disc-hub {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      border-radius: 9999px;
+      background: radial-gradient(circle, rgba(12, 14, 20, 0.95) 0%, rgba(12, 14, 20, 0.95) 46%, rgba(255, 255, 255, 0.45) 48%, rgba(255, 255, 255, 0.14) 100%);
+      border: 1.5px solid rgba(255, 255, 255, 0.45);
+    }
+    .cd-jewel-lid {
+      position: absolute;
+      inset: 0;
+      transform-origin: left center;
+      -webkit-transform-origin: left center;
+      transform-style: preserve-3d;
+      -webkit-transform-style: preserve-3d;
+      transition: transform 0.72s cubic-bezier(0.22, 1, 0.36, 1);
+      border-radius: 7px 10px 10px 7px;
+      z-index: 5;
+    }
+    .cd-jewel-case.is-open .cd-jewel-lid {
+      transform: rotateY(-122deg);
+    }
+    .cd-jewel-lid-front {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      border-radius: 7px 10px 10px 7px;
+      display: flex;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.42), 0 18px 42px rgba(0, 0, 0, 0.55);
+      background: rgba(15, 18, 26, 0.95);
+    }
+    .cd-jewel-lid-glare {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(125deg, rgba(255, 255, 255, 0.26) 0%, rgba(255, 255, 255, 0.04) 36%, transparent 55%, rgba(255, 255, 255, 0.10) 100%);
+      pointer-events: none;
+    }
+    .cd-jewel-lid-back {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      transform: rotateY(180deg);
+      border-radius: 10px 7px 7px 10px;
+      background: linear-gradient(135deg, rgba(30, 36, 48, 0.92), rgba(14, 18, 28, 0.96));
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -587,7 +779,20 @@
   <main id="main-workspace" class="app-screen-shell relative z-10 w-full flex flex-col overflow-hidden">
 
     <!-- ==================== VIEW 1: LIBRARY (曲库 + 专辑/歌手筛选) ==================== -->
-    <section id="view-library" class="app-view flex-1 flex flex-col overflow-hidden">
+    <section id="view-library" class="app-view relative flex-1 flex flex-col overflow-hidden">
+      <!-- Borderless Compact Collapsed Header (centered 曲库 + right Search icon) -->
+      <div class="collapsible-compact-bar px-4 sm:px-6 items-center justify-between shrink-0" style="padding-top: calc(var(--safe-top) + 10px);">
+        <div class="w-9 h-9 shrink-0" aria-hidden="true"></div>
+        <span id="lib-compact-title" class="text-base font-bold tracking-tight text-white">曲库</span>
+        <button id="btn-open-search-compact" class="liquid-pill w-9 h-9 rounded-full text-white flex items-center justify-center shrink-0" title="搜索" aria-label="搜索">
+          <svg class="w-4 h-4 text-white/90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <circle cx="11" cy="11" r="7" />
+            <path stroke-linecap="round" d="M20 20l-3.5-3.5" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="collapsible-expanded-area shrink-0">
       <header class="px-4 sm:px-6 pb-2.5 flex items-center justify-between gap-3 shrink-0" style="padding-top: calc(var(--safe-top) + 12px);">
         <div class="min-w-0">
           <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-white truncate">我的曲库</h1>
@@ -645,23 +850,24 @@
           </button>
         </div>
       </div>
+      </div>
 
       <!-- Sub-panel 1: Song List -->
-      <div id="library-list-container" class="flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 space-y-2"></div>
+      <div id="library-list-container" class="collapsible-scroll-body flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 space-y-2"></div>
       <!-- Sub-panel 2: Albums Grid -->
-      <div id="albums-grid" class="hidden flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5 content-start"></div>
+      <div id="albums-grid" class="collapsible-scroll-body hidden flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5 content-start"></div>
       <!-- Sub-panel 3: Artists Grid -->
-      <div id="artists-grid" class="hidden flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5 content-start"></div>
+      <div id="artists-grid" class="collapsible-scroll-body hidden flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5 content-start"></div>
     </section>
 
-    <!-- ==================== VIEW 4: GROUP DETAIL (专辑/歌手详情) ==================== -->
+    <!-- ==================== VIEW 4: GROUP DETAIL (专辑 CD 盒 / 歌手详情) ==================== -->
     <section id="view-group-detail" class="app-view hidden flex-1 flex flex-col overflow-hidden">
-      <header class="px-4 sm:px-6 pb-3 flex items-center justify-between gap-3 shrink-0" style="padding-top: calc(var(--safe-top) + 12px);">
+      <header class="px-4 sm:px-6 pb-2.5 flex items-center justify-between gap-3 shrink-0" style="padding-top: calc(var(--safe-top) + 12px);">
         <div class="flex items-center gap-3 min-w-0">
-          <button id="btn-group-back" class="w-10 h-10 rounded-2xl liquid-pill flex items-center justify-center text-white shrink-0">
+          <button id="btn-group-back" class="w-10 h-10 rounded-full liquid-pill flex items-center justify-center text-white shrink-0" aria-label="返回">
             <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
           </button>
-          <div class="min-w-0">
+          <div id="group-header-text" class="min-w-0">
             <h1 id="group-detail-title" class="text-lg sm:text-xl font-bold text-white truncate">详情</h1>
             <p id="group-detail-subtitle" class="text-xs text-white/55 truncate">0 首歌曲</p>
           </div>
@@ -671,11 +877,27 @@
           播放全部
         </button>
       </header>
-      <div id="group-detail-list" class="flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 space-y-2"></div>
+      <div id="group-detail-scroll" class="flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 space-y-4">
+        <div id="album-jewel-hero" class="hidden pt-2 pb-1 space-y-5"></div>
+        <div id="group-detail-list" class="space-y-2"></div>
+      </div>
     </section>
 
     <!-- ==================== VIEW 5: PLAYLISTS (歌单) ==================== -->
-    <section id="view-playlists" class="app-view hidden flex-1 flex flex-col overflow-hidden">
+    <section id="view-playlists" class="app-view relative hidden flex-1 flex flex-col overflow-hidden">
+      <!-- Borderless Compact Collapsed Header (centered 歌单 + right Search icon) -->
+      <div class="collapsible-compact-bar px-4 sm:px-6 items-center justify-between shrink-0" style="padding-top: calc(var(--safe-top) + 10px);">
+        <div class="w-9 h-9 shrink-0" aria-hidden="true"></div>
+        <span class="text-base font-bold tracking-tight text-white">歌单</span>
+        <button id="btn-pl-search-compact" class="liquid-pill w-9 h-9 rounded-full text-white flex items-center justify-center shrink-0" title="搜索" aria-label="搜索">
+          <svg class="w-4 h-4 text-white/90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <circle cx="11" cy="11" r="7" />
+            <path stroke-linecap="round" d="M20 20l-3.5-3.5" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="collapsible-expanded-area shrink-0">
       <header class="px-4 sm:px-6 pb-3 flex items-center justify-between gap-3 shrink-0" style="padding-top: calc(var(--safe-top) + 12px);">
         <div class="flex items-center gap-3">
           <div>
@@ -693,11 +915,27 @@
           </button>
         </div>
       </header>
+      </div>
       <div id="playlists-grid" class="flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5 content-start"></div>
     </section>
 
     <!-- ==================== VIEW 6: PLAYLIST DETAIL (歌单详情) ==================== -->
-    <section id="view-playlist-detail" class="app-view hidden flex-1 flex flex-col overflow-hidden">
+    <section id="view-playlist-detail" class="app-view relative hidden flex-1 flex flex-col overflow-hidden">
+      <!-- Borderless Compact Collapsed Header (left Back + centered Playlist Name + right Search) -->
+      <div class="collapsible-compact-bar px-4 sm:px-6 items-center justify-between gap-2 shrink-0" style="padding-top: calc(var(--safe-top) + 10px);">
+        <button id="btn-playlist-back-compact" class="w-9 h-9 rounded-full liquid-pill flex items-center justify-center text-white shrink-0" aria-label="返回">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+        </button>
+        <span id="detail-playlist-title-compact" class="text-base font-bold tracking-tight text-white truncate">歌单</span>
+        <button id="btn-pl-detail-search-compact" class="liquid-pill w-9 h-9 rounded-full text-white flex items-center justify-center shrink-0" title="搜索" aria-label="搜索">
+          <svg class="w-4 h-4 text-white/90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <circle cx="11" cy="11" r="7" />
+            <path stroke-linecap="round" d="M20 20l-3.5-3.5" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="collapsible-expanded-area shrink-0">
       <header class="px-4 sm:px-6 pb-3 flex items-center justify-between gap-2 shrink-0" style="padding-top: calc(var(--safe-top) + 12px);">
         <div class="flex items-center gap-3 min-w-0">
           <button id="btn-playlist-back" class="w-10 h-10 rounded-2xl liquid-pill flex items-center justify-center text-white shrink-0">
@@ -738,6 +976,7 @@
           添加歌曲
         </button>
       </div>
+      </div>
 
       <!-- Playlist Multi-Select Batch Action Bar -->
       <div id="playlist-multiselect-bar" class="hidden px-4 sm:px-6 pb-2.5 shrink-0">
@@ -762,7 +1001,7 @@
         </div>
       </div>
 
-      <div id="playlist-detail-tracks" class="flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 space-y-2"></div>
+      <div id="playlist-detail-tracks" class="collapsible-scroll-body flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 space-y-2"></div>
     </section>
 
     <!-- ==================== VIEW 7: DEDICATED FULL-SCREEN SEARCH ==================== -->
@@ -837,7 +1076,7 @@
         <div class="flex items-center gap-3">
           <div>
             <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-white">界面 DIY 设置</h1>
-            <p class="text-xs text-white/55">FENG MUSIC v1.0.2 · 壁纸、黑胶形态与玻璃通透度</p>
+            <p class="text-xs text-white/55">FENG MUSIC v1.0.3 · 壁纸、黑胶形态与玻璃通透度</p>
           </div>
         </div>
       </header>
@@ -1009,6 +1248,10 @@
           <button data-wn-preset="cafe_rain" class="wn-preset-btn liquid-pill px-3.5 py-1.5 rounded-full text-xs font-medium text-white shrink-0">☕ 咖啡馆午后</button>
           <button data-wn-preset="deep_space" class="wn-preset-btn liquid-pill px-3.5 py-1.5 rounded-full text-xs font-medium text-white shrink-0">🌌 宇航员助眠</button>
           <button data-wn-preset="storm_night" class="wn-preset-btn liquid-pill px-3.5 py-1.5 rounded-full text-xs font-medium text-white shrink-0">⛈️ 暴雨听雷</button>
+          <button data-wn-preset="morning_garden" class="wn-preset-btn liquid-pill px-3.5 py-1.5 rounded-full text-xs font-medium text-white shrink-0">🌅 晨光庭院</button>
+          <button data-wn-preset="night_coding" class="wn-preset-btn liquid-pill px-3.5 py-1.5 rounded-full text-xs font-medium text-white shrink-0">💻 深夜敲码</button>
+          <button data-wn-preset="zen_bowl" class="wn-preset-btn liquid-pill px-3.5 py-1.5 rounded-full text-xs font-medium text-white shrink-0">🧘 颂钵禅修</button>
+          <button data-wn-preset="summer_breeze" class="wn-preset-btn liquid-pill px-3.5 py-1.5 rounded-full text-xs font-medium text-white shrink-0">🎐 夏夜纳凉</button>
         </div>
         <div class="liquid-panel rounded-2xl px-4 py-2.5 flex items-center gap-3">
           <span class="text-xs font-medium text-white/75 shrink-0">总音量</span>
@@ -1521,12 +1764,19 @@
         <button id="btn-guide-close-top" class="w-8 h-8 rounded-full bg-white/12 flex items-center justify-center text-white/80">✕</button>
       </div>
 
-      <div class="space-y-2">
-        <div class="text-xs font-semibold text-white/85">本地歌单、歌词校准与统计备份</div>
+      <div class="space-y-2.5">
+        <div class="text-xs font-semibold text-white/85">全量配置备份（歌单 / 排序 / 歌词 / 统计 / DIY / 白噪音）</div>
+        <label class="flex items-center justify-between gap-2 px-3 py-2 rounded-2xl bg-white/6 border border-white/10 cursor-pointer">
+          <span class="text-[11px] text-white/80">导出时打包自定义主页 / 播放页壁纸</span>
+          <input id="chk-backup-wallpapers" type="checkbox" checked class="w-4 h-4 accent-sky-400 rounded" />
+        </label>
         <div class="grid grid-cols-2 gap-2.5">
           <button id="btn-export-backup" class="liquid-pill py-2.5 px-3 rounded-2xl text-xs font-medium text-white">导出 JSON 备份</button>
           <button id="btn-import-backup" class="liquid-pill py-2.5 px-3 rounded-2xl text-xs font-medium text-white">恢复 JSON 备份</button>
         </div>
+        <p class="text-[11px] text-white/50 leading-relaxed">
+          支持跨重装 / 换设备智能匹配曲目指纹（文件名与歌名+歌手），重导同一批音频后再恢复备份，歌单、自定义曲库排序、歌词偏移与听歌足迹会自动重新挂回。
+        </p>
       </div>
 
       <div class="space-y-2 pt-2 border-t border-white/10">
@@ -2330,8 +2580,13 @@
         return true;
       }
 
+      function extractFourDigitYear(raw) {
+        const m = String(raw || '').match(/\b(19\d{2}|20\d{2})\b/);
+        return m ? m[1] : '';
+      }
+
       function parseId3v2(bytes) {
-        const result = { title: '', artist: '', album: '', lrc: '', coverBytes: null, coverMime: 'image/jpeg', coverPriority: -1 };
+        const result = { title: '', artist: '', album: '', year: '', lrc: '', coverBytes: null, coverMime: 'image/jpeg', coverPriority: -1 };
         if (bytes.length < 10) return result;
         if (bytes[0] !== 0x49 || bytes[1] !== 0x44 || bytes[2] !== 0x33) return result;
 
@@ -2423,6 +2678,9 @@
             result.artist = decodeTagBytes(frameData.subarray(1), frameData[0]) || result.artist;
           } else if (frameId === 'TALB' || frameId === 'TAL') {
             result.album = decodeTagBytes(frameData.subarray(1), frameData[0]) || result.album;
+          } else if (frameId === 'TYER' || frameId === 'TDRC' || frameId === 'TYE') {
+            const yr = extractFourDigitYear(decodeTagBytes(frameData.subarray(1), frameData[0]));
+            if (yr) result.year = yr;
           } else if (frameId === 'TXXX' || frameId === 'TXX') {
             const enc = frameData[0];
             const isUtf16 = enc === 1 || enc === 2;
@@ -2499,13 +2757,14 @@
       }
 
       function parseId3v1(bytes) {
-        const res = { title: '', artist: '', album: '' };
+        const res = { title: '', artist: '', album: '', year: '' };
         if (bytes.length < 128) return res;
         const tail = bytes.subarray(bytes.length - 128);
         if (tail[0] !== 0x54 || tail[1] !== 0x41 || tail[2] !== 0x47) return res;
         res.title = decodeTagBytes(tail.subarray(3, 33), 0);
         res.artist = decodeTagBytes(tail.subarray(33, 63), 0);
         res.album = decodeTagBytes(tail.subarray(63, 93), 0);
+        res.year = extractFourDigitYear(decodeTagBytes(tail.subarray(93, 97), 0));
         return res;
       }
 
@@ -2530,7 +2789,7 @@
       }
 
       function parseFlac(bytes) {
-        const result = { title: '', artist: '', album: '', lrc: '', coverBytes: null, coverMime: 'image/jpeg', coverPriority: -1 };
+        const result = { title: '', artist: '', album: '', year: '', lrc: '', coverBytes: null, coverMime: 'image/jpeg', coverPriority: -1 };
         if (bytes.length < 8) return result;
         if (bytes[0] !== 0x66 || bytes[1] !== 0x4c || bytes[2] !== 0x61 || bytes[3] !== 0x43) return result;
 
@@ -2566,6 +2825,10 @@
                   if (key === 'TITLE') result.title = val || result.title;
                   else if (key === 'ARTIST') result.artist = val || result.artist;
                   else if (key === 'ALBUM') result.album = val || result.album;
+                  else if (key === 'DATE' || key === 'YEAR' || key === 'ORIGINALDATE') {
+                    const yr = extractFourDigitYear(val);
+                    if (yr) result.year = yr;
+                  }
                   else if (key === 'LYRICS' || key === 'UNSYNCEDLYRICS' || key === 'SYNCEDLYRICS' || key === 'LRC') {
                     if (val.length > result.lrc.length) result.lrc = val;
                   } else if (key === 'METADATA_BLOCK_PICTURE') {
@@ -2616,7 +2879,7 @@
 
           if (containers.has(type)) {
             parseMp4Atoms(bytes, bodyStart, bodyEnd, result);
-          } else if (type === '\xa9nam' || type === '\xa9ART' || type === '\xa9alb' || type === '\xa9lyr' || type === 'covr') {
+          } else if (type === '\xa9nam' || type === '\xa9ART' || type === '\xa9alb' || type === '\xa9day' || type === '\xa9lyr' || type === 'covr') {
             let inner = bodyStart;
             while (inner + 16 <= bodyEnd) {
               const dSize = dv.getUint32(inner, false);
@@ -2633,6 +2896,10 @@
                   if (type === '\xa9nam') result.title = txt || result.title;
                   else if (type === '\xa9ART') result.artist = txt || result.artist;
                   else if (type === '\xa9alb') result.album = txt || result.album;
+                  else if (type === '\xa9day') {
+                    const yr = extractFourDigitYear(txt);
+                    if (yr) result.year = yr;
+                  }
                   else if (type === '\xa9lyr' && txt.length > result.lrc.length) result.lrc = txt;
                 }
               }
@@ -2646,7 +2913,7 @@
       async function extractEmbeddedMetadata(arrayBuffer, fallbackFileName = '') {
         const bytes = new Uint8Array(arrayBuffer);
         const cleanName = fallbackFileName.replace(/\.[^/.]+$/, '').trim() || '未知曲目';
-        let parsed = { title: '', artist: '', album: '', lrc: '', coverBytes: null, coverMime: 'image/jpeg' };
+        let parsed = { title: '', artist: '', album: '', year: '', lrc: '', coverBytes: null, coverMime: 'image/jpeg' };
 
         if (bytes.length >= 10 && bytes[0] === 0x49 && bytes[1] === 0x44 && bytes[2] === 0x33) {
           parsed = parseId3v2(bytes);
@@ -2656,11 +2923,12 @@
           parseMp4Atoms(bytes, 0, Math.min(bytes.length, 24 * 1024 * 1024), parsed);
         }
 
-        if (!parsed.title || !parsed.artist || !parsed.album) {
+        if (!parsed.title || !parsed.artist || !parsed.album || !parsed.year) {
           const v1 = parseId3v1(bytes);
           if (!parsed.title && v1.title) parsed.title = v1.title;
           if (!parsed.artist && v1.artist) parsed.artist = v1.artist;
           if (!parsed.album && v1.album) parsed.album = v1.album;
+          if (!parsed.year && v1.year) parsed.year = v1.year;
         }
 
         let finalTitle = parsed.title;
@@ -2683,6 +2951,7 @@
           title: finalTitle || cleanName,
           artist: finalArtist || '未知歌手',
           album: parsed.album || '未知专辑',
+          year: parsed.year || '',
           lrc: parsed.lrc || '',
           cover: coverDataUrl
         };
@@ -3166,6 +3435,7 @@
               title: meta.title,
               artist: meta.artist,
               album: meta.album,
+              year: meta.year || '',
               cover: meta.cover || DEFAULT_APP_COVER,
               hasEmbeddedCover: Boolean(meta.cover),
               lrc: externalLrc || meta.lrc || '',
@@ -3410,47 +3680,116 @@
       // =========================================================================
       // PLAYBACK ENGINE, QUEUE & RECORDING STATS
       // =========================================================================
+      function getActiveWhiteNoiseChannels() {
+        if (typeof WN_CHANNELS === 'undefined' || typeof wnState === 'undefined') return [];
+        return WN_CHANNELS.filter((c) => wnState.channels[c.id]?.active);
+      }
+
+      function isWhiteNoiseOnlyActive() {
+        const musicPlaying = Boolean(state.currentTrackId && audio && !audio.paused && !audio.ended);
+        return !musicPlaying && getActiveWhiteNoiseChannels().length > 0;
+      }
+
+      function syncWhiteNoisePlayerSurface() {
+        const activeWn = getActiveWhiteNoiseChannels();
+        const musicPlaying = Boolean(state.currentTrackId && audio && !audio.paused && !audio.ended);
+        const wnOnly = !musicPlaying && activeWn.length > 0;
+        state.wnOnlySurfaceActive = wnOnly;
+
+        if (wnOnly) {
+          const names = activeWn.slice(0, 3).map((c) => `${c.icon} ${c.name}`).join(' · ');
+          const extra = activeWn.length > 3 ? ` 等 ${activeWn.length} 种` : '';
+          const titleStr = `${names}${extra}`;
+          const subStr = `白噪音空间 · ${activeWn.length} 种自然声景混音中`;
+          $('mini-title').textContent = titleStr;
+          $('mini-artist').textContent = subStr;
+          $('np-title').textContent = titleStr;
+          $('np-artist').textContent = subStr;
+          $('np-time-current').textContent = 'LIVE';
+          $('np-time-duration').textContent = '∞';
+          $('np-mini-lyric-1').textContent = `自然声景混音中 · 总音量 ${wnState.masterVol}%`;
+          $('np-mini-lyric-2').textContent = '轻触打开白噪音调音台，调节各声景音量';
+          if (!state.currentTrackId) {
+            $('mini-cover').src = DEFAULT_APP_COVER;
+            $('np-cover-img-rounded').src = DEFAULT_APP_COVER;
+            $('np-cover-img-vinyl').src = DEFAULT_APP_COVER;
+            $('np-cover-img-disc').src = DEFAULT_APP_COVER;
+            $('np-cover-ambient-glow').src = DEFAULT_APP_COVER;
+          }
+        } else if (state.currentTrackId) {
+          const raw = state.tracks.find((t) => t.id === state.currentTrackId);
+          if (raw) {
+            const trk = getTrackDisplay(raw);
+            $('mini-title').textContent = trk.title;
+            $('mini-artist').textContent = `${trk.artist} · ${trk.album}`;
+            $('np-title').textContent = trk.title;
+            $('np-artist').textContent = `${trk.artist} · ${trk.album}`;
+            if (Number.isFinite(audio.duration) && audio.duration > 0) {
+              $('np-time-duration').textContent = formatTime(audio.duration);
+            }
+            if (state.parsedLyrics.length) {
+              syncActiveLyric(false);
+            } else {
+              $('np-mini-lyric-1').textContent = '暂无同步歌词';
+              $('np-mini-lyric-2').textContent = '轻触切换至滚动歌词视图';
+            }
+          }
+        } else {
+          $('mini-title').textContent = 'FENG MUSIC';
+          $('mini-artist').textContent = '私人纯享无损音乐空间';
+          $('np-title').textContent = '未在播放';
+          $('np-artist').textContent = 'FENG MUSIC';
+          $('np-time-current').textContent = '00:00';
+          $('np-time-duration').textContent = '00:00';
+          $('np-mini-lyric-1').textContent = '暂无同步歌词';
+          $('np-mini-lyric-2').textContent = '轻触切换至滚动歌词视图';
+        }
+      }
+
       function updatePlayStateUI() {
-        const playing = Boolean(state.currentTrackId && audio && !audio.paused && !audio.ended);
-        state.isPlaying = playing;
+        const musicPlaying = Boolean(state.currentTrackId && audio && !audio.paused && !audio.ended);
+        state.isPlaying = musicPlaying;
+        const activeVisual = musicPlaying || getActiveWhiteNoiseChannels().length > 0;
+        syncWhiteNoisePlayerSurface();
+
         const miniPlay = $('icon-mini-play');
         const miniPause = $('icon-mini-pause');
         const npPlay = $('icon-np-play');
         const npPause = $('icon-np-pause');
 
-        miniPlay.classList.toggle('hidden', playing);
-        miniPlay.classList.toggle('flex', !playing);
-        miniPause.classList.toggle('hidden', !playing);
-        miniPause.classList.toggle('flex', playing);
+        miniPlay.classList.toggle('hidden', activeVisual);
+        miniPlay.classList.toggle('flex', !activeVisual);
+        miniPause.classList.toggle('hidden', !activeVisual);
+        miniPause.classList.toggle('flex', activeVisual);
 
-        npPlay.classList.toggle('hidden', playing);
-        npPlay.classList.toggle('flex', !playing);
-        npPause.classList.toggle('hidden', !playing);
-        npPause.classList.toggle('flex', playing);
+        npPlay.classList.toggle('hidden', activeVisual);
+        npPlay.classList.toggle('flex', !activeVisual);
+        npPause.classList.toggle('hidden', !activeVisual);
+        npPause.classList.toggle('flex', activeVisual);
 
         const progressWrap = $('np-progress-wrap');
-        if (progressWrap) progressWrap.classList.toggle('is-playing', playing);
+        if (progressWrap) progressWrap.classList.toggle('is-playing', activeVisual);
 
         const particleCanvas = $('np-particles-canvas');
         if (particleCanvas) {
-          const showParticles = playing && (state.diy.playerEffect || 'sparks') !== 'off';
+          const showParticles = activeVisual && (state.diy.playerEffect || 'sparks') !== 'off';
           particleCanvas.classList.toggle('opacity-100', showParticles);
           particleCanvas.classList.toggle('opacity-0', !showParticles);
         }
 
         const roundedImg = $('np-cover-img-rounded');
-        roundedImg.classList.toggle('cover-playing', playing);
-        roundedImg.classList.toggle('cover-paused', !playing);
+        roundedImg.classList.toggle('cover-playing', activeVisual);
+        roundedImg.classList.toggle('cover-paused', !activeVisual);
 
         const vinylRotor = $('vinyl-disc-rotor');
-        vinylRotor.classList.toggle('spin-paused', !playing);
+        vinylRotor.classList.toggle('spin-paused', !activeVisual);
         const tonearm = $('vinyl-tonearm');
         if (tonearm) {
-          tonearm.style.transform = playing ? 'rotate(4deg)' : 'rotate(-24deg)';
+          tonearm.style.transform = activeVisual ? 'rotate(4deg)' : 'rotate(-24deg)';
         }
 
         const discImg = $('np-cover-img-disc');
-        discImg.classList.toggle('spin-paused', !playing);
+        discImg.classList.toggle('spin-paused', !activeVisual);
       }
 
       function toLocalDateKey(ts = Date.now()) {
@@ -3645,8 +3984,22 @@
       }
 
       async function togglePlayPause() {
+        const activeWn = getActiveWhiteNoiseChannels();
+        if (isWhiteNoiseOnlyActive()) {
+          wnState.lastPausedChannelIds = activeWn.map((c) => c.id);
+          stopAllWhiteNoise();
+          showToast('已暂停白噪音播放');
+          updatePlayStateUI();
+          return;
+        }
+        if (!state.currentTrackId && !state.tracks.length && Array.isArray(wnState.lastPausedChannelIds) && wnState.lastPausedChannelIds.length) {
+          wnState.lastPausedChannelIds.forEach((id) => toggleWhiteNoiseChannel(id, true));
+          showToast('已恢复白噪音播放');
+          updatePlayStateUI();
+          return;
+        }
         if (!state.tracks.length) {
-          showToast('曲库为空，请先导入本地音乐');
+          showToast('曲库为空，请先导入本地音乐或开启白噪音');
           return;
         }
         if (!state.currentTrackId) {
@@ -3753,6 +4106,12 @@
 
       function setLibraryTab(tabName) {
         state.libTab = tabName || 'songs';
+        const libViewEl = $('view-library');
+        if (libViewEl) libViewEl.classList.remove('is-scrolled');
+        const compactLibTitle = $('lib-compact-title');
+        if (compactLibTitle) {
+          compactLibTitle.textContent = state.libTab === 'albums' ? '专辑' : state.libTab === 'artists' ? '歌手' : '曲库';
+        }
         if (state.libTab !== 'songs' && state.multiSelectMode) {
           exitMultiSelectMode(false);
         }
@@ -3804,6 +4163,12 @@
           btn.classList.toggle('text-white/65', !active);
         });
 
+        const libV = $('view-library');
+        if (libV) libV.classList.remove('is-scrolled');
+        const plV = $('view-playlists');
+        if (plV) plV.classList.remove('is-scrolled');
+        const plDV = $('view-playlist-detail');
+        if (plDV) plDV.classList.remove('is-scrolled');
         if (viewName === 'library') {
           setLibraryTab(state.libTab || 'songs');
         } else if (viewName === 'playlists') {
@@ -4174,11 +4539,162 @@
           .map(getTrackDisplay)
           .filter((t) => (type === 'album' ? t.album === name : t.artist === name));
 
+        const isAlbum = type === 'album';
+        const headerText = $('group-header-text');
+        const headerPlayBtn = $('btn-group-play-all');
+        const hero = $('album-jewel-hero');
+
+        if (headerText) headerText.classList.toggle('hidden', isAlbum);
+        if (headerPlayBtn) headerPlayBtn.classList.toggle('hidden', isAlbum);
+
         $('group-detail-title').textContent = name;
-        $('group-detail-subtitle').textContent = `${type === 'album' ? '专辑' : '歌手'} · 共 ${matched.length} 首歌曲`;
+        $('group-detail-subtitle').textContent = `${isAlbum ? '专辑' : '歌手'} · 共 ${matched.length} 首歌曲`;
+
+        if (isAlbum && hero) {
+          const cover = matched[0]?.cover || DEFAULT_APP_COVER;
+          const artist = matched[0]?.artist || '未知歌手';
+          const totalSec = matched.reduce((acc, t) => acc + (Number(t.duration) || 0), 0);
+          const totalDurLabel = totalSec > 0 ? ` · ${formatTime(totalSec)}` : '';
+          const totalDurShort = totalSec > 0 ? formatTime(totalSec) : '未知';
+          const albumPlaying = Boolean(state.isPlaying && matched.some((t) => t.id === state.currentTrackId));
+          const yearMatches = matched
+            .map((t) => extractFourDigitYear(t.year))
+            .filter(Boolean);
+          const albumYear = yearMatches[0] || '';
+          const albumYearDisplay = albumYear || '未知';
+          const exts = [...new Set(matched.map((t) => {
+            const m = String(t.fileName || t.src || '').match(/\.([a-z0-9]{2,5})(?:\?|$)/i);
+            return m ? m[1].toUpperCase() : '';
+          }).filter(Boolean))];
+          const formatBadge = exts.length ? exts.slice(0, 2).join(' / ') : 'AUDIO';
+
+          hero.classList.remove('hidden');
+          hero.innerHTML = `
+            <div class="flex flex-col items-center text-center space-y-4">
+              <div class="cd-jewel-stage">
+                <div id="album-cd-case" class="cd-jewel-case" title="点击打开 / 合上专辑盒">
+                  <div class="cd-jewel-tray">
+                    <div class="cd-jewel-spine"></div>
+                    <div class="cd-jewel-disc-well">
+                      <div id="album-cd-disc" class="cd-jewel-disc ${albumPlaying ? 'spin-disc' : 'spin-disc spin-paused'}">
+                        <img src="${cover}" alt="" class="cd-jewel-disc-art" />
+                        <div class="cd-jewel-disc-hub"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="cd-jewel-lid">
+                    <div class="cd-jewel-lid-front">
+                      <div class="cd-jewel-spine"></div>
+                      <img src="${cover}" alt="" class="flex-1 w-full h-full object-cover" />
+                      <div class="cd-jewel-lid-glare"></div>
+                    </div>
+                    <div class="cd-jewel-lid-back">
+                      <div class="w-full space-y-2 text-left px-1">
+                        <div>
+                          <div class="text-[11px] font-bold text-white leading-snug line-clamp-2">${escapeHtml(name)}</div>
+                          <div class="text-[10px] text-white/60 truncate mt-0.5">${escapeHtml(artist)}</div>
+                        </div>
+                        <div class="h-px bg-white/15 w-full"></div>
+                        <div class="space-y-1 text-[10px]">
+                          <div class="flex items-center justify-between gap-2">
+                            <span class="text-white/45">年份</span>
+                            <span class="text-white/90 font-medium tabular-nums">${escapeHtml(albumYearDisplay)}</span>
+                          </div>
+                          <div class="flex items-center justify-between gap-2">
+                            <span class="text-white/45">曲目</span>
+                            <span class="text-white/90 font-medium tabular-nums">${matched.length} 首</span>
+                          </div>
+                          <div class="flex items-center justify-between gap-2">
+                            <span class="text-white/45">总时长</span>
+                            <span class="text-white/90 font-medium tabular-nums">${escapeHtml(totalDurShort)}</span>
+                          </div>
+                          <div class="flex items-center justify-between gap-2">
+                            <span class="text-white/45">格式</span>
+                            <span class="text-sky-300 font-semibold">${escapeHtml(formatBadge)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="space-y-1 px-2 max-w-full">
+                <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight leading-snug">${escapeHtml(name)}</h2>
+                <p class="text-sm text-white/60">${escapeHtml(artist)}</p>
+                ${albumYear ? `<p class="text-xs text-white/45 tabular-nums">${escapeHtml(albumYear)}</p>` : ''}
+              </div>
+              <div class="grid grid-cols-2 gap-3 w-full max-w-sm">
+                <button id="btn-album-play" class="py-3 px-4 rounded-full bg-sky-400/25 hover:bg-sky-400/35 border border-sky-300/35 text-sm font-semibold text-white flex items-center justify-center gap-2 active:scale-95 transition">
+                  <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                  <span>播放</span>
+                </button>
+                <button id="btn-album-shuffle" class="py-3 px-4 rounded-full liquid-pill text-sm font-semibold text-white flex items-center justify-center gap-2 active:scale-95 transition">
+                  <svg class="w-4 h-4 text-white/85" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><path stroke-linecap="round" stroke-linejoin="round" d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+                  <span>随机</span>
+                </button>
+              </div>
+              <div class="w-full flex items-center justify-between pt-2 border-t border-white/10 text-xs">
+                <span class="font-semibold text-white/90">光盘 1</span>
+                <span class="text-white/50 tabular-nums">${matched.length} 首歌曲${totalDurLabel}</span>
+              </div>
+            </div>`;
+
+          const cdCase = $('album-cd-case');
+          const cdDisc = $('album-cd-disc');
+          const hintEl = $('album-case-hint');
+
+          on(cdCase, 'click', async (e) => {
+            if (cdCase.classList.contains('is-open') && e.target.closest('#album-cd-disc')) {
+              e.stopPropagation();
+              if (!matched.length) return;
+              const isThisAlbumCurrent = matched.some((t) => t.id === state.currentTrackId);
+              if (isThisAlbumCurrent) {
+                await togglePlayPause();
+              } else {
+                state.queue = matched.map((t) => t.id);
+                await loadTrack(matched[0].id, true);
+              }
+              if (cdDisc) cdDisc.classList.toggle('spin-paused', !state.isPlaying);
+              showToast(state.isPlaying ? `正在播放光盘：${name}` : '已暂停光盘播放');
+              return;
+            }
+            cdCase.classList.toggle('is-open');
+          });
+
+          on('btn-album-play', async () => {
+            if (!matched.length) return;
+            state.playMode = 'loop';
+            updatePlayModeButton();
+            state.queue = matched.map((t) => t.id);
+            await loadTrack(matched[0].id, true);
+            if (cdDisc) cdDisc.classList.remove('spin-paused');
+            saveAppState();
+          });
+
+          on('btn-album-shuffle', async () => {
+            if (!matched.length) return;
+            const shuffled = matched.map((t) => t.id);
+            for (let i = shuffled.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1));
+              [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            state.playMode = 'shuffle';
+            updatePlayModeButton();
+            state.queue = shuffled;
+            await loadTrack(shuffled[0], true);
+            if (cdDisc) cdDisc.classList.remove('spin-paused');
+            saveAppState();
+          });
+        } else if (hero) {
+          hero.classList.add('hidden');
+          hero.innerHTML = '';
+        }
+
         const list = $('group-detail-list');
         list.innerHTML = matched.map((t, i) => buildSongRowHtml(t, i + 1)).join('');
         attachSongRowListeners(list);
+        const scrollBox = $('group-detail-scroll');
+        if (scrollBox) scrollBox.scrollTop = 0;
         switchView('group-detail');
       }
 
@@ -4228,7 +4744,7 @@
       function renderPlaylists() {
         updateSidebarBadges();
         applyPlaylistLayoutUI();
-        $('playlists-subtitle').textContent = `共 ${state.playlists.length} 个歌单 · 长按卡片可编辑`;
+        $('playlists-subtitle').textContent = `共 ${state.playlists.length} 个歌单`;
         const grid = $('playlists-grid');
 
         const layout = state.diy.playlistLayout || 'grid';
@@ -4244,7 +4760,7 @@
             ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4'
             : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5';
 
-        grid.className = `flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 grid ${gridColsClass} content-start`;
+        grid.className = `collapsible-scroll-body flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 grid ${gridColsClass} content-start`;
 
         if (!state.playlists.length) {
           grid.innerHTML = `
@@ -4468,6 +4984,8 @@
         const validTracks = getSortedPlaylistTracks(pl);
 
         $('detail-playlist-title').textContent = pl.name;
+        const compactPlTitle = $('detail-playlist-title-compact');
+        if (compactPlTitle) compactPlTitle.textContent = pl.name;
         $('detail-playlist-count').textContent = `共 ${validTracks.length} 首歌曲`;
         const container = $('playlist-detail-tracks');
 
@@ -5205,12 +5723,13 @@
             hasLiveFreq = analyserData.some((v) => v > 4);
           }
 
-          phase += state.isPlaying ? 0.14 : 0.02;
+          const waveActive = state.isPlaying || getActiveWhiteNoiseChannels().length > 0;
+          phase += waveActive ? 0.14 : 0.02;
           const style = state.diy.waveStyle || 'bars';
 
           bars.forEach((bar, i) => {
             let level = 0.15;
-            if (state.isPlaying) {
+            if (waveActive) {
               if (hasLiveFreq) {
                 const raw = analyserData[i % analyserData.length] / 255;
                 level = Math.max(0.16, raw);
@@ -5230,11 +5749,11 @@
               const s = Math.sin(phase * 1.4 + i * 0.42);
               bar.style.width = '4px';
               bar.style.borderRadius = '999px';
-              bar.style.height = `${Math.round(5 + Math.abs(s) * (state.isPlaying ? 17 : 3))}px`;
+              bar.style.height = `${Math.round(5 + Math.abs(s) * (waveActive ? 17 : 3))}px`;
               bar.style.opacity = '0.85';
             } else {
               const centerDist = Math.abs(i - barCount / 2);
-              const pulse = state.isPlaying ? Math.max(0, 1 - centerDist / (6 + Math.sin(phase * 2) * 5)) : 0.15;
+              const pulse = waveActive ? Math.max(0, 1 - centerDist / (6 + Math.sin(phase * 2) * 5)) : 0.15;
               bar.style.width = '3.5px';
               bar.style.height = `${Math.round(4 + pulse * 18)}px`;
               bar.style.opacity = `${0.3 + pulse * 0.7}`;
@@ -5264,7 +5783,7 @@
         });
         const canvas = $('np-particles-canvas');
         if (canvas) {
-          const visible = state.isPlaying && mode !== 'off';
+          const visible = (state.isPlaying || getActiveWhiteNoiseChannels().length > 0) && mode !== 'off';
           canvas.classList.toggle('opacity-100', visible);
           canvas.classList.toggle('opacity-0', !visible);
         }
@@ -5388,7 +5907,7 @@
             activeEffect = mode;
             resetParticles(mode);
           }
-          if (mode === 'off' || !state.isPlaying || nowPlayingModal.classList.contains('translate-y-full')) {
+          if (mode === 'off' || !(state.isPlaying || getActiveWhiteNoiseChannels().length > 0) || nowPlayingModal.classList.contains('translate-y-full')) {
             return;
           }
           if (!width || !height) resizeCanvas();
@@ -5517,20 +6036,24 @@
       // MULTI-CHANNEL WHITE NOISE MIXER
       // =========================================================================
       const WN_CHANNELS = [
-        { id: 'rain', name: '窗边细雨', desc: '绵密细腻的雨滴敲窗声', icon: '🌧️', defaultVol: 60 },
-        { id: 'ocean', name: '深夜海浪', desc: '周期起伏的海岸潮汐声', icon: '🌊', defaultVol: 55 },
-        { id: 'fireplace', name: '壁炉篝火', desc: '温暖木柴燃烧与噼啪火星', icon: '🔥', defaultVol: 65 },
-        { id: 'vinyl', name: '黑胶底噪', desc: '复古唱针与唱片沙沙声', icon: '💿', defaultVol: 45 },
-        { id: 'wind', name: '林间晚风', desc: '穿过树梢的柔和微风声', icon: '🌬️', defaultVol: 50 },
-        { id: 'thunder', name: '远方雷鸣', desc: '低沉舒缓的远空雷声回响', icon: '⛈️', defaultVol: 50 },
-        { id: 'crickets', name: '夏夜虫鸣', desc: '静谧田野里的轻柔虫鸣', icon: '🦗', defaultVol: 40 },
-        { id: 'cafe', name: '咖啡馆微噪', desc: '温和舒适的室内环境白噪', icon: '☕', defaultVol: 50 },
-        { id: 'stream', name: '山涧溪流', desc: '清澈流动的林间溪水声', icon: '💧', defaultVol: 55 },
-        { id: 'train', name: '绿皮火车', desc: '规律轻摇的铁轨与车厢低鸣', icon: '🚂', defaultVol: 50 },
-        { id: 'blizzard', name: '冬日暴雪', desc: '呼啸而过的寒冷风雪声', icon: '❄️', defaultVol: 45 },
-        { id: 'space', name: '深空嗡鸣', desc: '极简冥想级宇宙低频共振', icon: '🌌', defaultVol: 50 }
+        { id: 'rain', name: '窗边细雨', desc: '细腻雨幕夹杂清脆水滴敲窗', icon: '🌧️', defaultVol: 60 },
+        { id: 'ocean', name: '深夜海浪', desc: '潮起潮落的低频海浪拍岸', icon: '🌊', defaultVol: 55 },
+        { id: 'fireplace', name: '壁炉篝火', desc: '暖厚余烬底噪与木柴噼啪声', icon: '🔥', defaultVol: 65 },
+        { id: 'vinyl', name: '黑胶底噪', desc: '复古模拟唱针沙沙与偶发爆豆', icon: '💿', defaultVol: 45 },
+        { id: 'wind', name: '林间晚风', desc: '掠过松针的立体呼啸微风', icon: '🌬️', defaultVol: 50 },
+        { id: 'thunder', name: '远方雷鸣', desc: '低沉滚动的远空闷雷回响', icon: '⛈️', defaultVol: 50 },
+        { id: 'crickets', name: '夏夜虫鸣', desc: '双频共振的田野清脆蟋蟀声', icon: '🦗', defaultVol: 40 },
+        { id: 'cafe', name: '咖啡馆微噪', desc: '温暖室内低语与轻柔瓷杯碰撞', icon: '☕', defaultVol: 50 },
+        { id: 'stream', name: '山涧溪流', desc: '清亮跳跃的林间石畔流水声', icon: '💧', defaultVol: 55 },
+        { id: 'train', name: '绿皮火车', desc: '规律咔哒铁轨节拍与车厢共振', icon: '🚂', defaultVol: 50 },
+        { id: 'blizzard', name: '冬日暴雪', desc: '清冽呼啸的高频风雪吹拂', icon: '❄️', defaultVol: 45 },
+        { id: 'space', name: '深空嗡鸣', desc: '五度泛音宇宙低频冥想共振', icon: '🌌', defaultVol: 50 },
+        { id: 'birds', name: '清晨鸟鸣', desc: '晨雾微风里清脆灵动的林间鸟啭', icon: '🐦', defaultVol: 48 },
+        { id: 'chimes', name: '庭院风铃', desc: '五声音阶玻璃风铃清透叮咚', icon: '🎐', defaultVol: 45 },
+        { id: 'keyboard', name: '机械键盘', desc: '舒缓解压的节奏敲击助专注', icon: '⌨️', defaultVol: 45 },
+        { id: 'singing_bowl', name: '颂钵冥想', desc: '泛音悠长的藏式铜钵治愈共鸣', icon: '🔔', defaultVol: 52 }
       ];
-      const wnState = { masterVol: 65, channels: {} };
+      const wnState = { masterVol: 65, channels: {}, lastPausedChannelIds: [] };
       WN_CHANNELS.forEach((ch) => {
         wnState.channels[ch.id] = { active: false, vol: ch.defaultVol, nodes: null };
       });
@@ -5539,51 +6062,180 @@
         ensureAudioContext();
         if (!audioCtx) return null;
         const sr = audioCtx.sampleRate;
-        const len = sr * 4;
+        const durationSec = ['birds', 'chimes', 'singing_bowl', 'keyboard', 'thunder'].includes(channelId) ? 6 : 4;
+        const len = sr * durationSec;
         const buffer = audioCtx.createBuffer(1, len, sr);
         const data = buffer.getChannelData(0);
 
-        if (channelId === 'vinyl') {
+        if (channelId === 'rain') {
+          let b0 = 0, b1 = 0;
+          const drops = [];
+          for (let d = 0; d < 28; d++) {
+            drops.push({ start: Math.floor(Math.random() * (len - 2400)), freq: 1800 + Math.random() * 1900, amp: 0.08 + Math.random() * 0.12 });
+          }
           for (let i = 0; i < len; i++) {
-            const hiss = (Math.random() * 2 - 1) * 0.02;
-            const pop = Math.random() < 0.002 ? (Math.random() * 2 - 1) * 0.42 : 0;
+            const w = Math.random() * 2 - 1;
+            b0 = 0.96 * b0 + w * 0.14;
+            b1 = 0.85 * b1 + w * 0.25;
+            data[i] = (b0 + b1) * 0.16;
+          }
+          for (const dr of drops) {
+            for (let k = 0; k < 1400 && dr.start + k < len; k++) {
+              const t = k / sr;
+              const env = Math.exp(-t * 68);
+              data[dr.start + k] += Math.sin(2 * Math.PI * (dr.freq + t * 900) * t) * env * dr.amp;
+            }
+          }
+        } else if (channelId === 'vinyl') {
+          let b0 = 0;
+          for (let i = 0; i < len; i++) {
+            const w = Math.random() * 2 - 1;
+            b0 = 0.92 * b0 + w * 0.08;
+            const hiss = b0 * 0.075;
+            const pop = Math.random() < 0.0014 ? (Math.random() * 2 - 1) * (0.28 + Math.random() * 0.35) : 0;
             data[i] = hiss + pop;
           }
         } else if (channelId === 'fireplace') {
           let b0 = 0, b1 = 0;
+          const pops = [];
+          for (let p = 0; p < 22; p++) {
+            pops.push({ start: Math.floor(Math.random() * (len - 800)), amp: 0.25 + Math.random() * 0.45 });
+          }
           for (let i = 0; i < len; i++) {
             const w = Math.random() * 2 - 1;
-            b0 = 0.99 * b0 + w * 0.08;
-            b1 = 0.96 * b1 + w * 0.2;
-            const crackle = Math.random() < 0.0012 ? (Math.random() * 2 - 1) * 0.65 : 0;
-            data[i] = (b0 + b1) * 0.09 + crackle;
+            b0 = 0.994 * b0 + w * 0.06;
+            b1 = 0.94 * b1 + w * 0.15;
+            data[i] = b0 * 0.42 + b1 * 0.08;
+          }
+          for (const pop of pops) {
+            for (let k = 0; k < 520 && pop.start + k < len; k++) {
+              const env = Math.exp(-(k / sr) * 160);
+              data[pop.start + k] += (Math.random() * 2 - 1) * env * pop.amp;
+            }
           }
         } else if (channelId === 'crickets') {
           for (let i = 0; i < len; i++) {
             const t = i / sr;
-            const pulse = Math.pow(Math.max(0, Math.sin(t * 2 * Math.PI * 2.2)), 6);
-            const chirp = Math.sin(t * 2 * Math.PI * 4200) * Math.sin(t * 2 * Math.PI * 24) * pulse;
-            const bed = (Math.random() * 2 - 1) * 0.008;
-            data[i] = chirp * 0.045 + bed;
+            const cadence = Math.pow(Math.max(0, Math.sin(t * 2 * Math.PI * 1.45)), 8);
+            const trill = 0.5 + 0.5 * Math.sin(t * 2 * Math.PI * 34);
+            const chirp = (Math.sin(t * 2 * Math.PI * 4150) * 0.65 + Math.sin(t * 2 * Math.PI * 4320) * 0.35) * trill * cadence;
+            const nightBed = (Math.random() * 2 - 1) * 0.006;
+            data[i] = chirp * 0.09 + nightBed;
           }
         } else if (channelId === 'train') {
           let b0 = 0;
           for (let i = 0; i < len; i++) {
             const t = i / sr;
-            const beatPhase = (t * 1.65) % 1;
-            const clack = (beatPhase < 0.04 || (beatPhase > 0.14 && beatPhase < 0.18)) ? (Math.random() * 2 - 1) * 0.18 : 0;
+            const beatPhase = (t * 1.4) % 1;
+            const clackA = beatPhase < 0.032 ? Math.exp(-beatPhase * 110) * (Math.random() * 2 - 1) * 0.28 : 0;
+            const clackB = (beatPhase > 0.13 && beatPhase < 0.162) ? Math.exp(-(beatPhase - 0.13) * 110) * (Math.random() * 2 - 1) * 0.24 : 0;
             const w = Math.random() * 2 - 1;
-            b0 = 0.985 * b0 + w * 0.05;
-            data[i] = b0 * 0.18 + clack;
+            b0 = 0.988 * b0 + w * 0.06;
+            const hum = Math.sin(2 * Math.PI * 58 * t) * 0.035;
+            data[i] = b0 * 0.32 + hum + clackA + clackB;
           }
         } else if (channelId === 'space') {
           let b0 = 0;
           for (let i = 0; i < len; i++) {
             const t = i / sr;
             const w = Math.random() * 2 - 1;
-            b0 = 0.992 * b0 + w * 0.03;
-            const drone = Math.sin(t * 2 * Math.PI * 64) * 0.07 + Math.sin(t * 2 * Math.PI * 96) * 0.04 + Math.sin(t * 2 * Math.PI * 128) * 0.025;
-            data[i] = drone + b0 * 0.05;
+            b0 = 0.995 * b0 + w * 0.025;
+            const breath = 0.75 + 0.25 * Math.sin(2 * Math.PI * 0.25 * t);
+            const drone = (
+              Math.sin(2 * Math.PI * 55 * t) * 0.10 +
+              Math.sin(2 * Math.PI * 82.4 * t) * 0.06 +
+              Math.sin(2 * Math.PI * 110.2 * t) * 0.045 +
+              Math.sin(2 * Math.PI * 164.8 * t) * 0.02
+            ) * breath;
+            data[i] = drone + b0 * 0.08;
+          }
+        } else if (channelId === 'birds') {
+          let b0 = 0;
+          for (let i = 0; i < len; i++) {
+            const w = Math.random() * 2 - 1;
+            b0 = 0.97 * b0 + w * 0.03;
+            data[i] = b0 * 0.05;
+          }
+          const calls = [0.4, 1.35, 2.2, 3.6, 4.7, 5.25];
+          for (const sec of calls) {
+            const start = Math.floor(sec * sr);
+            const baseF = 2400 + Math.random() * 1100;
+            const dur = Math.floor((0.18 + Math.random() * 0.16) * sr);
+            for (let k = 0; k < dur && start + k < len; k++) {
+              const t = k / sr;
+              const env = Math.sin((k / dur) * Math.PI);
+              const sweep = baseF + Math.sin(2 * Math.PI * 18 * t) * 320 + t * 1400;
+              data[start + k] += Math.sin(2 * Math.PI * sweep * t) * env * 0.11;
+            }
+          }
+        } else if (channelId === 'chimes') {
+          let b0 = 0;
+          for (let i = 0; i < len; i++) {
+            const w = Math.random() * 2 - 1;
+            b0 = 0.98 * b0 + w * 0.025;
+            data[i] = b0 * 0.045;
+          }
+          const pentatonic = [523.25, 587.33, 659.25, 783.99, 880.0, 1046.5, 1174.66];
+          for (let n = 0; n < 9; n++) {
+            const start = Math.floor((0.25 + n * 0.62 + Math.random() * 0.15) * sr);
+            const f = pentatonic[Math.floor(Math.random() * pentatonic.length)];
+            for (let k = 0; k < sr * 1.6 && start + k < len; k++) {
+              const t = k / sr;
+              const env = Math.exp(-t * 3.4);
+              const tone = Math.sin(2 * Math.PI * f * t) * 0.65 + Math.sin(2 * Math.PI * f * 2.756 * t) * 0.25;
+              data[start + k] += tone * env * 0.085;
+            }
+          }
+        } else if (channelId === 'keyboard') {
+          let b0 = 0;
+          for (let i = 0; i < len; i++) {
+            const w = Math.random() * 2 - 1;
+            b0 = 0.95 * b0 + w * 0.015;
+            data[i] = b0 * 0.025;
+          }
+          let cursor = Math.floor(0.15 * sr);
+          while (cursor < len - 2200) {
+            const isSpace = Math.random() < 0.14;
+            const clickFreq = isSpace ? 420 : 850 + Math.random() * 650;
+            for (let k = 0; k < 1400 && cursor + k < len; k++) {
+              const t = k / sr;
+              const thock = Math.sin(2 * Math.PI * clickFreq * t) * Math.exp(-t * 145);
+              const snap = (Math.random() * 2 - 1) * Math.exp(-t * 380);
+              data[cursor + k] += (thock * 0.22 + snap * 0.18) * (isSpace ? 1.2 : 0.95);
+            }
+            const gap = (0.09 + Math.random() * 0.17 + (Math.random() < 0.12 ? 0.28 : 0)) * sr;
+            cursor += Math.floor(gap);
+          }
+        } else if (channelId === 'singing_bowl') {
+          for (let i = 0; i < len; i++) {
+            const t = i / sr;
+            const cycle = t % durationSec;
+            const attack = Math.min(1, cycle / 0.35);
+            const decay = Math.exp(-cycle * 0.42);
+            const beat = 0.8 + 0.2 * Math.sin(2 * Math.PI * 1.5 * t);
+            const f0 = 216;
+            const tone =
+              Math.sin(2 * Math.PI * f0 * t) * 0.14 +
+              Math.sin(2 * Math.PI * (f0 * 2.71) * t) * 0.065 +
+              Math.sin(2 * Math.PI * (f0 * 5.12) * t) * 0.028;
+            data[i] = tone * attack * (0.45 + 0.55 * decay) * beat;
+          }
+        } else if (channelId === 'cafe') {
+          let b0 = 0, b1 = 0, b2 = 0;
+          for (let i = 0; i < len; i++) {
+            const w = Math.random() * 2 - 1;
+            b0 = 0.996 * b0 + w * 0.08;
+            b1 = 0.95 * b1 + w * 0.22;
+            b2 = 0.62 * b2 + w * 0.6;
+            data[i] = (b0 + b1 * 0.7 + b2 * 0.25) * 0.09;
+          }
+          for (let c = 0; c < 4; c++) {
+            const start = Math.floor(Math.random() * (len - 4000));
+            const f = 2600 + Math.random() * 800;
+            for (let k = 0; k < 3200 && start + k < len; k++) {
+              const t = k / sr;
+              data[start + k] += Math.sin(2 * Math.PI * f * t) * Math.exp(-t * 36) * 0.05;
+            }
           }
         } else {
           let b0 = 0, b1 = 0, b2 = 0;
@@ -5592,7 +6244,7 @@
             b0 = 0.99765 * b0 + w * 0.099046;
             b1 = 0.96300 * b1 + w * 0.2965164;
             b2 = 0.57000 * b2 + w * 1.0526913;
-            data[i] = (b0 + b1 + b2 + w * 0.1848) * 0.07;
+            data[i] = (b0 + b1 + b2 + w * 0.1848) * 0.085;
           }
         }
 
@@ -5603,36 +6255,36 @@
         const filter = audioCtx.createBiquadFilter();
         if (channelId === 'rain') {
           filter.type = 'bandpass';
-          filter.frequency.value = 1450;
-          filter.Q.value = 0.6;
+          filter.frequency.value = 1550;
+          filter.Q.value = 0.55;
         } else if (channelId === 'ocean') {
           filter.type = 'lowpass';
-          filter.frequency.value = 460;
+          filter.frequency.value = 420;
         } else if (channelId === 'fireplace') {
           filter.type = 'lowpass';
-          filter.frequency.value = 1200;
+          filter.frequency.value = 1600;
         } else if (channelId === 'wind') {
           filter.type = 'bandpass';
-          filter.frequency.value = 620;
-          filter.Q.value = 1.4;
+          filter.frequency.value = 560;
+          filter.Q.value = 2.2;
         } else if (channelId === 'thunder') {
           filter.type = 'lowpass';
-          filter.frequency.value = 190;
+          filter.frequency.value = 165;
         } else if (channelId === 'cafe') {
           filter.type = 'bandpass';
-          filter.frequency.value = 780;
-          filter.Q.value = 0.7;
+          filter.frequency.value = 820;
+          filter.Q.value = 0.65;
         } else if (channelId === 'stream') {
           filter.type = 'bandpass';
-          filter.frequency.value = 1850;
-          filter.Q.value = 0.5;
+          filter.frequency.value = 1950;
+          filter.Q.value = 0.65;
         } else if (channelId === 'blizzard') {
           filter.type = 'bandpass';
-          filter.frequency.value = 920;
-          filter.Q.value = 1.8;
+          filter.frequency.value = 1050;
+          filter.Q.value = 3.0;
         } else if (channelId === 'train' || channelId === 'space') {
           filter.type = 'lowpass';
-          filter.frequency.value = 340;
+          filter.frequency.value = 360;
         } else {
           filter.type = 'allpass';
         }
@@ -5649,10 +6301,16 @@
         if (channelId === 'ocean' || channelId === 'wind' || channelId === 'thunder' || channelId === 'blizzard' || channelId === 'stream') {
           lfo = audioCtx.createOscillator();
           const lfoGain = audioCtx.createGain();
-          lfo.frequency.value = channelId === 'ocean' ? 0.13 : channelId === 'wind' ? 0.09 : 0.07;
-          lfoGain.gain.value = gainValue * 0.45;
+          lfo.frequency.value = channelId === 'ocean' ? 0.11 : channelId === 'wind' ? 0.14 : channelId === 'blizzard' ? 0.22 : 0.08;
+          lfoGain.gain.value = gainValue * (channelId === 'ocean' ? 0.58 : 0.42);
           lfo.connect(lfoGain);
           lfoGain.connect(gainNode.gain);
+          if (channelId === 'ocean' || channelId === 'wind' || channelId === 'blizzard') {
+            const freqMod = audioCtx.createGain();
+            freqMod.gain.value = channelId === 'ocean' ? 240 : 320;
+            lfo.connect(freqMod);
+            freqMod.connect(filter.frequency);
+          }
           lfo.start();
         }
         return { source, gain: gainNode, lfo };
@@ -5691,12 +6349,14 @@
         }
         renderWhiteNoiseGrid();
         syncFortuneWhiteNoiseUI();
+        updatePlayStateUI();
       }
 
       function stopAllWhiteNoise() {
         WN_CHANNELS.forEach((ch) => stopWhiteNoiseChannel(ch.id));
         renderWhiteNoiseGrid();
         syncFortuneWhiteNoiseUI();
+        updatePlayStateUI();
       }
 
       function renderWhiteNoiseGrid() {
@@ -6499,9 +7159,10 @@
 
         if (forceRandom) {
           const card = $('fortune-card-inner');
-          card.classList.remove('fortune-card-flip');
-          void card.offsetWidth;
-          card.classList.add('fortune-card-flip');
+          if (card) {
+            state.fortuneFlipAngle = (state.fortuneFlipAngle || 0) + 360;
+            card.style.transform = `rotateY(${state.fortuneFlipAngle}deg)`;
+          }
         }
       }
 
@@ -6681,6 +7342,7 @@
               title: meta.title,
               artist: meta.artist,
               album: meta.album,
+              year: meta.year || '',
               cover: meta.cover || DEFAULT_APP_COVER,
               hasEmbeddedCover: Boolean(meta.cover),
               lrc: externalLrc || meta.lrc || '',
@@ -6779,6 +7441,7 @@
             if (meta.title && (!trk.title || trk.title === '未知曲目' || trk.title === baseFallback)) trk.title = meta.title;
             if (meta.artist && (!trk.artist || trk.artist === '未知歌手')) trk.artist = meta.artist;
             if (meta.album && (!trk.album || trk.album === '未知专辑')) trk.album = meta.album;
+            if (meta.year) trk.year = meta.year;
 
             await dbPut('tracks', toStorableTrackRecord(trk));
             updatedCount++;
@@ -6912,6 +7575,20 @@
           on(el, 'scroll', () => {
             if (!isMainTabView()) return;
             const st = el.scrollTop;
+            if (scrollId === 'library-list-container' || scrollId === 'albums-grid' || scrollId === 'artists-grid') {
+              const libView = $('view-library');
+              if (libView) {
+                const allowCollapse = !state.multiSelectMode && !state.libCustomEditing;
+                if (allowCollapse && st > 26) libView.classList.add('is-scrolled');
+                else if (st <= 14 || !allowCollapse) libView.classList.remove('is-scrolled');
+              }
+            } else if (scrollId === 'playlists-grid') {
+              const plView = $('view-playlists');
+              if (plView) {
+                if (st > 26) plView.classList.add('is-scrolled');
+                else if (st <= 14) plView.classList.remove('is-scrolled');
+              }
+            }
             if (st <= 10) {
               if (state.dockCollapsed) {
                 state.dockCollapsed = false;
@@ -7007,6 +7684,23 @@
 
         // Library Header & Unified Action Bar
         on('btn-open-search', () => switchView('search'));
+        on('btn-open-search-compact', () => switchView('search'));
+        on('btn-pl-search-compact', () => switchView('search'));
+        on('btn-pl-detail-search-compact', () => switchView('search'));
+        on('btn-playlist-back-compact', () => {
+          resetDeletePlaylistConfirm();
+          switchView('playlists');
+        });
+        const plDetailListEl = $('playlist-detail-tracks');
+        if (plDetailListEl) {
+          on(plDetailListEl, 'scroll', () => {
+            const plDetailView = $('view-playlist-detail');
+            if (!plDetailView) return;
+            const allowCollapse = !state.plMultiSelectMode && !state.plCustomEditing;
+            if (allowCollapse && plDetailListEl.scrollTop > 26) plDetailView.classList.add('is-scrolled');
+            else if (plDetailListEl.scrollTop <= 14 || !allowCollapse) plDetailView.classList.remove('is-scrolled');
+          }, { passive: true });
+        }
         on('btn-daily-fortune', () => openDailyFortuneModal(false));
         on('btn-lib-sort', () => openSortSheet('library'));
         on('btn-pl-sort', () => openSortSheet('playlist'));
@@ -7230,7 +7924,14 @@
         document.querySelectorAll('.np-tab-btn').forEach((btn) => {
           on(btn, 'click', () => setNowPlayingTab(btn.dataset.npTab));
         });
-        on('np-mini-lyric-box', () => setNowPlayingTab('lyrics'));
+        on('np-mini-lyric-box', () => {
+          if (isWhiteNoiseOnlyActive()) {
+            closeNowPlaying();
+            switchView('whitenoise');
+            return;
+          }
+          setNowPlayingTab('lyrics');
+        });
         on('btn-np-settings', () => openBottomSheet('sheet-np-settings'));
         on('btn-np-quick-playlist', () => {
           if (!state.currentTrackId) return showToast('当前未在播放歌曲');
@@ -7555,6 +8256,7 @@
               wnState.channels[c.id].nodes.gain.gain.value = computeChannelGain(c.id);
             }
           });
+          if (isWhiteNoiseOnlyActive()) syncWhiteNoisePlayerSurface();
         });
         document.querySelectorAll('.wn-preset-btn').forEach((btn) => {
           on(btn, 'click', () => {
@@ -7568,7 +8270,11 @@
               midnight_train: [['train', 70], ['rain', 45]],
               cafe_rain: [['cafe', 60], ['rain', 45], ['vinyl', 25]],
               deep_space: [['space', 70], ['wind', 30]],
-              storm_night: [['rain', 80], ['thunder', 65], ['wind', 50]]
+              storm_night: [['rain', 80], ['thunder', 65], ['wind', 50]],
+              morning_garden: [['birds', 62], ['chimes', 48], ['wind', 32]],
+              night_coding: [['keyboard', 58], ['rain', 55], ['cafe', 35]],
+              zen_bowl: [['singing_bowl', 65], ['stream', 45], ['wind', 30]],
+              summer_breeze: [['crickets', 52], ['chimes', 45], ['stream', 42]]
             };
             (map[preset] || []).forEach(([id, vol]) => {
               wnState.channels[id].vol = vol;
@@ -7754,23 +8460,46 @@
           showToast('已复制 songs.json 模板');
         });
         on('btn-export-backup', () => {
+          const includeWallpapers = Boolean($('chk-backup-wallpapers')?.checked);
+          const trackManifest = {};
+          for (const trk of state.tracks) {
+            const disp = getTrackDisplay(trk);
+            trackManifest[trk.id] = {
+              fileName: trk.fileName || '',
+              title: disp.title || '',
+              artist: disp.artist || '',
+              album: disp.album || ''
+            };
+          }
+          const wnBackup = {
+            masterVol: wnState.masterVol,
+            channels: Object.fromEntries(
+              WN_CHANNELS.map((c) => [c.id, { vol: wnState.channels[c.id]?.vol ?? c.defaultVol }])
+            )
+          };
           const backupObj = {
             app: 'FENG MUSIC',
+            version: '1.0.3',
             exportedAt: new Date().toISOString(),
+            trackManifest,
             playlists: state.playlists,
             stats: state.stats,
             lyricOffsets: state.lyricOffsets,
             customMeta: state.customMeta,
             customLyrics: state.customLyrics,
-            diy: { ...state.diy, homeBgUrl: '', playerBgUrl: '' }
+            sortMode: state.sortMode,
+            customTrackOrder: state.customTrackOrder,
+            playMode: state.playMode,
+            playbackRate: state.playbackRate || 1,
+            whiteNoise: wnBackup,
+            diy: {
+              ...state.diy,
+              homeBgUrl: includeWallpapers ? (state.diy.homeBgUrl || '') : '',
+              playerBgUrl: includeWallpapers ? (state.diy.playerBgUrl || '') : ''
+            }
           };
           const backupJson = JSON.stringify(backupObj, null, 2);
           const backupName = `FENG-MUSIC-backup-${new Date().toISOString().slice(0, 10)}.json`;
-          // In the iOS app a blob <a download> click is a no-op in WKWebView,
-          // so hand the JSON to the native bridge: it writes a temp file and
-          // presents the system Files export picker for the user to choose
-          // where to save. The success toast fires from __fengExportResult
-          // only after the user actually picks a destination.
           if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.fengExport) {
             try {
               window.webkit.messageHandlers.fengExport.postMessage({ filename: backupName, content: backupJson });
@@ -7782,7 +8511,7 @@
           a.href = URL.createObjectURL(blob);
           a.download = backupName;
           a.click();
-          showToast('已导出 JSON 备份文件');
+          showToast(includeWallpapers ? '已导出全量 JSON 备份（含壁纸与曲目指纹）' : '已导出轻量 JSON 备份（含曲目指纹）');
         });
         on('btn-import-backup', () => $('backup-import-input').click());
         on('backup-import-input', 'change', async (e) => {
@@ -7790,19 +8519,111 @@
           if (!file) return;
           try {
             const parsed = JSON.parse(await file.text());
-            if (Array.isArray(parsed.playlists)) state.playlists = parsed.playlists;
-            if (parsed.stats) state.stats = { ...state.stats, ...parsed.stats };
-            if (parsed.lyricOffsets) state.lyricOffsets = parsed.lyricOffsets;
-            if (parsed.customMeta) state.customMeta = parsed.customMeta;
-            if (parsed.customLyrics) state.customLyrics = parsed.customLyrics;
-            if (parsed.diy) state.diy = { ...state.diy, ...parsed.diy };
+            const manifest = parsed.trackManifest && typeof parsed.trackManifest === 'object' ? parsed.trackManifest : {};
+            const currentById = new Set(state.tracks.map((t) => t.id));
+            const remappedCache = new Map();
+            let remappedCount = 0;
+
+            const remapTrackId = (oldId) => {
+              if (!oldId) return oldId;
+              if (currentById.has(oldId)) return oldId;
+              if (remappedCache.has(oldId)) return remappedCache.get(oldId);
+              const info = manifest[oldId];
+              if (info) {
+                const match = findDuplicateTrack({
+                  fileName: info.fileName || '',
+                  title: info.title || '',
+                  artist: info.artist || ''
+                });
+                if (match) {
+                  remappedCache.set(oldId, match.id);
+                  remappedCount++;
+                  return match.id;
+                }
+              }
+              remappedCache.set(oldId, oldId);
+              return oldId;
+            };
+
+            const remapRecordMap = (obj) => {
+              if (!obj || typeof obj !== 'object') return {};
+              const out = {};
+              for (const [k, v] of Object.entries(obj)) {
+                out[remapTrackId(k)] = v;
+              }
+              return out;
+            };
+
+            if (Array.isArray(parsed.playlists)) {
+              state.playlists = parsed.playlists.map((pl) => ({
+                ...pl,
+                trackIds: [...new Set((pl.trackIds || []).map(remapTrackId))]
+              }));
+            }
+            if (parsed.stats) {
+              const incomingStats = { ...parsed.stats };
+              if (incomingStats.trackPlays) incomingStats.trackPlays = remapRecordMap(incomingStats.trackPlays);
+              if (Array.isArray(incomingStats.recentPlays)) {
+                incomingStats.recentPlays = incomingStats.recentPlays.map((item) => ({ ...item, trackId: remapTrackId(item.trackId) }));
+              }
+              if (Array.isArray(incomingStats.playHistory)) {
+                incomingStats.playHistory = incomingStats.playHistory.map((item) => ({ ...item, trackId: remapTrackId(item.trackId) }));
+              }
+              state.stats = { ...state.stats, ...incomingStats };
+            }
+            if (parsed.lyricOffsets) state.lyricOffsets = remapRecordMap(parsed.lyricOffsets);
+            if (parsed.customMeta) state.customMeta = remapRecordMap(parsed.customMeta);
+            if (parsed.customLyrics) state.customLyrics = remapRecordMap(parsed.customLyrics);
+            if (parsed.sortMode) state.sortMode = parsed.sortMode;
+            if (Array.isArray(parsed.customTrackOrder)) {
+              state.customTrackOrder = [...new Set(parsed.customTrackOrder.map(remapTrackId))];
+            }
+            if (parsed.playMode) {
+              state.playMode = parsed.playMode;
+              updatePlayModeButton();
+            }
+            if (Number.isFinite(parsed.playbackRate) && parsed.playbackRate > 0) {
+              state.playbackRate = parsed.playbackRate;
+              audio.playbackRate = parsed.playbackRate;
+            }
+            if (parsed.whiteNoise && typeof parsed.whiteNoise === 'object') {
+              if (Number.isFinite(parsed.whiteNoise.masterVol)) {
+                wnState.masterVol = parsed.whiteNoise.masterVol;
+                const mv = $('wn-master-vol');
+                const mval = $('wn-master-val');
+                if (mv) mv.value = wnState.masterVol;
+                if (mval) mval.textContent = `${wnState.masterVol}%`;
+              }
+              if (parsed.whiteNoise.channels && typeof parsed.whiteNoise.channels === 'object') {
+                for (const [cid, cfg] of Object.entries(parsed.whiteNoise.channels)) {
+                  if (wnState.channels[cid] && Number.isFinite(cfg?.vol)) {
+                    wnState.channels[cid].vol = cfg.vol;
+                  }
+                }
+                renderWhiteNoiseGrid();
+              }
+            }
+            if (parsed.diy) {
+              const incomingDiy = { ...parsed.diy };
+              if (incomingDiy.homeBgUrl) {
+                await dbPut('kv', { key: 'homeBgDataUrl', value: incomingDiy.homeBgUrl });
+              } else {
+                delete incomingDiy.homeBgUrl;
+              }
+              if (incomingDiy.playerBgUrl) {
+                await dbPut('kv', { key: 'playerBgDataUrl', value: incomingDiy.playerBgUrl });
+              } else {
+                delete incomingDiy.playerBgUrl;
+              }
+              state.diy = { ...state.diy, ...incomingDiy };
+            }
             await saveAppState();
             applyDiySettings();
             renderLibrary();
             renderPlaylists();
             renderStats();
             closeAllBottomSheets();
-            showToast('备份恢复成功');
+            showToast(remappedCount > 0 ? `备份恢复成功（已智能重新关联 ${remappedCount} 首跨重装曲目）` : '备份恢复成功');
           } catch {
             showToast('备份文件格式无效');
           }
