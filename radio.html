@@ -1312,7 +1312,10 @@
             </button>
           </div>
           <button id="btn-pick-native-folder" class="hidden w-full py-2.5 px-3 rounded-2xl bg-sky-500/20 hover:bg-sky-500/30 text-xs font-medium text-sky-200 flex items-center justify-center gap-2 transition">
-            <span>+ 关联新的 iOS 音乐文件夹（持久化书签）</span>
+            <span>+ 关联音乐文件夹（持久化授权）</span>
+          </button>
+          <button id="btn-scan-mediastore" class="hidden w-full py-2.5 px-3 rounded-2xl bg-indigo-500/20 hover:bg-indigo-500/30 text-xs font-medium text-indigo-200 flex items-center justify-center gap-2 transition">
+            <span>扫描本机音乐库</span>
           </button>
           <button id="btn-diy-native-scan" class="hidden w-full py-2.5 px-3 rounded-2xl bg-teal-500/20 hover:bg-teal-500/30 text-xs font-medium text-teal-200 flex items-center justify-center gap-2 transition">
             <span>立即扫描 iOS FENG MUSIC 文件夹</span>
@@ -2412,6 +2415,23 @@
         });
       }
 
+      async function dbDeleteMany(storeName, keys) {
+        if (!keys || !keys.length) return true;
+        const db = await openDB();
+        if (!db) return false;
+        return new Promise((resolve) => {
+          try {
+            const tx = db.transaction(storeName, 'readwrite');
+            const store = tx.objectStore(storeName);
+            for (const k of keys) store.delete(k);
+            tx.oncomplete = () => resolve(true);
+            tx.onerror = () => resolve(false);
+          } catch {
+            resolve(false);
+          }
+        });
+      }
+
       async function saveAppState() {
         const payload = {
           key: 'appState',
@@ -3106,21 +3126,49 @@
         );
       }
 
-      function hasNativeFolderPicker() {
+      function hasIosFolderBridge() {
         return Boolean(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.fengFolder);
+      }
+
+      function hasAndroidFolderBridge() {
+        return Boolean(window.FengAndroidBridge && typeof window.FengAndroidBridge.postFolderMessage === 'function');
+      }
+
+      function postFolderMessage(obj) {
+        if (hasIosFolderBridge()) {
+          window.webkit.messageHandlers.fengFolder.postMessage(obj);
+          return true;
+        }
+        if (hasAndroidFolderBridge()) {
+          try {
+            window.FengAndroidBridge.postFolderMessage(JSON.stringify(obj));
+            return true;
+          } catch {
+            return false;
+          }
+        }
+        return false;
+      }
+
+      function hasNativeFolderPicker() {
+        return Boolean(hasIosFolderBridge() || hasAndroidFolderBridge());
       }
 
       function hasNativeDockBridge() {
         return Boolean(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.fengDock);
       }
 
-      if (hasNativeDockBridge() || hasNativeFolderPicker()) {
+      if (hasNativeDockBridge() || hasIosFolderBridge()) {
         document.documentElement.classList.add('is-native-ios');
+      } else if (hasAndroidFolderBridge()) {
+        document.documentElement.classList.add('is-native-android');
       }
 
       function enforceNativeBridgeVisibility() {
-        if (hasNativeDockBridge() || hasNativeFolderPicker()) {
+        if (hasNativeDockBridge() || hasIosFolderBridge()) {
           document.documentElement.classList.add('is-native-ios');
+        } else if (hasAndroidFolderBridge()) {
+          document.documentElement.classList.add('is-native-android');
         }
         if (hasNativeDockBridge()) {
           const webDock = $('bottom-tab-dock');
@@ -3129,6 +3177,10 @@
         if (hasNativeFolderPicker()) {
           const nativePickBtn = $('btn-pick-native-folder');
           if (nativePickBtn) nativePickBtn.classList.remove('hidden');
+        }
+        if (hasAndroidFolderBridge()) {
+          const mediaStoreBtn = $('btn-scan-mediastore');
+          if (mediaStoreBtn) mediaStoreBtn.classList.remove('hidden');
         }
       }
       enforceNativeBridgeVisibility();
@@ -3213,14 +3265,14 @@
         container.querySelectorAll('[data-rescan-bm]').forEach((btn) => {
           on(btn, 'click', () => {
             if (hasNativeFolderPicker()) {
-              window.webkit.messageHandlers.fengFolder.postMessage({ action: 'rescanBookmarks', silent: false });
+              postFolderMessage({ action: 'rescanBookmarks', silent: false });
             }
           });
         });
         container.querySelectorAll('[data-remove-bm]').forEach((btn) => {
           on(btn, 'click', () => {
             if (hasNativeFolderPicker()) {
-              window.webkit.messageHandlers.fengFolder.postMessage({ action: 'removeBookmark', key: btn.dataset.removeBm });
+              postFolderMessage({ action: 'removeBookmark', key: btn.dataset.removeBm });
               showToast('已移除该文件夹关联');
             }
           });
@@ -3336,6 +3388,7 @@
           const nativeTitle = (item.title || '').trim();
           const nativeArtist = (item.artist || '').trim();
           const nativeAlbum = (item.album || '').trim();
+          const nativeYear = extractFourDigitYear(item.year);
           const nativeCover = (item.cover || '').trim();
           if (!fileUri) continue;
 
@@ -3407,6 +3460,7 @@
             title: resolvedTitle,
             artist: resolvedArtist,
             album: resolvedAlbum,
+            year: nativeYear || '',
             cover: nativeCover || DEFAULT_APP_COVER,
             hasEmbeddedCover: Boolean(nativeCover),
             lrc: externalLrc || '',
@@ -4300,9 +4354,7 @@
       }
 
       function switchView(viewName) {
-        if (viewName === 'search' && state.activeView !== 'search') {
-          state.searchReturnView = state.activeView || 'library';
-        } else if (viewName === 'group-detail' && state.activeView !== 'group-detail') {
+        if (viewName === 'group-detail' && state.activeView !== 'group-detail') {
           state.groupReturnView = state.activeView || 'library';
         }
         state.activeView = viewName;
@@ -5788,6 +5840,9 @@
       // DEDICATED SEARCH VIEW (Simultaneously searches Songs, Albums & Artists)
       // =========================================================================
       function openScopedSearch(playlistId = null) {
+        if (state.activeView !== 'search' && state.activeView !== 'group-detail') {
+          state.searchReturnView = state.activeView || 'library';
+        }
         state.searchScopePlaylistId = playlistId || null;
         const input = $('search-input');
         if (input) {
@@ -7156,33 +7211,50 @@
         }
       }
 
-      async function handleDeleteTrackById(trackId, silent = false) {
-        const idx = state.tracks.findIndex((t) => t.id === trackId);
-        if (idx === -1) return;
-        const removed = state.tracks[idx];
-        if (removed.objectUrl) URL.revokeObjectURL(removed.objectUrl);
+      async function handleBatchDeleteTracks(trackIds, silent = false) {
+        const idSet = new Set((trackIds || []).filter(Boolean));
+        if (!idSet.size) return 0;
 
-        state.tracks.splice(idx, 1);
-        state.queue = state.queue.filter((id) => id !== trackId);
+        const removedTracks = [];
+        const keptTracks = [];
+        for (const t of state.tracks) {
+          if (idSet.has(t.id)) {
+            removedTracks.push(t);
+            if (t.objectUrl) {
+              try { URL.revokeObjectURL(t.objectUrl); } catch {}
+            }
+            sessionFileMap.delete(t.id);
+            delete state.customMeta[t.id];
+            delete state.customLyrics[t.id];
+            delete state.lyricOffsets[t.id];
+            if (state.stats.trackPlays) delete state.stats.trackPlays[t.id];
+          } else {
+            keptTracks.push(t);
+          }
+        }
+        if (!removedTracks.length) return 0;
+
+        const removedIds = removedTracks.map((t) => t.id);
+        const removedSet = new Set(removedIds);
+        state.tracks = keptTracks;
+        state.queue = state.queue.filter((id) => !removedSet.has(id));
+        state.customTrackOrder = (state.customTrackOrder || []).filter((id) => !removedSet.has(id));
         state.playlists.forEach((pl) => {
-          pl.trackIds = (pl.trackIds || []).filter((id) => id !== trackId);
+          pl.trackIds = (pl.trackIds || []).filter((id) => !removedSet.has(id));
         });
-        delete state.customMeta[trackId];
-        delete state.customLyrics[trackId];
-        delete state.lyricOffsets[trackId];
-        if (state.stats.trackPlays) delete state.stats.trackPlays[trackId];
 
-        await dbDelete('tracks', trackId);
+        await dbDeleteMany('tracks', removedIds);
         await saveAppState();
 
-        if (state.currentTrackId === trackId) {
+        if (state.currentTrackId && removedSet.has(state.currentTrackId)) {
+          const wasPlaying = state.isPlaying;
           if (state.queue.length) {
-            await loadTrack(state.queue[0], state.isPlaying);
+            await loadTrack(state.queue[0], wasPlaying);
           } else if (state.tracks.length) {
-            await loadTrack(state.tracks[0].id, state.isPlaying);
+            await loadTrack(state.tracks[0].id, wasPlaying);
           } else {
             audio.pause();
-            audio.src = '';
+            audio.removeAttribute('src');
             state.currentTrackId = null;
             state.isPlaying = false;
             $('mini-title').textContent = 'FENG MUSIC';
@@ -7201,12 +7273,17 @@
         if (!silent) {
           closeAllBottomSheets();
           renderLibrary();
-          if (state.activeView === 'albums') renderAlbums();
-          if (state.activeView === 'artists') renderArtists();
+          if (state.libTab === 'albums') renderAlbums();
+          if (state.libTab === 'artists') renderArtists();
           if (state.activeView === 'playlists') renderPlaylists();
           if (state.activeView === 'stats') renderStats();
-          showToast('已从曲库删除该歌曲');
+          showToast(removedIds.length === 1 ? '已从曲库删除该歌曲' : `已从曲库删除 ${removedIds.length} 首歌曲`);
         }
+        return removedIds.length;
+      }
+
+      async function handleDeleteTrackById(trackId, silent = false) {
+        return handleBatchDeleteTracks([trackId], silent);
       }
 
       function drawRoundedRectPath(ctx, x, y, w, h, r) {
@@ -7463,7 +7540,7 @@
         closeAllBottomSheets();
         if (hasNativeFolderPicker()) {
           try {
-            window.webkit.messageHandlers.fengFolder.postMessage({ action: 'pickFolder' });
+            postFolderMessage({ action: 'pickFolder' });
           } catch {}
           return;
         }
@@ -7496,7 +7573,7 @@
       async function triggerMusicImport() {
         if (hasNativeFolderPicker()) {
           try {
-            window.webkit.messageHandlers.fengFolder.postMessage({ action: 'pickAudioFiles' });
+            postFolderMessage({ action: 'pickAudioFiles' });
           } catch {}
           return;
         }
@@ -7924,6 +8001,7 @@
           openPickPlaylistSheet(ids);
         });
         on('btn-ms-delete', async () => {
+          if (state.msDeleting) return;
           const ids = [...state.selectedTrackIds];
           if (!ids.length) return showToast('请先勾选要删除的歌曲');
           if (!state.msDeleteConfirm) {
@@ -7932,11 +8010,15 @@
             showToast(`再次点击「确认删(${ids.length})」将永久移除所选歌曲`);
             return;
           }
-          for (const tid of ids) {
-            await handleDeleteTrackById(tid, true);
+          state.msDeleting = true;
+          try {
+            const deletedCount = await handleBatchDeleteTracks(ids, true);
+            exitMultiSelectMode(true);
+            renderQueue();
+            showToast(`已从曲库删除 ${deletedCount} 首歌曲`);
+          } finally {
+            state.msDeleting = false;
           }
-          exitMultiSelectMode(true);
-          showToast(`已从曲库删除 ${ids.length} 首歌曲`);
         });
         on('btn-ms-cancel', () => exitMultiSelectMode(true));
         on('btn-add-source-folder', () => triggerFolderImportAction());
@@ -9051,6 +9133,10 @@
         on('btn-pick-native-folder', () => {
           triggerFolderImportAction();
         });
+        on('btn-scan-mediastore', () => {
+          postFolderMessage({ action: 'scanMediaStore' });
+          showToast('正在扫描本机音乐库...');
+        });
 
         if (typeof window.showDirectoryPicker === 'function') {
           const webFolderBtn = $('btn-pick-web-folder');
@@ -9311,7 +9397,7 @@
 
           if (hasNativeFolderPicker()) {
             try {
-              window.webkit.messageHandlers.fengFolder.postMessage({ action: 'rescanBookmarks', silent: true });
+              postFolderMessage({ action: 'rescanBookmarks', silent: true });
             } catch {}
           }
 
