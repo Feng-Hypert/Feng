@@ -53,6 +53,757 @@ jobs:
             cp icon-512.png "android/app/src/main/res/$dir/ic_launcher_foreground.png"
           done
 
+      - name: Inject Android Folder & MediaStore Bridge (SAF + MediaStore + Batch Import)
+        env:
+          BUNDLE_ID: ${{ inputs.bundle_id || 'com.feng.music' }}
+        run: |
+          # 1. Add androidx.documentfile dependency to android/app/build.gradle
+          if ! grep -q "androidx.documentfile:documentfile" android/app/build.gradle; then
+            sed -i '/dependencies {/a\    implementation "androidx.documentfile:documentfile:1.0.1"' android/app/build.gradle
+          fi
+
+          # 2. Add MediaStore audio permissions to AndroidManifest.xml (no MANAGE_EXTERNAL_STORAGE)
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          if ! grep -q "READ_MEDIA_AUDIO" "$MANIFEST"; then
+            sed -i '/<manifest /a\    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />' "$MANIFEST"
+          fi
+
+          # 3. Write MainActivity.java implementing FengAndroidBridge (SAF + MediaStore + pickAudioFiles)
+          PKG_PATH="$(echo "$BUNDLE_ID" | tr '.' '/')"
+          MAIN_ACT="android/app/src/main/java/${PKG_PATH}/MainActivity.java"
+          mkdir -p "$(dirname "$MAIN_ACT")"
+
+          echo "package ${BUNDLE_ID};" > "$MAIN_ACT"
+          cat << 'JAVAEOF' >> "$MAIN_ACT"
+
+          import android.Manifest;
+          import android.content.ContentResolver;
+          import android.content.ContentUris;
+          import android.content.Intent;
+          import android.content.SharedPreferences;
+          import android.content.UriPermission;
+          import android.content.pm.PackageManager;
+          import android.database.Cursor;
+          import android.graphics.Bitmap;
+          import android.graphics.BitmapFactory;
+          import android.media.MediaMetadataRetriever;
+          import android.net.Uri;
+          import android.os.Build;
+          import android.os.Bundle;
+          import android.os.Environment;
+          import android.provider.MediaStore;
+          import android.provider.OpenableColumns;
+          import android.util.Base64;
+          import android.webkit.JavascriptInterface;
+          import android.webkit.WebView;
+
+          import androidx.activity.result.ActivityResultLauncher;
+          import androidx.activity.result.contract.ActivityResultContracts;
+          import androidx.core.content.ContextCompat;
+          import androidx.documentfile.provider.DocumentFile;
+
+          import com.getcapacitor.BridgeActivity;
+
+          import org.json.JSONArray;
+          import org.json.JSONObject;
+
+          import java.io.ByteArrayOutputStream;
+          import java.io.File;
+          import java.io.FileOutputStream;
+          import java.io.InputStream;
+          import java.nio.charset.StandardCharsets;
+          import java.util.ArrayList;
+          import java.util.Arrays;
+          import java.util.HashMap;
+          import java.util.HashSet;
+          import java.util.List;
+          import java.util.Locale;
+          import java.util.Map;
+          import java.util.Set;
+          import java.util.concurrent.ExecutorService;
+          import java.util.concurrent.Executors;
+          import java.util.regex.Matcher;
+          import java.util.regex.Pattern;
+
+          public class MainActivity extends BridgeActivity {
+              private static final String PREF_NAME = "feng_android_folder";
+              private static final String KEY_GRANTS = "tree_grants_v1";
+              private static final int MAX_DEPTH = 8;
+              private static final long MAX_LRC_BYTES = 256L * 1024L;
+              private static final int PATCH_BATCH_SIZE = 6;
+              private static final Set<String> AUDIO_EXTS = new HashSet<>(
+                  Arrays.asList("mp3", "flac", "m4a", "wav", "aac", "ogg")
+              );
+              private static final Pattern YEAR_PATTERN = Pattern.compile("\\b(19\\d{2}|20\\d{2})\\b");
+
+              private final ExecutorService scanExecutor = Executors.newSingleThreadExecutor();
+              private final ExecutorService coverExecutor = Executors.newSingleThreadExecutor();
+              private volatile boolean destroyedFlag = false;
+
+              private ActivityResultLauncher<Uri> folderPickerLauncher;
+              private ActivityResultLauncher<String[]> audioFilesLauncher;
+              private ActivityResultLauncher<String> mediaPermissionLauncher;
+
+              private static class AudioTarget {
+                  final Uri uri;
+                  final String uriStr;
+                  final String relKey;
+                  final String name;
+                  final String lrc;
+                  final String title;
+                  final String artist;
+                  final String album;
+                  final String year;
+
+                  AudioTarget(Uri uri, String relKey, String name, String lrc, String title, String artist, String album, String year) {
+                      this.uri = uri;
+                      this.uriStr = uri.toString();
+                      this.relKey = relKey;
+                      this.name = name;
+                      this.lrc = lrc != null ? lrc : "";
+                      this.title = title != null ? title : "";
+                      this.artist = artist != null ? artist : "";
+                      this.album = album != null ? album : "";
+                      this.year = year != null ? year : "";
+                  }
+              }
+
+              @Override
+              public void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+
+                  folderPickerLauncher = registerForActivityResult(
+                      new ActivityResultContracts.OpenDocumentTree(),
+                      this::onFolderPicked
+                  );
+
+                  audioFilesLauncher = registerForActivityResult(
+                      new ActivityResultContracts.OpenMultipleDocuments(),
+                      this::onAudioFilesPicked
+                  );
+
+                  mediaPermissionLauncher = registerForActivityResult(
+                      new ActivityResultContracts.RequestPermission(),
+                      granted -> {
+                          if (Boolean.TRUE.equals(granted)) {
+                              runMediaStoreScan();
+                          } else {
+                              dispatchStringToWeb("__fengFolderPickerStatus", "未获得媒体权限，无法扫描本机音乐库");
+                          }
+                      }
+                  );
+
+                  if (getBridge() != null && getBridge().getWebView() != null) {
+                      getBridge().getWebView().addJavascriptInterface(new FengFolderJsBridge(), "FengAndroidBridge");
+                  }
+              }
+
+              @Override
+              public void onDestroy() {
+                  destroyedFlag = true;
+                  scanExecutor.shutdownNow();
+                  coverExecutor.shutdownNow();
+                  super.onDestroy();
+              }
+
+              private class FengFolderJsBridge {
+                  @JavascriptInterface
+                  public void postFolderMessage(String jsonStr) {
+                      if (jsonStr == null || jsonStr.isEmpty()) return;
+                      runOnUiThread(() -> {
+                          try {
+                              JSONObject msg = new JSONObject(jsonStr);
+                              String action = msg.optString("action", "");
+                              if ("pickFolder".equals(action)) {
+                                  folderPickerLauncher.launch(null);
+                              } else if ("pickAudioFiles".equals(action)) {
+                                  audioFilesLauncher.launch(new String[]{"*/*"});
+                              } else if ("rescanBookmarks".equals(action)) {
+                                  boolean silent = msg.optBoolean("silent", true);
+                                  rescanBookmarkedTrees(silent);
+                              } else if ("removeBookmark".equals(action)) {
+                                  String key = msg.optString("key", "");
+                                  removeBookmarkedTree(key);
+                              } else if ("scanMediaStore".equals(action)) {
+                                  startMediaStoreScanWithPermission();
+                              }
+                          } catch (Exception ignored) {
+                          }
+                      });
+                  }
+              }
+
+              private void dispatchJsonToWeb(String callbackName, JSONObject payload) {
+                  if (destroyedFlag || getBridge() == null) return;
+                  WebView wv = getBridge().getWebView();
+                  if (wv == null) return;
+                  final String js = "window." + callbackName + " && window." + callbackName + "(" + payload.toString() + ");";
+                  wv.post(() -> {
+                      if (!destroyedFlag) {
+                          wv.evaluateJavascript(js, null);
+                      }
+                  });
+              }
+
+              private void dispatchStringToWeb(String callbackName, String message) {
+                  if (destroyedFlag || getBridge() == null) return;
+                  WebView wv = getBridge().getWebView();
+                  if (wv == null) return;
+                  final String js = "window." + callbackName + " && window." + callbackName + "(" + JSONObject.quote(message) + ");";
+                  wv.post(() -> {
+                      if (!destroyedFlag) {
+                          wv.evaluateJavascript(js, null);
+                      }
+                  });
+              }
+
+              // MARK: - SAF Grants Persistence
+              private JSONArray loadGrants() {
+                  SharedPreferences sp = getSharedPreferences(PREF_NAME, MODE_PRIVATE);
+                  String raw = sp.getString(KEY_GRANTS, "[]");
+                  try {
+                      return new JSONArray(raw);
+                  } catch (Exception e) {
+                      return new JSONArray();
+                  }
+              }
+
+              private void saveGrants(JSONArray arr) {
+                  getSharedPreferences(PREF_NAME, MODE_PRIVATE)
+                      .edit()
+                      .putString(KEY_GRANTS, arr.toString())
+                      .apply();
+              }
+
+              private Set<String> getPersistedReadUriStrings() {
+                  Set<String> active = new HashSet<>();
+                  try {
+                      List<UriPermission> perms = getContentResolver().getPersistedUriPermissions();
+                      for (UriPermission p : perms) {
+                          if (p.isReadPermission() && p.getUri() != null) {
+                              active.add(p.getUri().toString());
+                          }
+                      }
+                  } catch (Exception ignored) {
+                  }
+                  return active;
+              }
+
+              private void pushBoundFolders() {
+                  JSONArray grants = loadGrants();
+                  Set<String> persisted = getPersistedReadUriStrings();
+                  JSONArray folders = new JSONArray();
+                  for (int i = 0; i < grants.length(); i++) {
+                      JSONObject item = grants.optJSONObject(i);
+                      if (item == null) continue;
+                      String treeUri = item.optString("treeUri", "");
+                      String name = item.optString("name", "已关联文件夹");
+                      if (treeUri.isEmpty()) continue;
+                      try {
+                          JSONObject f = new JSONObject();
+                          f.put("key", treeUri);
+                          f.put("name", name);
+                          f.put("active", persisted.contains(treeUri));
+                          folders.put(f);
+                      } catch (Exception ignored) {
+                      }
+                  }
+                  try {
+                      JSONObject payload = new JSONObject();
+                      payload.put("folders", folders);
+                      dispatchJsonToWeb("__fengBoundFolders", payload);
+                  } catch (Exception ignored) {
+                  }
+              }
+
+              private void onFolderPicked(Uri treeUri) {
+                  if (treeUri == null) {
+                      try {
+                          JSONObject cancelPayload = new JSONObject();
+                          cancelPayload.put("cancelled", true);
+                          dispatchJsonToWeb("__fengPickedFolderFiles", cancelPayload);
+                      } catch (Exception ignored) {
+                      }
+                      return;
+                  }
+                  try {
+                      getContentResolver().takePersistableUriPermission(treeUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                  } catch (Exception e) {
+                      dispatchStringToWeb("__fengFolderPickerStatus", "持久化文件夹授权失败：" + e.getMessage());
+                  }
+
+                  DocumentFile rootDoc = DocumentFile.fromTreeUri(this, treeUri);
+                  String folderName = (rootDoc != null && rootDoc.getName() != null && !rootDoc.getName().isEmpty())
+                      ? rootDoc.getName()
+                      : "已关联文件夹";
+                  String treeStr = treeUri.toString();
+
+                  JSONArray grants = loadGrants();
+                  JSONArray next = new JSONArray();
+                  for (int i = 0; i < grants.length(); i++) {
+                      JSONObject existing = grants.optJSONObject(i);
+                      if (existing != null && !treeStr.equals(existing.optString("treeUri", ""))) {
+                          next.put(existing);
+                      }
+                  }
+                  try {
+                      JSONObject entry = new JSONObject();
+                      entry.put("treeUri", treeStr);
+                      entry.put("name", folderName);
+                      next.put(entry);
+                  } catch (Exception ignored) {
+                  }
+                  saveGrants(next);
+                  pushBoundFolders();
+
+                  try {
+                      JSONObject scanNotice = new JSONObject();
+                      scanNotice.put("folderName", folderName);
+                      dispatchJsonToWeb("__fengFolderScanning", scanNotice);
+                  } catch (Exception ignored) {
+                  }
+
+                  scanExecutor.execute(() -> enumerateSafTree(treeUri, folderName, false));
+              }
+
+              private void rescanBookmarkedTrees(boolean silent) {
+                  scanExecutor.execute(() -> {
+                      JSONArray grants = loadGrants();
+                      Set<String> persisted = getPersistedReadUriStrings();
+                      for (int i = 0; i < grants.length(); i++) {
+                          if (destroyedFlag) return;
+                          JSONObject item = grants.optJSONObject(i);
+                          if (item == null) continue;
+                          String treeStr = item.optString("treeUri", "");
+                          String name = item.optString("name", "已关联文件夹");
+                          if (treeStr.isEmpty() || !persisted.contains(treeStr)) continue;
+                          enumerateSafTree(Uri.parse(treeStr), name, silent);
+                      }
+                      pushBoundFolders();
+                  });
+              }
+
+              private void removeBookmarkedTree(String key) {
+                  if (key == null || key.isEmpty()) return;
+                  JSONArray grants = loadGrants();
+                  JSONArray next = new JSONArray();
+                  for (int i = 0; i < grants.length(); i++) {
+                      JSONObject item = grants.optJSONObject(i);
+                      if (item != null && !key.equals(item.optString("treeUri", ""))) {
+                          next.put(item);
+                      }
+                  }
+                  saveGrants(next);
+                  try {
+                      getContentResolver().releasePersistableUriPermission(Uri.parse(key), Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                  } catch (Exception ignored) {
+                  }
+                  pushBoundFolders();
+              }
+
+              private void enumerateSafTree(Uri treeUri, String folderName, boolean silent) {
+                  DocumentFile rootDoc = DocumentFile.fromTreeUri(this, treeUri);
+                  if (rootDoc == null || !rootDoc.canRead()) {
+                      try {
+                          JSONObject errPayload = new JSONObject();
+                          errPayload.put("cancelled", false);
+                          errPayload.put("silent", silent);
+                          errPayload.put("folderName", folderName);
+                          errPayload.put("error", "无法读取所选文件夹，请重新授权");
+                          errPayload.put("files", new JSONArray());
+                          dispatchJsonToWeb("__fengPickedFolderFiles", errPayload);
+                      } catch (Exception ignored) {
+                      }
+                      return;
+                  }
+
+                  List<AudioTarget> targets = new ArrayList<>();
+                  walkDocumentDir(rootDoc, folderName, "", 0, targets);
+
+                  JSONArray filesArr = new JSONArray();
+                  for (AudioTarget t : targets) {
+                      try {
+                          JSONObject f = new JSONObject();
+                          f.put("name", t.name);
+                          f.put("uri", t.uriStr);
+                          f.put("relKey", t.relKey);
+                          f.put("lrc", t.lrc);
+                          f.put("title", t.title);
+                          f.put("artist", t.artist);
+                          f.put("album", t.album);
+                          f.put("year", t.year);
+                          f.put("cover", "");
+                          filesArr.put(f);
+                      } catch (Exception ignored) {
+                      }
+                  }
+
+                  try {
+                      JSONObject payload = new JSONObject();
+                      payload.put("cancelled", false);
+                      payload.put("silent", silent);
+                      payload.put("folderName", folderName);
+                      payload.put("error", "");
+                      payload.put("files", filesArr);
+                      dispatchJsonToWeb("__fengPickedFolderFiles", payload);
+                  } catch (Exception ignored) {
+                  }
+
+                  if (!targets.isEmpty()) {
+                      coverExecutor.execute(() -> patchMetadataAndCovers(targets));
+                  }
+              }
+
+              private void walkDocumentDir(DocumentFile dir, String folderName, String relPrefix, int depth, List<AudioTarget> out) {
+                  if (destroyedFlag || depth > MAX_DEPTH || dir == null) return;
+                  DocumentFile[] children;
+                  try {
+                      children = dir.listFiles();
+                  } catch (Exception e) {
+                      return;
+                  }
+                  if (children == null) return;
+
+                  Map<String, String> lrcMap = new HashMap<>();
+                  List<DocumentFile> audioFiles = new ArrayList<>();
+                  List<DocumentFile> subDirs = new ArrayList<>();
+
+                  for (DocumentFile child : children) {
+                      String name = child.getName();
+                      if (name == null || name.isEmpty() || name.startsWith(".")) continue;
+                      if (child.isDirectory()) {
+                          subDirs.add(child);
+                      } else if (child.isFile()) {
+                          String ext = getFileExt(name);
+                          if ("lrc".equals(ext)) {
+                              String base = stripExt(name).trim().toLowerCase(Locale.ROOT);
+                              String lrcText = readSmallTextUri(child.getUri(), MAX_LRC_BYTES);
+                              if (!lrcText.isEmpty()) lrcMap.put(base, lrcText);
+                          } else if (AUDIO_EXTS.contains(ext)) {
+                              audioFiles.add(child);
+                          }
+                      }
+                  }
+
+                  for (DocumentFile af : audioFiles) {
+                      String name = af.getName();
+                      if (name == null) continue;
+                      String base = stripExt(name).trim().toLowerCase(Locale.ROOT);
+                      String relPath = relPrefix.isEmpty() ? name : (relPrefix + "/" + name);
+                      String relKey = folderName + "/" + relPath;
+                      String lrc = lrcMap.containsKey(base) ? lrcMap.get(base) : "";
+                      out.add(new AudioTarget(af.getUri(), relKey, name, lrc, "", "", "", ""));
+                  }
+
+                  for (DocumentFile sub : subDirs) {
+                      String subName = sub.getName();
+                      if (subName == null) continue;
+                      String nextPrefix = relPrefix.isEmpty() ? subName : (relPrefix + "/" + subName);
+                      walkDocumentDir(sub, folderName, nextPrefix, depth + 1, out);
+                  }
+              }
+
+              // MARK: - MediaStore Scan
+              private void startMediaStoreScanWithPermission() {
+                  String perm = (Build.VERSION.SDK_INT >= 33)
+                      ? Manifest.permission.READ_MEDIA_AUDIO
+                      : Manifest.permission.READ_EXTERNAL_STORAGE;
+                  if (ContextCompat.checkSelfPermission(this, perm) == PackageManager.PERMISSION_GRANTED) {
+                      runMediaStoreScan();
+                  } else {
+                      mediaPermissionLauncher.launch(perm);
+                  }
+              }
+
+              private void runMediaStoreScan() {
+                  scanExecutor.execute(() -> {
+                      List<AudioTarget> targets = new ArrayList<>();
+                      Set<Long> seenIds = new HashSet<>();
+                      String[] projection = new String[]{
+                          MediaStore.Audio.Media._ID,
+                          MediaStore.Audio.Media.DISPLAY_NAME,
+                          MediaStore.Audio.Media.TITLE,
+                          MediaStore.Audio.Media.ARTIST,
+                          MediaStore.Audio.Media.ALBUM,
+                          MediaStore.Audio.Media.YEAR
+                      };
+                      String selection = MediaStore.Audio.Media.IS_MUSIC + " != 0";
+
+                      try (Cursor cursor = getContentResolver().query(
+                          MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                          projection,
+                          selection,
+                          null,
+                          MediaStore.Audio.Media.DATE_ADDED + " DESC"
+                      )) {
+                          if (cursor != null) {
+                              int idCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID);
+                              int nameCol = cursor.getColumnIndex(MediaStore.Audio.Media.DISPLAY_NAME);
+                              int titleCol = cursor.getColumnIndex(MediaStore.Audio.Media.TITLE);
+                              int artistCol = cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST);
+                              int albumCol = cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM);
+                              int yearCol = cursor.getColumnIndex(MediaStore.Audio.Media.YEAR);
+
+                              while (cursor.moveToNext()) {
+                                  if (destroyedFlag) return;
+                                  long id = cursor.getLong(idCol);
+                                  if (!seenIds.add(id)) continue;
+                                  String displayName = nameCol >= 0 ? cursor.getString(nameCol) : null;
+                                  String title = titleCol >= 0 ? cursor.getString(titleCol) : "";
+                                  String artist = artistCol >= 0 ? cursor.getString(artistCol) : "";
+                                  String album = albumCol >= 0 ? cursor.getString(albumCol) : "";
+                                  int yrInt = yearCol >= 0 ? cursor.getInt(yearCol) : 0;
+                                  String year = (yrInt >= 1900 && yrInt <= 2099) ? String.valueOf(yrInt) : "";
+
+                                  if (artist != null && "<unknown>".equalsIgnoreCase(artist.trim())) artist = "";
+                                  if (album != null && "<unknown>".equalsIgnoreCase(album.trim())) album = "";
+                                  String safeName = (displayName != null && !displayName.trim().isEmpty())
+                                      ? displayName.trim()
+                                      : ((title != null && !title.trim().isEmpty()) ? title.trim() + ".mp3" : ("audio_" + id + ".mp3"));
+
+                                  String ext = getFileExt(safeName);
+                                  if (!ext.isEmpty() && !AUDIO_EXTS.contains(ext)) continue;
+
+                                  Uri contentUri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id);
+                                  String relKey = "mediastore/" + id;
+                                  targets.add(new AudioTarget(contentUri, relKey, safeName, "", title, artist, album, year));
+                              }
+                          }
+                      } catch (Exception e) {
+                          dispatchStringToWeb("__fengFolderPickerStatus", "扫描本机音乐库失败：" + e.getMessage());
+                          return;
+                      }
+
+                      JSONArray filesArr = new JSONArray();
+                      for (AudioTarget t : targets) {
+                          try {
+                              JSONObject f = new JSONObject();
+                              f.put("name", t.name);
+                              f.put("uri", t.uriStr);
+                              f.put("relKey", t.relKey);
+                              f.put("lrc", "");
+                              f.put("title", t.title);
+                              f.put("artist", t.artist);
+                              f.put("album", t.album);
+                              f.put("year", t.year);
+                              f.put("cover", "");
+                              filesArr.put(f);
+                          } catch (Exception ignored) {
+                          }
+                      }
+
+                      try {
+                          JSONObject payload = new JSONObject();
+                          payload.put("cancelled", false);
+                          payload.put("silent", false);
+                          payload.put("folderName", "本机音乐库");
+                          payload.put("error", "");
+                          payload.put("files", filesArr);
+                          dispatchJsonToWeb("__fengPickedFolderFiles", payload);
+                      } catch (Exception ignored) {
+                      }
+
+                      if (!targets.isEmpty()) {
+                          coverExecutor.execute(() -> patchMetadataAndCovers(targets));
+                      }
+                  });
+              }
+
+              // MARK: - Batch File Import (Copy to Capacitor DOCUMENTS/Music)
+              private void onAudioFilesPicked(List<Uri> uris) {
+                  if (uris == null || uris.isEmpty()) return;
+                  scanExecutor.execute(() -> {
+                      File docsBase = getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS);
+                      if (docsBase == null) {
+                          docsBase = new File(getFilesDir(), "Documents");
+                      }
+                      File musicDir = new File(docsBase, "Music");
+                      if (!musicDir.exists()) {
+                          musicDir.mkdirs();
+                      }
+
+                      int importedAudio = 0;
+                      String errMsg = "";
+                      for (Uri uri : uris) {
+                          if (destroyedFlag || uri == null) continue;
+                          String fileName = queryDisplayName(uri);
+                          if (fileName == null || fileName.trim().isEmpty()) continue;
+                          String ext = getFileExt(fileName);
+                          if (!AUDIO_EXTS.contains(ext) && !"lrc".equals(ext)) continue;
+
+                          File dest = new File(musicDir, fileName);
+                          try (InputStream in = getContentResolver().openInputStream(uri);
+                               FileOutputStream out = new FileOutputStream(dest, false)) {
+                              if (in == null) continue;
+                              byte[] buf = new byte[16384];
+                              int n;
+                              while ((n = in.read(buf)) > 0) {
+                                  out.write(buf, 0, n);
+                              }
+                              if (AUDIO_EXTS.contains(ext)) {
+                                  importedAudio++;
+                              }
+                          } catch (Exception e) {
+                              if (errMsg.isEmpty()) errMsg = e.getMessage() != null ? e.getMessage() : "复制文件失败";
+                          }
+                      }
+
+                      try {
+                          JSONObject res = new JSONObject();
+                          res.put("count", importedAudio);
+                          res.put("skippedOgg", 0);
+                          res.put("error", importedAudio > 0 ? "" : errMsg);
+                          dispatchJsonToWeb("__fengImportedNativeFiles", res);
+                      } catch (Exception ignored) {
+                      }
+                  });
+              }
+
+              // MARK: - Async Metadata & Cover Patching (batches <= 6)
+              private void patchMetadataAndCovers(List<AudioTarget> targets) {
+                  JSONArray batch = new JSONArray();
+                  for (AudioTarget t : targets) {
+                      if (destroyedFlag) return;
+                      MediaMetadataRetriever mmr = new MediaMetadataRetriever();
+                      try {
+                          mmr.setDataSource(this, t.uri);
+                          String title = safeMeta(mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE));
+                          String artist = safeMeta(mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST));
+                          String album = safeMeta(mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM));
+                          String year = extractYear(safeMeta(mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_YEAR)));
+                          if (year.isEmpty()) {
+                              year = extractYear(safeMeta(mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DATE)));
+                          }
+                          String coverDataUrl = "";
+                          byte[] pic = mmr.getEmbeddedPicture();
+                          if (pic != null && pic.length > 32) {
+                              coverDataUrl = encodeResizedCover(pic);
+                          }
+
+                          if (!title.isEmpty() || !artist.isEmpty() || !album.isEmpty() || !year.isEmpty() || !coverDataUrl.isEmpty()) {
+                              JSONObject item = new JSONObject();
+                              item.put("relKey", t.relKey);
+                              item.put("uri", t.uriStr);
+                              item.put("title", title);
+                              item.put("artist", artist);
+                              item.put("album", album);
+                              item.put("year", year);
+                              item.put("cover", coverDataUrl);
+                              batch.put(item);
+                          }
+                      } catch (Exception ignored) {
+                      } finally {
+                          try {
+                              mmr.release();
+                          } catch (Exception ignored) {
+                          }
+                      }
+
+                      if (batch.length() >= PATCH_BATCH_SIZE) {
+                          flushCoverBatch(batch);
+                          batch = new JSONArray();
+                      }
+                  }
+                  if (batch.length() > 0 && !destroyedFlag) {
+                      flushCoverBatch(batch);
+                  }
+              }
+
+              private void flushCoverBatch(JSONArray batch) {
+                  try {
+                      JSONObject payload = new JSONObject();
+                      payload.put("items", batch);
+                      dispatchJsonToWeb("__fengPatchTrackCovers", payload);
+                  } catch (Exception ignored) {
+                  }
+              }
+
+              private String encodeResizedCover(byte[] rawBytes) {
+                  try {
+                      BitmapFactory.Options opts = new BitmapFactory.Options();
+                      opts.inJustDecodeBounds = true;
+                      BitmapFactory.decodeByteArray(rawBytes, 0, rawBytes.length, opts);
+                      int maxSide = Math.max(opts.outWidth, opts.outHeight);
+                      int sample = 1;
+                      while (maxSide / (sample * 2) >= 360) {
+                          sample *= 2;
+                      }
+                      BitmapFactory.Options decOpts = new BitmapFactory.Options();
+                      decOpts.inSampleSize = sample;
+                      Bitmap bmp = BitmapFactory.decodeByteArray(rawBytes, 0, rawBytes.length, decOpts);
+                      if (bmp == null) return "";
+                      int w = bmp.getWidth();
+                      int h = bmp.getHeight();
+                      if (w > 360 || h > 360) {
+                          float scale = Math.min(360f / w, 360f / h);
+                          Bitmap scaled = Bitmap.createScaledBitmap(bmp, Math.max(1, Math.round(w * scale)), Math.max(1, Math.round(h * scale)), true);
+                          if (scaled != bmp) bmp.recycle();
+                          bmp = scaled;
+                      }
+                      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                      bmp.compress(Bitmap.CompressFormat.JPEG, 78, baos);
+                      bmp.recycle();
+                      return "data:image/jpeg;base64," + Base64.encodeToString(baos.toByteArray(), Base64.NO_WRAP);
+                  } catch (Exception e) {
+                      return "";
+                  }
+              }
+
+              private String readSmallTextUri(Uri uri, long maxBytes) {
+                  try (InputStream in = getContentResolver().openInputStream(uri)) {
+                      if (in == null) return "";
+                      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                      byte[] buf = new byte[8192];
+                      long total = 0;
+                      int n;
+                      while ((n = in.read(buf)) > 0) {
+                          total += n;
+                          if (total > maxBytes) return "";
+                          baos.write(buf, 0, n);
+                      }
+                      return new String(baos.toByteArray(), StandardCharsets.UTF_8);
+                  } catch (Exception e) {
+                      return "";
+                  }
+              }
+
+              private String queryDisplayName(Uri uri) {
+                  try (Cursor c = getContentResolver().query(uri, new String[]{OpenableColumns.DISPLAY_NAME}, null, null, null)) {
+                      if (c != null && c.moveToFirst()) {
+                          String name = c.getString(0);
+                          if (name != null && !name.trim().isEmpty()) return name.trim();
+                      }
+                  } catch (Exception ignored) {
+                  }
+                  String seg = uri.getLastPathSegment();
+                  if (seg == null) return "";
+                  int slash = seg.lastIndexOf('/');
+                  return slash >= 0 ? seg.substring(slash + 1) : seg;
+              }
+
+              private static String getFileExt(String name) {
+                  int dot = name.lastIndexOf('.');
+                  if (dot < 0 || dot == name.length() - 1) return "";
+                  return name.substring(dot + 1).toLowerCase(Locale.ROOT);
+              }
+
+              private static String stripExt(String name) {
+                  int dot = name.lastIndexOf('.');
+                  return dot > 0 ? name.substring(0, dot) : name;
+              }
+
+              private static String safeMeta(String s) {
+                  return s == null ? "" : s.trim();
+              }
+
+              private static String extractYear(String raw) {
+                  if (raw == null || raw.isEmpty()) return "";
+                  Matcher m = YEAR_PATTERN.matcher(raw);
+                  return m.find() ? m.group(1) : "";
+              }
+          }
+          JAVAEOF
+
       - name: Build Android APK
         run: |
           cd android
