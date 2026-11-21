@@ -550,19 +550,21 @@
       transform: scale(1.25);
     }
 
-    /* iOS 26 Borderless Scroll-Collapsing Floating Header (Library, Playlists & Playlist Detail) */
+    /* iOS 26 Zero-Reflow Borderless Scroll-Collapsing Floating Header (Library, Playlists & Playlist Detail) */
     .collapsible-expanded-area {
-      transition: max-height 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.22s ease, transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), padding 0.28s ease;
-      max-height: 220px;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 20;
+      transition: opacity 0.22s ease, transform 0.26s cubic-bezier(0.22, 1, 0.36, 1);
       opacity: 1;
-      overflow: hidden;
+      transform: translateY(0);
+      will-change: transform, opacity;
     }
     .is-scrolled .collapsible-expanded-area {
-      max-height: 0 !important;
       opacity: 0;
-      padding-top: 0 !important;
-      padding-bottom: 0 !important;
-      transform: translateY(-10px);
+      transform: translateY(-28px);
       pointer-events: none;
     }
     .collapsible-compact-bar {
@@ -575,9 +577,10 @@
       opacity: 0;
       pointer-events: none;
       transform: translateY(-8px);
-      transition: opacity 0.26s ease, transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+      transition: opacity 0.24s ease, transform 0.26s cubic-bezier(0.22, 1, 0.36, 1);
       padding-bottom: 22px;
-      background: linear-gradient(180deg, rgba(9, 11, 16, 0.78) 0%, rgba(9, 11, 16, 0.42) 55%, rgba(9, 11, 16, 0) 100%);
+      background: linear-gradient(180deg, rgba(9, 11, 16, 0.78) 0%, rgba(9, 11, 16, 0.40) 56%, rgba(9, 11, 16, 0) 100%);
+      will-change: transform, opacity;
     }
     .collapsible-compact-bar::before {
       content: '';
@@ -597,11 +600,74 @@
       opacity: 1;
       transform: translateY(0);
     }
-    .is-scrolled .collapsible-scroll-body {
-      padding-top: calc(var(--safe-top) + 56px);
+    /* Constant top padding prevents scroll-jump / layout-thrash when header collapses */
+    .lib-scroll-pad {
+      padding-top: calc(var(--safe-top) + 124px);
+    }
+    .pl-scroll-pad {
+      padding-top: calc(var(--safe-top) + 84px);
+    }
+    .pl-detail-scroll-pad {
+      padding-top: calc(var(--safe-top) + 128px);
+    }
+    /* Dedicated Editing Mode Bar (Multi-Select / Custom Reorder) — replaces normal header cleanly with zero overlap */
+    .editing-floating-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 30;
+      padding-top: calc(var(--safe-top) + 10px);
+      padding-bottom: 18px;
+      background: linear-gradient(180deg, rgba(9, 11, 16, 0.88) 0%, rgba(9, 11, 16, 0.56) 68%, rgba(9, 11, 16, 0) 100%);
+    }
+    .is-editing-bar .collapsible-expanded-area,
+    .is-editing-bar .collapsible-compact-bar {
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+    .is-editing-bar .lib-scroll-pad,
+    .is-editing-bar .pl-detail-scroll-pad {
+      padding-top: calc(var(--safe-top) + 68px) !important;
     }
 
-    /* Interactive 3D CD Jewel Case (Album Detail View) */
+    /* Playlist Swipe-Left Delete Card */
+    .pl-swipe-wrap {
+      position: relative;
+      overflow: hidden;
+      border-radius: 1.5rem;
+    }
+    .pl-swipe-actions {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 0 14px;
+      background: linear-gradient(135deg, rgba(127, 29, 29, 0.72), rgba(190, 18, 60, 0.82));
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.22s ease;
+    }
+    .pl-swipe-wrap.is-swiped .pl-swipe-actions {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .pl-swipe-wrap .playlist-card {
+      position: relative;
+      z-index: 2;
+      transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.22s ease;
+    }
+    .pl-swipe-wrap.is-swiped .playlist-card {
+      transform: translateX(-100%);
+      opacity: 0.12;
+      pointer-events: none;
+    }
+
+    /* Interactive 3D CD Jewel Case (WebKit Z-Plane Safe) */
     .cd-jewel-stage {
       perspective: 1200px;
       -webkit-perspective: 1200px;
@@ -623,18 +689,21 @@
     .cd-jewel-tray {
       position: absolute;
       inset: 0;
+      transform: translateZ(-2px);
+      -webkit-transform: translateZ(-2px);
       border-radius: 7px 10px 10px 7px;
       background: linear-gradient(135deg, rgba(24, 28, 36, 0.94), rgba(10, 12, 18, 0.98));
       border: 1px solid rgba(255, 255, 255, 0.22);
       box-shadow: 0 24px 54px rgba(0, 0, 0, 0.62), inset 0 1px 0 rgba(255, 255, 255, 0.24);
       display: flex;
       align-items: center;
-      overflow: hidden;
+      z-index: 1;
     }
     .cd-jewel-spine {
       width: 24px;
       height: 100%;
       flex-shrink: 0;
+      border-radius: 6px 0 0 6px;
       background: repeating-linear-gradient(
         90deg,
         rgba(255, 255, 255, 0.10) 0px,
@@ -652,12 +721,13 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      border-radius: 0 9px 9px 0;
       background: radial-gradient(circle at center, rgba(255, 255, 255, 0.08) 0%, rgba(0, 0, 0, 0.55) 70%);
     }
     .cd-jewel-disc {
       position: relative;
-      width: 172px;
-      height: 172px;
+      width: 164px;
+      height: 164px;
       border-radius: 9999px;
       background:
         conic-gradient(
@@ -675,11 +745,17 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.28s ease;
+    }
+    .cd-jewel-case.is-open .cd-jewel-disc {
+      opacity: 1;
+      pointer-events: auto;
     }
     .cd-jewel-disc-art {
-      width: 112px;
-      height: 112px;
+      width: 106px;
+      height: 106px;
       border-radius: 9999px;
       object-fit: cover;
       border: 2px solid rgba(255, 255, 255, 0.35);
@@ -687,8 +763,8 @@
     }
     .cd-jewel-disc-hub {
       position: absolute;
-      width: 30px;
-      height: 30px;
+      width: 28px;
+      height: 28px;
       border-radius: 9999px;
       background: radial-gradient(circle, rgba(12, 14, 20, 0.95) 0%, rgba(12, 14, 20, 0.95) 46%, rgba(255, 255, 255, 0.45) 48%, rgba(255, 255, 255, 0.14) 100%);
       border: 1.5px solid rgba(255, 255, 255, 0.45);
@@ -700,16 +776,21 @@
       -webkit-transform-origin: left center;
       transform-style: preserve-3d;
       -webkit-transform-style: preserve-3d;
+      transform: translateZ(4px) rotateY(0deg);
+      -webkit-transform: translateZ(4px) rotateY(0deg);
       transition: transform 0.72s cubic-bezier(0.22, 1, 0.36, 1);
       border-radius: 7px 10px 10px 7px;
-      z-index: 5;
+      z-index: 10;
     }
     .cd-jewel-case.is-open .cd-jewel-lid {
-      transform: rotateY(-122deg);
+      transform: translateZ(4px) rotateY(-126deg);
+      -webkit-transform: translateZ(4px) rotateY(-126deg);
     }
     .cd-jewel-lid-front {
       position: absolute;
       inset: 0;
+      transform: translateZ(1px);
+      -webkit-transform: translateZ(1px);
       backface-visibility: hidden;
       -webkit-backface-visibility: hidden;
       border-radius: 7px 10px 10px 7px;
@@ -717,7 +798,7 @@
       overflow: hidden;
       border: 1px solid rgba(255, 255, 255, 0.28);
       box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.42), 0 18px 42px rgba(0, 0, 0, 0.55);
-      background: rgba(15, 18, 26, 0.95);
+      background: rgba(15, 18, 26, 0.98);
     }
     .cd-jewel-lid-glare {
       position: absolute;
@@ -728,11 +809,12 @@
     .cd-jewel-lid-back {
       position: absolute;
       inset: 0;
+      transform: rotateY(180deg) translateZ(1px);
+      -webkit-transform: rotateY(180deg) translateZ(1px);
       backface-visibility: hidden;
       -webkit-backface-visibility: hidden;
-      transform: rotateY(180deg);
       border-radius: 10px 7px 7px 10px;
-      background: linear-gradient(135deg, rgba(30, 36, 48, 0.92), rgba(14, 18, 28, 0.96));
+      background: linear-gradient(135deg, rgba(30, 36, 48, 0.95), rgba(14, 18, 28, 0.98));
       border: 1px solid rgba(255, 255, 255, 0.22);
       display: flex;
       flex-direction: column;
@@ -780,9 +862,13 @@
 
     <!-- ==================== VIEW 1: LIBRARY (曲库 + 专辑/歌手筛选) ==================== -->
     <section id="view-library" class="app-view relative flex-1 flex flex-col overflow-hidden">
-      <!-- Borderless Compact Collapsed Header (centered 曲库 + right Search icon) -->
+      <!-- Borderless Compact Collapsed Header (left ↑ Back-to-Top + centered 曲库/专辑/歌手 + right Search icon) -->
       <div class="collapsible-compact-bar px-4 sm:px-6 items-center justify-between shrink-0" style="padding-top: calc(var(--safe-top) + 10px);">
-        <div class="w-9 h-9 shrink-0" aria-hidden="true"></div>
+        <button id="btn-lib-scroll-top" class="liquid-pill w-9 h-9 rounded-full text-white flex items-center justify-center shrink-0" title="返回顶部" aria-label="返回顶部">
+          <svg class="w-4 h-4 text-white/90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 19V5m0 0l-6 6m6-6l6 6" />
+          </svg>
+        </button>
         <span id="lib-compact-title" class="text-base font-bold tracking-tight text-white">曲库</span>
         <button id="btn-open-search-compact" class="liquid-pill w-9 h-9 rounded-full text-white flex items-center justify-center shrink-0" title="搜索" aria-label="搜索">
           <svg class="w-4 h-4 text-white/90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
@@ -793,12 +879,15 @@
       </div>
 
       <div class="collapsible-expanded-area shrink-0">
-      <header class="px-4 sm:px-6 pb-2.5 flex items-center justify-between gap-3 shrink-0" style="padding-top: calc(var(--safe-top) + 12px);">
+      <header class="px-4 sm:px-6 pb-2 flex items-center justify-between gap-3 shrink-0" style="padding-top: calc(var(--safe-top) + 12px);">
         <div class="min-w-0">
           <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-white truncate">我的曲库</h1>
           <p id="library-subtitle" class="text-xs text-white/55 truncate">FENG MUSIC · 共 0 首歌曲</p>
         </div>
         <div class="flex items-center gap-2 shrink-0">
+          <button id="btn-daily-fortune" class="liquid-pill w-9 h-9 rounded-full flex items-center justify-center text-rose-300 shrink-0" title="今日音乐签" aria-label="今日音乐签">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+          </button>
           <button id="btn-open-search" class="liquid-pill w-9 h-9 rounded-full text-white flex items-center justify-center shrink-0" title="搜索歌曲、专辑或歌手" aria-label="搜索">
             <svg class="w-4 h-4 text-white/90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
               <circle cx="11" cy="11" r="7" />
@@ -808,9 +897,29 @@
         </div>
       </header>
 
-      <!-- Multi-Select Batch Action Bar -->
-      <div id="library-multiselect-bar" class="hidden px-4 sm:px-6 pb-2.5 shrink-0">
-        <div class="liquid-panel rounded-2xl px-3.5 py-2 flex items-center justify-between gap-2">
+
+
+      <!-- Filter Bar: [全部 | 专辑 | 歌手] + 2nd Row of 2x2 Square Icons [多选 | 排序] -->
+      <div class="px-4 sm:px-6 pb-2 flex items-center justify-between gap-2 shrink-0">
+        <div class="liquid-pill p-1 rounded-full flex items-center gap-1">
+          <button data-lib-tab="songs" class="lib-tab-btn px-3.5 py-1 rounded-full text-xs font-semibold bg-white text-zinc-950 transition">全部</button>
+          <button data-lib-tab="albums" class="lib-tab-btn px-3.5 py-1 rounded-full text-xs font-semibold text-white/75 hover:text-white transition">专辑</button>
+          <button data-lib-tab="artists" class="lib-tab-btn px-3.5 py-1 rounded-full text-xs font-semibold text-white/75 hover:text-white transition">歌手</button>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <button id="btn-lib-multiselect" class="liquid-pill w-9 h-9 rounded-full flex items-center justify-center text-sky-200 shrink-0" title="多选歌曲" aria-label="多选">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><path stroke-linecap="round" stroke-linejoin="round" d="M9 11l3 3L22 4"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          </button>
+          <button id="btn-lib-sort" class="liquid-pill w-9 h-9 rounded-full flex items-center justify-center text-white/90 shrink-0" title="排序方式" aria-label="排序方式">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
+          </button>
+        </div>
+      </div>
+      </div>
+
+      <!-- Dedicated Floating Multi-Select Batch Action Bar (Library) -->
+      <div id="library-multiselect-bar" class="hidden editing-floating-bar px-4 sm:px-6">
+        <div class="liquid-panel rounded-2xl px-3.5 py-2.5 flex items-center justify-between gap-2">
           <div class="flex items-center gap-2.5 min-w-0">
             <button id="btn-ms-select-all" class="px-2.5 py-1 rounded-lg bg-white/12 hover:bg-white/20 text-xs font-medium text-white shrink-0">全选</button>
             <span id="ms-selected-count" class="text-xs font-medium text-sky-300 tabular-nums truncate">已选 0 首</span>
@@ -823,41 +932,20 @@
         </div>
       </div>
 
-      <!-- Custom Order Editing Banner (Library) -->
-      <div id="library-custom-order-bar" class="hidden px-4 sm:px-6 pb-2.5 shrink-0">
-        <div class="liquid-panel rounded-2xl px-3.5 py-2 flex items-center justify-between gap-2 border border-sky-400/30">
+      <!-- Dedicated Floating Custom Order Bar (Library) -->
+      <div id="library-custom-order-bar" class="hidden editing-floating-bar px-4 sm:px-6">
+        <div class="liquid-panel rounded-2xl px-3.5 py-2.5 flex items-center justify-between gap-2 border border-sky-400/30">
           <span class="text-xs font-medium text-sky-200 truncate">自定义排列 · 轻触右侧 ↑ ↓ 调整顺序</span>
           <button id="btn-lib-order-done" class="px-3 py-1 rounded-lg bg-sky-400 text-xs font-semibold text-zinc-950 shrink-0">完成</button>
         </div>
       </div>
 
-      <!-- Unified Filter & Icon Action Bar: [全部 | 专辑 | 歌手] + [今日音乐签 | 多选 | 排序] -->
-      <div class="px-4 sm:px-6 pb-2.5 flex items-center justify-between gap-2 shrink-0">
-        <div class="liquid-pill p-1 rounded-full flex items-center gap-1">
-          <button data-lib-tab="songs" class="lib-tab-btn px-3.5 py-1 rounded-full text-xs font-semibold bg-white text-zinc-950 transition">全部</button>
-          <button data-lib-tab="albums" class="lib-tab-btn px-3.5 py-1 rounded-full text-xs font-semibold text-white/75 hover:text-white transition">专辑</button>
-          <button data-lib-tab="artists" class="lib-tab-btn px-3.5 py-1 rounded-full text-xs font-semibold text-white/75 hover:text-white transition">歌手</button>
-        </div>
-        <div class="flex items-center gap-1.5 shrink-0">
-          <button id="btn-daily-fortune" class="liquid-pill w-9 h-9 rounded-full flex items-center justify-center text-rose-300 shrink-0" title="今日音乐签" aria-label="今日音乐签">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
-          </button>
-          <button id="btn-lib-multiselect" class="liquid-pill w-9 h-9 rounded-full flex items-center justify-center text-sky-200 shrink-0" title="多选歌曲" aria-label="多选">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><path stroke-linecap="round" stroke-linejoin="round" d="M9 11l3 3L22 4"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-          </button>
-          <button id="btn-lib-sort" class="liquid-pill w-9 h-9 rounded-full flex items-center justify-center text-white/90 shrink-0" title="排序方式" aria-label="排序方式">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
-          </button>
-        </div>
-      </div>
-      </div>
-
       <!-- Sub-panel 1: Song List -->
-      <div id="library-list-container" class="collapsible-scroll-body flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 space-y-2"></div>
+      <div id="library-list-container" class="lib-scroll-pad flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 space-y-2"></div>
       <!-- Sub-panel 2: Albums Grid -->
-      <div id="albums-grid" class="collapsible-scroll-body hidden flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5 content-start"></div>
+      <div id="albums-grid" class="lib-scroll-pad hidden flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5 content-start"></div>
       <!-- Sub-panel 3: Artists Grid -->
-      <div id="artists-grid" class="collapsible-scroll-body hidden flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5 content-start"></div>
+      <div id="artists-grid" class="lib-scroll-pad hidden flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5 content-start"></div>
     </section>
 
     <!-- ==================== VIEW 4: GROUP DETAIL (专辑 CD 盒 / 歌手详情) ==================== -->
@@ -885,9 +973,13 @@
 
     <!-- ==================== VIEW 5: PLAYLISTS (歌单) ==================== -->
     <section id="view-playlists" class="app-view relative hidden flex-1 flex flex-col overflow-hidden">
-      <!-- Borderless Compact Collapsed Header (centered 歌单 + right Search icon) -->
+      <!-- Borderless Compact Collapsed Header (left ↑ + centered 歌单 + right Search icon) -->
       <div class="collapsible-compact-bar px-4 sm:px-6 items-center justify-between shrink-0" style="padding-top: calc(var(--safe-top) + 10px);">
-        <div class="w-9 h-9 shrink-0" aria-hidden="true"></div>
+        <button id="btn-pl-scroll-top" class="liquid-pill w-9 h-9 rounded-full text-white flex items-center justify-center shrink-0" title="返回顶部" aria-label="返回顶部">
+          <svg class="w-4 h-4 text-white/90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 19V5m0 0l-6 6m6-6l6 6" />
+          </svg>
+        </button>
         <span class="text-base font-bold tracking-tight text-white">歌单</span>
         <button id="btn-pl-search-compact" class="liquid-pill w-9 h-9 rounded-full text-white flex items-center justify-center shrink-0" title="搜索" aria-label="搜索">
           <svg class="w-4 h-4 text-white/90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
@@ -936,9 +1028,9 @@
       </div>
 
       <div class="collapsible-expanded-area shrink-0">
-      <header class="px-4 sm:px-6 pb-3 flex items-center justify-between gap-2 shrink-0" style="padding-top: calc(var(--safe-top) + 12px);">
+      <header class="px-4 sm:px-6 pb-2 flex items-center justify-between gap-2 shrink-0" style="padding-top: calc(var(--safe-top) + 12px);">
         <div class="flex items-center gap-3 min-w-0">
-          <button id="btn-playlist-back" class="w-10 h-10 rounded-2xl liquid-pill flex items-center justify-center text-white shrink-0">
+          <button id="btn-playlist-back" class="w-10 h-10 rounded-full liquid-pill flex items-center justify-center text-white shrink-0">
             <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
           </button>
           <div class="min-w-0">
@@ -946,40 +1038,47 @@
             <p id="detail-playlist-count" class="text-xs text-white/55 truncate">0 首歌曲</p>
           </div>
         </div>
-        <div class="flex items-center gap-1.5 shrink-0">
+        <div class="flex items-center gap-2 shrink-0">
+          <button id="btn-pl-daily-fortune" class="w-9 h-9 rounded-full liquid-pill flex items-center justify-center text-rose-300 shrink-0" title="今日音乐签" aria-label="今日音乐签">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+          </button>
+          <button id="btn-pl-detail-search" class="w-9 h-9 rounded-full liquid-pill flex items-center justify-center text-white shrink-0" title="搜索" aria-label="搜索">
+            <svg class="w-4 h-4 text-white/90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <circle cx="11" cy="11" r="7" />
+              <path stroke-linecap="round" d="M20 20l-3.5-3.5" />
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <div id="playlist-quick-actions" class="px-4 sm:px-6 pb-2 flex items-center justify-between gap-2 shrink-0">
+        <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar min-w-0">
+          <button id="btn-playlist-play-all" class="liquid-pill px-3 py-1.5 rounded-full text-[11px] font-medium text-white flex items-center gap-1 shrink-0">
+            <svg class="w-3.5 h-3.5 text-sky-300" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            播放全部
+          </button>
+          <button id="btn-playlist-shuffle-all" class="liquid-pill px-3 py-1.5 rounded-full text-[11px] font-medium text-white flex items-center gap-1 shrink-0">
+            <svg class="w-3.5 h-3.5 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+            随心漫步
+          </button>
+          <button id="btn-playlist-add-songs" class="liquid-pill px-3 py-1.5 rounded-full text-[11px] font-medium text-white flex items-center gap-1 shrink-0">
+            <svg class="w-3.5 h-3.5 text-emerald-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+            添加歌曲
+          </button>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
           <button id="btn-playlist-multiselect" class="w-9 h-9 rounded-full liquid-pill flex items-center justify-center text-sky-200 shrink-0" title="多选歌曲" aria-label="多选">
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><path stroke-linecap="round" stroke-linejoin="round" d="M9 11l3 3L22 4"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
           </button>
           <button id="btn-pl-sort" class="w-9 h-9 rounded-full liquid-pill flex items-center justify-center text-white/90 shrink-0" title="歌单排序" aria-label="歌单排序">
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
           </button>
-          <button id="btn-playlist-rename" class="w-9 h-9 rounded-full liquid-pill flex items-center justify-center text-white/85" title="重命名歌单">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-          </button>
-          <button id="btn-playlist-delete" class="w-9 h-9 rounded-full liquid-pill flex items-center justify-center text-rose-300 transition-all" title="删除歌单">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-          </button>
         </div>
-      </header>
-
-      <div id="playlist-quick-actions" class="px-4 sm:px-6 pb-3 flex items-center gap-1.5 sm:gap-2 shrink-0 overflow-x-auto no-scrollbar">
-        <button id="btn-playlist-play-all" class="liquid-pill px-3 py-1.5 rounded-full text-[11px] font-medium text-white flex items-center gap-1 shrink-0">
-          <svg class="w-3.5 h-3.5 text-sky-300" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-          播放全部
-        </button>
-        <button id="btn-playlist-shuffle-all" class="liquid-pill px-3 py-1.5 rounded-full text-[11px] font-medium text-white flex items-center gap-1 shrink-0">
-          <svg class="w-3.5 h-3.5 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
-          随心漫步
-        </button>
-        <button id="btn-playlist-add-songs" class="liquid-pill px-3 py-1.5 rounded-full text-[11px] font-medium text-white flex items-center gap-1 shrink-0">
-          <svg class="w-3.5 h-3.5 text-emerald-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-          添加歌曲
-        </button>
       </div>
       </div>
 
       <!-- Playlist Multi-Select Batch Action Bar -->
-      <div id="playlist-multiselect-bar" class="hidden px-4 sm:px-6 pb-2.5 shrink-0">
+      <div id="playlist-multiselect-bar" class="hidden editing-floating-bar px-4 sm:px-6">
         <div class="liquid-panel rounded-2xl px-3.5 py-2 flex items-center justify-between gap-2">
           <div class="flex items-center gap-2.5 min-w-0">
             <button id="btn-pl-ms-select-all" class="px-2.5 py-1 rounded-lg bg-white/12 hover:bg-white/20 text-xs font-medium text-white shrink-0">全选</button>
@@ -994,14 +1093,14 @@
       </div>
 
       <!-- Custom Order Editing Banner (Playlist) -->
-      <div id="playlist-custom-order-bar" class="hidden px-4 sm:px-6 pb-2.5 shrink-0">
+      <div id="playlist-custom-order-bar" class="hidden editing-floating-bar px-4 sm:px-6">
         <div class="liquid-panel rounded-2xl px-3.5 py-2 flex items-center justify-between gap-2 border border-sky-400/30">
           <span class="text-xs font-medium text-sky-200 truncate">自定义排列 · 轻触右侧 ↑ ↓ 调整歌单顺序</span>
           <button id="btn-pl-order-done" class="px-3 py-1 rounded-lg bg-sky-400 text-xs font-semibold text-zinc-950 shrink-0">完成</button>
         </div>
       </div>
 
-      <div id="playlist-detail-tracks" class="collapsible-scroll-body flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 space-y-2"></div>
+      <div id="playlist-detail-tracks" class="pl-detail-scroll-pad flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 space-y-2"></div>
     </section>
 
     <!-- ==================== VIEW 7: DEDICATED FULL-SCREEN SEARCH ==================== -->
@@ -1076,7 +1175,7 @@
         <div class="flex items-center gap-3">
           <div>
             <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-white">界面 DIY 设置</h1>
-            <p class="text-xs text-white/55">FENG MUSIC v1.0.3 · 壁纸、黑胶形态与玻璃通透度</p>
+            <p class="text-xs text-white/55">FENG MUSIC v1.0.4 · 壁纸、黑胶形态与玻璃通透度</p>
           </div>
         </div>
       </header>
@@ -1902,7 +2001,13 @@
   <!-- 13. Edit Playlist Name & Custom Cover Modal (Long-Press) -->
   <div id="modal-edit-playlist" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-4">
     <div class="liquid-sheet rounded-3xl w-full max-w-sm p-5 space-y-4 border border-white/20">
-      <h3 class="text-base font-bold text-white">编辑歌单信息</h3>
+      <div class="flex items-center justify-between gap-2">
+        <h3 class="text-base font-bold text-white">编辑歌单信息</h3>
+        <button id="btn-edit-pl-delete" class="px-3 py-1.5 rounded-full bg-rose-500/20 hover:bg-rose-500/30 border border-rose-400/30 text-xs font-medium text-rose-300 flex items-center gap-1 transition">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+          <span id="btn-edit-pl-delete-label">删除歌单</span>
+        </button>
+      </div>
       <div class="flex items-center gap-3">
         <img id="edit-pl-cover-preview" src="" alt="" class="w-16 h-16 rounded-2xl object-cover bg-white/10 shrink-0" />
         <div class="flex flex-col gap-2">
@@ -4313,6 +4418,12 @@
         const bar = $('library-multiselect-bar');
         const msBtn = $('btn-lib-multiselect');
         const orderBar = $('library-custom-order-bar');
+        const libView = $('view-library');
+        const libEditing = state.multiSelectMode || (state.libCustomEditing && state.libTab === 'songs');
+        if (libView) {
+          libView.classList.toggle('is-editing-bar', libEditing);
+          if (libEditing) libView.classList.remove('is-scrolled');
+        }
         if (bar) bar.classList.toggle('hidden', !state.multiSelectMode);
         if (orderBar) orderBar.classList.toggle('hidden', !state.libCustomEditing || state.multiSelectMode || state.libTab !== 'songs');
         if (msBtn) {
@@ -4628,8 +4739,8 @@
                   <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
                   <span>播放</span>
                 </button>
-                <button id="btn-album-shuffle" class="py-3 px-4 rounded-full liquid-pill text-sm font-semibold text-white flex items-center justify-center gap-2 active:scale-95 transition">
-                  <svg class="w-4 h-4 text-white/85" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><path stroke-linecap="round" stroke-linejoin="round" d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+                <button id="btn-album-shuffle" class="py-3 px-4 rounded-full bg-sky-400/25 hover:bg-sky-400/35 border border-sky-300/35 backdrop-blur-xl text-sm font-semibold text-white flex items-center justify-center gap-2 active:scale-95 transition">
+                  <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><path stroke-linecap="round" stroke-linejoin="round" d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
                   <span>随机</span>
                 </button>
               </div>
@@ -4710,6 +4821,9 @@
         $('edit-pl-cover-preview').src = fallbackCover;
         $('edit-pl-cover-preview').dataset.pendingCover = pl.cover || '';
         $('input-edit-pl-name').value = pl.name || '';
+        state.editPlDeleteConfirmId = null;
+        const delLbl = $('btn-edit-pl-delete-label');
+        if (delLbl) delLbl.textContent = '删除歌单';
         openCenteredModal('modal-edit-playlist');
       }
 
@@ -4760,7 +4874,7 @@
             ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4'
             : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5';
 
-        grid.className = `collapsible-scroll-body flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 grid ${gridColsClass} content-start`;
+        grid.className = `pl-scroll-pad flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 grid ${gridColsClass} content-start`;
 
         if (!state.playlists.length) {
           grid.innerHTML = `
@@ -4797,8 +4911,17 @@
               return `<img src="${singleCover}" alt="" class="${sizeCls} ${shapeClass} object-cover bg-white/10 shrink-0" />`;
             };
 
+            const wrapSwipe = (innerCard) => `
+              <div data-swipe-pl="${pl.id}" class="pl-swipe-wrap">
+                <div class="pl-swipe-actions">
+                  <button data-swipe-cancel="${pl.id}" class="btn-pl-swipe-cancel px-3 py-2 rounded-full bg-white/15 hover:bg-white/25 text-xs font-medium text-white">取消</button>
+                  <button data-swipe-delete="${pl.id}" class="btn-pl-swipe-delete px-3.5 py-2 rounded-full bg-rose-500 hover:bg-rose-400 text-xs font-semibold text-white shadow-lg">确认删除</button>
+                </div>
+                ${innerCard}
+              </div>`;
+
             if (layout === 'list') {
-              return `
+              return wrapSwipe(`
                 <div data-playlist-id="${pl.id}" class="playlist-card liquid-panel rounded-3xl p-3 flex items-center justify-between gap-2.5 cursor-pointer active:scale-[0.985] transition select-none">
                   <div class="flex items-center gap-3 min-w-0 flex-1">
                     ${renderCover(listImgSize)}
@@ -4816,11 +4939,11 @@
                     </button>
                     <svg class="w-4 h-4 text-white/35 ml-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
                   </div>
-                </div>`;
+                </div>`);
             }
 
             if (size === 'sm') {
-              return `
+              return wrapSwipe(`
                 <div data-playlist-id="${pl.id}" class="playlist-card liquid-panel rounded-3xl p-2 space-y-1.5 cursor-pointer active:scale-[0.98] transition select-none">
                   ${renderCover('w-full aspect-square')}
                   <div class="px-0.5 text-center">
@@ -4835,10 +4958,10 @@
                       <svg class="w-3 h-3 translate-x-[0.5px]" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
                     </button>
                   </div>
-                </div>`;
+                </div>`);
             }
 
-            return `
+            return wrapSwipe(`
               <div data-playlist-id="${pl.id}" class="playlist-card liquid-panel rounded-3xl p-3 space-y-2.5 cursor-pointer active:scale-[0.98] transition select-none">
                 ${renderCover('w-full aspect-square')}
                 <div class="px-0.5 flex items-center justify-between gap-2">
@@ -4855,7 +4978,7 @@
                     </button>
                   </div>
                 </div>
-              </div>`;
+              </div>`);
           })
           .join('');
 
@@ -4920,15 +5043,32 @@
             }, 480);
           }, { passive: true });
 
+          let swipedJustNow = false;
+          const wrapEl = card.closest('.pl-swipe-wrap');
           on(card, 'touchmove', (e) => {
-            if (!pressTimer) return;
             const t = e.touches[0];
-            if (Math.abs(t.clientX - startX) > 10 || Math.abs(t.clientY - startY) > 10) {
+            const dx = t.clientX - startX;
+            const dy = t.clientY - startY;
+            if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
               cancelPress();
+            }
+            if (wrapEl && Math.abs(dx) > 42 && Math.abs(dx) > Math.abs(dy) * 1.4) {
+              swipedJustNow = true;
+              if (dx < -42) {
+                grid.querySelectorAll('.pl-swipe-wrap.is-swiped').forEach((w) => {
+                  if (w !== wrapEl) w.classList.remove('is-swiped');
+                });
+                wrapEl.classList.add('is-swiped');
+              } else if (dx > 36) {
+                wrapEl.classList.remove('is-swiped');
+              }
             }
           }, { passive: true });
 
-          on(card, 'touchend', cancelPress);
+          on(card, 'touchend', () => {
+            cancelPress();
+            if (swipedJustNow) setTimeout(() => { swipedJustNow = false; }, 180);
+          });
           on(card, 'touchcancel', cancelPress);
 
           on(card, 'mousedown', (e) => {
@@ -4949,11 +5089,38 @@
           });
 
           on(card, 'click', () => {
-            if (longPressed) {
+            if (longPressed || swipedJustNow) {
               longPressed = false;
               return;
             }
+            if (wrapEl && wrapEl.classList.contains('is-swiped')) {
+              wrapEl.classList.remove('is-swiped');
+              return;
+            }
             openPlaylistDetail(plId);
+          });
+        });
+
+        grid.querySelectorAll('.btn-pl-swipe-cancel').forEach((btn) => {
+          on(btn, 'click', (e) => {
+            e.stopPropagation();
+            const wrap = btn.closest('.pl-swipe-wrap');
+            if (wrap) wrap.classList.remove('is-swiped');
+          });
+        });
+
+        grid.querySelectorAll('.btn-pl-swipe-delete').forEach((btn) => {
+          on(btn, 'click', async (e) => {
+            e.stopPropagation();
+            const targetId = btn.dataset.swipeDelete;
+            const idx = state.playlists.findIndex((p) => p.id === targetId);
+            if (idx === -1) return;
+            const name = state.playlists[idx].name;
+            state.playlists.splice(idx, 1);
+            await saveAppState();
+            updateSidebarBadges();
+            renderPlaylists();
+            showToast(`已删除歌单「${name}」`);
           });
         });
       }
@@ -4998,6 +5165,8 @@
         const isPlReordering = state.plCustomEditing && (pl.sortMode || 'default') === 'custom' && !state.plMultiSelectMode;
         const plOrderBar = $('playlist-custom-order-bar');
         if (plOrderBar) plOrderBar.classList.toggle('hidden', !isPlReordering || !validTracks.length);
+        const plDVEdit = $('view-playlist-detail');
+        if (plDVEdit) plDVEdit.classList.toggle('is-editing-bar', Boolean(validTracks.length && (state.plMultiSelectMode || isPlReordering)));
 
         if (!validTracks.length) {
           if (state.plMultiSelectMode) exitPlaylistMultiSelectMode(false);
@@ -5483,6 +5652,12 @@
         const bar = $('playlist-multiselect-bar');
         const plQuick = $('playlist-quick-actions');
         const plMsBtn = $('btn-playlist-multiselect');
+        const plDetailView = $('view-playlist-detail');
+        const plEditing = state.plMultiSelectMode || state.plCustomEditing;
+        if (plDetailView) {
+          plDetailView.classList.toggle('is-editing-bar', plEditing);
+          if (plEditing) plDetailView.classList.remove('is-scrolled');
+        }
         if (bar) bar.classList.toggle('hidden', !state.plMultiSelectMode);
         if (plQuick) plQuick.classList.toggle('hidden', state.plMultiSelectMode);
         if (plMsBtn) {
@@ -5523,17 +5698,39 @@
       // =========================================================================
       // DEDICATED SEARCH VIEW (Simultaneously searches Songs, Albums & Artists)
       // =========================================================================
+      function openScopedSearch(playlistId = null) {
+        state.searchScopePlaylistId = playlistId || null;
+        const input = $('search-input');
+        if (input) {
+          input.value = '';
+          if (state.searchScopePlaylistId) {
+            const pl = state.playlists.find((p) => p.id === state.searchScopePlaylistId);
+            input.placeholder = pl ? `在歌单「${pl.name}」内搜索歌曲...` : '在当前歌单内搜索歌曲...';
+          } else {
+            input.placeholder = '同时搜索歌曲、专辑或歌手...';
+          }
+        }
+        switchView('search');
+      }
+
       function renderSearchResults(query) {
         const q = (query || '').trim().toLowerCase();
         $('btn-search-clear').classList.toggle('hidden', !q);
         const container = $('search-results-container');
+        const scopedPl = state.searchScopePlaylistId
+          ? state.playlists.find((p) => p.id === state.searchScopePlaylistId)
+          : null;
 
         if (!q) {
-          container.innerHTML = `<div class="text-center text-xs text-white/45 py-16">输入关键词，即时检索曲库中的歌曲、专辑或歌手</div>`;
+          container.innerHTML = scopedPl
+            ? `<div class="text-center text-xs text-white/45 py-16">输入关键词，仅检索歌单「${escapeHtml(scopedPl.name)}」内的歌曲</div>`
+            : `<div class="text-center text-xs text-white/45 py-16">输入关键词，即时检索曲库中的歌曲、专辑或歌手</div>`;
           return;
         }
 
-        const all = state.tracks.map(getTrackDisplay);
+        const all = scopedPl
+          ? getSortedPlaylistTracks(scopedPl)
+          : state.tracks.map(getTrackDisplay);
         const matchedTracks = all.filter(
           (t) => t.title.toLowerCase().includes(q) || t.artist.toLowerCase().includes(q) || t.album.toLowerCase().includes(q)
         );
@@ -7579,14 +7776,14 @@
               const libView = $('view-library');
               if (libView) {
                 const allowCollapse = !state.multiSelectMode && !state.libCustomEditing;
-                if (allowCollapse && st > 26) libView.classList.add('is-scrolled');
-                else if (st <= 14 || !allowCollapse) libView.classList.remove('is-scrolled');
+                if (allowCollapse && st > 44) libView.classList.add('is-scrolled');
+                else if (st < 18 || !allowCollapse) libView.classList.remove('is-scrolled');
               }
             } else if (scrollId === 'playlists-grid') {
               const plView = $('view-playlists');
               if (plView) {
-                if (st > 26) plView.classList.add('is-scrolled');
-                else if (st <= 14) plView.classList.remove('is-scrolled');
+                if (st > 44) plView.classList.add('is-scrolled');
+                else if (st < 18) plView.classList.remove('is-scrolled');
               }
             }
             if (st <= 10) {
@@ -7683,10 +7880,21 @@
         });
 
         // Library Header & Unified Action Bar
-        on('btn-open-search', () => switchView('search'));
-        on('btn-open-search-compact', () => switchView('search'));
-        on('btn-pl-search-compact', () => switchView('search'));
-        on('btn-pl-detail-search-compact', () => switchView('search'));
+        on('btn-open-search', () => openScopedSearch(null));
+        on('btn-open-search-compact', () => openScopedSearch(null));
+        on('btn-pl-search-compact', () => openScopedSearch(null));
+        on('btn-pl-detail-search-compact', () => openScopedSearch(state.activePlaylistId));
+        on('btn-pl-detail-search', () => openScopedSearch(state.activePlaylistId));
+        on('btn-pl-daily-fortune', () => openDailyFortuneModal(false));
+        on('btn-lib-scroll-top', () => {
+          const targetId = state.libTab === 'albums' ? 'albums-grid' : state.libTab === 'artists' ? 'artists-grid' : 'library-list-container';
+          const box = $(targetId);
+          if (box) box.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        on('btn-pl-scroll-top', () => {
+          const box = $('playlists-grid');
+          if (box) box.scrollTo({ top: 0, behavior: 'smooth' });
+        });
         on('btn-playlist-back-compact', () => {
           resetDeletePlaylistConfirm();
           switchView('playlists');
@@ -7697,8 +7905,8 @@
             const plDetailView = $('view-playlist-detail');
             if (!plDetailView) return;
             const allowCollapse = !state.plMultiSelectMode && !state.plCustomEditing;
-            if (allowCollapse && plDetailListEl.scrollTop > 26) plDetailView.classList.add('is-scrolled');
-            else if (plDetailListEl.scrollTop <= 14 || !allowCollapse) plDetailView.classList.remove('is-scrolled');
+            if (allowCollapse && plDetailListEl.scrollTop > 44) plDetailView.classList.add('is-scrolled');
+            else if (plDetailListEl.scrollTop < 18 || !allowCollapse) plDetailView.classList.remove('is-scrolled');
           }, { passive: true });
         }
         on('btn-daily-fortune', () => openDailyFortuneModal(false));
@@ -8479,7 +8687,7 @@
           };
           const backupObj = {
             app: 'FENG MUSIC',
-            version: '1.0.3',
+            version: '1.0.4',
             exportedAt: new Date().toISOString(),
             trackManifest,
             playlists: state.playlists,
@@ -8824,6 +9032,30 @@
           $('edit-pl-cover-preview').dataset.pendingCover = '';
         });
         on('btn-edit-pl-cancel', closeAllBottomSheets);
+        on('btn-edit-pl-delete', async () => {
+          const plId = state.editingPlaylistId;
+          const idx = state.playlists.findIndex((p) => p.id === plId);
+          if (idx === -1) return;
+          if (state.editPlDeleteConfirmId !== plId) {
+            state.editPlDeleteConfirmId = plId;
+            const lbl = $('btn-edit-pl-delete-label');
+            if (lbl) lbl.textContent = '确认删除';
+            showToast('再次点击右上角「确认删除」以移除该歌单');
+            return;
+          }
+          const name = state.playlists[idx].name;
+          state.playlists.splice(idx, 1);
+          state.editPlDeleteConfirmId = null;
+          await saveAppState();
+          updateSidebarBadges();
+          closeAllBottomSheets();
+          if (state.activeView === 'playlist-detail' && state.activePlaylistId === plId) {
+            switchView('playlists');
+          } else {
+            renderPlaylists();
+          }
+          showToast(`已删除歌单「${name}」`);
+        });
         on('btn-edit-pl-save', async () => {
           const pl = state.playlists.find((p) => p.id === state.editingPlaylistId);
           if (!pl) return;
