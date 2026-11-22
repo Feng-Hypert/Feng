@@ -46,7 +46,10 @@ jobs:
           npx tailwindcss -i tailwind.input.css -o www/app.css --content ./www/index.html --minify
           node -e 'const fs=require("fs"); let h=fs.readFileSync("www/index.html","utf8"); h=h.replace(/<!-- TAILWIND_CDN_TAG -->[\s\S]*?<!-- \/TAILWIND_CDN_TAG -->/, "<link rel=\"stylesheet\" href=\"./app.css\" />"); fs.writeFileSync("www/index.html",h,"utf8");'
           npx cap add android
-          command -v convert >/dev/null 2>&1 || { echo "ERROR: ImageMagick convert is required for Android adaptive icon generation"; exit 1; }
+          if ! command -v convert >/dev/null 2>&1; then
+                      sudo apt-get update && sudo apt-get install -y imagemagick
+                                fi
+                                command -v convert >/dev/null 2>&1 || { echo "ERROR: ImageMagick convert is required for Android adaptive icon generation"; exit 1; }
           for spec in "mdpi:48:108" "hdpi:72:162" "xhdpi:96:216" "xxhdpi:144:324" "xxxhdpi:192:432"; do
             IFS=':' read -r dens legacy adapt <<< "$spec"
             dir="android/app/src/main/res/mipmap-$dens"
