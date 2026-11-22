@@ -46,20 +46,37 @@ jobs:
           npx tailwindcss -i tailwind.input.css -o www/app.css --content ./www/index.html --minify
           node -e 'const fs=require("fs"); let h=fs.readFileSync("www/index.html","utf8"); h=h.replace(/<!-- TAILWIND_CDN_TAG -->[\s\S]*?<!-- \/TAILWIND_CDN_TAG -->/, "<link rel=\"stylesheet\" href=\"./app.css\" />"); fs.writeFileSync("www/index.html",h,"utf8");'
           npx cap add android
-          for dir in mipmap-mdpi mipmap-hdpi mipmap-xhdpi mipmap-xxhdpi mipmap-xxxhdpi; do
-            mkdir -p "android/app/src/main/res/$dir"
-            cp icon-512.png "android/app/src/main/res/$dir/ic_launcher.png"
-            cp icon-512.png "android/app/src/main/res/$dir/ic_launcher_round.png"
-            cp icon-512.png "android/app/src/main/res/$dir/ic_launcher_foreground.png"
+          command -v convert >/dev/null 2>&1 || { echo "ERROR: ImageMagick convert is required for Android adaptive icon generation"; exit 1; }
+          for spec in "mdpi:48:108" "hdpi:72:162" "xhdpi:96:216" "xxhdpi:144:324" "xxxhdpi:192:432"; do
+            IFS=':' read -r dens legacy adapt <<< "$spec"
+            dir="android/app/src/main/res/mipmap-$dens"
+            mkdir -p "$dir"
+            convert icon-512.png -resize "${legacy}x${legacy}" "$dir/ic_launcher.png"
+            convert icon-512.png -resize "${legacy}x${legacy}" "$dir/ic_launcher_round.png"
+            convert -size "${adapt}x${adapt}" "gradient:#D1F2F5-#FFFFFF" "$dir/ic_launcher_background.png"
+            fg=$(( adapt * 66 / 100 ))
+            convert -size "${adapt}x${adapt}" xc:none \( icon-512.png -resize "${fg}x${fg}" \) -gravity center -composite "$dir/ic_launcher_foreground.png"
           done
+          mkdir -p android/app/src/main/res/mipmap-anydpi-v26
+          cat << 'XMLEOF' > android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@mipmap/ic_launcher_background" />
+              <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+          </adaptive-icon>
+          XMLEOF
+          cp android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
 
       - name: Inject Android Folder & MediaStore Bridge (SAF + MediaStore + Batch Import)
         env:
           BUNDLE_ID: ${{ inputs.bundle_id || 'com.feng.music' }}
         run: |
-          # 1. Add androidx.documentfile dependency to android/app/build.gradle
+          # 1. Add androidx.documentfile and androidx.core dependencies to android/app/build.gradle
           if ! grep -q "androidx.documentfile:documentfile" android/app/build.gradle; then
             sed -i '/dependencies {/a\    implementation "androidx.documentfile:documentfile:1.0.1"' android/app/build.gradle
+          fi
+          if ! grep -q "androidx.core:core:" android/app/build.gradle; then
+            sed -i '/dependencies {/a\    implementation "androidx.core:core:1.13.1"' android/app/build.gradle
           fi
 
           # 2. Add MediaStore audio permissions to AndroidManifest.xml (no MANAGE_EXTERNAL_STORAGE)
@@ -86,6 +103,8 @@ jobs:
           import android.database.Cursor;
           import android.graphics.Bitmap;
           import android.graphics.BitmapFactory;
+          import android.graphics.Color;
+          import android.view.View;
           import android.media.MediaMetadataRetriever;
           import android.net.Uri;
           import android.os.Build;
@@ -100,6 +119,11 @@ jobs:
           import androidx.activity.result.ActivityResultLauncher;
           import androidx.activity.result.contract.ActivityResultContracts;
           import androidx.core.content.ContextCompat;
+          import androidx.core.graphics.Insets;
+          import androidx.core.view.ViewCompat;
+          import androidx.core.view.WindowCompat;
+          import androidx.core.view.WindowInsetsCompat;
+          import androidx.core.view.WindowInsetsControllerCompat;
           import androidx.documentfile.provider.DocumentFile;
 
           import com.getcapacitor.BridgeActivity;
@@ -168,9 +192,50 @@ jobs:
                   }
               }
 
+              private volatile int lastInsetTopPx = 0;
+              private volatile int lastInsetBottomPx = 0;
+
+              private void pushSystemInsetsToWeb() {
+                  if (destroyedFlag) return;
+                  final int top = lastInsetTopPx;
+                  final int bottom = lastInsetBottomPx;
+                  final String js = "window.__fengSetSystemInsets && window.__fengSetSystemInsets(" + top + "," + bottom + ");";
+                  runOnUiThread(() -> {
+                      try {
+                          if (getBridge() != null && getBridge().getWebView() != null) {
+                              getBridge().getWebView().evaluateJavascript(js, null);
+                          }
+                      } catch (Exception ignored) {}
+                  });
+              }
+
               @Override
               public void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
+
+                  WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+                  getWindow().setStatusBarColor(Color.TRANSPARENT);
+                  getWindow().setNavigationBarColor(Color.TRANSPARENT);
+                  if (Build.VERSION.SDK_INT >= 29) {
+                      getWindow().setNavigationBarContrastEnforced(false);
+                  }
+                  WindowInsetsControllerCompat insetsController =
+                      WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+                  if (insetsController != null) {
+                      insetsController.setAppearanceLightStatusBars(true);
+                      insetsController.setAppearanceLightNavigationBars(true);
+                  }
+                  View decorView = getWindow().getDecorView();
+                  ViewCompat.setOnApplyWindowInsetsListener(decorView, (v, windowInsets) -> {
+                      Insets bars = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
+                      float density = getResources().getDisplayMetrics().density;
+                      if (density <= 0f) density = 1f;
+                      lastInsetTopPx = Math.round(bars.top / density);
+                      lastInsetBottomPx = Math.round(bars.bottom / density);
+                      pushSystemInsetsToWeb();
+                      return windowInsets;
+                  });
+                  ViewCompat.requestApplyInsets(decorView);
 
                   folderPickerLauncher = registerForActivityResult(
                       new ActivityResultContracts.OpenDocumentTree(),
@@ -196,6 +261,13 @@ jobs:
                   if (getBridge() != null && getBridge().getWebView() != null) {
                       getBridge().getWebView().addJavascriptInterface(new FengFolderJsBridge(), "FengAndroidBridge");
                   }
+              }
+
+              @Override
+              public void onResume() {
+                  super.onResume();
+                  pushSystemInsetsToWeb();
+                  getWindow().getDecorView().postDelayed(this::pushSystemInsetsToWeb, 500);
               }
 
               @Override
@@ -864,7 +936,7 @@ jobs:
       - name: Stamp Build Version
         run: |
           PLIST="ios/App/App/Info.plist"
-          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0.5" "$PLIST" || /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string 1.0.5" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0.6" "$PLIST" || /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string 1.0.6" "$PLIST"
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${{ github.run_number }}" "$PLIST" || /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string ${{ github.run_number }}" "$PLIST"
 
       - name: Enable Native iOS AVPlayer, Lock Screen Controls, UITabBar Liquid Glass Dock & Security-Scoped Bookmarks
@@ -2287,7 +2359,7 @@ jobs:
             <key>CFBundlePackageType</key>
             <string>XPC!</string>
             <key>CFBundleShortVersionString</key>
-            <string>1.0.5</string>
+            <string>1.0.6</string>
             <key>CFBundleVersion</key>
             <string>${BUILD_NUM}</string>
             <key>FengAppGroup</key>
