@@ -1203,14 +1203,14 @@ jobs:
           import UniformTypeIdentifiers
           import WidgetKit
 
-          final class FengRemoteMediaBridge: NSObject, WKScriptMessageHandler, UITabBarDelegate, UIDocumentPickerDelegate, UIAdaptivePresentationControllerDelegate {
+          final class FengRemoteMediaBridge: NSObject, WKScriptMessageHandler, UITabBarDelegate, UIDocumentPickerDelegate {
               static let shared = FengRemoteMediaBridge()
               private var isConfigured = false
               private var isAttached = false
               weak var webView: WKWebView?
 
               // Keep strong reference to active picker & security-scoped folder URLs across app lifecycle
-              private var activeFolderPicker: UIDocumentPickerViewController?
+              private weak var activeFolderPicker: UIDocumentPickerViewController?
               private var isExportingDocument = false
               private var isPickingAudioFiles = false
               private var activeScopedURLs: [String: URL] = [:]
@@ -1678,7 +1678,6 @@ jobs:
                       if #available(iOS 14.0, *) {
                           let picker = UIDocumentPickerViewController(forExporting: [tmpURL], asCopy: true)
                           picker.delegate = self
-                          picker.presentationController?.delegate = self
                           self.isExportingDocument = true
                           presenter.present(picker, animated: true, completion: nil)
                       } else {
@@ -1707,12 +1706,12 @@ jobs:
                           return
                       }
                       if #available(iOS 14.0, *) {
-                          // iOS requires the 1-argument init(forOpeningContentTypes:) without asCopy for .folder;
-                          // passing asCopy: false or mutating file-only flags breaks the "Open" button in DOCRemoteViewController.
+                          // Never overwrite picker.presentationController?.delegate on UIDocumentPickerViewController,
+                          // which hijacks DOCRemoteViewController's internal dismissal handler on iOS 16-26.
                           let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.folder])
+                          picker.allowsMultipleSelection = false
                           picker.delegate = self
-                          picker.presentationController?.delegate = self
-                          picker.modalPresentationStyle = .formSheet
+                          picker.modalPresentationStyle = .overFullScreen
                           self.isExportingDocument = false
                           self.isPickingAudioFiles = false
                           self.activeFolderPicker = picker
@@ -1748,7 +1747,6 @@ jobs:
                           if let lrc = UTType(filenameExtension: "lrc") { types.append(lrc) }
                           let picker = UIDocumentPickerViewController(forOpeningContentTypes: types, asCopy: true)
                           picker.delegate = self
-                          picker.presentationController?.delegate = self
                           picker.allowsMultipleSelection = true
                           picker.shouldShowFileExtensions = true
                           self.isExportingDocument = false
@@ -1768,12 +1766,6 @@ jobs:
                   }
               }
 
-              func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
-                  self.activeFolderPicker = nil
-                  self.isExportingDocument = false
-                  self.isPickingAudioFiles = false
-              }
-
               func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
                   self.activeFolderPicker = nil
                   if isExportingDocument {
@@ -1790,6 +1782,9 @@ jobs:
 
               func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
                   self.activeFolderPicker = nil
+                  if controller.presentingViewController != nil {
+                      controller.dismiss(animated: true, completion: nil)
+                  }
                   if isExportingDocument {
                       isExportingDocument = false
                       reportExportResult(true)
@@ -1814,7 +1809,7 @@ jobs:
                   activeScopedURLs[canonicalKey] = pickedURL
 
                   if let bookmarkData = try? pickedURL.bookmarkData(
-                      options: [],
+                      options: .minimalBookmark,
                       includingResourceValuesForKeys: nil,
                       relativeTo: nil
                   ) {
@@ -1895,7 +1890,7 @@ jobs:
                           _ = resolvedURL.startAccessingSecurityScopedResource()
                           activeScopedURLs[canonicalPath] = resolvedURL
                           if isStale,
-                             let freshData = try? resolvedURL.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil) {
+                             let freshData = try? resolvedURL.bookmarkData(options: .minimalBookmark, includingResourceValuesForKeys: nil, relativeTo: nil) {
                               updatedDict[key] = freshData
                               didRefreshStale = true
                           }
