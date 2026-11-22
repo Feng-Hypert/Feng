@@ -72,7 +72,7 @@
       bottom: calc(var(--safe-bottom) + 12px) !important;
     }
     html.dock-collapsed #mini-player-wrapper {
-      padding-left: 84px !important;
+      padding-left: 78px !important;
       padding-right: 14px !important;
       bottom: calc(var(--safe-bottom) + 10px) !important;
     }
@@ -90,20 +90,39 @@
       display: none;
     }
     html.dock-collapsed #bottom-tab-dock {
-      width: 74px;
+      width: auto;
+      left: 14px;
       right: auto;
-      padding-left: 14px;
+      padding-left: 0;
       padding-right: 0;
+    }
+    html.dock-collapsed #bottom-tab-dock > .liquid-dock {
+      width: 54px;
+      height: 54px;
+      padding: 0;
+      border-radius: 9999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     html.dock-collapsed #bottom-tab-dock .dock-nav-btn:not(.is-active-tab) {
       display: none;
     }
+    html.dock-collapsed #bottom-tab-dock .dock-nav-btn.is-active-tab {
+      width: 100%;
+      height: 100%;
+      padding: 0;
+      border-radius: 9999px;
+      background: transparent;
+      color: #38bdf8;
+    }
+    html.dock-collapsed #bottom-tab-dock .dock-nav-btn.is-active-tab svg {
+      width: 20px;
+      height: 20px;
+      margin-bottom: 0;
+    }
     html.dock-collapsed #bottom-tab-dock .dock-nav-btn.is-active-tab span {
       display: none;
-    }
-    html.dock-collapsed #bottom-tab-dock .grid-cols-4 {
-      grid-template-columns: repeat(1, minmax(0, 1fr));
-      padding: 0.35rem;
     }
 
     * {
@@ -3410,6 +3429,11 @@
             trk.hasEmbeddedCover = true;
             dirty = true;
           }
+          const nextLrc = (item.lrc || '').trim();
+          if (nextLrc && (!trk.lrc || trk.lrc.trim().length < nextLrc.length)) {
+            trk.lrc = nextLrc;
+            dirty = true;
+          }
           if (dirty) {
             await dbPut('tracks', toStorableTrackRecord(trk));
             changed = true;
@@ -3425,6 +3449,10 @@
               $('np-cover-img-disc').src = disp.cover;
               $('np-cover-ambient-glow').src = disp.cover;
               updateAuroraColorsFromCover(disp.cover);
+              if (nextLrc) {
+                state.parsedLyrics = parseLrcText(disp.lrc);
+                renderLyricsList();
+              }
             }
           }
         }
