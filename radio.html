@@ -38,25 +38,7 @@
       --safe-top: max(env(safe-area-inset-top, 0px), 47px);
     }
 
-    /* Android-only consolidated import entry visibility */
-    #btn-scan-music-android,
-    #android-scan-hint {
-      display: none;
-    }
-    html.is-native-android #btn-scan-music-android,
-    body.is-native-android #btn-scan-music-android {
-      display: flex;
-    }
-    html.is-native-android #android-scan-hint,
-    body.is-native-android #android-scan-hint {
-      display: block;
-    }
-    html.is-native-android #btn-scan-mediastore,
-    body.is-native-android #btn-scan-mediastore,
-    html.is-native-android #btn-diy-native-scan,
-    body.is-native-android #btn-diy-native-scan,
-    html.is-native-android #btn-diy-rescan,
-    body.is-native-android #btn-diy-rescan,
+    /* Android-only duplicate rescan entry suppression */
     html.is-native-android #btn-settings-rescan,
     body.is-native-android #btn-settings-rescan,
     html.is-native-android #btn-sheet-rescan,
@@ -1337,41 +1319,26 @@
           </div>
         </div>
 
-        <!-- 5. Tools, White Noise, Rescan & Backup -->
-        <div class="liquid-panel rounded-3xl p-4 space-y-2.5">
+        <!-- 5. Tools & White Noise (4 Clean Modules) -->
+        <div class="liquid-panel rounded-3xl p-4 space-y-3">
           <div>
             <h2 class="text-sm font-semibold text-white">实用工具与白噪音</h2>
-            <p class="text-xs text-white/50">白噪音混音台、内嵌封面识别与数据备份</p>
           </div>
-          <div class="grid grid-cols-2 gap-2">
-            <button id="btn-diy-open-whitenoise" class="liquid-pill py-2.5 px-3 rounded-2xl text-xs font-medium text-teal-200 flex items-center justify-center gap-1.5">
+          <div class="grid grid-cols-2 gap-2.5">
+            <button id="btn-diy-open-whitenoise" class="liquid-pill py-3 px-3 rounded-2xl text-xs font-medium text-teal-200 flex items-center justify-center gap-1.5">
               <span>白噪音空间</span>
               <span id="diy-wn-badge" class="hidden px-1.5 py-0.5 rounded-full bg-teal-400/25 text-[10px] tabular-nums">0</span>
             </button>
-            <button id="btn-diy-import" class="liquid-pill py-2.5 px-3 rounded-2xl text-xs font-medium text-sky-200 flex items-center justify-center gap-1.5">
-              <span>+ 添加我的音乐</span>
-            </button>
-            <button id="btn-diy-rescan" class="liquid-pill py-2.5 px-3 rounded-2xl text-xs font-medium text-emerald-200 flex items-center justify-center gap-1.5">
-              <span>重扫内嵌元数据</span>
-            </button>
-            <button id="btn-diy-backup" class="liquid-pill py-2.5 px-3 rounded-2xl text-xs font-medium text-white/85 flex items-center justify-center gap-1.5">
+            <button id="btn-diy-backup" class="liquid-pill py-3 px-3 rounded-2xl text-xs font-medium text-white/85 flex items-center justify-center gap-1.5">
               <span>备份与部署指南</span>
             </button>
+            <button id="btn-diy-add-ios" class="liquid-pill py-3 px-3 rounded-2xl text-xs font-medium text-sky-200 flex items-center justify-center gap-1.5">
+              <span>iPhone 添加音乐</span>
+            </button>
+            <button id="btn-diy-add-android" class="liquid-pill py-3 px-3 rounded-2xl text-xs font-medium text-emerald-200 flex items-center justify-center gap-1.5">
+              <span>Android 添加音乐</span>
+            </button>
           </div>
-          <button id="btn-pick-native-folder" class="hidden w-full py-2.5 px-3 rounded-2xl bg-sky-500/20 hover:bg-sky-500/30 text-xs font-medium text-sky-200 flex items-center justify-center gap-2 transition">
-            <span>+ 关联音乐文件夹（持久化授权）</span>
-          </button>
-          <button id="btn-scan-music-android" class="w-full py-3 px-4 rounded-2xl bg-sky-400/25 hover:bg-sky-400/35 border border-sky-300/35 text-xs font-semibold text-white items-center justify-center gap-2 shadow-sm active:scale-[0.98] transition disabled:opacity-50 disabled:pointer-events-none">
-            <span>扫描音乐</span>
-          </button>
-          <p id="android-scan-hint" class="text-[11px] leading-relaxed text-white/50 px-1">扫描本机音乐并补齐封面；外置 .lrc 歌词会从已关联的文件夹自动配对。</p>
-          <button id="btn-scan-mediastore" class="hidden w-full py-2.5 px-3 rounded-2xl bg-indigo-500/20 hover:bg-indigo-500/30 text-xs font-medium text-indigo-200 flex items-center justify-center gap-2 transition">
-            <span>扫描本机音乐库</span>
-          </button>
-          <button id="btn-diy-native-scan" class="hidden w-full py-2.5 px-3 rounded-2xl bg-teal-500/20 hover:bg-teal-500/30 text-xs font-medium text-teal-200 flex items-center justify-center gap-2 transition">
-            <span>立即扫描 iOS FENG MUSIC 文件夹</span>
-          </button>
-          <div id="bound-folders-container" class="hidden space-y-2 pt-2 border-t border-white/10"></div>
         </div>
       </div>
     </section>
@@ -2077,38 +2044,75 @@
     </div>
   </div>
 
-  <!-- 14. Add My Music Source Sheet (Salt Player Style: Folder vs Files) -->
-  <div id="sheet-add-music" class="fixed left-0 right-0 bottom-0 z-50 liquid-sheet rounded-t-[32px] translate-y-full transition-transform duration-300 max-w-xl mx-auto p-5 space-y-4" style="padding-bottom: calc(var(--safe-bottom) + 22px);">
+  <!-- 14A. iPhone Add Music Sheet (单曲/歌词 + FENG MUSIC) -->
+  <div id="sheet-add-music-ios" class="fixed left-0 right-0 bottom-0 z-50 liquid-sheet rounded-t-[32px] translate-y-full transition-transform duration-300 max-w-xl mx-auto p-5 space-y-4" style="padding-bottom: calc(var(--safe-bottom) + 22px);">
     <div class="w-10 h-1 rounded-full bg-white/25 mx-auto"></div>
     <div class="flex items-center justify-between">
       <div>
-        <h3 class="text-lg font-bold text-white">添加我的音乐</h3>
-        <p class="text-xs text-white/55 mt-0.5">选择一种添加方式 · 不会复制或修改原始文件</p>
+        <h3 class="text-lg font-bold text-white">iPhone 添加音乐</h3>
+        <p class="text-xs text-white/55 mt-0.5">批量永久入库或扫描应用专属目录</p>
       </div>
       <button class="btn-close-sheets w-8 h-8 rounded-full bg-white/12 flex items-center justify-center text-white/80 text-xs">✕</button>
     </div>
 
     <div class="grid grid-cols-2 gap-3 pt-1">
-      <button id="btn-add-source-folder" class="liquid-panel rounded-3xl p-4 text-left space-y-3 hover:bg-white/15 active:scale-[0.98] transition border border-sky-400/25">
+      <button id="btn-ios-add-files" class="liquid-panel rounded-3xl p-4 text-left space-y-3 hover:bg-white/15 active:scale-[0.98] transition border border-sky-400/25">
         <div class="w-11 h-11 rounded-2xl bg-sky-500/25 border border-sky-400/35 flex items-center justify-center text-sky-300">
-          <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
-        </div>
-        <div class="space-y-1">
-          <div class="text-sm font-bold text-white">文件夹</div>
-          <p class="text-[11px] text-white/55 leading-relaxed">从文件 App 或 iCloud Drive 选择音乐文件夹并持久化关联</p>
-        </div>
-      </button>
-
-      <button id="btn-add-source-files" class="liquid-panel rounded-3xl p-4 text-left space-y-3 hover:bg-white/15 active:scale-[0.98] transition">
-        <div class="w-11 h-11 rounded-2xl bg-emerald-500/25 border border-emerald-400/35 flex items-center justify-center text-emerald-300">
           <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z"/></svg>
         </div>
         <div class="space-y-1">
           <div class="text-sm font-bold text-white">单曲 / 歌词</div>
-          <p class="text-[11px] text-white/55 leading-relaxed">批量选取音频（MP3 / FLAC / M4A）与 .lrc 永久入库，重启不丢失</p>
+          <p class="text-[11px] text-white/55 leading-relaxed">批量选取 MP3 / FLAC / M4A 与 .lrc 永久入库，重启不丢失</p>
+        </div>
+      </button>
+
+      <button id="btn-ios-scan-docs" class="liquid-panel rounded-3xl p-4 text-left space-y-3 hover:bg-white/15 active:scale-[0.98] transition border border-teal-400/25">
+        <div class="w-11 h-11 rounded-2xl bg-teal-500/25 border border-teal-400/35 flex items-center justify-center text-teal-300">
+          <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
+        </div>
+        <div class="space-y-1">
+          <div class="text-sm font-bold text-white">FENG MUSIC</div>
+          <p class="text-[11px] text-white/55 leading-relaxed">扫描「我的 iPhone → FENG MUSIC」文件夹内的歌曲与歌词</p>
         </div>
       </button>
     </div>
+  </div>
+
+  <!-- 14B. Android Add Music Sheet (扫描音乐 + 关联文件夹) -->
+  <div id="sheet-add-music-android" class="fixed left-0 right-0 bottom-0 z-50 liquid-sheet rounded-t-[32px] translate-y-full transition-transform duration-300 max-w-xl mx-auto p-5 space-y-4 max-h-[82vh] overflow-y-auto no-scrollbar" style="padding-bottom: calc(var(--safe-bottom) + 22px);">
+    <div class="w-10 h-1 rounded-full bg-white/25 mx-auto"></div>
+    <div class="flex items-center justify-between">
+      <div>
+        <h3 class="text-lg font-bold text-white">Android 添加音乐</h3>
+        <p class="text-xs text-white/55 mt-0.5">扫描本机曲库或持久化关联音乐文件夹</p>
+      </div>
+      <button class="btn-close-sheets w-8 h-8 rounded-full bg-white/12 flex items-center justify-center text-white/80 text-xs">✕</button>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3 pt-1">
+      <button id="btn-scan-music-android" class="liquid-panel rounded-3xl p-4 text-left space-y-3 hover:bg-white/15 active:scale-[0.98] transition border border-emerald-400/25 disabled:opacity-50 disabled:pointer-events-none">
+        <div class="w-11 h-11 rounded-2xl bg-emerald-500/25 border border-emerald-400/35 flex items-center justify-center text-emerald-300">
+          <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"/></svg>
+        </div>
+        <div class="space-y-1">
+          <div class="text-sm font-bold text-white"><span class="scan-btn-label">扫描音乐</span></div>
+          <p class="text-[11px] text-white/55 leading-relaxed">扫描本机音频并自动补齐封面与内嵌 LRC 歌词</p>
+        </div>
+      </button>
+
+      <button id="btn-android-bind-folder" class="liquid-panel rounded-3xl p-4 text-left space-y-3 hover:bg-white/15 active:scale-[0.98] transition border border-sky-400/25">
+        <div class="w-11 h-11 rounded-2xl bg-sky-500/25 border border-sky-400/35 flex items-center justify-center text-sky-300">
+          <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
+        </div>
+        <div class="space-y-1">
+          <div class="text-sm font-bold text-white">关联文件夹</div>
+          <p class="text-[11px] text-white/55 leading-relaxed">持久化授权音乐目录，自动配对外置 .lrc 歌词</p>
+        </div>
+      </button>
+    </div>
+
+    <p class="text-[11px] leading-relaxed text-white/45 px-1">扫描本机音乐并补齐封面与内嵌歌词；外置 .lrc 歌词会从已关联的文件夹自动配对。</p>
+    <div id="bound-folders-container" class="hidden space-y-2 pt-2 border-t border-white/10"></div>
   </div>
 
   <!-- 15. Shared Sort Mode Sheet (Library & Playlist) -->
@@ -2228,8 +2232,8 @@
         const btn = $('btn-scan-music-android');
         if (btn) {
           btn.disabled = state.androidScanning;
-          const span = btn.querySelector('span');
-          if (span) span.textContent = state.androidScanning ? '正在扫描音乐...' : '扫描音乐';
+          const span = btn.querySelector('.scan-btn-label') || btn.querySelector('span');
+          if (span) span.textContent = state.androidScanning ? '正在扫描...' : '扫描音乐';
         }
         if (androidUnifiedScanTimer) {
           clearTimeout(androidUnifiedScanTimer);
@@ -4820,11 +4824,7 @@
               <button id="btn-empty-import" class="px-5 py-2.5 rounded-full bg-white text-zinc-950 text-xs font-semibold shadow-lg active:scale-95 transition">添加我的音乐</button>
             </div>`;
           on('btn-empty-import', () => {
-            if (hasAndroidFolderBridge()) {
-              triggerAndroidUnifiedScan();
-            } else {
-              openAddMusicSheet();
-            }
+            openAddMusicSheet();
           });
           return;
         }
@@ -7367,7 +7367,7 @@
       // =========================================================================
       function closeAllBottomSheets(skipDockSync = false) {
         modalBackdrop.classList.add('opacity-0', 'pointer-events-none');
-        ['sheet-np-settings', 'sheet-track-actions', 'sheet-queue', 'sheet-pick-playlist', 'sheet-playlist-layout', 'sheet-add-music', 'sheet-sort-menu'].forEach((id) => {
+        ['sheet-np-settings', 'sheet-track-actions', 'sheet-queue', 'sheet-pick-playlist', 'sheet-playlist-layout', 'sheet-add-music-ios', 'sheet-add-music-android', 'sheet-sort-menu'].forEach((id) => {
           const el = $(id);
           if (el) el.classList.add('translate-y-full');
         });
@@ -7980,8 +7980,18 @@
       // =========================================================================
       // ADD MUSIC SHEET & IMPORT / RE-SCAN EMBEDDED METADATA
       // =========================================================================
-      function openAddMusicSheet() {
-        openBottomSheet('sheet-add-music');
+      function detectAddMusicPlatform() {
+        if (hasAndroidFolderBridge()) return 'android';
+        if (hasIosFolderBridge() || hasNativeDockBridge()) return 'ios';
+        const ua = navigator.userAgent || '';
+        if (/Android/i.test(ua)) return 'android';
+        if (/iP(hone|ad|od)/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return 'ios';
+        return 'ios';
+      }
+
+      function openAddMusicSheet(forcePlatform = null) {
+        const target = forcePlatform || detectAddMusicPlatform();
+        openBottomSheet(target === 'android' ? 'sheet-add-music-android' : 'sheet-add-music-ios');
       }
 
       async function triggerFolderImportAction() {
@@ -8478,23 +8488,36 @@
           }
         });
         on('btn-ms-cancel', () => exitMultiSelectMode(true));
-        on('btn-add-source-folder', () => triggerFolderImportAction());
-        on('btn-add-source-files', () => {
+        // iPhone Add Music Sheet Actions
+        on('btn-ios-add-files', () => {
           closeAllBottomSheets();
           triggerMusicImport();
         });
+        on('btn-ios-scan-docs', async () => {
+          closeAllBottomSheets();
+          if (isCapacitorNative()) {
+            await scanNativeDocumentsFolder(true);
+          } else {
+            showToast('请将音乐放入「我的 iPhone → FENG MUSIC」并在 iOS App 内扫描');
+          }
+        });
 
-        // DIY Tools & White Noise Entry
+        // Android Add Music Sheet Actions
+        on('btn-android-bind-folder', () => {
+          if (hasAndroidFolderBridge() || typeof window.showDirectoryPicker === 'function') {
+            triggerFolderImportAction();
+          } else {
+            closeAllBottomSheets();
+            showToast('请在安卓客户端中使用「关联文件夹」');
+          }
+        });
+
+        // DIY Tools & White Noise Entry (4 Modules)
         on('btn-diy-open-whitenoise', () => switchView('whitenoise'));
         on('btn-wn-back', () => switchView('diy'));
-        on('btn-diy-import', () => openAddMusicSheet());
-        on('btn-diy-native-scan', async () => {
-          await scanNativeDocumentsFolder(true);
-        });
-        on('btn-diy-rescan', async () => {
-          await rescanTracksMetadata();
-        });
         on('btn-diy-backup', () => openCenteredModal('modal-backup-guide'));
+        on('btn-diy-add-ios', () => openAddMusicSheet('ios'));
+        on('btn-diy-add-android', () => openAddMusicSheet('android'));
 
         on('relink-file-input', 'change', async (e) => {
           await relinkLocalFiles(e.target.files);
@@ -9658,7 +9681,13 @@
           triggerFolderImportAction();
         });
         on('btn-scan-music-android', () => {
-          triggerAndroidUnifiedScan();
+          if (hasAndroidFolderBridge()) {
+            closeAllBottomSheets();
+            triggerAndroidUnifiedScan();
+          } else {
+            closeAllBottomSheets();
+            showToast('请在安卓客户端中使用「扫描音乐」');
+          }
         });
         on('btn-scan-mediastore', () => {
           postFolderMessage({ action: 'scanMediaStore' });
