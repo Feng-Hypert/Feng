@@ -190,29 +190,47 @@
       transition: background 1.2s ease;
     }
 
-    /* Liquid Glass Surfaces */
+    /* iOS 26 Clear Liquid Glass Surfaces (All Cards) */
     .liquid-panel {
       background: linear-gradient(
-        145deg,
-        rgba(255, 255, 255, calc(var(--glass-alpha) + 0.04)),
-        rgba(255, 255, 255, calc(var(--glass-alpha) * 0.65))
+        165deg,
+        rgba(255, 255, 255, calc(var(--glass-alpha) * 0.48 + 0.02)) 0%,
+        rgba(255, 255, 255, calc(var(--glass-alpha) * 0.14)) 52%,
+        rgba(255, 255, 255, calc(var(--glass-alpha) * 0.28 + 0.01)) 100%
       );
-      backdrop-filter: blur(28px) saturate(185%);
-      -webkit-backdrop-filter: blur(28px) saturate(185%);
-      border: 1px solid rgba(255, 255, 255, var(--glass-border));
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24), 0 10px 30px rgba(0, 0, 0, 0.28);
+      backdrop-filter: blur(2.5px) saturate(165%) brightness(1.08) contrast(1.03);
+      -webkit-backdrop-filter: blur(2.5px) saturate(165%) brightness(1.08) contrast(1.03);
+      border: 1px solid rgba(255, 255, 255, 0.24);
+      border-top-color: rgba(255, 255, 255, 0.50);
+      border-bottom-color: rgba(255, 255, 255, 0.16);
+      box-shadow:
+        inset 0 1px 0.5px rgba(255, 255, 255, 0.55),
+        inset 0 -0.8px 0.5px rgba(255, 255, 255, 0.18),
+        inset 0 0 14px rgba(255, 255, 255, 0.06),
+        0 8px 24px rgba(0, 0, 0, 0.18);
+      text-shadow: 0 1px 6px rgba(0, 0, 0, 0.36);
     }
 
-    .song-card-glass {
+    /* iOS 26 Clear Liquid Glass for Song / Album / Artist Cards (preserves original card layout) */
+    .song-card-glass,
+    .clear-liquid-card {
       background: linear-gradient(
-        145deg,
-        rgba(255, 255, 255, calc(var(--song-card-alpha) + 0.03)),
-        rgba(255, 255, 255, calc(var(--song-card-alpha) * 0.6))
+        165deg,
+        rgba(255, 255, 255, calc(var(--song-card-alpha) * 0.48 + 0.02)) 0%,
+        rgba(255, 255, 255, calc(var(--song-card-alpha) * 0.14)) 52%,
+        rgba(255, 255, 255, calc(var(--song-card-alpha) * 0.28 + 0.01)) 100%
       );
-      backdrop-filter: blur(22px) saturate(175%);
-      -webkit-backdrop-filter: blur(22px) saturate(175%);
-      border: 1px solid rgba(255, 255, 255, calc(var(--song-card-alpha) + 0.07));
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 8px 24px rgba(0, 0, 0, 0.22);
+      backdrop-filter: blur(2.5px) saturate(165%) brightness(1.08) contrast(1.03);
+      -webkit-backdrop-filter: blur(2.5px) saturate(165%) brightness(1.08) contrast(1.03);
+      border: 1px solid rgba(255, 255, 255, 0.24);
+      border-top-color: rgba(255, 255, 255, 0.50);
+      border-bottom-color: rgba(255, 255, 255, 0.16);
+      box-shadow:
+        inset 0 1px 0.5px rgba(255, 255, 255, 0.55),
+        inset 0 -0.8px 0.5px rgba(255, 255, 255, 0.18),
+        inset 0 0 14px rgba(255, 255, 255, 0.06),
+        0 8px 24px rgba(0, 0, 0, 0.18);
+      text-shadow: 0 1px 6px rgba(0, 0, 0, 0.36);
     }
 
     .liquid-pill {
@@ -579,6 +597,79 @@
       transform: scale(1.25);
     }
 
+    /* Fluid Stepless Liquid-Glass Slider (Sleep Timer, Playback Speed, Lyric Offset) */
+    .fluid-slider-box {
+      position: relative;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      touch-action: none;
+    }
+    .fluid-slider-rail {
+      position: relative;
+      width: 100%;
+      height: 7px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
+      overflow: visible;
+      transition: height 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .fluid-slider-box:active .fluid-slider-rail {
+      height: 10px;
+    }
+    .fluid-slider-fill {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--aurora-1, #38bdf8), var(--aurora-2, #818cf8), var(--aurora-3, #2dd4bf));
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.55);
+      pointer-events: none;
+    }
+    .fluid-slider-notch {
+      position: absolute;
+      top: -2px;
+      bottom: -2px;
+      left: 50%;
+      width: 2px;
+      transform: translateX(-50%);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.42);
+      pointer-events: none;
+    }
+    .fluid-slider-thumb {
+      position: absolute;
+      top: 50%;
+      left: 0%;
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 35% 35%, #ffffff 0%, #e0f2fe 70%, #bae6fd 100%);
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25), 0 3px 10px rgba(0, 0, 0, 0.45);
+      transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.18s ease;
+      pointer-events: none;
+    }
+    .fluid-slider-box:active .fluid-slider-thumb {
+      transform: translate(-50%, -50%) scale(1.22);
+      box-shadow: 0 0 0 6px rgba(56, 189, 248, 0.32), 0 4px 14px rgba(0, 0, 0, 0.55);
+    }
+    .fluid-slider-input {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      opacity: 0;
+      cursor: pointer;
+      z-index: 4;
+    }
+
     /* iOS 26 Zero-Reflow Borderless Scroll-Collapsing Floating Header (Library, Playlists & Playlist Detail) */
     .collapsible-expanded-area {
       position: absolute;
@@ -778,9 +869,18 @@
       pointer-events: none;
       transition: opacity 0.28s ease;
     }
+    .cd-jewel-case.is-open .cd-jewel-tray {
+      z-index: 20;
+    }
     .cd-jewel-case.is-open .cd-jewel-disc {
       opacity: 1;
       pointer-events: auto;
+      touch-action: none;
+      z-index: 25;
+      cursor: grab;
+    }
+    .cd-jewel-case.is-open .cd-jewel-disc:active {
+      cursor: grabbing;
     }
     .cd-jewel-disc-art {
       width: 106px;
@@ -1269,19 +1369,6 @@
           </div>
         </div>
 
-        <!-- 3. Cover Visual Style -->
-        <div class="liquid-panel rounded-3xl p-4 space-y-3">
-          <div>
-            <h2 class="text-sm font-semibold text-white">播放页封面形态</h2>
-            <p class="text-xs text-white/50">自由选择经典圆角封面、拟真黑胶唱片或纯享圆形封面</p>
-          </div>
-          <div class="grid grid-cols-3 gap-2">
-            <button data-cover-style="rounded" class="diy-cover-style-btn py-2.5 px-2 rounded-xl text-xs font-medium bg-white/20 text-white border border-white/25">经典圆角封面</button>
-            <button data-cover-style="vinyl" class="diy-cover-style-btn py-2.5 px-2 rounded-xl text-xs font-medium bg-white/8 text-white/70 border border-transparent">拟真黑胶唱片</button>
-            <button data-cover-style="disc" class="diy-cover-style-btn py-2.5 px-2 rounded-xl text-xs font-medium bg-white/8 text-white/70 border border-transparent">纯享圆形封面</button>
-          </div>
-        </div>
-
         <!-- 4. Wave Visualizer, Lyric Font Size Slider & Glass Opacity Slider -->
         <div class="liquid-panel rounded-3xl p-4 space-y-4">
           <div class="flex items-center justify-between">
@@ -1643,37 +1730,91 @@
       <button class="btn-close-sheets text-xs text-white/65 hover:text-white px-2.5 py-1 rounded-full bg-white/10">关闭</button>
     </div>
 
-    <!-- Sleep Timer -->
+    <!-- 1. Stepless Sleep Timer (关闭 - 0~120min - 播完本首) -->
     <div class="space-y-2">
-      <div class="flex justify-between text-xs text-white/70">
-        <span>睡眠定时关闭</span>
+      <div class="flex items-center justify-between text-xs text-white/70">
+        <span>定时关闭</span>
         <span id="sleep-timer-status" class="text-sky-300 font-medium tabular-nums">未开启</span>
       </div>
-      <div class="grid grid-cols-6 gap-1.5">
-        <button data-sleep="0" class="sleep-opt-btn py-2 rounded-xl text-[11px] font-medium bg-white/20 text-white">关闭</button>
-        <button data-sleep="15" class="sleep-opt-btn py-2 rounded-xl text-[11px] font-medium bg-white/8 text-white/75">15分</button>
-        <button data-sleep="30" class="sleep-opt-btn py-2 rounded-xl text-[11px] font-medium bg-white/8 text-white/75">30分</button>
-        <button data-sleep="45" class="sleep-opt-btn py-2 rounded-xl text-[11px] font-medium bg-white/8 text-white/75">45分</button>
-        <button data-sleep="60" class="sleep-opt-btn py-2 rounded-xl text-[11px] font-medium bg-white/8 text-white/75">60分</button>
-        <button data-sleep="track" class="sleep-opt-btn py-2 rounded-xl text-[11px] font-medium bg-white/8 text-white/75">播完本首</button>
+      <div class="flex items-center gap-2.5">
+        <button data-sleep="0" class="sleep-opt-btn px-2.5 py-1.5 rounded-xl text-[11px] font-medium bg-white/20 text-white shrink-0 transition">关闭</button>
+        <div class="fluid-slider-box flex-1">
+          <div class="fluid-slider-rail">
+            <div id="sleep-slider-fill" class="fluid-slider-fill"></div>
+            <div id="sleep-slider-thumb" class="fluid-slider-thumb"></div>
+          </div>
+          <input id="sleep-timer-slider" type="range" min="0" max="120" step="1" value="0" class="fluid-slider-input" aria-label="定时关闭分钟数" />
+        </div>
+        <button data-sleep="track" class="sleep-opt-btn px-2.5 py-1.5 rounded-xl text-[11px] font-medium bg-white/8 text-white/75 shrink-0 transition">播完本首</button>
+      </div>
+      <div class="flex justify-between text-[10px] text-white/40 tabular-nums px-11">
+        <span>0 min</span>
+        <span>60 min</span>
+        <span>120 min</span>
       </div>
     </div>
 
-    <!-- Playback Speed -->
+    <!-- 2. Stepless Playback Speed (0.0x - 2.0x, default 1.0x) -->
+    <div class="space-y-2">
+      <div class="flex items-center justify-between text-xs text-white/70">
+        <span>播放倍速</span>
+        <div class="flex items-center gap-2">
+          <span id="playback-rate-status" class="text-sky-300 font-medium tabular-nums">1.00x</span>
+          <button id="btn-rate-reset" class="px-2 py-0.5 rounded-full bg-white/10 hover:bg-white/20 text-[10px] text-white/75 transition">1.0x</button>
+        </div>
+      </div>
+      <div class="fluid-slider-box">
+        <div class="fluid-slider-rail">
+          <div class="fluid-slider-notch"></div>
+          <div id="rate-slider-fill" class="fluid-slider-fill" style="width: 50%;"></div>
+          <div id="rate-slider-thumb" class="fluid-slider-thumb" style="left: 50%;"></div>
+        </div>
+        <input id="playback-rate-slider" type="range" min="0" max="2" step="0.05" value="1" class="fluid-slider-input" aria-label="播放倍速" />
+      </div>
+      <div class="flex justify-between text-[10px] text-white/40 tabular-nums">
+        <span>0.0x</span>
+        <span>1.0x</span>
+        <span>2.0x</span>
+      </div>
+    </div>
+
+    <!-- 3. Stepless Lyric Timeline Offset (-10.0s ~ +10.0s) -->
+    <div class="space-y-2">
+      <div class="flex items-center justify-between text-xs text-white/70">
+        <span>歌词时间轴校正</span>
+        <div class="flex items-center gap-2">
+          <span id="lyric-offset-badge" class="text-sky-300 font-medium tabular-nums">0.0s</span>
+          <button id="btn-lyric-offset-reset" class="px-2 py-0.5 rounded-full bg-white/10 hover:bg-white/20 text-[10px] text-white/75 transition">重置</button>
+        </div>
+      </div>
+      <div class="fluid-slider-box">
+        <div class="fluid-slider-rail">
+          <div class="fluid-slider-notch"></div>
+          <div id="lyric-offset-fill" class="fluid-slider-fill" style="left: 50%; width: 0%;"></div>
+          <div id="lyric-offset-thumb" class="fluid-slider-thumb" style="left: 50%;"></div>
+        </div>
+        <input id="lyric-offset-slider" type="range" min="-10" max="10" step="0.1" value="0" class="fluid-slider-input" aria-label="歌词时间轴校正" />
+      </div>
+      <div class="flex justify-between text-[10px] text-white/40 tabular-nums">
+        <span>延后 -10s</span>
+        <span>0.0s</span>
+        <span>提前 +10s</span>
+      </div>
+    </div>
+
+    <!-- 4. Cover Visual Style (Moved from DIY Settings) -->
     <div class="space-y-2">
       <div class="flex justify-between text-xs text-white/70">
-        <span>播放倍速</span>
-        <span id="playback-rate-status" class="text-sky-300 font-medium tabular-nums">1.0x</span>
+        <span>播放页封面形态</span>
       </div>
-      <div class="grid grid-cols-4 gap-2">
-        <button data-rate="0.75" class="rate-opt-btn py-2 rounded-xl text-xs font-medium bg-white/8 text-white/75">0.75x</button>
-        <button data-rate="1" class="rate-opt-btn py-2 rounded-xl text-xs font-medium bg-white/20 text-white">1.0x</button>
-        <button data-rate="1.25" class="rate-opt-btn py-2 rounded-xl text-xs font-medium bg-white/8 text-white/75">1.25x</button>
-        <button data-rate="1.5" class="rate-opt-btn py-2 rounded-xl text-xs font-medium bg-white/8 text-white/75">1.5x</button>
+      <div class="grid grid-cols-3 gap-2">
+        <button data-cover-style="rounded" class="diy-cover-style-btn py-2 px-2 rounded-xl text-xs font-medium bg-white/20 text-white border border-white/25">经典圆角封面</button>
+        <button data-cover-style="vinyl" class="diy-cover-style-btn py-2 px-2 rounded-xl text-xs font-medium bg-white/8 text-white/70 border border-transparent">拟真黑胶唱片</button>
+        <button data-cover-style="disc" class="diy-cover-style-btn py-2 px-2 rounded-xl text-xs font-medium bg-white/8 text-white/70 border border-transparent">纯享圆形封面</button>
       </div>
     </div>
 
-    <!-- Playback Dynamic Particle Effects -->
+    <!-- 5. Playback Dynamic Particle Effects -->
     <div class="space-y-2">
       <div class="flex justify-between text-xs text-white/70">
         <span>播放动态特效</span>
@@ -1688,49 +1829,13 @@
       </div>
     </div>
 
-    <!-- Personalized Lyric Visual Effects -->
-    <div class="space-y-2">
-      <div class="flex justify-between text-xs text-white/70">
-        <span>歌词个性动效</span>
-        <span id="lyric-style-status" class="text-amber-300 font-medium">景深聚焦</span>
-      </div>
-      <div class="grid grid-cols-4 gap-1.5">
-        <button data-lyric-style="focus" class="lyric-style-opt-btn py-2 rounded-xl text-[11px] font-medium bg-white/20 text-white">景深聚焦</button>
-        <button data-lyric-style="karaoke" class="lyric-style-opt-btn py-2 rounded-xl text-[11px] font-medium bg-white/8 text-white/75">流光渐变</button>
-        <button data-lyric-style="neon" class="lyric-style-opt-btn py-2 rounded-xl text-[11px] font-medium bg-white/8 text-white/75">霓虹脉冲</button>
-        <button data-lyric-style="bounce" class="lyric-style-opt-btn py-2 rounded-xl text-[11px] font-medium bg-white/8 text-white/75">逐字弹跳</button>
-      </div>
-    </div>
-
-    <!-- Lyric Timeline Offset Calibration -->
-    <div class="space-y-2">
-      <div class="flex justify-between text-xs text-white/70">
-        <span>歌词时间轴校正</span>
-        <span id="lyric-offset-badge" class="text-sky-300 font-medium tabular-nums">0.0s</span>
-      </div>
-      <div class="grid grid-cols-3 gap-2">
-        <button id="btn-lyric-offset-minus" class="py-2 rounded-xl text-xs font-medium bg-white/8 hover:bg-white/15 text-white/85 active:scale-95 transition">延后 -0.5s</button>
-        <button id="btn-lyric-offset-reset" class="py-2 rounded-xl text-xs font-medium bg-white/8 hover:bg-white/15 text-white/70 active:scale-95 transition">重置 0.0s</button>
-        <button id="btn-lyric-offset-plus" class="py-2 rounded-xl text-xs font-medium bg-white/8 hover:bg-white/15 text-white/85 active:scale-95 transition">提前 +0.5s</button>
-      </div>
-    </div>
-
-    <!-- Quick Action Grid -->
+    <!-- 6. Compact Edit Tools -->
     <div class="grid grid-cols-2 gap-2.5 pt-1">
-      <button id="btn-settings-add-playlist" class="liquid-pill py-3 px-3 rounded-2xl text-xs font-medium text-white flex items-center justify-center gap-2">
-        <span>+ 加入歌单</span>
-      </button>
       <button id="btn-settings-edit-meta" class="liquid-pill py-3 px-3 rounded-2xl text-xs font-medium text-white flex items-center justify-center gap-2">
         <span>编辑歌曲 / 封面</span>
       </button>
       <button id="btn-settings-edit-lrc" class="liquid-pill py-3 px-3 rounded-2xl text-xs font-medium text-white flex items-center justify-center gap-2">
         <span>编辑 LRC 歌词</span>
-      </button>
-      <button id="btn-settings-open-diy" class="liquid-pill py-3 px-3 rounded-2xl text-xs font-medium text-sky-200 flex items-center justify-center gap-2">
-        <span>界面 DIY 设置</span>
-      </button>
-      <button id="btn-settings-rescan" class="col-span-2 liquid-pill py-3 px-3 rounded-2xl text-xs font-medium text-emerald-200 flex items-center justify-center gap-2">
-        <span>重新识别内嵌封面与歌词</span>
       </button>
     </div>
   </div>
@@ -4219,7 +4324,7 @@
         updateAuroraColorsFromCover(track.cover);
 
         const offset = state.lyricOffsets[trackId] || 0;
-        $('lyric-offset-badge').textContent = `${offset >= 0 ? '+' : ''}${offset.toFixed(1)}s`;
+        syncLyricOffsetSliderUI(offset);
         state.parsedLyrics = parseLrcText(track.lrc);
         renderLyricsList();
 
@@ -5002,7 +5107,7 @@
             const isFav = favSet.has(alb.name);
             const isChecked = isMs && state.selectedGroupKeys.has(alb.name);
             return `
-            <div data-album-name="${escapeHtml(alb.name)}" class="album-card relative liquid-panel rounded-3xl p-3 space-y-2.5 cursor-pointer active:scale-[0.98] transition ${isChecked ? 'ring-2 ring-sky-400 bg-sky-500/20' : isFav ? 'ring-1 ring-amber-300/35' : ''}">
+            <div data-album-name="${escapeHtml(alb.name)}" class="album-card relative clear-liquid-card rounded-3xl p-3 space-y-2.5 cursor-pointer active:scale-[0.98] transition ${isChecked ? 'ring-2 ring-sky-400 bg-sky-500/20' : isFav ? 'ring-1 ring-amber-300/35' : ''}">
               ${
                 isMs
                   ? `<div class="absolute top-4 left-4 z-10 w-6 h-6 rounded-full border-2 flex items-center justify-center shadow transition ${isChecked ? 'bg-sky-400 border-sky-400 text-zinc-950' : 'border-white/50 bg-black/45 text-transparent'}">
@@ -5088,7 +5193,7 @@
             const isFav = favSet.has(art.name);
             const isChecked = isMs && state.selectedGroupKeys.has(art.name);
             return `
-            <div data-artist-name="${escapeHtml(art.name)}" class="artist-card relative liquid-panel rounded-3xl p-3.5 text-center space-y-2.5 cursor-pointer active:scale-[0.98] transition ${isChecked ? 'ring-2 ring-sky-400 bg-sky-500/20' : isFav ? 'ring-1 ring-amber-300/35' : ''}">
+            <div data-artist-name="${escapeHtml(art.name)}" class="artist-card relative clear-liquid-card rounded-3xl p-3.5 text-center space-y-2.5 cursor-pointer active:scale-[0.98] transition ${isChecked ? 'ring-2 ring-sky-400 bg-sky-500/20' : isFav ? 'ring-1 ring-amber-300/35' : ''}">
               ${
                 isMs
                   ? `<div class="absolute top-3 left-3 z-10 w-6 h-6 rounded-full border-2 flex items-center justify-center shadow transition ${isChecked ? 'bg-sky-400 border-sky-400 text-zinc-950' : 'border-white/50 bg-black/45 text-transparent'}">
@@ -5200,9 +5305,10 @@
                     <div class="cd-jewel-spine"></div>
                     <div class="cd-jewel-disc-well">
                       <div id="album-cd-disc" class="cd-jewel-disc ${albumPlaying ? 'spin-disc' : 'spin-disc spin-paused'}">
-                        <img src="${cover}" alt="" class="cd-jewel-disc-art" />
-                        <div class="cd-jewel-disc-hub"></div>
+                        <img src="${cover}" alt="" class="cd-jewel-disc-art pointer-events-none" />
+                        <div class="cd-jewel-disc-hub pointer-events-none"></div>
                       </div>
+                      <div id="album-cd-hud" class="absolute z-30 px-3 py-1 rounded-full liquid-dock text-[11px] font-semibold text-white tabular-nums opacity-0 scale-90 pointer-events-none transition-all duration-150">00:00</div>
                     </div>
                   </div>
                   <div class="cd-jewel-lid">
@@ -5264,21 +5370,127 @@
 
           const cdCase = $('album-cd-case');
           const cdDisc = $('album-cd-disc');
-          const hintEl = $('album-case-hint');
+          const cdHud = $('album-cd-hud');
 
-          on(cdCase, 'click', async (e) => {
-            if (cdCase.classList.contains('is-open') && e.target.closest('#album-cd-disc')) {
-              e.stopPropagation();
-              if (!matched.length) return;
-              const isThisAlbumCurrent = matched.some((t) => t.id === state.currentTrackId);
-              if (isThisAlbumCurrent) {
-                await togglePlayPause();
+          let cdLastAngle = null;
+          let cdStartX = 0;
+          let cdStartY = 0;
+          let cdMoved = false;
+          let cdScrubbed = false;
+          let cdActivePointer = false;
+          let cdHudTimer = null;
+
+          const getCdAngle = (cx, cy) => {
+            const rect = cdDisc.getBoundingClientRect();
+            return (Math.atan2(cy - (rect.top + rect.height / 2), cx - (rect.left + rect.width / 2)) * 180) / Math.PI;
+          };
+
+          const flashCdHud = (text) => {
+            if (!cdHud) return;
+            cdHud.textContent = text;
+            cdHud.classList.remove('opacity-0', 'scale-90');
+            cdHud.classList.add('opacity-100', 'scale-100');
+            clearTimeout(cdHudTimer);
+            cdHudTimer = setTimeout(() => {
+              cdHud.classList.remove('opacity-100', 'scale-100');
+              cdHud.classList.add('opacity-0', 'scale-90');
+            }, 850);
+          };
+
+          const toggleAlbumDiscPlay = async () => {
+            if (!matched.length) return;
+            const isThisAlbumCurrent = matched.some((t) => t.id === state.currentTrackId);
+            if (isThisAlbumCurrent) {
+              await togglePlayPause();
+            } else {
+              state.queue = matched.map((t) => t.id);
+              await loadTrack(matched[0].id, true);
+            }
+            if (cdDisc) cdDisc.classList.toggle('spin-paused', !state.isPlaying);
+            flashCdHud(state.isPlaying ? '▶ 播放中' : '❚❚ 已暂停');
+          };
+
+          const beginCdGesture = (cx, cy) => {
+            if (!cdCase.classList.contains('is-open')) return;
+            cdActivePointer = true;
+            cdStartX = cx;
+            cdStartY = cy;
+            cdMoved = false;
+            cdScrubbed = false;
+            cdLastAngle = getCdAngle(cx, cy);
+          };
+
+          const moveCdGesture = (cx, cy) => {
+            if (!cdActivePointer || !cdCase.classList.contains('is-open') || cdLastAngle === null) return;
+            if (Math.hypot(cx - cdStartX, cy - cdStartY) > 7) cdMoved = true;
+            const curAngle = getCdAngle(cx, cy);
+            let delta = curAngle - cdLastAngle;
+            if (delta > 180) delta -= 360;
+            if (delta < -180) delta += 360;
+            if (Math.abs(delta) > 3.5) {
+              cdScrubbed = true;
+              if (Number.isFinite(audio.duration) && audio.duration > 0) {
+                const seekDelta = (delta / 360) * 24;
+                audio.currentTime = Math.max(0, Math.min(audio.duration, (audio.currentTime || 0) + seekDelta));
+                flashCdHud(`${seekDelta >= 0 ? '⏩' : '⏪'} ${formatTime(audio.currentTime)}`);
               } else {
-                state.queue = matched.map((t) => t.id);
-                await loadTrack(matched[0].id, true);
+                flashCdHud('轻触光盘开始播放');
               }
-              if (cdDisc) cdDisc.classList.toggle('spin-paused', !state.isPlaying);
-              showToast(state.isPlaying ? `正在播放光盘：${name}` : '已暂停光盘播放');
+              cdLastAngle = curAngle;
+            }
+          };
+
+          const endCdGesture = async () => {
+            if (!cdActivePointer) return;
+            const wasScrubbed = cdScrubbed;
+            const wasMoved = cdMoved;
+            cdActivePointer = false;
+            cdLastAngle = null;
+            if (!wasScrubbed && !wasMoved && cdCase.classList.contains('is-open')) {
+              await toggleAlbumDiscPlay();
+            }
+            if (wasScrubbed) {
+              setTimeout(() => { cdScrubbed = false; }, 160);
+            }
+          };
+
+          if (cdDisc) {
+            on(cdDisc, 'touchstart', (e) => {
+              if (!cdCase.classList.contains('is-open') || !e.touches[0]) return;
+              e.stopPropagation();
+              beginCdGesture(e.touches[0].clientX, e.touches[0].clientY);
+            }, { passive: true });
+            on(cdDisc, 'touchmove', (e) => {
+              if (!cdActivePointer || !e.touches[0]) return;
+              e.stopPropagation();
+              moveCdGesture(e.touches[0].clientX, e.touches[0].clientY);
+            }, { passive: true });
+            on(cdDisc, 'touchend', (e) => {
+              if (!cdActivePointer) return;
+              e.stopPropagation();
+              e.preventDefault();
+              endCdGesture();
+            });
+            on(cdDisc, 'mousedown', (e) => {
+              if (!cdCase.classList.contains('is-open') || e.button !== 0) return;
+              e.stopPropagation();
+              beginCdGesture(e.clientX, e.clientY);
+            });
+            on(window, 'mousemove', (e) => {
+              if (cdActivePointer) moveCdGesture(e.clientX, e.clientY);
+            });
+            on(window, 'mouseup', () => {
+              if (cdActivePointer) endCdGesture();
+            });
+            on(cdDisc, 'click', (e) => {
+              if (cdCase.classList.contains('is-open')) {
+                e.stopPropagation();
+              }
+            });
+          }
+
+          on(cdCase, 'click', (e) => {
+            if (cdCase.classList.contains('is-open') && e.target.closest('#album-cd-disc')) {
               return;
             }
             cdCase.classList.toggle('is-open');
@@ -8290,7 +8502,53 @@
       // =========================================================================
       // SLEEP TIMER
       // =========================================================================
-      function setSleepTimer(val) {
+      function syncSleepSliderVisual(mins) {
+        const clamped = Math.max(0, Math.min(120, Number(mins) || 0));
+        const pct = (clamped / 120) * 100;
+        const sl = $('sleep-timer-slider');
+        if (sl) sl.value = String(clamped);
+        const fill = $('sleep-slider-fill');
+        const thumb = $('sleep-slider-thumb');
+        if (fill) fill.style.width = `${pct}%`;
+        if (thumb) thumb.style.left = `${pct}%`;
+      }
+
+      function syncRateSliderUI(rate) {
+        const clamped = Math.max(0, Math.min(2, Math.round((Number(rate) || 0) * 20) / 20));
+        const pct = (clamped / 2) * 100;
+        const sl = $('playback-rate-slider');
+        if (sl) sl.value = String(clamped);
+        const fill = $('rate-slider-fill');
+        const thumb = $('rate-slider-thumb');
+        if (fill) fill.style.width = `${pct}%`;
+        if (thumb) thumb.style.left = `${pct}%`;
+        const status = $('playback-rate-status');
+        if (status) status.textContent = clamped <= 0.001 ? '0.00x (暂停)' : `${clamped.toFixed(2)}x`;
+      }
+
+      function syncLyricOffsetSliderUI(offsetSec) {
+        const clamped = Math.max(-10, Math.min(10, Math.round((Number(offsetSec) || 0) * 10) / 10));
+        const pct = ((clamped + 10) / 20) * 100;
+        const sl = $('lyric-offset-slider');
+        if (sl) sl.value = String(clamped);
+        const fill = $('lyric-offset-fill');
+        const thumb = $('lyric-offset-thumb');
+        if (fill) {
+          if (clamped >= 0) {
+            fill.style.left = '50%';
+            fill.style.width = `${(clamped / 10) * 50}%`;
+          } else {
+            const w = (-clamped / 10) * 50;
+            fill.style.left = `${50 - w}%`;
+            fill.style.width = `${w}%`;
+          }
+        }
+        if (thumb) thumb.style.left = `${pct}%`;
+        const badge = $('lyric-offset-badge');
+        if (badge) badge.textContent = `${clamped > 0 ? '+' : ''}${clamped.toFixed(1)}s`;
+      }
+
+      function setSleepTimer(val, silent = false) {
         clearInterval(state.sleepIntervalId);
         state.sleepTimerEnd = null;
         state.sleepStopAfterTrack = false;
@@ -8305,22 +8563,25 @@
 
         const badge = $('np-sleep-badge');
         if (val === '0' || val === 0) {
+          syncSleepSliderVisual(0);
           $('sleep-timer-status').textContent = '未开启';
           badge.classList.add('hidden');
-          showToast('睡眠定时已关闭');
+          if (!silent) showToast('定时关闭已取消');
           return;
         }
 
         if (val === 'track') {
+          syncSleepSliderVisual(0);
           state.sleepStopAfterTrack = true;
           $('sleep-timer-status').textContent = '播完当前歌曲后停止';
           badge.textContent = '1首';
           badge.classList.remove('hidden');
-          showToast('将在播完当前歌曲后暂停');
+          if (!silent) showToast('将在播完当前歌曲后暂停');
           return;
         }
 
-        const mins = parseInt(val, 10);
+        const mins = Math.max(1, Math.min(120, parseInt(val, 10) || 1));
+        syncSleepSliderVisual(mins);
         state.sleepTimerEnd = Date.now() + mins * 60 * 1000;
         badge.classList.remove('hidden');
 
@@ -8332,9 +8593,10 @@
             audio.pause();
             state.isPlaying = false;
             updatePlayStateUI();
+            syncSleepSliderVisual(0);
             $('sleep-timer-status').textContent = '未开启';
             badge.classList.add('hidden');
-            showToast('睡眠定时结束，已暂停播放');
+            showToast('定时结束，已暂停播放');
             return;
           }
           const m = Math.floor(remain / 60000);
@@ -8346,7 +8608,7 @@
 
         updateCountdown();
         state.sleepIntervalId = setInterval(updateCountdown, 1000);
-        showToast(`已开启 ${mins} 分钟睡眠定时`);
+        if (!silent) showToast(`已开启 ${mins} 分钟定时关闭`);
       }
 
       // =========================================================================
@@ -8868,31 +9130,26 @@
           });
         });
 
-        on('btn-lyric-offset-minus', async () => {
+        on('lyric-offset-slider', 'input', (e) => {
+          const val = Math.round(parseFloat(e.target.value) * 10) / 10;
+          syncLyricOffsetSliderUI(val);
           if (!state.currentTrackId) return;
-          const next = (state.lyricOffsets[state.currentTrackId] || 0) - 0.5;
-          state.lyricOffsets[state.currentTrackId] = next;
-          $('lyric-offset-badge').textContent = `${next >= 0 ? '+' : ''}${next.toFixed(1)}s`;
+          state.lyricOffsets[state.currentTrackId] = val;
           syncActiveLyric(true);
+        });
+        on('lyric-offset-slider', 'change', async (e) => {
+          if (!state.currentTrackId) return;
+          const val = Math.round(parseFloat(e.target.value) * 10) / 10;
+          state.lyricOffsets[state.currentTrackId] = val;
           await saveAppState();
-          showToast(`歌词时间轴：${next >= 0 ? '+' : ''}${next.toFixed(1)}s`);
         });
         on('btn-lyric-offset-reset', async () => {
+          syncLyricOffsetSliderUI(0);
           if (!state.currentTrackId) return;
           state.lyricOffsets[state.currentTrackId] = 0;
-          $('lyric-offset-badge').textContent = '0.0s';
           syncActiveLyric(true);
           await saveAppState();
           showToast('歌词时间轴已重置为 0.0s');
-        });
-        on('btn-lyric-offset-plus', async () => {
-          if (!state.currentTrackId) return;
-          const next = (state.lyricOffsets[state.currentTrackId] || 0) + 0.5;
-          state.lyricOffsets[state.currentTrackId] = next;
-          $('lyric-offset-badge').textContent = `${next >= 0 ? '+' : ''}${next.toFixed(1)}s`;
-          syncActiveLyric(true);
-          await saveAppState();
-          showToast(`歌词时间轴：+${next.toFixed(1)}s`);
         });
         on('btn-lyric-poster', () => generateLyricPoster(state.posterTheme));
 
@@ -9137,24 +9394,42 @@
         document.querySelectorAll('.sleep-opt-btn').forEach((btn) => {
           on(btn, 'click', () => setSleepTimer(btn.dataset.sleep));
         });
-
-        // Playback Speed Options
-        document.querySelectorAll('.rate-opt-btn').forEach((btn) => {
-          on(btn, 'click', () => {
-            const rate = parseFloat(btn.dataset.rate);
-            state.playbackRate = rate;
-            audio.playbackRate = rate;
-            $('playback-rate-status').textContent = `${rate}x`;
-            document.querySelectorAll('.rate-opt-btn').forEach((b) => {
-              const active = parseFloat(b.dataset.rate) === rate;
-              b.classList.toggle('bg-white/20', active);
-              b.classList.toggle('text-white', active);
-              b.classList.toggle('bg-white/8', !active);
-              b.classList.toggle('text-white/75', !active);
-            });
-            showToast(`播放倍速已设为 ${rate}x`);
-          });
+        on('sleep-timer-slider', 'input', (e) => {
+          const mins = parseInt(e.target.value, 10) || 0;
+          syncSleepSliderVisual(mins);
+          $('sleep-timer-status').textContent = mins > 0 ? `${mins} 分钟后停止` : '未开启';
         });
+        on('sleep-timer-slider', 'change', (e) => {
+          const mins = parseInt(e.target.value, 10) || 0;
+          setSleepTimer(mins);
+        });
+
+        // Stepless Playback Speed (0.0x - 2.0x, default 1.0x)
+        let pausedByZeroRate = false;
+        const applySteplessPlaybackRate = (rawVal, showFeedback = false) => {
+          const rate = Math.max(0, Math.min(2, Math.round(parseFloat(rawVal) * 20) / 20));
+          state.playbackRate = rate;
+          syncRateSliderUI(rate);
+          if (rate <= 0.001) {
+            if (state.isPlaying) {
+              pausedByZeroRate = true;
+              audio.pause();
+            }
+          } else {
+            try { audio.playbackRate = Math.max(0.1, rate); } catch {}
+            if (pausedByZeroRate && state.currentTrackId) {
+              pausedByZeroRate = false;
+              audio.play().catch(() => {});
+            }
+          }
+          if (showFeedback) {
+            showToast(rate <= 0.001 ? '倍速 0.00x（已暂停）' : `播放倍速已设为 ${rate.toFixed(2)}x`);
+          }
+        };
+        syncRateSliderUI(state.playbackRate || 1);
+        on('playback-rate-slider', 'input', (e) => applySteplessPlaybackRate(e.target.value, false));
+        on('playback-rate-slider', 'change', (e) => applySteplessPlaybackRate(e.target.value, true));
+        on('btn-rate-reset', () => applySteplessPlaybackRate(1, true));
 
         // White Noise Mixer Controls
         renderWhiteNoiseGrid();
@@ -9209,10 +9484,6 @@
           });
         });
 
-        on('btn-settings-add-playlist', () => {
-          if (!state.currentTrackId) return showToast('当前未在播放歌曲');
-          openPickPlaylistSheet(state.currentTrackId);
-        });
         on('btn-settings-edit-meta', () => {
           if (!state.currentTrackId) return showToast('当前未在播放歌曲');
           openEditMetaModal(state.currentTrackId);
@@ -9220,15 +9491,6 @@
         on('btn-settings-edit-lrc', () => {
           if (!state.currentTrackId) return showToast('当前未在播放歌曲');
           openEditLrcModal(state.currentTrackId);
-        });
-        on('btn-settings-open-diy', () => {
-          closeAllBottomSheets();
-          closeNowPlaying();
-          switchView('diy');
-        });
-        on('btn-settings-rescan', async () => {
-          closeAllBottomSheets();
-          await rescanTracksMetadata(state.currentTrackId);
         });
 
         // Track Action Sheet (··· Menu)
