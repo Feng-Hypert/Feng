@@ -46,6 +46,17 @@
       display: none !important;
     }
 
+    /* §11 Android fast-scroll flicker fix: pause backdrop-filter while actively scrolling */
+    body.is-native-android.is-scrolling .liquid-panel,
+    body.is-native-android.is-scrolling .liquid-pill,
+    body.is-native-android.is-scrolling .liquid-dock,
+    body.is-native-android.is-scrolling .liquid-sheet,
+    body.is-native-android.is-scrolling .song-card-glass,
+    body.is-native-android.is-scrolling .clear-liquid-card {
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+    }
+
     /* Collapsed & Hidden Bottom Bar Layout */
     #mini-player-wrapper {
       transition: padding-left 0.28s cubic-bezier(0.22, 1, 0.36, 1), padding-right 0.28s cubic-bezier(0.22, 1, 0.36, 1), bottom 0.28s cubic-bezier(0.22, 1, 0.36, 1);
@@ -1304,7 +1315,7 @@
         <div class="flex items-center gap-3">
           <div>
             <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-white">界面 DIY 设置</h1>
-            <p class="text-xs text-white/55">FENG MUSIC v1.0.6</p>
+            <p class="text-xs text-white/55">FENG MUSIC v1.0.7</p>
           </div>
         </div>
       </header>
@@ -1829,6 +1840,88 @@
       </div>
     </div>
 
+    <!-- 5.5 Web Audio FX (Cross-track Fade, 5-Band EQ, Loudness Normalization) -->
+    <div id="np-audiofx-section" class="space-y-3.5 pt-2 border-t border-white/10">
+      <div class="flex items-center justify-between gap-2">
+        <span class="text-xs font-semibold text-white/85">音频效果与过渡</span>
+        <span id="np-audiofx-ios-notice" class="hidden text-[10px] text-amber-300/90">原生播放模式下暂不生效</span>
+      </div>
+
+      <div id="np-audiofx-controls" class="space-y-3.5">
+        <!-- Cross-track Dip Fade -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between text-xs text-white/75">
+            <span>切歌淡入淡出</span>
+            <button id="btn-fx-fade-toggle" class="w-10 h-5 rounded-full bg-white/15 p-0.5 transition-colors flex items-center justify-start" aria-label="开关切歌淡入淡出">
+              <span class="w-4 h-4 rounded-full bg-white shadow"></span>
+            </button>
+          </div>
+          <div class="grid grid-cols-5 gap-1.5">
+            <button data-fade-sec="0" class="fx-fade-btn py-1.5 rounded-xl text-[11px] font-medium bg-white/8 text-white/75">0秒</button>
+            <button data-fade-sec="1" class="fx-fade-btn py-1.5 rounded-xl text-[11px] font-medium bg-white/8 text-white/75">1秒</button>
+            <button data-fade-sec="2" class="fx-fade-btn py-1.5 rounded-xl text-[11px] font-medium bg-white/20 text-white">2秒</button>
+            <button data-fade-sec="3" class="fx-fade-btn py-1.5 rounded-xl text-[11px] font-medium bg-white/8 text-white/75">3秒</button>
+            <button data-fade-sec="4" class="fx-fade-btn py-1.5 rounded-xl text-[11px] font-medium bg-white/8 text-white/75">4秒</button>
+          </div>
+        </div>
+
+        <!-- 5-Band EQ -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between text-xs text-white/75">
+            <span>五段均衡器 (EQ)</span>
+            <button id="btn-fx-eq-toggle" class="w-10 h-5 rounded-full bg-white/15 p-0.5 transition-colors flex items-center justify-start" aria-label="开关均衡器">
+              <span class="w-4 h-4 rounded-full bg-white shadow"></span>
+            </button>
+          </div>
+          <div class="grid grid-cols-5 gap-1.5">
+            <button data-eq-preset="flat" class="fx-eq-preset-btn py-1.5 rounded-xl text-[11px] font-medium bg-white/20 text-white">平坦</button>
+            <button data-eq-preset="bass" class="fx-eq-preset-btn py-1.5 rounded-xl text-[11px] font-medium bg-white/8 text-white/75">低音</button>
+            <button data-eq-preset="vocal" class="fx-eq-preset-btn py-1.5 rounded-xl text-[11px] font-medium bg-white/8 text-white/75">人声</button>
+            <button data-eq-preset="electronic" class="fx-eq-preset-btn py-1.5 rounded-xl text-[11px] font-medium bg-white/8 text-white/75">电子</button>
+            <button data-eq-preset="custom" class="fx-eq-preset-btn py-1.5 rounded-xl text-[11px] font-medium bg-white/8 text-white/75">自定义</button>
+          </div>
+          <div id="fx-eq-sliders" class="space-y-1.5 pt-1">
+            <div class="flex items-center gap-2">
+              <span class="w-11 text-[10px] text-white/55 tabular-nums shrink-0">60Hz</span>
+              <div class="fluid-slider-box flex-1"><div class="fluid-slider-rail"><div class="fluid-slider-notch"></div><div id="eq-fill-0" class="fluid-slider-fill" style="left:50%;width:0%;"></div><div id="eq-thumb-0" class="fluid-slider-thumb" style="left:50%;"></div></div><input id="eq-slider-0" data-eq-band="0" type="range" min="-12" max="12" step="0.5" value="0" class="fluid-slider-input eq-band-slider" aria-label="60Hz" /></div>
+              <span id="eq-val-0" class="w-10 text-right text-[10px] text-sky-300 tabular-nums shrink-0">0dB</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="w-11 text-[10px] text-white/55 tabular-nums shrink-0">230Hz</span>
+              <div class="fluid-slider-box flex-1"><div class="fluid-slider-rail"><div class="fluid-slider-notch"></div><div id="eq-fill-1" class="fluid-slider-fill" style="left:50%;width:0%;"></div><div id="eq-thumb-1" class="fluid-slider-thumb" style="left:50%;"></div></div><input id="eq-slider-1" data-eq-band="1" type="range" min="-12" max="12" step="0.5" value="0" class="fluid-slider-input eq-band-slider" aria-label="230Hz" /></div>
+              <span id="eq-val-1" class="w-10 text-right text-[10px] text-sky-300 tabular-nums shrink-0">0dB</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="w-11 text-[10px] text-white/55 tabular-nums shrink-0">910Hz</span>
+              <div class="fluid-slider-box flex-1"><div class="fluid-slider-rail"><div class="fluid-slider-notch"></div><div id="eq-fill-2" class="fluid-slider-fill" style="left:50%;width:0%;"></div><div id="eq-thumb-2" class="fluid-slider-thumb" style="left:50%;"></div></div><input id="eq-slider-2" data-eq-band="2" type="range" min="-12" max="12" step="0.5" value="0" class="fluid-slider-input eq-band-slider" aria-label="910Hz" /></div>
+              <span id="eq-val-2" class="w-10 text-right text-[10px] text-sky-300 tabular-nums shrink-0">0dB</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="w-11 text-[10px] text-white/55 tabular-nums shrink-0">3.6kHz</span>
+              <div class="fluid-slider-box flex-1"><div class="fluid-slider-rail"><div class="fluid-slider-notch"></div><div id="eq-fill-3" class="fluid-slider-fill" style="left:50%;width:0%;"></div><div id="eq-thumb-3" class="fluid-slider-thumb" style="left:50%;"></div></div><input id="eq-slider-3" data-eq-band="3" type="range" min="-12" max="12" step="0.5" value="0" class="fluid-slider-input eq-band-slider" aria-label="3.6kHz" /></div>
+              <span id="eq-val-3" class="w-10 text-right text-[10px] text-sky-300 tabular-nums shrink-0">0dB</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="w-11 text-[10px] text-white/55 tabular-nums shrink-0">14kHz</span>
+              <div class="fluid-slider-box flex-1"><div class="fluid-slider-rail"><div class="fluid-slider-notch"></div><div id="eq-fill-4" class="fluid-slider-fill" style="left:50%;width:0%;"></div><div id="eq-thumb-4" class="fluid-slider-thumb" style="left:50%;"></div></div><input id="eq-slider-4" data-eq-band="4" type="range" min="-12" max="12" step="0.5" value="0" class="fluid-slider-input eq-band-slider" aria-label="14kHz" /></div>
+              <span id="eq-val-4" class="w-10 text-right text-[10px] text-sky-300 tabular-nums shrink-0">0dB</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Loudness Normalization -->
+        <div class="space-y-1">
+          <div class="flex items-center justify-between text-xs text-white/75">
+            <span>响度均衡</span>
+            <button id="btn-fx-loudness-toggle" class="w-10 h-5 rounded-full bg-sky-500 p-0.5 transition-colors flex items-center justify-end" aria-label="开关响度均衡">
+              <span class="w-4 h-4 rounded-full bg-white shadow"></span>
+            </button>
+          </div>
+          <p class="text-[10px] text-white/45 leading-relaxed">首次播放某曲自动测算平均电平，从第二次播放起自动均衡音量（±6dB）</p>
+        </div>
+      </div>
+    </div>
+
     <!-- 6. Compact Edit Tools -->
     <div class="grid grid-cols-2 gap-2.5 pt-1">
       <button id="btn-settings-edit-meta" class="liquid-pill py-3 px-3 rounded-2xl text-xs font-medium text-white flex items-center justify-center gap-2">
@@ -2309,9 +2402,8 @@
           nativeAudioState.ended = true;
         } else if (type === 'error') {
           nativeAudioState.paused = true;
-          state.isPlaying = false;
-          updatePlayStateUI();
-          showToast(payload.message || '音频解码失败或文件授权已失效，请检查格式或重新关联文件夹');
+          const curRaw = state.tracks.find((t) => t.id === state.currentTrackId);
+          handlePlaybackFailure(curRaw, payload.message || '');
         }
         emitAudioEvent(type);
       };
@@ -2465,6 +2557,20 @@
         currentTrackId: null,
         isPlaying: false,
         playMode: 'loop', // 'loop' | 'one' | 'shuffle'
+        shuffleBag: [],
+        shuffleBagPlayed: [],
+        shuffleBagSignature: '',
+        fortuneScopePlaylistId: null,
+        consecutivePlayFailures: 0,
+        audioFx: {
+          fadeEnabled: false,
+          fadeSecs: 2,
+          eqEnabled: false,
+          eqPreset: 'flat',
+          eqGains: [0, 0, 0, 0, 0],
+          loudnessEnabled: true
+        },
+        trackLoudness: {},
         sortMode: 'default', // 'default' | 'title' | 'artist' | 'custom'
         albumSortMode: 'az', // 'az' | 'za' | 'count' | 'custom'
         artistSortMode: 'az', // 'az' | 'za' | 'count' | 'custom'
@@ -2552,7 +2658,7 @@
       // INDEXEDDB PERSISTENCE
       // =========================================================================
       const DB_NAME = 'FENG_MUSIC_DB';
-      const DB_VERSION = 2;
+      const DB_VERSION = 3;
 
       function openDB() {
         return new Promise((resolve) => {
@@ -2566,6 +2672,9 @@
               }
               if (!db.objectStoreNames.contains('kv')) {
                 db.createObjectStore('kv', { keyPath: 'key' });
+              }
+              if (!db.objectStoreNames.contains('metaCache')) {
+                db.createObjectStore('metaCache', { keyPath: 'key' });
               }
             };
             req.onsuccess = (e) => resolve(e.target.result);
@@ -2587,6 +2696,21 @@
             req.onerror = () => resolve([]);
           } catch {
             resolve([]);
+          }
+        });
+      }
+
+      async function dbGet(storeName, key) {
+        const db = await openDB();
+        if (!db) return null;
+        return new Promise((resolve) => {
+          try {
+            const tx = db.transaction(storeName, 'readonly');
+            const req = tx.objectStore(storeName).get(key);
+            req.onsuccess = () => resolve(req.result || null);
+            req.onerror = () => resolve(null);
+          } catch {
+            resolve(null);
           }
         });
       }
@@ -2647,6 +2771,8 @@
           customMeta: state.customMeta,
           customLyrics: state.customLyrics,
           playMode: state.playMode,
+          audioFx: state.audioFx,
+          trackLoudness: state.trackLoudness,
           sortMode: state.sortMode,
           albumSortMode: state.albumSortMode,
           artistSortMode: state.artistSortMode,
@@ -4164,6 +4290,7 @@
           particleCanvas.classList.toggle('opacity-100', showParticles);
           particleCanvas.classList.toggle('opacity-0', !showParticles);
         }
+        syncAndroidWidgetState();
 
         const roundedImg = $('np-cover-img-rounded');
         roundedImg.classList.toggle('cover-playing', activeVisual);
@@ -4269,6 +4396,45 @@
         if (state.currentTrackId) {
           closeAllBottomSheets();
           openNowPlaying();
+        }
+      };
+
+      // §13 Android Home Screen Widget sync & command bridge (aligned with iOS widget)
+      let lastAndroidWidgetSig = '';
+      function syncAndroidWidgetState(force = false) {
+        if (!hasAndroidFolderBridge()) return;
+        const rawTrack = state.currentTrackId
+          ? state.tracks.find((t) => t.id === state.currentTrackId)
+          : null;
+        const disp = rawTrack ? getTrackDisplay(rawTrack) : null;
+        const title = disp ? String(disp.title || 'FENG MUSIC') : '';
+        const artist = disp ? String(disp.artist || '') : '';
+        const isPlaying = Boolean(disp && audio && !audio.paused && !audio.ended);
+        const rawCover = disp ? String(disp.cover || '') : '';
+        const cover = rawCover.startsWith('data:image/') ? rawCover : null;
+        const sig = `${disp ? disp.id : ''}|${title}|${artist}|${isPlaying ? 1 : 0}|${cover ? 1 : 0}`;
+        if (!force && sig === lastAndroidWidgetSig) return;
+        lastAndroidWidgetSig = sig;
+        postFolderMessage({
+          action: 'widgetSync',
+          title,
+          artist,
+          isPlaying,
+          cover
+        });
+      }
+
+      window.__fengWidgetCommand = async (cmd) => {
+        try {
+          if (cmd === 'toggle') {
+            await togglePlayPause();
+          } else if (cmd === 'next') {
+            await playNext(true);
+          } else if (cmd === 'prev') {
+            await playPrev();
+          }
+        } finally {
+          syncAndroidWidgetState(true);
         }
       };
 
@@ -4399,13 +4565,43 @@
           } catch {}
         }
 
+        audioFxRuntime.fadeOutTriggered = false;
+        audioFxRuntime.sleepFadeFactor = 1;
+        resetLoudnessAccumulator(trackId);
+        if (!useNativeBridge) {
+          ensureAudioContext();
+          applyEqNodeGains();
+          audioFxRuntime.loudnessGain =
+            state.audioFx.loudnessEnabled && Number.isFinite(state.trackLoudness[trackId])
+              ? state.trackLoudness[trackId]
+              : 1;
+          const shouldFadeIn = Boolean(autoPlay && state.audioFx.fadeEnabled && state.audioFx.fadeSecs > 0);
+          if (shouldFadeIn) {
+            audioFxRuntime.crossFadeFactor = 0;
+            applyMasterGain(0.01);
+          } else {
+            audioFxRuntime.crossFadeFactor = 1;
+            applyMasterGain(0.05);
+          }
+        }
+
         if (autoPlay) {
           try {
             if (!useNativeBridge) await audio.play();
             state.isPlaying = true;
             recordTrackPlay(track.id);
-          } catch {
+            if (!useNativeBridge && state.audioFx.fadeEnabled && state.audioFx.fadeSecs > 0) {
+              const fadeInDur = audioFxRuntime.pendingManualFade ? 0.3 : state.audioFx.fadeSecs;
+              audioFxRuntime.pendingManualFade = false;
+              audioFxRuntime.crossFadeFactor = 1;
+              applyMasterGain(fadeInDur);
+            }
+          } catch (err) {
             state.isPlaying = false;
+            const errName = err && err.name ? err.name : '';
+            if (errName !== 'NotAllowedError' && errName !== 'AbortError') {
+              handlePlaybackFailure(rawTrack);
+            }
           }
         } else {
           state.isPlaying = false;
@@ -4456,8 +4652,65 @@
         renderLibrary();
       }
 
+      function shuffleArray(arr) {
+        const out = [...(arr || [])];
+        for (let i = out.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [out[i], out[j]] = [out[j], out[i]];
+        }
+        return out;
+      }
+
+      function syncShuffleBag(currentId = state.currentTrackId) {
+        const sig = (state.queue || []).join(',');
+        if (state.shuffleBagSignature !== sig) {
+          state.shuffleBagSignature = sig;
+          const fresh = shuffleArray(state.queue || []).filter((id) => id !== currentId);
+          state.shuffleBag = fresh;
+          state.shuffleBagPlayed = currentId ? [currentId] : [];
+        }
+      }
+
+      function recordManualTrackInShuffleBag(trackId) {
+        if (!trackId) return;
+        syncShuffleBag(trackId);
+        state.shuffleBag = state.shuffleBag.filter((id) => id !== trackId);
+        if (state.shuffleBagPlayed[state.shuffleBagPlayed.length - 1] !== trackId) {
+          state.shuffleBagPlayed.push(trackId);
+        }
+      }
+
+      let failureSkipTimer = null;
+      function handlePlaybackFailure(rawTrack, customMsg = '') {
+        const title = rawTrack ? getTrackDisplay(rawTrack).title : '当前曲目';
+        state.isPlaying = false;
+        updatePlayStateUI();
+        state.consecutivePlayFailures = (state.consecutivePlayFailures || 0) + 1;
+        if (state.consecutivePlayFailures >= 3) {
+          showToast(customMsg || `连续 ${state.consecutivePlayFailures} 首无法播放（${title}），已停止自动跳过`);
+          return;
+        }
+        showToast(`无法播放：${title}，已自动跳过`);
+        if (state.queue.length > 1) {
+          clearTimeout(failureSkipTimer);
+          failureSkipTimer = setTimeout(() => {
+            playNext(false);
+          }, 360);
+        }
+      }
+
+      async function quickManualFadeOutIfNeeded() {
+        if (!hasNativeAudioBridge() && state.audioFx.fadeEnabled && state.audioFx.fadeSecs > 0 && state.isPlaying) {
+          audioFxRuntime.pendingManualFade = true;
+          audioFxRuntime.crossFadeFactor = 0;
+          applyMasterGain(0.28);
+          await new Promise((r) => setTimeout(r, 290));
+        }
+      }
+
       async function playNext(manual = true) {
         if (!state.queue.length) return;
+        finalizeLoudnessMeasurement(state.currentTrackId);
         if (!manual && state.playMode === 'one') {
           audio.currentTime = 0;
           await audio.play();
@@ -4466,11 +4719,25 @@
           saveAppState();
           return;
         }
+        if (manual) await quickManualFadeOutIfNeeded();
         if (state.playMode === 'shuffle' && state.queue.length > 1) {
-          const candidates = state.queue.filter((id) => id !== state.currentTrackId);
-          const pick = candidates[Math.floor(Math.random() * candidates.length)];
-          await loadTrack(pick, true);
-          return;
+          syncShuffleBag(state.currentTrackId);
+          if (!state.shuffleBag.length) {
+            const fresh = shuffleArray(state.queue);
+            if (fresh.length > 1 && fresh[0] === state.currentTrackId) {
+              const swapIdx = 1 + Math.floor(Math.random() * (fresh.length - 1));
+              [fresh[0], fresh[swapIdx]] = [fresh[swapIdx], fresh[0]];
+            }
+            state.shuffleBag = fresh;
+          }
+          const pick = state.shuffleBag.shift();
+          if (pick) {
+            if (state.shuffleBagPlayed[state.shuffleBagPlayed.length - 1] !== pick) {
+              state.shuffleBagPlayed.push(pick);
+            }
+            await loadTrack(pick, true);
+            return;
+          }
         }
         const curIdx = state.queue.indexOf(state.currentTrackId);
         const nextIdx = curIdx >= 0 ? (curIdx + 1) % state.queue.length : 0;
@@ -4482,6 +4749,16 @@
         if ((audio.currentTime || 0) > 4) {
           audio.currentTime = 0;
           return;
+        }
+        await quickManualFadeOutIfNeeded();
+        if (state.playMode === 'shuffle' && state.shuffleBagPlayed.length > 1) {
+          const cur = state.shuffleBagPlayed.pop();
+          if (cur) state.shuffleBag.unshift(cur);
+          const prevId = state.shuffleBagPlayed[state.shuffleBagPlayed.length - 1];
+          if (prevId && state.queue.includes(prevId)) {
+            await loadTrack(prevId, true);
+            return;
+          }
         }
         const curIdx = state.queue.indexOf(state.currentTrackId);
         const prevIdx = curIdx > 0 ? curIdx - 1 : state.queue.length - 1;
@@ -4761,7 +5038,7 @@
                   : ''
               }
               <div class="relative w-12 h-12 rounded-xl overflow-hidden bg-white/10 shrink-0">
-                <img src="${track.cover}" alt="" class="w-full h-full object-cover" />
+                <img src="${track.cover}" alt="" loading="lazy" decoding="async" class="w-full h-full object-cover" />
                 ${
                   isCurrent && !enableMultiSelect
                     ? `<div class="active-playing-overlay absolute inset-0 bg-black/45 flex items-center justify-center">
@@ -4892,6 +5169,7 @@
               return;
             }
             state.queue = getSortedTracks().map((t) => t.id);
+            recordManualTrackInShuffleBag(id);
             loadTrack(id, true);
           });
         });
@@ -5107,7 +5385,7 @@
             const isFav = favSet.has(alb.name);
             const isChecked = isMs && state.selectedGroupKeys.has(alb.name);
             return `
-            <div data-album-name="${escapeHtml(alb.name)}" class="album-card relative clear-liquid-card rounded-3xl p-3 space-y-2.5 cursor-pointer active:scale-[0.98] transition ${isChecked ? 'ring-2 ring-sky-400 bg-sky-500/20' : isFav ? 'ring-1 ring-amber-300/35' : ''}">
+            <div data-album-name="${escapeHtml(alb.name)}" class="album-card relative clear-liquid-card rounded-3xl p-3 space-y-2.5 cursor-pointer active:scale-[0.98] transition ${isChecked ? 'ring-2 ring-sky-400 bg-sky-500/20' : isFav ? 'ring-2 ring-amber-300/70' : ''}">
               ${
                 isMs
                   ? `<div class="absolute top-4 left-4 z-10 w-6 h-6 rounded-full border-2 flex items-center justify-center shadow transition ${isChecked ? 'bg-sky-400 border-sky-400 text-zinc-950' : 'border-white/50 bg-black/45 text-transparent'}">
@@ -5115,7 +5393,7 @@
                     </div>`
                   : ''
               }
-              <img src="${alb.cover}" alt="" class="w-full aspect-square rounded-2xl object-cover bg-white/10 shadow-md" />
+              <img src="${alb.cover}" alt="" loading="lazy" decoding="async" class="w-full aspect-square rounded-2xl object-cover bg-white/10 shadow-md" />
               <div class="px-0.5 flex items-center justify-between gap-1.5">
                 <div class="min-w-0 flex-1">
                   <div class="text-xs sm:text-sm font-bold text-white truncate">${escapeHtml(alb.name)}</div>
@@ -5193,7 +5471,7 @@
             const isFav = favSet.has(art.name);
             const isChecked = isMs && state.selectedGroupKeys.has(art.name);
             return `
-            <div data-artist-name="${escapeHtml(art.name)}" class="artist-card relative clear-liquid-card rounded-3xl p-3.5 text-center space-y-2.5 cursor-pointer active:scale-[0.98] transition ${isChecked ? 'ring-2 ring-sky-400 bg-sky-500/20' : isFav ? 'ring-1 ring-amber-300/35' : ''}">
+            <div data-artist-name="${escapeHtml(art.name)}" class="artist-card relative clear-liquid-card rounded-3xl p-3.5 text-center space-y-2.5 cursor-pointer active:scale-[0.98] transition ${isChecked ? 'ring-2 ring-sky-400 bg-sky-500/20' : isFav ? 'ring-2 ring-amber-300/70' : ''}">
               ${
                 isMs
                   ? `<div class="absolute top-3 left-3 z-10 w-6 h-6 rounded-full border-2 flex items-center justify-center shadow transition ${isChecked ? 'bg-sky-400 border-sky-400 text-zinc-950' : 'border-white/50 bg-black/45 text-transparent'}">
@@ -5206,7 +5484,7 @@
                   ? `<button data-fav-artist="${escapeHtml(art.name)}" class="btn-fav-artist absolute top-2.5 right-2.5 z-10 w-7 h-7 rounded-full flex items-center justify-center transition active:scale-90 ${isFav ? 'text-amber-300 bg-amber-400/15' : 'text-white/35 hover:text-white/75 hover:bg-white/10'}" title="${isFav ? '取消收藏' : '收藏歌手'}" aria-label="收藏歌手">${buildStarIconSvg(isFav)}</button>`
                   : ''
               }
-              <img src="${art.cover}" alt="" class="w-24 h-24 rounded-full object-cover mx-auto border-2 border-white/15 bg-white/10 shadow-lg" />
+              <img src="${art.cover}" alt="" loading="lazy" decoding="async" class="w-24 h-24 rounded-full object-cover mx-auto border-2 border-white/15 bg-white/10 shadow-lg" />
               <div>
                 <div class="text-xs sm:text-sm font-bold text-white truncate">${escapeHtml(art.name)}</div>
                 <div class="text-[11px] text-white/55 mt-0.5">${art.tracks.length} 首歌曲</div>
@@ -5261,6 +5539,468 @@
         });
       }
 
+      // =========================================================================
+      // §14 METADATA FETCH ENGINE (MusicBrainz + Cover Art Archive + Wikipedia)
+      // - Read-only display layer; never auto-mutates user file tags or customMeta.
+      // - Stored in IndexedDB `metaCache` (excluded from JSON backups).
+      // =========================================================================
+      const META_CACHE_MISS_TTL_MS = 7 * 24 * 3600 * 1000;
+      let mbQueueTail = Promise.resolve();
+      let mbLastRequestAt = 0;
+
+      function mbEnqueue(taskFn) {
+        const run = async () => {
+          const waitMs = Math.max(0, 1050 - (Date.now() - mbLastRequestAt));
+          if (waitMs > 0) await new Promise((r) => setTimeout(r, waitMs));
+          mbLastRequestAt = Date.now();
+          return await taskFn();
+        };
+        const next = mbQueueTail.then(run, run);
+        mbQueueTail = next.catch(() => {});
+        return next;
+      }
+
+      function normalizeMetaQuery(str) {
+        return String(str || '')
+          .replace(/[\(\[【（][^\)\]】）]*(remaster|deluxe|edition|explicit|bonus|version|live|ost|soundtrack|single|ep|flac|hi-res|clean|disc\s*\d+)[^\)\]】）]*[\)\]】）]/gi, ' ')
+          .replace(/[\(\[【（][^\)\]】）]*[\)\]】）]/g, ' ')
+          .replace(/\b(feat\.?|ft\.?|featuring)\b.*$/i, ' ')
+          .replace(/[-–—]\s*(single|ep|remaster(ed)?|deluxe|live)\b.*$/i, ' ')
+          .replace(/[\u2018\u2019'`".,!?;:·•/\\|+~]/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .toLowerCase();
+      }
+
+      function metaNameSimilarity(a, b) {
+        const na = normalizeMetaQuery(a);
+        const nb = normalizeMetaQuery(b);
+        if (!na || !nb) return 0;
+        if (na === nb) return 1;
+        if (na.includes(nb) || nb.includes(na)) {
+          const ratio = Math.min(na.length, nb.length) / Math.max(na.length, nb.length);
+          return ratio >= 0.55 ? 0.82 + ratio * 0.15 : ratio;
+        }
+        const sa = new Set(na.split(' ').filter(Boolean));
+        const sb = new Set(nb.split(' ').filter(Boolean));
+        if (!sa.size || !sb.size) return 0;
+        let inter = 0;
+        for (const w of sa) if (sb.has(w)) inter++;
+        return (2 * inter) / (sa.size + sb.size);
+      }
+
+      function escapeMbLucene(str) {
+        return String(str || '').replace(/([+\-!(){}\[\]^"~*?:\\/])/g, '\\$1').trim();
+      }
+
+      async function fetchJsonWithTimeout(url, timeoutMs = 8000) {
+        const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+        const timer = ctrl ? setTimeout(() => ctrl.abort(), timeoutMs) : null;
+        try {
+          const resp = await fetch(url, {
+            headers: { Accept: 'application/json' },
+            signal: ctrl ? ctrl.signal : undefined
+          });
+          if (!resp.ok) return { ok: false, status: resp.status, data: null };
+          const data = await resp.json();
+          return { ok: true, status: resp.status, data };
+        } catch (err) {
+          return { ok: false, status: 0, error: String(err?.message || err), data: null };
+        } finally {
+          if (timer) clearTimeout(timer);
+        }
+      }
+
+      async function fetchWikiSummary(queryName) {
+        const clean = String(queryName || '').trim();
+        if (!clean || clean === '未知歌手') return null;
+        const musicHintRe = /(歌手|音乐|乐队|组合|唱作|作曲|作词|饶舌|说唱|声优|演奏|制作人|唱片|专辑|singer|musician|band|composer|rapper|songwriter|producer|dj|vocalist|record|album|music)/i;
+        const tryLang = async (lang) => {
+          // Direct summary lookup first, then search API fallback if needed
+          const directUrl = `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(clean)}`;
+          let res = await fetchJsonWithTimeout(directUrl, 6500);
+          let page = res.ok ? res.data : null;
+          if (!page || page.type === 'disambiguation' || !page.extract) {
+            const searchUrl = `https://${lang}.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(clean)}&srlimit=3&format=json&origin=*`;
+            const sr = await fetchJsonWithTimeout(searchUrl, 6500);
+            const hits = sr.ok && Array.isArray(sr.data?.query?.search) ? sr.data.query.search : [];
+            const bestHit = hits.find((h) => {
+              const sim = metaNameSimilarity(h.title, clean);
+              const snippet = String(h.snippet || '');
+              return sim >= 0.65 && (musicHintRe.test(h.title) || musicHintRe.test(snippet) || sim >= 0.9);
+            });
+            if (bestHit?.title) {
+              const r2 = await fetchJsonWithTimeout(`https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(bestHit.title)}`, 6500);
+              if (r2.ok && r2.data && r2.data.type !== 'disambiguation') page = r2.data;
+            }
+          }
+          if (!page || page.type === 'disambiguation' || !page.extract) return null;
+          const titleSim = metaNameSimilarity(page.title, clean);
+          const descAndExtract = `${page.description || ''} ${page.extract || ''}`;
+          if (titleSim < 0.6 && !musicHintRe.test(descAndExtract)) return null;
+          if (!musicHintRe.test(descAndExtract) && titleSim < 0.85) return null;
+          return {
+            lang,
+            title: page.title || clean,
+            bio: String(page.extract || '').trim(),
+            photoUrl: page.thumbnail?.source || page.originalimage?.source || '',
+            wikiUrl: page.content_urls?.mobile?.page || page.content_urls?.desktop?.page || ''
+          };
+        };
+        const zh = await tryLang('zh');
+        if (zh && zh.bio) return zh;
+        const en = await tryLang('en');
+        if (en && en.bio) return en;
+        return null;
+      }
+
+      async function fetchAlbumMetadata(albumName, artistName, forceRefresh = false) {
+        const normAlbum = normalizeMetaQuery(albumName);
+        const isUnknownArtist = !artistName || artistName === '未知歌手' || artistName === '群星' || artistName === 'Various Artists';
+        const normArtist = isUnknownArtist ? '' : normalizeMetaQuery(artistName);
+        const cacheKey = `album:${normArtist}|${normAlbum}`;
+
+        if (!forceRefresh) {
+          const cached = await dbGet('metaCache', cacheKey);
+          if (cached) {
+            if (cached.found || (Date.now() - (cached.fetchedAt || 0) < META_CACHE_MISS_TTL_MS)) {
+              return cached;
+            }
+          }
+        }
+
+        if (!normAlbum || albumName === '未知专辑') {
+          return { key: cacheKey, type: 'album', found: false, fetchedAt: Date.now() };
+        }
+        if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+          const cached = await dbGet('metaCache', cacheKey);
+          return cached || { key: cacheKey, type: 'album', found: false, offline: true, fetchedAt: Date.now() };
+        }
+
+        const qParts = [`release:"${escapeMbLucene(normAlbum)}"`];
+        if (normArtist) qParts.push(`artist:"${escapeMbLucene(normArtist)}"`);
+        const searchUrl = `https://musicbrainz.org/ws/2/release/?query=${encodeURIComponent(qParts.join(' AND '))}&fmt=json&limit=6`;
+        const searchRes = await mbEnqueue(() => fetchJsonWithTimeout(searchUrl, 8500));
+        if (!searchRes.ok) {
+          // Network or CORS error: do not overwrite valid cache
+          const fallback = await dbGet('metaCache', cacheKey);
+          return fallback || { key: cacheKey, type: 'album', found: false, networkError: true, fetchedAt: Date.now() };
+        }
+
+        const releases = Array.isArray(searchRes.data?.releases) ? searchRes.data.releases : [];
+        let best = null;
+        for (const rel of releases) {
+          const mbScore = Number(rel.score || 0);
+          if (mbScore < 80) continue;
+          const titleSim = metaNameSimilarity(rel.title, albumName);
+          const relArtist = (rel['artist-credit'] || []).map((a) => a.name || a.artist?.name || '').join(' ');
+          const artistSim = normArtist ? metaNameSimilarity(relArtist, artistName) : 1;
+          if (titleSim >= 0.65 && artistSim >= 0.6) {
+            const combined = mbScore * 0.5 + titleSim * 30 + artistSim * 20;
+            if (!best || combined > best.combined) {
+              best = { rel, combined };
+            }
+          }
+        }
+
+        if (!best) {
+          const miss = { key: cacheKey, type: 'album', found: false, fetchedAt: Date.now() };
+          await dbPut('metaCache', miss);
+          return miss;
+        }
+
+        const mbid = best.rel.id;
+        const detailUrl = `https://musicbrainz.org/ws/2/release/${encodeURIComponent(mbid)}?inc=labels+recordings+genres+tags&fmt=json`;
+        const detailRes = await mbEnqueue(() => fetchJsonWithTimeout(detailUrl, 8500));
+        const d = detailRes.ok && detailRes.data ? detailRes.data : best.rel;
+
+        const labelNames = [...new Set((d['label-info'] || []).map((li) => li.label?.name).filter(Boolean))];
+        const genreNames = [...new Set([
+          ...(d.genres || []).map((g) => g.name),
+          ...(d.tags || []).filter((t) => (t.count || 0) >= 1).map((t) => t.name)
+        ].filter(Boolean))].slice(0, 4);
+
+        const tracklist = [];
+        for (const medium of (d.media || [])) {
+          for (const tr of (medium.tracks || [])) {
+            tracklist.push({
+              num: tr.number || String(tracklist.length + 1),
+              title: tr.title || tr.recording?.title || '',
+              lengthMs: Number(tr.length || tr.recording?.length || 0)
+            });
+          }
+        }
+
+        const hasFrontArt = Boolean(d['cover-art-archive']?.front || best.rel['cover-art-archive']?.front);
+        const record = {
+          key: cacheKey,
+          type: 'album',
+          found: true,
+          mbid,
+          title: d.title || best.rel.title || albumName,
+          releaseDate: d.date || best.rel.date || '',
+          country: d.country || best.rel.country || '',
+          label: labelNames.join(' / '),
+          genres: genreNames,
+          tracklist: tracklist.slice(0, 60),
+          caaCoverUrl: hasFrontArt ? `https://coverartarchive.org/release/${encodeURIComponent(mbid)}/front-500` : '',
+          fetchedAt: Date.now()
+        };
+        await dbPut('metaCache', record);
+        return record;
+      }
+
+      async function fetchArtistMetadata(artistName, forceRefresh = false) {
+        const normArtist = normalizeMetaQuery(artistName);
+        const cacheKey = `artist:${normArtist}`;
+
+        if (!forceRefresh) {
+          const cached = await dbGet('metaCache', cacheKey);
+          if (cached) {
+            if (cached.found || (Date.now() - (cached.fetchedAt || 0) < META_CACHE_MISS_TTL_MS)) {
+              return cached;
+            }
+          }
+        }
+
+        if (!normArtist || artistName === '未知歌手' || artistName === '群星' || artistName === 'Various Artists') {
+          return { key: cacheKey, type: 'artist', found: false, fetchedAt: Date.now() };
+        }
+        if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+          const cached = await dbGet('metaCache', cacheKey);
+          return cached || { key: cacheKey, type: 'artist', found: false, offline: true, fetchedAt: Date.now() };
+        }
+
+        // 1. MusicBrainz artist facts (polite serial queue)
+        const mbUrl = `https://musicbrainz.org/ws/2/artist/?query=${encodeURIComponent(`artist:"${escapeMbLucene(normArtist)}"`)}&fmt=json&limit=5`;
+        const mbRes = await mbEnqueue(() => fetchJsonWithTimeout(mbUrl, 8500));
+        let mbArtist = null;
+        if (mbRes.ok && Array.isArray(mbRes.data?.artists)) {
+          for (const a of mbRes.data.artists) {
+            const score = Number(a.score || 0);
+            if (score < 85) continue;
+            const sim = Math.max(
+              metaNameSimilarity(a.name, artistName),
+              metaNameSimilarity(a['sort-name'], artistName),
+              ...(a.aliases || []).map((al) => metaNameSimilarity(al.name, artistName))
+            );
+            if (sim >= 0.72) {
+              mbArtist = a;
+              break;
+            }
+          }
+        }
+
+        // 2. Wikipedia bio & photo (zh -> en fallback)
+        const wiki = await fetchWikiSummary(artistName);
+
+        if (!mbArtist && !wiki) {
+          if (!mbRes.ok) {
+            const fallback = await dbGet('metaCache', cacheKey);
+            return fallback || { key: cacheKey, type: 'artist', found: false, networkError: true, fetchedAt: Date.now() };
+          }
+          const miss = { key: cacheKey, type: 'artist', found: false, fetchedAt: Date.now() };
+          await dbPut('metaCache', miss);
+          return miss;
+        }
+
+        const lifeBegin = mbArtist?.['life-span']?.begin ? String(mbArtist['life-span'].begin).slice(0, 4) : '';
+        const lifeEnd = mbArtist?.['life-span']?.end ? String(mbArtist['life-span'].end).slice(0, 4) : '';
+        const activeYears = lifeBegin ? `${lifeBegin}${lifeEnd ? `–${lifeEnd}` : '–至今'}` : '';
+        const area = mbArtist?.area?.name || mbArtist?.['begin-area']?.name || '';
+        const tags = [...new Set((mbArtist?.tags || []).filter((t) => (t.count || 0) >= 1).map((t) => t.name))].slice(0, 4);
+
+        const record = {
+          key: cacheKey,
+          type: 'artist',
+          found: true,
+          mbid: mbArtist?.id || '',
+          name: mbArtist?.name || wiki?.title || artistName,
+          area,
+          activeYears,
+          tags,
+          bio: wiki?.bio || '',
+          photoUrl: wiki?.photoUrl || '',
+          wikiLang: wiki?.lang || '',
+          fetchedAt: Date.now()
+        };
+        await dbPut('metaCache', record);
+        return record;
+      }
+
+      async function applyCaaCoverToAlbum(albumName, matchedTracks, caaCoverUrl) {
+        if (!caaCoverUrl || !matchedTracks.length) return;
+        showToast('正在获取封面...');
+        let coverValue = caaCoverUrl;
+        try {
+          const resp = await fetch(caaCoverUrl);
+          if (resp.ok) {
+            const blob = await resp.blob();
+            coverValue = await new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(String(reader.result || caaCoverUrl));
+              reader.onerror = () => resolve(caaCoverUrl);
+              reader.readAsDataURL(blob);
+            });
+          }
+        } catch {}
+        for (const t of matchedTracks) {
+          if (!state.customMeta[t.id]) state.customMeta[t.id] = {};
+          state.customMeta[t.id].cover = coverValue;
+        }
+        await saveAppState();
+        renderAlbums();
+        renderLibrary();
+        if (state.activeGroup?.type === 'album' && state.activeGroup?.name === albumName) {
+          openGroupDetail('album', albumName);
+        }
+        showToast('已将此封面应用到当前专辑');
+      }
+
+      function renderAlbumMetaCardContent(container, albumName, artistName, matchedTracks, hasLocalCover, meta) {
+        if (!container) return;
+        const refreshBtnHtml = `<button id="btn-album-meta-refresh" class="px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/20 text-[11px] text-white/80 transition active:scale-95">刷新资料</button>`;
+        if (!meta || !meta.found) {
+          container.innerHTML = `
+            <div class="clear-liquid-card rounded-2xl p-3.5 flex items-center justify-between gap-3">
+              <div class="text-xs text-white/50">${meta?.offline ? '离线状态，暂无缓存资料' : '未找到资料'}</div>
+              ${refreshBtnHtml}
+            </div>`;
+        } else {
+          const infoItems = [];
+          if (meta.releaseDate) infoItems.push(`<span class="px-2 py-0.5 rounded-full bg-white/10 text-[11px] text-white/85 tabular-nums">发行：${escapeHtml(meta.releaseDate)}</span>`);
+          if (meta.label) infoItems.push(`<span class="px-2 py-0.5 rounded-full bg-white/10 text-[11px] text-white/85">厂牌：${escapeHtml(meta.label)}</span>`);
+          if (meta.genres && meta.genres.length) infoItems.push(`<span class="px-2 py-0.5 rounded-full bg-sky-400/15 border border-sky-300/25 text-[11px] text-sky-200">${escapeHtml(meta.genres.join(' · '))}</span>`);
+
+          const caaOfferHtml = (!hasLocalCover && meta.caaCoverUrl) ? `
+            <div class="mt-3 pt-3 border-t border-white/10 flex items-center justify-between gap-3">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <img src="${escapeHtml(meta.caaCoverUrl)}" alt="" loading="lazy" decoding="async" class="w-10 h-10 rounded-lg object-cover border border-white/15 shrink-0" />
+                <div class="min-w-0">
+                  <div class="text-xs font-medium text-white/90 truncate">发现 Cover Art Archive 专辑封面</div>
+                  <div class="text-[11px] text-white/50">仅在你确认后应用，不修改音频文件</div>
+                </div>
+              </div>
+              <button id="btn-album-apply-caa" class="px-3 py-1.5 rounded-full bg-sky-400/25 hover:bg-sky-400/35 border border-sky-300/35 text-[11px] font-semibold text-white shrink-0 active:scale-95 transition">使用此封面</button>
+            </div>` : '';
+
+          const localNormTitles = matchedTracks.map((t) => normalizeMetaQuery(t.title));
+          const tracklistHtml = (meta.tracklist && meta.tracklist.length) ? `
+            <details class="mt-3 pt-2.5 border-t border-white/10">
+              <summary class="text-xs font-medium text-white/75 cursor-pointer select-none flex items-center justify-between">
+                <span>官方曲目表对照（共 ${meta.tracklist.length} 首）</span>
+                <span class="text-[11px] text-white/45">展开查看</span>
+              </summary>
+              <div class="mt-2 space-y-1 max-h-56 overflow-y-auto no-scrollbar">
+                ${meta.tracklist.map((tr) => {
+                  const hasLocal = localNormTitles.some((lt) => metaNameSimilarity(lt, tr.title) >= 0.72);
+                  return `
+                    <div class="flex items-center justify-between gap-2 text-xs py-1 px-2 rounded-lg ${hasLocal ? 'text-white/85 bg-white/5' : 'text-white/35'}">
+                      <div class="flex items-center gap-2 min-w-0">
+                        <span class="w-5 text-[10px] tabular-nums text-white/40 shrink-0">${escapeHtml(tr.num)}</span>
+                        <span class="truncate">${escapeHtml(tr.title)}</span>
+                      </div>
+                      <span class="text-[10px] shrink-0 ${hasLocal ? 'text-emerald-300/90' : 'text-white/35'}">${hasLocal ? '已拥有' : '本地缺失'}</span>
+                    </div>`;
+                }).join('')}
+              </div>
+            </details>` : '';
+
+          container.innerHTML = `
+            <div class="clear-liquid-card rounded-2xl p-3.5 text-left">
+              <div class="flex items-center justify-between gap-2 mb-2">
+                <span class="text-xs font-semibold text-white/85">专辑资料 · MusicBrainz</span>
+                ${refreshBtnHtml}
+              </div>
+              <div class="flex flex-wrap gap-1.5">
+                ${infoItems.length ? infoItems.join('') : '<span class="text-xs text-white/50">暂无更多发行信息</span>'}
+              </div>
+              ${caaOfferHtml}
+              ${tracklistHtml}
+            </div>`;
+        }
+
+        const refreshBtn = $('btn-album-meta-refresh');
+        if (refreshBtn) {
+          on(refreshBtn, 'click', async () => {
+            refreshBtn.textContent = '刷新中...';
+            refreshBtn.disabled = true;
+            const fresh = await fetchAlbumMetadata(albumName, artistName, true);
+            if (state.activeGroup?.type === 'album' && state.activeGroup?.name === albumName) {
+              renderAlbumMetaCardContent(container, albumName, artistName, matchedTracks, hasLocalCover, fresh);
+            }
+          });
+        }
+        const applyCaaBtn = $('btn-album-apply-caa');
+        if (applyCaaBtn && meta?.caaCoverUrl) {
+          on(applyCaaBtn, 'click', () => applyCaaCoverToAlbum(albumName, matchedTracks, meta.caaCoverUrl));
+        }
+      }
+
+      function renderArtistMetaIntoPage(artistName, meta) {
+        const bioBox = $('artist-meta-bio-box');
+        const factsEl = $('artist-meta-facts');
+        const avatarWrap = $('artist-hero-avatar');
+        const refreshBtnHtml = `<button id="btn-artist-meta-refresh" class="px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/20 text-[11px] text-white/80 transition active:scale-95 shrink-0">刷新资料</button>`;
+
+        if (factsEl) {
+          if (meta?.found) {
+            const parts = [meta.area, meta.activeYears, ...(meta.tags || []).slice(0, 2)].filter(Boolean);
+            factsEl.textContent = parts.join(' · ');
+            factsEl.classList.toggle('hidden', !parts.length);
+          } else {
+            factsEl.textContent = '';
+            factsEl.classList.add('hidden');
+          }
+        }
+
+        if (avatarWrap && meta?.found && meta.photoUrl) {
+          avatarWrap.innerHTML = `<img src="${escapeHtml(meta.photoUrl)}" alt="${escapeHtml(artistName)}" class="w-full h-full object-cover" />`;
+        }
+
+        if (bioBox) {
+          if (!meta || !meta.found || (!meta.bio && !meta.area && !meta.activeYears)) {
+            bioBox.innerHTML = `
+              <div class="flex items-center justify-between gap-3">
+                <span class="text-xs text-white/50">${meta?.offline ? '离线状态，暂无缓存资料' : '未找到资料'}</span>
+                ${refreshBtnHtml}
+              </div>`;
+          } else {
+            const bioText = meta.bio || '暂无详细简介';
+            const isLong = bioText.length > 90;
+            bioBox.innerHTML = `
+              <div class="flex items-center justify-between gap-2 mb-1.5">
+                <span class="text-xs font-semibold text-white/85">歌手简介</span>
+                ${refreshBtnHtml}
+              </div>
+              <p id="artist-bio-text" class="text-xs text-white/75 leading-relaxed ${isLong ? 'line-clamp-3' : ''}">${escapeHtml(bioText)}</p>
+              ${isLong ? `<button id="btn-artist-bio-toggle" class="mt-1.5 text-[11px] font-medium text-sky-300 hover:text-sky-200">展开全部</button>` : ''}`;
+
+            const toggleBtn = $('btn-artist-bio-toggle');
+            const bioP = $('artist-bio-text');
+            if (toggleBtn && bioP) {
+              on(toggleBtn, 'click', () => {
+                const expanded = !bioP.classList.contains('line-clamp-3');
+                bioP.classList.toggle('line-clamp-3', expanded);
+                toggleBtn.textContent = expanded ? '展开全部' : '收起简介';
+              });
+            }
+          }
+
+          const refBtn = $('btn-artist-meta-refresh');
+          if (refBtn) {
+            on(refBtn, 'click', async () => {
+              refBtn.textContent = '刷新中...';
+              refBtn.disabled = true;
+              const fresh = await fetchArtistMetadata(artistName, true);
+              if (state.activeGroup?.type === 'artist' && state.activeGroup?.name === artistName) {
+                renderArtistMetaIntoPage(artistName, fresh);
+              }
+            });
+          }
+        }
+      }
+
       function openGroupDetail(type, name) {
         state.activeGroup = { type, name };
         const matched = state.tracks
@@ -5272,8 +6012,10 @@
         const headerPlayBtn = $('btn-group-play-all');
         const hero = $('album-jewel-hero');
 
-        if (headerText) headerText.classList.toggle('hidden', isAlbum);
-        if (headerPlayBtn) headerPlayBtn.classList.toggle('hidden', isAlbum);
+        state.groupDetailRenderToken = (state.groupDetailRenderToken || 0) + 1;
+        const renderToken = state.groupDetailRenderToken;
+        if (headerText) headerText.classList.toggle('hidden', true);
+        if (headerPlayBtn) headerPlayBtn.classList.toggle('hidden', true);
 
         $('group-detail-title').textContent = name;
         $('group-detail-subtitle').textContent = `${isAlbum ? '专辑' : '歌手'} · 共 ${matched.length} 首歌曲`;
@@ -5362,6 +6104,9 @@
                   <span>随机</span>
                 </button>
               </div>
+              <div id="album-meta-card" class="w-full pt-1">
+                <div class="clear-liquid-card rounded-2xl p-3.5 text-left text-xs text-white/50">正在查询专辑资料...</div>
+              </div>
               <div class="w-full flex items-center justify-between pt-2 border-t border-white/10 text-xs">
                 <span class="font-semibold text-white/90">光盘 1</span>
                 <span class="text-white/50 tabular-nums">${matched.length} 首歌曲${totalDurLabel}</span>
@@ -5372,10 +6117,21 @@
           const cdDisc = $('album-cd-disc');
           const cdHud = $('album-cd-hud');
 
+          const playCurrentAlbum = async () => {
+            if (!matched.length) return;
+            state.playMode = 'loop';
+            updatePlayModeButton();
+            state.queue = matched.map((t) => t.id);
+            await loadTrack(matched[0].id, true);
+            if (cdDisc) cdDisc.classList.remove('spin-paused');
+            saveAppState();
+          };
+
           let cdLastAngle = null;
           let cdStartX = 0;
           let cdStartY = 0;
-          let cdMoved = false;
+          let cdStartTime = 0;
+          let cdMaxDist = 0;
           let cdScrubbed = false;
           let cdActivePointer = false;
           let cdHudTimer = null;
@@ -5403,8 +6159,7 @@
             if (isThisAlbumCurrent) {
               await togglePlayPause();
             } else {
-              state.queue = matched.map((t) => t.id);
-              await loadTrack(matched[0].id, true);
+              await playCurrentAlbum();
             }
             if (cdDisc) cdDisc.classList.toggle('spin-paused', !state.isPlaying);
             flashCdHud(state.isPlaying ? '▶ 播放中' : '❚❚ 已暂停');
@@ -5415,19 +6170,20 @@
             cdActivePointer = true;
             cdStartX = cx;
             cdStartY = cy;
-            cdMoved = false;
+            cdStartTime = Date.now();
+            cdMaxDist = 0;
             cdScrubbed = false;
             cdLastAngle = getCdAngle(cx, cy);
           };
 
           const moveCdGesture = (cx, cy) => {
             if (!cdActivePointer || !cdCase.classList.contains('is-open') || cdLastAngle === null) return;
-            if (Math.hypot(cx - cdStartX, cy - cdStartY) > 7) cdMoved = true;
+            cdMaxDist = Math.max(cdMaxDist, Math.hypot(cx - cdStartX, cy - cdStartY));
             const curAngle = getCdAngle(cx, cy);
             let delta = curAngle - cdLastAngle;
             if (delta > 180) delta -= 360;
             if (delta < -180) delta += 360;
-            if (Math.abs(delta) > 3.5) {
+            if (Math.abs(delta) > 3.5 && cdMaxDist >= 8) {
               cdScrubbed = true;
               if (Number.isFinite(audio.duration) && audio.duration > 0) {
                 const seekDelta = (delta / 360) * 24;
@@ -5442,11 +6198,12 @@
 
           const endCdGesture = async () => {
             if (!cdActivePointer) return;
+            const elapsed = Date.now() - cdStartTime;
             const wasScrubbed = cdScrubbed;
-            const wasMoved = cdMoved;
+            const isCleanTap = !wasScrubbed && cdMaxDist < 8 && elapsed < 300;
             cdActivePointer = false;
             cdLastAngle = null;
-            if (!wasScrubbed && !wasMoved && cdCase.classList.contains('is-open')) {
+            if (isCleanTap && cdCase.classList.contains('is-open')) {
               await toggleAlbumDiscPlay();
             }
             if (wasScrubbed) {
@@ -5496,15 +6253,7 @@
             cdCase.classList.toggle('is-open');
           });
 
-          on('btn-album-play', async () => {
-            if (!matched.length) return;
-            state.playMode = 'loop';
-            updatePlayModeButton();
-            state.queue = matched.map((t) => t.id);
-            await loadTrack(matched[0].id, true);
-            if (cdDisc) cdDisc.classList.remove('spin-paused');
-            saveAppState();
-          });
+          on('btn-album-play', () => playCurrentAlbum());
 
           if (!albumYear && matched.length) {
             (async () => {
@@ -5545,11 +6294,7 @@
 
           on('btn-album-shuffle', async () => {
             if (!matched.length) return;
-            const shuffled = matched.map((t) => t.id);
-            for (let i = shuffled.length - 1; i > 0; i--) {
-              const j = Math.floor(Math.random() * (i + 1));
-              [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-            }
+            const shuffled = shuffleArray(matched.map((t) => t.id));
             state.playMode = 'shuffle';
             updatePlayModeButton();
             state.queue = shuffled;
@@ -5557,9 +6302,190 @@
             if (cdDisc) cdDisc.classList.remove('spin-paused');
             saveAppState();
           });
+
+          // §14 Lazy-load album metadata (MusicBrainz + optional CAA cover)
+          const hasLocalCover = matched.some((t) => {
+            const raw = state.tracks.find((x) => x.id === t.id);
+            const cm = state.customMeta[t.id] || {};
+            const c = cm.cover || raw?.cover || '';
+            return Boolean(c && c !== DEFAULT_APP_COVER);
+          });
+          (async () => {
+            const meta = await fetchAlbumMetadata(name, artist, false);
+            if (renderToken !== state.groupDetailRenderToken) return;
+            const metaCard = $('album-meta-card');
+            if (metaCard) renderAlbumMetaCardContent(metaCard, name, artist, matched, hasLocalCover, meta);
+          })();
         } else if (hero) {
-          hero.classList.add('hidden');
-          hero.innerHTML = '';
+          // §15 Full Artist Detail Page
+          const albumMap = new Map();
+          for (const t of matched) {
+            const aName = t.album || '未知专辑';
+            if (!albumMap.has(aName)) {
+              albumMap.set(aName, { name: aName, cover: t.cover || DEFAULT_APP_COVER, tracks: [] });
+            }
+            const entry = albumMap.get(aName);
+            entry.tracks.push(t);
+            if (entry.cover === DEFAULT_APP_COVER && t.cover && t.cover !== DEFAULT_APP_COVER) {
+              entry.cover = t.cover;
+            }
+          }
+          const artistAlbums = Array.from(albumMap.values());
+          const totalPlays = matched.reduce((acc, t) => acc + (Number(state.stats?.trackPlays?.[t.id]) || 0), 0);
+          const isFavArtist = (state.favoriteArtists || []).includes(name);
+          const favAlbumSet = new Set(state.favoriteAlbums || []);
+
+          const uniqueCovers = [...new Set(artistAlbums.map((a) => a.cover).filter((c) => c && c !== DEFAULT_APP_COVER))];
+          let avatarInnerHtml = '';
+          if (uniqueCovers.length >= 4) {
+            avatarInnerHtml = `<div class="w-full h-full grid grid-cols-2 grid-rows-2">${uniqueCovers.slice(0, 4).map((c) => `<img src="${c}" alt="" class="w-full h-full object-cover" />`).join('')}</div>`;
+          } else if (uniqueCovers.length >= 1) {
+            avatarInnerHtml = `<img src="${uniqueCovers[0]}" alt="" class="w-full h-full object-cover" />`;
+          } else {
+            const initial = escapeHtml((name || '?').trim().slice(0, 1).toUpperCase());
+            avatarInnerHtml = `<div class="w-full h-full bg-gradient-to-br from-sky-400/40 via-indigo-400/35 to-fuchsia-400/35 flex items-center justify-center text-3xl font-bold text-white/90">${initial}</div>`;
+          }
+
+          const topTracks = [...matched]
+            .map((t) => ({ track: t, plays: Number(state.stats?.trackPlays?.[t.id]) || 0 }))
+            .sort((a, b) => b.plays - a.plays)
+            .slice(0, 10);
+          const hasAnyPlayStats = topTracks.some((x) => x.plays > 0);
+
+          const albumsStripHtml = artistAlbums.length ? `
+            <div class="w-full text-left space-y-2.5">
+              <div class="flex items-center justify-between">
+                <h3 class="text-sm font-semibold text-white/90">专辑（${artistAlbums.length}）</h3>
+              </div>
+              <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                ${artistAlbums.map((alb) => `
+                  <div class="artist-detail-album-card clear-liquid-card rounded-2xl p-2.5 cursor-pointer transition hover:bg-white/15 active:scale-[0.98] ${favAlbumSet.has(alb.name) ? 'ring-2 ring-amber-300/70' : ''}" data-open-album="${escapeHtml(alb.name)}">
+                    <div class="aspect-square rounded-xl overflow-hidden bg-black/30 mb-2 border border-white/10">
+                      <img src="${alb.cover}" alt="" loading="lazy" decoding="async" class="w-full h-full object-cover" />
+                    </div>
+                    <div class="text-xs font-semibold text-white truncate">${escapeHtml(alb.name)}</div>
+                    <div class="text-[11px] text-white/50 tabular-nums">${alb.tracks.length} 首歌曲</div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>` : '';
+
+          const topTracksHtml = hasAnyPlayStats ? `
+            <div class="w-full text-left space-y-2">
+              <div class="flex items-center justify-between">
+                <h3 class="text-sm font-semibold text-white/90">热门曲目（前 ${topTracks.filter((x) => x.plays > 0).length}）</h3>
+                <span class="text-[11px] text-white/45">按播放次数排序</span>
+              </div>
+              <div class="space-y-1.5">
+                ${topTracks.filter((x) => x.plays > 0).map((item, idx) => `
+                  <button class="artist-top-track-row w-full song-card-glass rounded-xl px-3 py-2 flex items-center gap-3 text-left hover:bg-white/15 active:scale-[0.99] transition" data-top-track-id="${escapeHtml(item.track.id)}">
+                    <span class="w-5 text-center text-xs font-bold tabular-nums ${idx < 3 ? 'text-amber-300' : 'text-white/45'}">${idx + 1}</span>
+                    <img src="${item.track.cover}" alt="" loading="lazy" decoding="async" class="w-9 h-9 rounded-lg object-cover border border-white/10 shrink-0" />
+                    <div class="min-w-0 flex-1">
+                      <div class="text-xs font-semibold text-white truncate">${escapeHtml(item.track.title)}</div>
+                      <div class="text-[11px] text-white/50 truncate">${escapeHtml(item.track.album)}</div>
+                    </div>
+                    <span class="text-[11px] text-sky-300/90 tabular-nums shrink-0">${item.plays} 次</span>
+                  </button>
+                `).join('')}
+              </div>
+            </div>` : '';
+
+          hero.classList.remove('hidden');
+          hero.innerHTML = `
+            <div class="flex flex-col items-center text-center space-y-4">
+              <div id="artist-hero-avatar" class="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border-2 border-white/20 shadow-2xl ${isFavArtist ? 'ring-2 ring-amber-300/70' : ''}">
+                ${avatarInnerHtml}
+              </div>
+              <div class="space-y-1 px-2 max-w-full">
+                <h2 class="text-2xl font-bold text-white tracking-tight leading-snug">${escapeHtml(name)}</h2>
+                <p id="artist-meta-facts" class="text-xs text-white/55 hidden"></p>
+                <div class="flex items-center justify-center flex-wrap gap-2 pt-1 text-[11px] text-white/65 tabular-nums">
+                  <span class="px-2.5 py-0.5 rounded-full bg-white/10">${artistAlbums.length} 张专辑</span>
+                  <span class="px-2.5 py-0.5 rounded-full bg-white/10">${matched.length} 首歌曲</span>
+                  <span class="px-2.5 py-0.5 rounded-full bg-white/10">累计播放 ${totalPlays} 次</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-center gap-2.5 w-full max-w-sm">
+                <button id="btn-artist-play-all" class="flex-1 py-2.5 px-4 rounded-full bg-sky-400/25 hover:bg-sky-400/35 border border-sky-300/35 text-xs sm:text-sm font-semibold text-white flex items-center justify-center gap-1.5 active:scale-95 transition">
+                  <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                  <span>播放全部</span>
+                </button>
+                <button id="btn-artist-shuffle" class="flex-1 py-2.5 px-4 rounded-full bg-white/12 hover:bg-white/20 border border-white/20 text-xs sm:text-sm font-semibold text-white flex items-center justify-center gap-1.5 active:scale-95 transition">
+                  <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><path stroke-linecap="round" stroke-linejoin="round" d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+                  <span>随机播放</span>
+                </button>
+                <button id="btn-artist-fav-toggle" class="w-11 h-11 rounded-full liquid-pill flex items-center justify-center shrink-0 active:scale-95 transition ${isFavArtist ? 'text-amber-300 ring-2 ring-amber-300/70' : 'text-white/75'}" title="${isFavArtist ? '取消收藏歌手' : '收藏歌手'}" aria-label="收藏歌手">
+                  ${buildStarIconSvg(isFavArtist)}
+                </button>
+              </div>
+              <div id="artist-meta-bio-box" class="w-full clear-liquid-card rounded-2xl p-3.5 text-left">
+                <span class="text-xs text-white/50">正在查询歌手资料...</span>
+              </div>
+              ${albumsStripHtml}
+              ${topTracksHtml}
+              <div class="w-full flex items-center justify-between pt-2 border-t border-white/10 text-xs">
+                <span class="font-semibold text-white/90">全部歌曲</span>
+                <span class="text-white/50 tabular-nums">${matched.length} 首</span>
+              </div>
+            </div>`;
+
+          on('btn-artist-play-all', async () => {
+            if (!matched.length) return;
+            state.playMode = 'loop';
+            updatePlayModeButton();
+            state.queue = matched.map((t) => t.id);
+            await loadTrack(matched[0].id, true);
+            saveAppState();
+          });
+          on('btn-artist-shuffle', async () => {
+            if (!matched.length) return;
+            const shuffled = shuffleArray(matched.map((t) => t.id));
+            state.playMode = 'shuffle';
+            updatePlayModeButton();
+            state.queue = shuffled;
+            await loadTrack(shuffled[0], true);
+            saveAppState();
+          });
+          on('btn-artist-fav-toggle', async () => {
+            await toggleGroupFavorite('artist', name);
+            const nowFav = (state.favoriteArtists || []).includes(name);
+            const favBtn = $('btn-artist-fav-toggle');
+            const avatarEl = $('artist-hero-avatar');
+            if (favBtn) {
+              favBtn.innerHTML = buildStarIconSvg(nowFav);
+              favBtn.classList.toggle('text-amber-300', nowFav);
+              favBtn.classList.toggle('text-white/75', !nowFav);
+              favBtn.classList.toggle('ring-2', nowFav);
+              favBtn.classList.toggle('ring-amber-300/70', nowFav);
+            }
+            if (avatarEl) {
+              avatarEl.classList.toggle('ring-2', nowFav);
+              avatarEl.classList.toggle('ring-amber-300/70', nowFav);
+            }
+          });
+          hero.querySelectorAll('.artist-detail-album-card').forEach((card) => {
+            on(card, 'click', () => {
+              const albName = card.dataset.openAlbum;
+              if (albName) openGroupDetail('album', albName);
+            });
+          });
+          hero.querySelectorAll('.artist-top-track-row').forEach((row) => {
+            on(row, 'click', async () => {
+              const tid = row.dataset.topTrackId;
+              if (!tid) return;
+              state.queue = topTracks.map((x) => x.track.id);
+              await loadTrack(tid, true);
+              saveAppState();
+            });
+          });
+
+          // §14 Lazy-load artist metadata (MusicBrainz + Wikipedia)
+          (async () => {
+            const meta = await fetchArtistMetadata(name, false);
+            if (renderToken !== state.groupDetailRenderToken) return;
+            renderArtistMetaIntoPage(name, meta);
+          })();
         }
 
         const list = $('group-detail-list');
@@ -5661,15 +6587,15 @@
 
             const renderCover = (sizeCls) => {
               if (pl.cover) {
-                return `<img src="${pl.cover}" alt="" class="${sizeCls} ${shapeClass} object-cover bg-white/10 shrink-0" />`;
+                return `<img src="${pl.cover}" alt="" loading="lazy" decoding="async" class="${sizeCls} ${shapeClass} object-cover bg-white/10 shrink-0" />`;
               }
               if (covers.length >= 4 && shape !== 'circle') {
                 return `<div class="${sizeCls} ${shapeClass} overflow-hidden grid grid-cols-2 grid-rows-2 gap-0.5 bg-white/10 shrink-0">
-                  ${covers.map((c) => `<img src="${c}" alt="" class="w-full h-full object-cover" />`).join('')}
+                  ${covers.map((c) => `<img src="${c}" alt="" loading="lazy" decoding="async" class="w-full h-full object-cover" />`).join('')}
                 </div>`;
               }
               const singleCover = covers[0] || DEFAULT_APP_COVER;
-              return `<img src="${singleCover}" alt="" class="${sizeCls} ${shapeClass} object-cover bg-white/10 shrink-0" />`;
+              return `<img src="${singleCover}" alt="" loading="lazy" decoding="async" class="${sizeCls} ${shapeClass} object-cover bg-white/10 shrink-0" />`;
             };
 
             const wrapSwipe = (innerCard) => `
@@ -6345,7 +7271,7 @@
                   : ''
               }
               <div class="relative w-12 h-12 rounded-xl overflow-hidden bg-white/10 shrink-0">
-                <img src="${track.cover}" alt="" class="w-full h-full object-cover" />
+                <img src="${track.cover}" alt="" loading="lazy" decoding="async" class="w-full h-full object-cover" />
                 ${
                   isCurrent && !enableMultiSelect
                     ? `<div class="active-playing-overlay absolute inset-0 bg-black/45 flex items-center justify-center">
@@ -6392,6 +7318,7 @@
               return;
             }
             state.queue = validTracks.map((t) => t.id);
+            recordManualTrackInShuffleBag(id);
             loadTrack(id, true);
           });
         });
@@ -6679,6 +7606,171 @@
       let audioCtx = null;
       let analyserNode = null;
       let analyserData = null;
+      let timeDomainData = null;
+      let eqNodes = [];
+      let masterGainNode = null;
+
+      const EQ_BAND_CONFIG = [
+        { type: 'lowshelf', freq: 60, q: 1 },
+        { type: 'peaking', freq: 230, q: 1 },
+        { type: 'peaking', freq: 910, q: 1 },
+        { type: 'peaking', freq: 3600, q: 1 },
+        { type: 'highshelf', freq: 14000, q: 1 }
+      ];
+      const EQ_PRESETS = {
+        flat: [0, 0, 0, 0, 0],
+        bass: [6, 4, 0, 0, 1],
+        vocal: [-2, 1, 4, 3, 1],
+        electronic: [5, 2, -1, 3, 5]
+      };
+
+      const audioFxRuntime = {
+        loudnessGain: 1,
+        crossFadeFactor: 1,
+        sleepFadeFactor: 1,
+        fadeOutTriggered: false,
+        pendingManualFade: false,
+        loudnessTrackId: null,
+        loudnessSumSq: 0,
+        loudnessSamples: 0
+      };
+
+      function applyMasterGain(rampSec = 0.05) {
+        if (hasNativeAudioBridge() || !masterGainNode || !audioCtx) return;
+        rawAudio.volume = 1;
+        const fade = Math.min(audioFxRuntime.crossFadeFactor, audioFxRuntime.sleepFadeFactor);
+        const target = Math.max(0, Math.min(2.0, audioFxRuntime.loudnessGain * fade));
+        const now = audioCtx.currentTime;
+        try {
+          masterGainNode.gain.cancelScheduledValues(now);
+          masterGainNode.gain.setValueAtTime(masterGainNode.gain.value, now);
+          if (rampSec <= 0.015) {
+            masterGainNode.gain.setValueAtTime(target, now);
+          } else {
+            masterGainNode.gain.linearRampToValueAtTime(target, now + rampSec);
+          }
+        } catch {
+          masterGainNode.gain.value = target;
+        }
+      }
+
+      function applyEqNodeGains() {
+        if (!eqNodes.length) return;
+        const enabled = Boolean(state.audioFx.eqEnabled);
+        const gains = state.audioFx.eqGains || [0, 0, 0, 0, 0];
+        eqNodes.forEach((node, i) => {
+          node.gain.value = enabled ? Math.max(-12, Math.min(12, Number(gains[i]) || 0)) : 0;
+        });
+      }
+
+      function resetLoudnessAccumulator(trackId) {
+        audioFxRuntime.loudnessTrackId = trackId || null;
+        audioFxRuntime.loudnessSumSq = 0;
+        audioFxRuntime.loudnessSamples = 0;
+      }
+
+      function sampleTrackLoudness(cur, dur) {
+        if (hasNativeAudioBridge() || !analyserNode || !timeDomainData || !state.isPlaying) return;
+        if (!state.currentTrackId || audioFxRuntime.loudnessTrackId !== state.currentTrackId) return;
+        if (!Number.isFinite(dur) || dur < 16 || cur < 5 || cur > dur - 5) return;
+        analyserNode.getByteTimeDomainData(timeDomainData);
+        let sum = 0;
+        for (let i = 0; i < timeDomainData.length; i++) {
+          const v = (timeDomainData[i] - 128) / 128;
+          sum += v * v;
+        }
+        const rmsSq = sum / timeDomainData.length;
+        if (rmsSq > 0.00005) {
+          audioFxRuntime.loudnessSumSq += rmsSq;
+          audioFxRuntime.loudnessSamples++;
+        }
+      }
+
+      function finalizeLoudnessMeasurement(trackId) {
+        if (!trackId || audioFxRuntime.loudnessTrackId !== trackId) return;
+        if (audioFxRuntime.loudnessSamples < 10) return;
+        const avgRms = Math.sqrt(audioFxRuntime.loudnessSumSq / audioFxRuntime.loudnessSamples);
+        if (!Number.isFinite(avgRms) || avgRms <= 0.001) return;
+        const measuredDb = 20 * Math.log10(avgRms);
+        const targetDb = -16;
+        const corrDb = Math.max(-6, Math.min(6, targetDb - measuredDb));
+        const gain = Number(Math.pow(10, corrDb / 20).toFixed(3));
+        state.trackLoudness[trackId] = gain;
+        resetLoudnessAccumulator(null);
+        saveAppState();
+      }
+
+      function applyAudioFxUI() {
+        const isNativeIos = hasNativeAudioBridge();
+        const notice = $('np-audiofx-ios-notice');
+        const controls = $('np-audiofx-controls');
+        if (notice) notice.classList.toggle('hidden', !isNativeIos);
+        if (controls) {
+          controls.classList.toggle('opacity-45', isNativeIos);
+          controls.classList.toggle('pointer-events-none', isNativeIos);
+        }
+
+        const fx = state.audioFx;
+        const fadeBtn = $('btn-fx-fade-toggle');
+        if (fadeBtn) {
+          fadeBtn.classList.toggle('bg-sky-500', fx.fadeEnabled);
+          fadeBtn.classList.toggle('justify-end', fx.fadeEnabled);
+          fadeBtn.classList.toggle('bg-white/15', !fx.fadeEnabled);
+          fadeBtn.classList.toggle('justify-start', !fx.fadeEnabled);
+        }
+        document.querySelectorAll('.fx-fade-btn').forEach((btn) => {
+          const active = Number(btn.dataset.fadeSec) === Number(fx.fadeSecs);
+          btn.classList.toggle('bg-white/20', active);
+          btn.classList.toggle('text-white', active);
+          btn.classList.toggle('bg-white/8', !active);
+          btn.classList.toggle('text-white/75', !active);
+        });
+
+        const eqBtn = $('btn-fx-eq-toggle');
+        if (eqBtn) {
+          eqBtn.classList.toggle('bg-sky-500', fx.eqEnabled);
+          eqBtn.classList.toggle('justify-end', fx.eqEnabled);
+          eqBtn.classList.toggle('bg-white/15', !fx.eqEnabled);
+          eqBtn.classList.toggle('justify-start', !fx.eqEnabled);
+        }
+        document.querySelectorAll('.fx-eq-preset-btn').forEach((btn) => {
+          const active = btn.dataset.eqPreset === fx.eqPreset;
+          btn.classList.toggle('bg-white/20', active);
+          btn.classList.toggle('text-white', active);
+          btn.classList.toggle('bg-white/8', !active);
+          btn.classList.toggle('text-white/75', !active);
+        });
+        const gains = fx.eqGains || [0, 0, 0, 0, 0];
+        for (let i = 0; i < 5; i++) {
+          const val = Math.max(-12, Math.min(12, Number(gains[i]) || 0));
+          const sl = $(`eq-slider-${i}`);
+          const fill = $(`eq-fill-${i}`);
+          const thumb = $(`eq-thumb-${i}`);
+          const lbl = $(`eq-val-${i}`);
+          if (sl) sl.value = String(val);
+          if (lbl) lbl.textContent = `${val > 0 ? '+' : ''}${val}dB`;
+          const pct = ((val + 12) / 24) * 100;
+          if (thumb) thumb.style.left = `${pct}%`;
+          if (fill) {
+            if (val >= 0) {
+              fill.style.left = '50%';
+              fill.style.width = `${(val / 12) * 50}%`;
+            } else {
+              const w = (-val / 12) * 50;
+              fill.style.left = `${50 - w}%`;
+              fill.style.width = `${w}%`;
+            }
+          }
+        }
+
+        const loudBtn = $('btn-fx-loudness-toggle');
+        if (loudBtn) {
+          loudBtn.classList.toggle('bg-sky-500', fx.loudnessEnabled);
+          loudBtn.classList.toggle('justify-end', fx.loudnessEnabled);
+          loudBtn.classList.toggle('bg-white/15', !fx.loudnessEnabled);
+          loudBtn.classList.toggle('justify-start', !fx.loudnessEnabled);
+        }
+      }
 
       function ensureAudioContext() {
         if (!audioCtx) {
@@ -6690,12 +7782,33 @@
         }
         if (audioCtx && !analyserNode && !hasNativeAudioBridge()) {
           try {
+            rawAudio.volume = 1;
             const srcNode = audioCtx.createMediaElementSource(rawAudio);
+            eqNodes = EQ_BAND_CONFIG.map((cfg) => {
+              const f = audioCtx.createBiquadFilter();
+              f.type = cfg.type;
+              f.frequency.value = cfg.freq;
+              f.Q.value = cfg.q;
+              f.gain.value = 0;
+              return f;
+            });
             analyserNode = audioCtx.createAnalyser();
-            analyserNode.fftSize = 64;
+            analyserNode.fftSize = 256;
             analyserData = new Uint8Array(analyserNode.frequencyBinCount);
-            srcNode.connect(analyserNode);
-            analyserNode.connect(audioCtx.destination);
+            timeDomainData = new Uint8Array(analyserNode.fftSize);
+            masterGainNode = audioCtx.createGain();
+            masterGainNode.gain.value = 1;
+
+            let prev = srcNode;
+            for (const f of eqNodes) {
+              prev.connect(f);
+              prev = f;
+            }
+            prev.connect(analyserNode);
+            analyserNode.connect(masterGainNode);
+            masterGainNode.connect(audioCtx.destination);
+            applyEqNodeGains();
+            applyMasterGain(0.01);
           } catch {}
         }
       }
@@ -8137,18 +9250,29 @@
         btn.classList.toggle('border-teal-400/25', !isActive);
       }
 
-      function openDailyFortuneModal(forceRandom = false) {
-        if (!state.tracks.length) {
+      function openDailyFortuneModal(forceRandom = false, playlistId = null) {
+        const effectivePlId = forceRandom && playlistId === null ? state.fortuneScopePlaylistId : (playlistId || null);
+        state.fortuneScopePlaylistId = effectivePlId;
+        let scopedTracks = state.tracks;
+        if (effectivePlId) {
+          const pl = state.playlists.find((p) => p.id === effectivePlId);
+          const plIds = new Set(pl?.trackIds || []);
+          scopedTracks = state.tracks.filter((t) => plIds.has(t.id));
+          if (!scopedTracks.length) {
+            showToast('歌单是空的');
+            return;
+          }
+        } else if (!scopedTracks.length) {
           showToast('曲库为空，请先导入音乐');
           return;
         }
         let pickTrack = null;
         if (!forceRandom && state.fortuneTrackId) {
-          pickTrack = state.tracks.find((t) => t.id === state.fortuneTrackId);
+          pickTrack = scopedTracks.find((t) => t.id === state.fortuneTrackId);
         }
         if (!pickTrack) {
-          const candidates = state.tracks.filter((t) => t.id !== state.fortuneTrackId);
-          const pool = candidates.length ? candidates : state.tracks;
+          const candidates = scopedTracks.filter((t) => t.id !== state.fortuneTrackId);
+          const pool = candidates.length ? candidates : scopedTracks;
           pickTrack = pool[Math.floor(Math.random() * pool.length)];
           state.fortuneTrackId = pickTrack.id;
         }
@@ -8585,13 +9709,21 @@
         state.sleepTimerEnd = Date.now() + mins * 60 * 1000;
         badge.classList.remove('hidden');
 
+        audioFxRuntime.sleepFadeFactor = 1;
+        applyMasterGain(0.1);
         const updateCountdown = () => {
           const remain = Math.max(0, state.sleepTimerEnd - Date.now());
+          if (remain <= 20000 && remain > 0 && !hasNativeAudioBridge()) {
+            audioFxRuntime.sleepFadeFactor = Math.max(0, remain / 20000);
+            applyMasterGain(0.95);
+          }
           if (remain <= 0) {
             clearInterval(state.sleepIntervalId);
             state.sleepTimerEnd = null;
             audio.pause();
             state.isPlaying = false;
+            audioFxRuntime.sleepFadeFactor = 1;
+            applyMasterGain(0.05);
             updatePlayStateUI();
             syncSleepSliderVisual(0);
             $('sleep-timer-status').textContent = '未开启';
@@ -8655,40 +9787,47 @@
             }
           }, { passive: true });
 
+          let scrollRafPending = false;
           on(el, 'scroll', () => {
-            if (!isMainTabView()) return;
-            const st = el.scrollTop;
-            if (scrollId === 'library-list-container' || scrollId === 'albums-grid' || scrollId === 'artists-grid') {
-              const libView = $('view-library');
-              if (libView) {
-                const allowCollapse = !state.multiSelectMode && !state.libCustomEditing;
-                if (allowCollapse && st > 44) libView.classList.add('is-scrolled');
-                else if (st < 18 || !allowCollapse) libView.classList.remove('is-scrolled');
+            markAndroidFastScrolling();
+            if (scrollRafPending) return;
+            scrollRafPending = true;
+            requestAnimationFrame(() => {
+              scrollRafPending = false;
+              if (!isMainTabView()) return;
+              const st = el.scrollTop;
+              if (scrollId === 'library-list-container' || scrollId === 'albums-grid' || scrollId === 'artists-grid') {
+                const libView = $('view-library');
+                if (libView) {
+                  const allowCollapse = !state.multiSelectMode && !state.libCustomEditing;
+                  if (allowCollapse && st > 44) libView.classList.add('is-scrolled');
+                  else if (st < 18 || !allowCollapse) libView.classList.remove('is-scrolled');
+                }
+              } else if (scrollId === 'playlists-grid') {
+                const plView = $('view-playlists');
+                if (plView) {
+                  if (st > 44) plView.classList.add('is-scrolled');
+                  else if (st < 18) plView.classList.remove('is-scrolled');
+                }
               }
-            } else if (scrollId === 'playlists-grid') {
-              const plView = $('view-playlists');
-              if (plView) {
-                if (st > 44) plView.classList.add('is-scrolled');
-                else if (st < 18) plView.classList.remove('is-scrolled');
+              if (st <= 10) {
+                if (state.dockCollapsed) {
+                  state.dockCollapsed = false;
+                  syncNativeDockState();
+                }
+              } else if (st - lastScrollTop > 16 && st > 28) {
+                if (!state.dockCollapsed) {
+                  state.dockCollapsed = true;
+                  syncNativeDockState();
+                }
+              } else if (lastScrollTop - st > 18) {
+                if (state.dockCollapsed) {
+                  state.dockCollapsed = false;
+                  syncNativeDockState();
+                }
               }
-            }
-            if (st <= 10) {
-              if (state.dockCollapsed) {
-                state.dockCollapsed = false;
-                syncNativeDockState();
-              }
-            } else if (st - lastScrollTop > 16 && st > 28) {
-              if (!state.dockCollapsed) {
-                state.dockCollapsed = true;
-                syncNativeDockState();
-              }
-            } else if (lastScrollTop - st > 18) {
-              if (state.dockCollapsed) {
-                state.dockCollapsed = false;
-                syncNativeDockState();
-              }
-            }
-            lastScrollTop = st;
+              lastScrollTop = st;
+            });
           }, { passive: true });
         });
 
@@ -8798,7 +9937,7 @@
         on('btn-pl-search-compact', () => openScopedSearch(null));
         on('btn-pl-detail-search-compact', () => openScopedSearch(state.activePlaylistId));
         on('btn-pl-detail-search', () => openScopedSearch(state.activePlaylistId));
-        on('btn-pl-daily-fortune', () => openDailyFortuneModal(false));
+        on('btn-pl-daily-fortune', () => openDailyFortuneModal(false, state.activePlaylistId));
         on('btn-lib-scroll-top', () => {
           const targetId = state.libTab === 'albums' ? 'albums-grid' : state.libTab === 'artists' ? 'artists-grid' : 'library-list-container';
           const box = $(targetId);
@@ -8812,17 +9951,48 @@
           resetDeletePlaylistConfirm();
           switchView('playlists');
         });
+        let androidScrollIdleTimer = null;
+        let androidScrollRaf = false;
+        function markAndroidFastScrolling() {
+          if (!document.body.classList.contains('is-native-android') && !document.documentElement.classList.contains('is-native-android')) return;
+          if (!androidScrollRaf) {
+            androidScrollRaf = true;
+            requestAnimationFrame(() => {
+              androidScrollRaf = false;
+              document.body.classList.add('is-scrolling');
+            });
+          }
+          if (androidScrollIdleTimer) clearTimeout(androidScrollIdleTimer);
+          androidScrollIdleTimer = setTimeout(() => {
+            androidScrollIdleTimer = null;
+            document.body.classList.remove('is-scrolling');
+          }, 150);
+        }
+
         const plDetailListEl = $('playlist-detail-tracks');
         if (plDetailListEl) {
+          let plScrollRaf = false;
           on(plDetailListEl, 'scroll', () => {
-            const plDetailView = $('view-playlist-detail');
-            if (!plDetailView) return;
-            const allowCollapse = !state.plMultiSelectMode && !state.plCustomEditing;
-            if (allowCollapse && plDetailListEl.scrollTop > 44) plDetailView.classList.add('is-scrolled');
-            else if (plDetailListEl.scrollTop < 18 || !allowCollapse) plDetailView.classList.remove('is-scrolled');
+            markAndroidFastScrolling();
+            if (plScrollRaf) return;
+            plScrollRaf = true;
+            requestAnimationFrame(() => {
+              plScrollRaf = false;
+              const plDetailView = $('view-playlist-detail');
+              if (!plDetailView) return;
+              const allowCollapse = !state.plMultiSelectMode && !state.plCustomEditing;
+              if (allowCollapse && plDetailListEl.scrollTop > 44) plDetailView.classList.add('is-scrolled');
+              else if (plDetailListEl.scrollTop < 18 || !allowCollapse) plDetailView.classList.remove('is-scrolled');
+            });
           }, { passive: true });
         }
-        on('btn-daily-fortune', () => openDailyFortuneModal(false));
+        const groupDetailScrollEl = $('group-detail-scroll');
+        if (groupDetailScrollEl) {
+          on(groupDetailScrollEl, 'scroll', () => {
+            markAndroidFastScrolling();
+          }, { passive: true });
+        }
+        on('btn-daily-fortune', () => openDailyFortuneModal(false, null));
         on('btn-lib-sort', () => openSortSheet('library'));
         on('btn-pl-sort', () => openSortSheet('playlist'));
         on('btn-lib-order-done', () => {
@@ -9326,6 +10496,23 @@
             }
           }
           syncActiveLyric(false);
+          sampleTrackLoudness(cur, dur);
+          if (
+            !hasNativeAudioBridge() &&
+            state.isPlaying &&
+            state.audioFx.fadeEnabled &&
+            state.audioFx.fadeSecs > 0 &&
+            state.playMode !== 'one' &&
+            state.queue.length > 1 &&
+            !audioFxRuntime.fadeOutTriggered &&
+            dur > state.audioFx.fadeSecs * 2 + 2 &&
+            dur - cur <= state.audioFx.fadeSecs &&
+            dur - cur > 0.1
+          ) {
+            audioFxRuntime.fadeOutTriggered = true;
+            audioFxRuntime.crossFadeFactor = 0;
+            applyMasterGain(Math.max(0.15, dur - cur));
+          }
 
           const now = Date.now();
           if (state.isPlaying && now - lastStatTick >= 5000) {
@@ -9356,8 +10543,18 @@
           await playNext(false);
         });
 
+        audio.addEventListener('error', () => {
+          if (hasNativeAudioBridge() || !state.currentTrackId || !audio.src) return;
+          const curRaw = state.tracks.find((t) => t.id === state.currentTrackId);
+          handlePlaybackFailure(curRaw);
+        });
+
         audio.addEventListener('play', () => {
           state.isPlaying = true;
+          if (audioFxRuntime.sleepFadeFactor < 1 && !state.sleepTimerEnd) {
+            audioFxRuntime.sleepFadeFactor = 1;
+            applyMasterGain(0.15);
+          }
           updatePlayStateUI();
           if ('mediaSession' in navigator) {
             try { navigator.mediaSession.playbackState = 'playing'; } catch {}
@@ -9366,6 +10563,7 @@
           }
         });
         audio.addEventListener('playing', () => {
+          state.consecutivePlayFailures = 0;
           state.isPlaying = true;
           updatePlayStateUI();
           if ('mediaSession' in navigator) {
@@ -9385,6 +10583,7 @@
         audio.addEventListener('ended', () => {
           state.isPlaying = false;
           updatePlayStateUI();
+          syncAndroidWidgetState();
         });
 
         // Now Playing Settings Sheet Controls
@@ -9430,6 +10629,75 @@
         on('playback-rate-slider', 'input', (e) => applySteplessPlaybackRate(e.target.value, false));
         on('playback-rate-slider', 'change', (e) => applySteplessPlaybackRate(e.target.value, true));
         on('btn-rate-reset', () => applySteplessPlaybackRate(1, true));
+
+        // Audio FX Controls (Fade, 5-Band EQ, Loudness)
+        applyAudioFxUI();
+        on('btn-fx-fade-toggle', async () => {
+          state.audioFx.fadeEnabled = !state.audioFx.fadeEnabled;
+          if (!state.audioFx.fadeEnabled) {
+            audioFxRuntime.crossFadeFactor = 1;
+            applyMasterGain(0.1);
+          }
+          applyAudioFxUI();
+          await saveAppState();
+          showToast(state.audioFx.fadeEnabled ? `已开启切歌淡入淡出 (${state.audioFx.fadeSecs}秒)` : '已关闭切歌淡入淡出');
+        });
+        document.querySelectorAll('.fx-fade-btn').forEach((btn) => {
+          on(btn, 'click', async () => {
+            const sec = Number(btn.dataset.fadeSec) || 0;
+            state.audioFx.fadeSecs = sec;
+            if (sec === 0) state.audioFx.fadeEnabled = false;
+            else state.audioFx.fadeEnabled = true;
+            applyAudioFxUI();
+            await saveAppState();
+          });
+        });
+        on('btn-fx-eq-toggle', async () => {
+          state.audioFx.eqEnabled = !state.audioFx.eqEnabled;
+          ensureAudioContext();
+          applyEqNodeGains();
+          applyAudioFxUI();
+          await saveAppState();
+          showToast(state.audioFx.eqEnabled ? '已开启五段均衡器' : '已关闭五段均衡器');
+        });
+        document.querySelectorAll('.fx-eq-preset-btn').forEach((btn) => {
+          on(btn, 'click', async () => {
+            const preset = btn.dataset.eqPreset || 'flat';
+            state.audioFx.eqPreset = preset;
+            if (EQ_PRESETS[preset]) {
+              state.audioFx.eqGains = [...EQ_PRESETS[preset]];
+            }
+            if (preset !== 'flat') state.audioFx.eqEnabled = true;
+            ensureAudioContext();
+            applyEqNodeGains();
+            applyAudioFxUI();
+            await saveAppState();
+          });
+        });
+        document.querySelectorAll('.eq-band-slider').forEach((sl) => {
+          on(sl, 'input', (e) => {
+            const idx = Number(sl.dataset.eqBand);
+            const val = Math.round(parseFloat(e.target.value) * 2) / 2;
+            state.audioFx.eqGains[idx] = val;
+            state.audioFx.eqPreset = 'custom';
+            state.audioFx.eqEnabled = true;
+            ensureAudioContext();
+            applyEqNodeGains();
+            applyAudioFxUI();
+          });
+          on(sl, 'change', saveAppState);
+        });
+        on('btn-fx-loudness-toggle', async () => {
+          state.audioFx.loudnessEnabled = !state.audioFx.loudnessEnabled;
+          audioFxRuntime.loudnessGain =
+            state.audioFx.loudnessEnabled && state.currentTrackId && Number.isFinite(state.trackLoudness[state.currentTrackId])
+              ? state.trackLoudness[state.currentTrackId]
+              : 1;
+          applyMasterGain(0.15);
+          applyAudioFxUI();
+          await saveAppState();
+          showToast(state.audioFx.loudnessEnabled ? '已开启响度均衡' : '已关闭响度均衡');
+        });
 
         // White Noise Mixer Controls
         renderWhiteNoiseGrid();
@@ -9605,7 +10873,7 @@
 
         // Daily Fortune Modal (With Toggleable White Noise)
         on('btn-fortune-close', closeAllBottomSheets);
-        on('btn-fortune-redraw', () => openDailyFortuneModal(true));
+        on('btn-fortune-redraw', () => openDailyFortuneModal(true, state.fortuneScopePlaylistId));
         on('btn-fortune-add-pl', () => {
           if (state.fortuneTrackId) openPickPlaylistSheet(state.fortuneTrackId);
         });
@@ -9655,7 +10923,7 @@
           };
           const backupObj = {
             app: 'FENG MUSIC',
-            version: '1.0.6',
+            version: '1.0.7',
             exportedAt: new Date().toISOString(),
             trackManifest,
             playlists: state.playlists,
@@ -9672,6 +10940,8 @@
             favoriteAlbums: state.favoriteAlbums,
             favoriteArtists: state.favoriteArtists,
             playMode: state.playMode,
+            audioFx: state.audioFx,
+            trackLoudness: state.trackLoudness,
             playbackRate: state.playbackRate || 1,
             whiteNoise: wnBackup,
             diy: {
@@ -9769,6 +11039,20 @@
             if (parsed.playMode) {
               state.playMode = parsed.playMode;
               updatePlayModeButton();
+            }
+            if (parsed.audioFx && typeof parsed.audioFx === 'object') {
+              state.audioFx = {
+                ...state.audioFx,
+                ...parsed.audioFx,
+                eqGains: Array.isArray(parsed.audioFx.eqGains) && parsed.audioFx.eqGains.length === 5
+                  ? parsed.audioFx.eqGains.map((v) => Math.max(-12, Math.min(12, Number(v) || 0)))
+                  : [0, 0, 0, 0, 0]
+              };
+              applyAudioFxUI();
+              applyEqNodeGains();
+            }
+            if (parsed.trackLoudness && typeof parsed.trackLoudness === 'object') {
+              state.trackLoudness = remapRecordMap(parsed.trackLoudness);
             }
             if (Number.isFinite(parsed.playbackRate) && parsed.playbackRate > 0) {
               state.playbackRate = parsed.playbackRate;
@@ -10151,6 +11435,18 @@
             state.customLyrics = savedState.customLyrics || {};
             if (savedState.diy) state.diy = { ...state.diy, ...savedState.diy };
             if (savedState.playMode) state.playMode = savedState.playMode;
+            if (savedState.audioFx && typeof savedState.audioFx === 'object') {
+              state.audioFx = {
+                ...state.audioFx,
+                ...savedState.audioFx,
+                eqGains: Array.isArray(savedState.audioFx.eqGains) && savedState.audioFx.eqGains.length === 5
+                  ? savedState.audioFx.eqGains.map((v) => Math.max(-12, Math.min(12, Number(v) || 0)))
+                  : [0, 0, 0, 0, 0]
+              };
+            }
+            if (savedState.trackLoudness && typeof savedState.trackLoudness === 'object') {
+              state.trackLoudness = savedState.trackLoudness;
+            }
             if (savedState.sortMode) state.sortMode = savedState.sortMode;
             if (savedState.albumSortMode) state.albumSortMode = savedState.albumSortMode;
             if (savedState.artistSortMode) state.artistSortMode = savedState.artistSortMode;
