@@ -74,7 +74,12 @@ jobs:
       - name: Inject Android Folder & MediaStore Bridge (SAF + MediaStore + Batch Import)
         env:
           BUNDLE_ID: ${{ inputs.bundle_id || 'com.feng.music' }}
+          BUILD_NUM: ${{ github.run_number }}
         run: |
+          # 0. Stamp Android app versionName "1.0.7" and versionCode
+          sed -i 's/versionName "[^"]*"/versionName "1.0.7"/' android/app/build.gradle
+          sed -i "s/versionCode [0-9][0-9]*/versionCode ${BUILD_NUM}/" android/app/build.gradle
+
           # 1. Add androidx.documentfile and androidx.core dependencies to android/app/build.gradle
           if ! grep -q "androidx.documentfile:documentfile" android/app/build.gradle; then
             sed -i '/dependencies {/a\    implementation "androidx.documentfile:documentfile:1.0.1"' android/app/build.gradle
@@ -87,6 +92,9 @@ jobs:
           MANIFEST="android/app/src/main/AndroidManifest.xml"
           if ! grep -q "READ_MEDIA_AUDIO" "$MANIFEST"; then
             sed -i '/<manifest /a\    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />' "$MANIFEST"
+          fi
+          if ! grep -q "FengWidgetProvider" "$MANIFEST"; then
+            sed -i 's|</application>|    <receiver android:name=".FengWidgetProvider" android:exported="false" android:label="FENG MUSIC">\n            <intent-filter>\n                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />\n            </intent-filter>\n            <meta-data android:name="android.appwidget.provider" android:resource="@xml/feng_widget_info" />\n        </receiver>\n    </application>|' "$MANIFEST"
           fi
 
           # 3. Write MainActivity.java implementing FengAndroidBridge (SAF + MediaStore + pickAudioFiles)
@@ -115,6 +123,8 @@ jobs:
           import android.os.Build;
           import android.os.Bundle;
           import android.os.Environment;
+          import android.os.Handler;
+          import android.os.Looper;
           import android.provider.MediaStore;
           import android.provider.OpenableColumns;
           import android.util.Base64;
@@ -140,6 +150,7 @@ jobs:
           import java.io.File;
           import java.io.FileOutputStream;
           import java.io.InputStream;
+          import java.lang.ref.WeakReference;
           import java.nio.charset.Charset;
           import java.nio.charset.StandardCharsets;
           import java.util.ArrayList;
@@ -198,8 +209,107 @@ jobs:
                   }
               }
 
+              // §12 Samsung bottom inset extra buffer (dp) — adjust here if needed
+              private static final int SAMSUNG_BOTTOM_INSET_EXTRA_DP = 4;
+
+              // §13 Android Home Screen Widget host & sync state
+              public static final String WIDGET_PREF_NAME = "feng_widget";
+              public static final String WIDGET_COVER_FILE = "widget_cover.jpg";
+              public static final String EXTRA_WIDGET_OPEN = "widget_open";
+              private static volatile WeakReference<MainActivity> widgetHost = new WeakReference<>(null);
+              private final Handler widgetSyncHandler = new Handler(Looper.getMainLooper());
+              private Runnable pendingWidgetSyncRunnable = null;
+              private volatile boolean pendingOpenNowPlaying = false;
+
+              public static boolean dispatchWidgetCommand(String cmd) {
+                  MainActivity host = widgetHost != null ? widgetHost.get() : null;
+                  if (host == null || host.destroyedFlag || host.getBridge() == null) return false;
+                  WebView wv = host.getBridge().getWebView();
+                  if (wv == null) return false;
+                  final String js = "window.__fengWidgetCommand && window.__fengWidgetCommand(" + JSONObject.quote(cmd) + ");";
+                  wv.post(() -> {
+                      if (!host.destroyedFlag) {
+                          wv.evaluateJavascript(js, null);
+                      }
+                  });
+                  return true;
+              }
+
+              private void handleWidgetIntent(Intent intent) {
+                  if (intent == null) return;
+                  if ("nowplaying".equals(intent.getStringExtra(EXTRA_WIDGET_OPEN))) {
+                      pendingOpenNowPlaying = true;
+                      intent.removeExtra(EXTRA_WIDGET_OPEN);
+                      flushPendingOpenNowPlaying();
+                  }
+              }
+
+              private void flushPendingOpenNowPlaying() {
+                  if (!pendingOpenNowPlaying || destroyedFlag || getBridge() == null) return;
+                  WebView wv = getBridge().getWebView();
+                  if (wv == null) return;
+                  wv.postDelayed(() -> {
+                      if (!pendingOpenNowPlaying || destroyedFlag) return;
+                      wv.evaluateJavascript(
+                          "(function(){ if (typeof window.__fengOpenNowPlaying === 'function') { window.__fengOpenNowPlaying(); return 'ok'; } return 'wait'; })()",
+                          val -> {
+                              if (val != null && val.contains("ok")) {
+                                  pendingOpenNowPlaying = false;
+                              }
+                          }
+                      );
+                  }, 180);
+              }
+
+              private void scheduleWidgetSync(String title, String artist, boolean isPlaying, String coverDataUrl) {
+                  if (pendingWidgetSyncRunnable != null) {
+                      widgetSyncHandler.removeCallbacks(pendingWidgetSyncRunnable);
+                  }
+                  pendingWidgetSyncRunnable = () -> {
+                      if (destroyedFlag) return;
+                      coverExecutor.execute(() -> {
+                          try {
+                              File coverFile = new File(getFilesDir(), WIDGET_COVER_FILE);
+                              if (coverDataUrl != null && !coverDataUrl.isEmpty()) {
+                                  String b64 = coverDataUrl;
+                                  int comma = b64.indexOf(',');
+                                  if (comma >= 0) b64 = b64.substring(comma + 1);
+                                  byte[] decoded = Base64.decode(b64, Base64.DEFAULT);
+                                  if (decoded != null && decoded.length > 0) {
+                                      try (FileOutputStream fos = new FileOutputStream(coverFile, false)) {
+                                          fos.write(decoded);
+                                          fos.flush();
+                                      }
+                                  } else if (coverFile.exists()) {
+                                      coverFile.delete();
+                                  }
+                              } else {
+                                  if (coverFile.exists()) coverFile.delete();
+                              }
+                              SharedPreferences sp = getSharedPreferences(WIDGET_PREF_NAME, MODE_PRIVATE);
+                              sp.edit()
+                                  .putBoolean("w_has_data", title != null && !title.isEmpty())
+                                  .putString("w_title", title == null ? "" : title)
+                                  .putString("w_artist", artist == null ? "" : artist)
+                                  .putBoolean("w_playing", isPlaying)
+                                  .commit();
+                              FengWidgetProvider.refreshAll(getApplicationContext());
+                          } catch (Exception ignored) {
+                          }
+                      });
+                  };
+                  widgetSyncHandler.postDelayed(pendingWidgetSyncRunnable, 150);
+              }
+
               private volatile int lastInsetTopPx = 0;
               private volatile int lastInsetBottomPx = 0;
+
+              private int adjustBottomInsetDp(int bottomDp) {
+                  if (Build.MANUFACTURER != null && "samsung".equalsIgnoreCase(Build.MANUFACTURER.trim())) {
+                      return bottomDp + SAMSUNG_BOTTOM_INSET_EXTRA_DP;
+                  }
+                  return bottomDp;
+              }
 
               private void refreshInsetsFromRoot() {
                   try {
@@ -210,7 +320,7 @@ jobs:
                           float density = getResources().getDisplayMetrics().density;
                           if (density <= 0f) density = 1f;
                           lastInsetTopPx = Math.round(bars.top / density);
-                          lastInsetBottomPx = Math.round(bars.bottom / density);
+                          lastInsetBottomPx = adjustBottomInsetDp(Math.round(bars.bottom / density));
                       }
                   } catch (Exception ignored) {}
               }
@@ -258,7 +368,7 @@ jobs:
                       float density = getResources().getDisplayMetrics().density;
                       if (density <= 0f) density = 1f;
                       lastInsetTopPx = Math.round(bars.top / density);
-                      lastInsetBottomPx = Math.round(bars.bottom / density);
+                      lastInsetBottomPx = adjustBottomInsetDp(Math.round(bars.bottom / density));
                       pushSystemInsetsToWeb();
                       return windowInsets;
                   });
@@ -285,9 +395,18 @@ jobs:
                       }
                   );
 
+                  widgetHost = new WeakReference<>(this);
                   if (getBridge() != null && getBridge().getWebView() != null) {
                       getBridge().getWebView().addJavascriptInterface(new FengFolderJsBridge(), "FengAndroidBridge");
                   }
+                  handleWidgetIntent(getIntent());
+              }
+
+              @Override
+              protected void onNewIntent(Intent intent) {
+                  super.onNewIntent(intent);
+                  setIntent(intent);
+                  handleWidgetIntent(intent);
               }
 
               @Override
@@ -301,6 +420,11 @@ jobs:
               @Override
               public void onDestroy() {
                   destroyedFlag = true;
+                  widgetSyncHandler.removeCallbacksAndMessages(null);
+                  MainActivity current = widgetHost != null ? widgetHost.get() : null;
+                  if (current == this) {
+                      widgetHost = new WeakReference<>(null);
+                  }
                   scanExecutor.shutdownNow();
                   coverExecutor.shutdownNow();
                   super.onDestroy();
@@ -326,6 +450,15 @@ jobs:
                                   removeBookmarkedTree(key);
                               } else if ("scanMediaStore".equals(action)) {
                                   startMediaStoreScanWithPermission();
+                              } else if ("widgetSync".equals(action)) {
+                                  String wTitle = msg.optString("title", "");
+                                  String wArtist = msg.optString("artist", "");
+                                  boolean wPlaying = msg.optBoolean("isPlaying", false);
+                                  String wCover = msg.isNull("cover") ? null : msg.optString("cover", "");
+                                  scheduleWidgetSync(wTitle, wArtist, wPlaying, wCover);
+                              }
+                              if (pendingOpenNowPlaying) {
+                                  flushPendingOpenNowPlaying();
                               }
                           } catch (Exception ignored) {
                           }
@@ -1129,6 +1262,379 @@ jobs:
           }
           JAVAEOF
 
+          # 4. Write FengWidgetProvider.java (§13 Android Home Screen Widget, aligned with iOS)
+          WIDGET_ACT="android/app/src/main/java/${PKG_PATH}/FengWidgetProvider.java"
+          echo "package ${BUNDLE_ID};" > "$WIDGET_ACT"
+          cat << 'JAVAEOF' >> "$WIDGET_ACT"
+
+          import android.app.PendingIntent;
+          import android.appwidget.AppWidgetManager;
+          import android.appwidget.AppWidgetProvider;
+          import android.content.ComponentName;
+          import android.content.Context;
+          import android.content.Intent;
+          import android.content.SharedPreferences;
+          import android.graphics.Bitmap;
+          import android.graphics.BitmapFactory;
+          import android.graphics.BitmapShader;
+          import android.graphics.Canvas;
+          import android.graphics.Paint;
+          import android.graphics.RectF;
+          import android.graphics.Shader;
+          import android.view.View;
+          import android.widget.RemoteViews;
+
+          import java.io.File;
+
+          public class FengWidgetProvider extends AppWidgetProvider {
+
+              private static final String SUFFIX_PREV = ".WIDGET_PREV";
+              private static final String SUFFIX_TOGGLE = ".WIDGET_TOGGLE";
+              private static final String SUFFIX_NEXT = ".WIDGET_NEXT";
+
+              public static void refreshAll(Context context) {
+                  if (context == null) return;
+                  AppWidgetManager mgr = AppWidgetManager.getInstance(context);
+                  ComponentName cn = new ComponentName(context, FengWidgetProvider.class);
+                  int[] ids = mgr.getAppWidgetIds(cn);
+                  if (ids == null || ids.length == 0) return;
+                  RemoteViews views = buildViews(context);
+                  for (int id : ids) {
+                      mgr.updateAppWidget(id, views);
+                  }
+              }
+
+              @Override
+              public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
+                  RemoteViews views = buildViews(context);
+                  for (int appWidgetId : appWidgetIds) {
+                      appWidgetManager.updateAppWidget(appWidgetId, views);
+                  }
+              }
+
+              @Override
+              public void onReceive(Context context, Intent intent) {
+                  super.onReceive(context, intent);
+                  if (context == null || intent == null || intent.getAction() == null) return;
+                  String pkg = context.getPackageName();
+                  String act = intent.getAction();
+                  String cmd = null;
+                  if ((pkg + SUFFIX_PREV).equals(act)) {
+                      cmd = "prev";
+                  } else if ((pkg + SUFFIX_TOGGLE).equals(act)) {
+                      cmd = "toggle";
+                  } else if ((pkg + SUFFIX_NEXT).equals(act)) {
+                      cmd = "next";
+                  }
+                  if (cmd != null) {
+                      boolean delivered = MainActivity.dispatchWidgetCommand(cmd);
+                      if (!delivered) {
+                          Intent launch = new Intent(context, MainActivity.class);
+                          launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                          context.startActivity(launch);
+                      }
+                  }
+              }
+
+              private static RemoteViews buildViews(Context context) {
+                  RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.feng_widget);
+                  SharedPreferences sp = context.getSharedPreferences(MainActivity.WIDGET_PREF_NAME, Context.MODE_PRIVATE);
+                  boolean hasData = sp.getBoolean("w_has_data", false);
+                  String title = sp.getString("w_title", "");
+                  String artist = sp.getString("w_artist", "");
+                  boolean isPlaying = sp.getBoolean("w_playing", false);
+
+                  if (hasData && title != null && !title.isEmpty()) {
+                      views.setTextViewText(R.id.widget_title, title);
+                      views.setTextViewText(R.id.widget_artist, artist == null ? "" : artist);
+                      views.setViewVisibility(R.id.widget_artist, (artist != null && !artist.isEmpty()) ? View.VISIBLE : View.GONE);
+                      views.setTextViewText(R.id.widget_status, isPlaying ? "● LOSSLESS" : "● PAUSED");
+                      views.setViewVisibility(R.id.widget_status, View.VISIBLE);
+                  } else {
+                      views.setTextViewText(R.id.widget_title, "FENG MUSIC");
+                      views.setTextViewText(R.id.widget_artist, "");
+                      views.setViewVisibility(R.id.widget_artist, View.GONE);
+                      views.setViewVisibility(R.id.widget_status, View.GONE);
+                  }
+
+                  views.setImageViewResource(
+                      R.id.widget_btn_toggle,
+                      isPlaying ? R.drawable.ic_widget_pause : R.drawable.ic_widget_play
+                  );
+
+                  // Cover art with native rounded corners (~18dp); fallback to app icon
+                  Bitmap rounded = loadRoundedCover(context);
+                  if (rounded != null) {
+                      views.setImageViewBitmap(R.id.widget_cover, rounded);
+                  } else {
+                      views.setImageViewResource(R.id.widget_cover, R.mipmap.ic_launcher);
+                  }
+
+                  String pkg = context.getPackageName();
+                  views.setOnClickPendingIntent(R.id.widget_btn_prev, buildCmdPendingIntent(context, pkg + SUFFIX_PREV, 101));
+                  views.setOnClickPendingIntent(R.id.widget_btn_toggle, buildCmdPendingIntent(context, pkg + SUFFIX_TOGGLE, 102));
+                  views.setOnClickPendingIntent(R.id.widget_btn_next, buildCmdPendingIntent(context, pkg + SUFFIX_NEXT, 103));
+
+                  Intent openIntent = new Intent(context, MainActivity.class);
+                  openIntent.putExtra(MainActivity.EXTRA_WIDGET_OPEN, "nowplaying");
+                  openIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                  PendingIntent openPi = PendingIntent.getActivity(
+                      context,
+                      100,
+                      openIntent,
+                      PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+                  );
+                  views.setOnClickPendingIntent(R.id.widget_root, openPi);
+                  return views;
+              }
+
+              private static PendingIntent buildCmdPendingIntent(Context context, String action, int requestCode) {
+                  Intent intent = new Intent(context, FengWidgetProvider.class);
+                  intent.setAction(action);
+                  return PendingIntent.getBroadcast(
+                      context,
+                      requestCode,
+                      intent,
+                      PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+                  );
+              }
+
+              private static Bitmap loadRoundedCover(Context context) {
+                  try {
+                      File f = new File(context.getFilesDir(), MainActivity.WIDGET_COVER_FILE);
+                      if (!f.exists() || f.length() == 0) return null;
+                      BitmapFactory.Options opts = new BitmapFactory.Options();
+                      opts.inJustDecodeBounds = true;
+                      BitmapFactory.decodeFile(f.getAbsolutePath(), opts);
+                      int maxDim = Math.max(opts.outWidth, opts.outHeight);
+                      int sample = 1;
+                      while (maxDim / sample > 360) sample *= 2;
+                      BitmapFactory.Options decodeOpts = new BitmapFactory.Options();
+                      decodeOpts.inSampleSize = sample;
+                      Bitmap raw = BitmapFactory.decodeFile(f.getAbsolutePath(), decodeOpts);
+                      if (raw == null) return null;
+
+                      int target = 240;
+                      int sw = raw.getWidth();
+                      int sh = raw.getHeight();
+                      int side = Math.min(sw, sh);
+                      int x = (sw - side) / 2;
+                      int y = (sh - side) / 2;
+                      Bitmap square = Bitmap.createBitmap(raw, x, y, side, side);
+                      Bitmap scaled = Bitmap.createScaledBitmap(square, target, target, true);
+                      if (square != raw) square.recycle();
+                      raw.recycle();
+
+                      float density = context.getResources().getDisplayMetrics().density;
+                      float radiusPx = Math.min(target * 0.22f, 18f * (density > 0f ? density : 2f));
+                      Bitmap out = Bitmap.createBitmap(target, target, Bitmap.Config.ARGB_8888);
+                      Canvas canvas = new Canvas(out);
+                      Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                      paint.setShader(new BitmapShader(scaled, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP));
+                      canvas.drawRoundRect(new RectF(0f, 0f, target, target), radiusPx, radiusPx, paint);
+                      scaled.recycle();
+                      return out;
+                  } catch (Exception ignored) {
+                      return null;
+                  }
+              }
+          }
+          JAVAEOF
+
+          # 5. Write Android Widget Resources (layout, background, vector icons, provider metadata)
+          mkdir -p android/app/src/main/res/layout android/app/src/main/res/drawable android/app/src/main/res/xml
+
+          cat << 'XMLEOF' > android/app/src/main/res/drawable/feng_widget_bg.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+              <solid android:color="#E6151B28" />
+              <corners android:radius="24dp" />
+              <stroke android:width="1dp" android:color="#2A3648" />
+          </shape>
+          XMLEOF
+
+          cat << 'XMLEOF' > android/app/src/main/res/drawable/ic_widget_play.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+              android:width="24dp"
+              android:height="24dp"
+              android:viewportWidth="24"
+              android:viewportHeight="24">
+              <path android:fillColor="#FFFFFFFF" android:pathData="M8,5.14v14l11,-7z" />
+          </vector>
+          XMLEOF
+
+          cat << 'XMLEOF' > android/app/src/main/res/drawable/ic_widget_pause.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+              android:width="24dp"
+              android:height="24dp"
+              android:viewportWidth="24"
+              android:viewportHeight="24">
+              <path android:fillColor="#FFFFFFFF" android:pathData="M6,5h4v14H6zM14,5h4v14h-4z" />
+          </vector>
+          XMLEOF
+
+          cat << 'XMLEOF' > android/app/src/main/res/drawable/ic_widget_prev.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+              android:width="24dp"
+              android:height="24dp"
+              android:viewportWidth="24"
+              android:viewportHeight="24">
+              <path android:fillColor="#FFFFFFFF" android:pathData="M6,6h2v12H6zM9.5,12l8.5,6V6z" />
+          </vector>
+          XMLEOF
+
+          cat << 'XMLEOF' > android/app/src/main/res/drawable/ic_widget_next.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+              android:width="24dp"
+              android:height="24dp"
+              android:viewportWidth="24"
+              android:viewportHeight="24">
+              <path android:fillColor="#FFFFFFFF" android:pathData="M16,6h2v12h-2zM6,18l8.5,-6L6,6z" />
+          </vector>
+          XMLEOF
+
+          cat << 'XMLEOF' > android/app/src/main/res/layout/feng_widget.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:id="@+id/widget_root"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:background="@drawable/feng_widget_bg"
+              android:gravity="center_vertical"
+              android:orientation="horizontal"
+              android:padding="14dp">
+
+              <LinearLayout
+                  android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:gravity="center_horizontal"
+                  android:orientation="vertical">
+
+                  <ImageView
+                      android:id="@+id/widget_cover"
+                      android:layout_width="84dp"
+                      android:layout_height="84dp"
+                      android:contentDescription="Album Cover"
+                      android:scaleType="centerCrop"
+                      android:src="@mipmap/ic_launcher" />
+
+                  <TextView
+                      android:id="@+id/widget_status"
+                      android:layout_width="wrap_content"
+                      android:layout_height="wrap_content"
+                      android:layout_marginTop="4dp"
+                      android:ellipsize="end"
+                      android:maxLines="1"
+                      android:text="● PAUSED"
+                      android:textColor="#8CFFFFFF"
+                      android:textSize="10sp"
+                      android:visibility="gone" />
+              </LinearLayout>
+
+              <LinearLayout
+                  android:layout_width="0dp"
+                  android:layout_height="wrap_content"
+                  android:layout_marginStart="12dp"
+                  android:layout_weight="1"
+                  android:orientation="vertical">
+
+                  <TextView
+                      android:id="@+id/widget_title"
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:ellipsize="end"
+                      android:maxLines="1"
+                      android:text="FENG MUSIC"
+                      android:textColor="#FFFFFFFF"
+                      android:textSize="15sp"
+                      android:textStyle="bold" />
+
+                  <TextView
+                      android:id="@+id/widget_artist"
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:layout_marginTop="2dp"
+                      android:ellipsize="end"
+                      android:maxLines="1"
+                      android:text=""
+                      android:textColor="#99FFFFFF"
+                      android:textSize="12sp"
+                      android:visibility="gone" />
+
+                  <LinearLayout
+                      android:layout_width="wrap_content"
+                      android:layout_height="wrap_content"
+                      android:layout_marginTop="8dp"
+                      android:gravity="center_vertical"
+                      android:orientation="horizontal">
+
+                      <ImageButton
+                          android:id="@+id/widget_btn_prev"
+                          android:layout_width="38dp"
+                          android:layout_height="38dp"
+                          android:background="@android:color/transparent"
+                          android:contentDescription="Previous"
+                          android:padding="7dp"
+                          android:scaleType="fitCenter"
+                          android:src="@drawable/ic_widget_prev" />
+
+                      <ImageButton
+                          android:id="@+id/widget_btn_toggle"
+                          android:layout_width="38dp"
+                          android:layout_height="38dp"
+                          android:layout_marginStart="4dp"
+                          android:layout_marginEnd="4dp"
+                          android:background="@android:color/transparent"
+                          android:contentDescription="Play or Pause"
+                          android:padding="6dp"
+                          android:scaleType="fitCenter"
+                          android:src="@drawable/ic_widget_play" />
+
+                      <ImageButton
+                          android:id="@+id/widget_btn_next"
+                          android:layout_width="38dp"
+                          android:layout_height="38dp"
+                          android:background="@android:color/transparent"
+                          android:contentDescription="Next"
+                          android:padding="7dp"
+                          android:scaleType="fitCenter"
+                          android:src="@drawable/ic_widget_next" />
+                  </LinearLayout>
+              </LinearLayout>
+
+              <TextView
+                  android:id="@+id/widget_quote"
+                  android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:layout_marginStart="8dp"
+                  android:ellipsize="end"
+                  android:gravity="end"
+                  android:lineSpacingExtra="2dp"
+                  android:maxLines="3"
+                  android:text="All the promises I made&#10;at sunset were as real&#10;as any other"
+                  android:textColor="#BFFFFFFF"
+                  android:textSize="11sp" />
+          </LinearLayout>
+          XMLEOF
+
+          cat << 'XMLEOF' > android/app/src/main/res/xml/feng_widget_info.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+              android:initialLayout="@layout/feng_widget"
+              android:minWidth="250dp"
+              android:minHeight="110dp"
+              android:previewImage="@mipmap/ic_launcher"
+              android:resizeMode="horizontal|vertical"
+              android:targetCellWidth="4"
+              android:targetCellHeight="2"
+              android:updatePeriodMillis="0"
+              android:widgetCategory="home_screen" />
+          XMLEOF
+
       - name: Build Android APK
         run: |
           cd android
@@ -1189,7 +1695,7 @@ jobs:
       - name: Stamp Build Version
         run: |
           PLIST="ios/App/App/Info.plist"
-          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0.6" "$PLIST" || /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string 1.0.6" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0.7" "$PLIST" || /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string 1.0.7" "$PLIST"
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${{ github.run_number }}" "$PLIST" || /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string ${{ github.run_number }}" "$PLIST"
 
       - name: Enable Native iOS AVPlayer, Lock Screen Controls, UITabBar Liquid Glass Dock & Security-Scoped Bookmarks
@@ -2607,7 +3113,7 @@ jobs:
             <key>CFBundlePackageType</key>
             <string>XPC!</string>
             <key>CFBundleShortVersionString</key>
-            <string>1.0.6</string>
+            <string>1.0.7</string>
             <key>CFBundleVersion</key>
             <string>${BUILD_NUM}</string>
             <key>FengAppGroup</key>
