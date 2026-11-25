@@ -2225,7 +2225,7 @@ jobs:
               private var currentRate: Float = 1.0
               private var targetVolume: Float = 1.0
               private var rampTimer: Timer?
-              private var timeTimer: Timer?
+              private var timeTimer: DispatchSourceTimer?
 
               var onTimeUpdate: ((Double, Double) -> Void)?
               var onEnded: (() -> Void)?
@@ -2411,17 +2411,21 @@ jobs:
               }
 
               private func startTimeTimer() {
-                  timeTimer?.invalidate()
-                  timeTimer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { [weak self] _ in
+                  timeTimer?.cancel()
+                  let t = DispatchSource.makeTimerSource(queue: .main)
+                  t.schedule(deadline: .now() + 0.25, repeating: 0.25, leeway: .milliseconds(80))
+                  t.setEventHandler { [weak self] in
                       guard let self = self, self.audioFile != nil else { return }
                       self.onTimeUpdate?(self.currentTime, self.duration)
                   }
+                  t.resume()
+                  timeTimer = t
               }
 
               func stop() {
                   scheduleGeneration += 1
                   isRunningPlay = false
-                  timeTimer?.invalidate()
+                  timeTimer?.cancel()
                   timeTimer = nil
                   rampTimer?.invalidate()
                   rampTimer = nil
@@ -2459,9 +2463,14 @@ jobs:
               private var nativeLyricOffset: Double = 0
               private var activeNativeLyricIdx: Int = -1
               private var marqueeChars: [Character] = []
+              private var marqueeNeedsScroll: Bool = false
               private var marqueeOffset: Int = 0
               private var lastLiveActivitySig: String = ""
-              private var lyricCarouselTimer: Timer? = nil
+              private var lastLiveActivityUpdateAt: TimeInterval = 0
+              private var isUpdatingLiveActivity: Bool = false
+              private var pendingLiveActivityForce: Bool = false
+              private var deferredLiveActivityWork: DispatchWorkItem? = nil
+              private var lyricCarouselTimer: DispatchSourceTimer? = nil
               private var liveActivityRef: Any? = nil
 
               private func charDisplayWeight(_ ch: Character) -> Double {
@@ -2469,28 +2478,34 @@ jobs:
                   return ch.isASCII ? 0.58 : 1.0
               }
 
+              private func textDisplayWeight(_ str: String) -> Double {
+                  return str.reduce(0.0) { $0 + charDisplayWeight($1) }
+              }
+
               private func rebuildMarqueeBuffer(for raw: String) {
                   let base = raw.trimmingCharacters(in: .whitespacesAndNewlines)
                   let fallback = currentTitle.isEmpty ? "FENG MUSIC" : currentTitle
                   let text = base.isEmpty ? fallback : base
-                  marqueeChars = Array(text + "   ·   ")
+                  let totalW = textDisplayWeight(text)
+                  marqueeNeedsScroll = totalW > 13.4
+                  marqueeChars = marqueeNeedsScroll ? Array(text + "   ·   ") : Array(text)
                   marqueeOffset = 0
               }
 
-              private func sliceMarqueeWindow(startIdx: Int, maxWeight: Double) -> (text: String, nextIdx: Int) {
+              private func sliceMarqueeWindow(startIdx: Int, maxWeight: Double, wrap: Bool) -> (text: String, nextIdx: Int) {
                   guard !marqueeChars.isEmpty else { return ("", 0) }
                   let total = marqueeChars.count
-                  var idx = ((startIdx % total) + total) % total
+                  var idx = wrap ? (((startIdx % total) + total) % total) : min(max(0, startIdx), total)
                   var out = ""
                   var w = 0.0
                   var steps = 0
-                  while steps < total {
+                  while steps < total && (wrap || idx < total) {
                       let ch = marqueeChars[idx]
                       let cw = charDisplayWeight(ch)
                       if w + cw > maxWeight && !out.isEmpty { break }
                       out.append(ch)
                       w += cw
-                      idx = (idx + 1) % total
+                      idx = wrap ? ((idx + 1) % total) : (idx + 1)
                       steps += 1
                   }
                   return (out, idx)
@@ -2500,18 +2515,23 @@ jobs:
                   if marqueeChars.isEmpty {
                       rebuildMarqueeBuffer(for: currentLyricLine)
                   }
-                  let left = sliceMarqueeWindow(startIdx: marqueeOffset, maxWeight: 6.8)
-                  let right = sliceMarqueeWindow(startIdx: left.nextIdx, maxWeight: 6.8)
+                  if !marqueeNeedsScroll {
+                      let left = sliceMarqueeWindow(startIdx: 0, maxWeight: 6.8, wrap: false)
+                      let right = sliceMarqueeWindow(startIdx: left.nextIdx, maxWeight: 6.8, wrap: false)
+                      return (left.text, right.text)
+                  }
+                  let left = sliceMarqueeWindow(startIdx: marqueeOffset, maxWeight: 6.8, wrap: true)
+                  let right = sliceMarqueeWindow(startIdx: left.nextIdx, maxWeight: 6.8, wrap: true)
                   return (left.text, right.text)
               }
 
               private func advanceMarqueeOffset() {
-                  guard !marqueeChars.isEmpty else { return }
+                  guard marqueeNeedsScroll, !marqueeChars.isEmpty else { return }
                   let total = marqueeChars.count
                   var idx = marqueeOffset % total
                   var movedW = 0.0
                   var count = 0
-                  while movedW < 2.2 && count < total {
+                  while movedW < 6.2 && count < total {
                       movedW += charDisplayWeight(marqueeChars[idx])
                       idx = (idx + 1) % total
                       count += 1
@@ -2564,19 +2584,23 @@ jobs:
                           isPlaying: isPlayingNow,
                           elapsed: elapsed.isFinite && elapsed >= 0 ? elapsed : 0,
                           duration: currentDuration,
-                          updatedAt: Date().timeIntervalSince1970
+                          updatedAt: Date().timeIntervalSince1970,
+                          urgent: true
                       )
                   }
               }
 
               private func restartLyricCarousel() {
-                  lyricCarouselTimer?.invalidate()
+                  lyricCarouselTimer?.cancel()
                   lyricCarouselTimer = nil
-                  guard !marqueeChars.isEmpty else { return }
-                  let timer = Timer(timeInterval: 0.95, repeats: true) { [weak self] _ in
+                  guard marqueeNeedsScroll, !marqueeChars.isEmpty else { return }
+                  let timer = DispatchSource.makeTimerSource(queue: .main)
+                  // Budget-safe 3.2s cadence avoids iOS 18+/26 ActivityKit frequent-update throttling while scrolling long lines
+                  timer.schedule(deadline: .now() + 3.2, repeating: 3.2, leeway: .milliseconds(150))
+                  timer.setEventHandler { [weak self] in
                       guard let self = self else { return }
                       let isPlayingNow = self.useEnginePlayer ? self.enginePlayer.isPlaying : ((self.player?.rate ?? 0) > 0)
-                      guard isPlayingNow else { return }
+                      guard isPlayingNow, self.marqueeNeedsScroll else { return }
                       let elapsedNow = self.useEnginePlayer ? self.enginePlayer.currentTime : (self.player.map { CMTimeGetSeconds($0.currentTime()) } ?? 0)
                       let safeElapsed = elapsedNow.isFinite && elapsedNow >= 0 ? elapsedNow : 0
                       if !self.nativeLyrics.isEmpty {
@@ -2591,10 +2615,11 @@ jobs:
                           isPlaying: true,
                           elapsed: safeElapsed,
                           duration: self.currentDuration,
-                          updatedAt: Date().timeIntervalSince1970
+                          updatedAt: Date().timeIntervalSince1970,
+                          urgent: false
                       )
                   }
-                  RunLoop.main.add(timer, forMode: .common)
+                  timer.resume()
                   lyricCarouselTimer = timer
               }
               private var timeObserver: Any?
@@ -3768,10 +3793,15 @@ jobs:
                   triggerTargetedWidgetReloadNow()
               }
 
-              private func syncLiveActivity(isPlaying: Bool, elapsed: Double, duration: Double, updatedAt: Double) {
+              private func syncLiveActivity(isPlaying: Bool, elapsed: Double, duration: Double, updatedAt: Double, urgent: Bool = true) {
                   #if canImport(ActivityKit)
                   if #available(iOS 16.1, *) {
                       guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+                      if (liveActivityRef as? Activity<FengLyricsActivityAttributes>)?.activityState != .active {
+                          if let recovered = Activity<FengLyricsActivityAttributes>.activities.first(where: { $0.activityState == .active }) {
+                              liveActivityRef = recovered
+                          }
+                      }
                       let pair = currentCompactIslandPair()
                       let safeTitle = currentTitle.isEmpty ? "FENG MUSIC" : currentTitle
                       let sig = "\(safeTitle)|\(currentLyricLine)|\(pair.leading)|\(pair.trailing)|\(isPlaying ? 1 : 0)"
@@ -3780,24 +3810,73 @@ jobs:
                          sig == lastLiveActivitySig {
                           return
                       }
+
+                      // Enforce budget-safe minimum gap so iOS 18+/26 chronod never throttles & freezes the Live Activity
+                      let now = Date().timeIntervalSince1970
+                      let minGap: TimeInterval = urgent ? 1.65 : 2.8
+                      if let act = liveActivityRef as? Activity<FengLyricsActivityAttributes>,
+                         act.activityState == .active {
+                          let sinceLast = now - lastLiveActivityUpdateAt
+                          if isUpdatingLiveActivity || sinceLast < minGap {
+                              pendingLiveActivityForce = true
+                              deferredLiveActivityWork?.cancel()
+                              let delay = max(0.25, minGap - sinceLast)
+                              let work = DispatchWorkItem { [weak self] in
+                                  guard let self = self, self.pendingLiveActivityForce else { return }
+                                  self.pendingLiveActivityForce = false
+                                  let playingNow = self.useEnginePlayer ? self.enginePlayer.isPlaying : ((self.player?.rate ?? 0) > 0)
+                                  let curNow = self.useEnginePlayer ? self.enginePlayer.currentTime : (self.player.map { CMTimeGetSeconds($0.currentTime()) } ?? 0)
+                                  self.syncLiveActivity(
+                                      isPlaying: playingNow,
+                                      elapsed: curNow.isFinite && curNow >= 0 ? curNow : 0,
+                                      duration: self.currentDuration,
+                                      updatedAt: Date().timeIntervalSince1970,
+                                      urgent: true
+                                  )
+                              }
+                              deferredLiveActivityWork = work
+                              DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
+                              return
+                          }
+                      }
+
+                      deferredLiveActivityWork?.cancel()
+                      deferredLiveActivityWork = nil
+                      pendingLiveActivityForce = false
                       lastLiveActivitySig = sig
+                      lastLiveActivityUpdateAt = now
+
                       let state = FengLyricsActivityAttributes.ContentState(
                           title: safeTitle,
                           artist: currentArtist,
                           lyricLine: currentLyricLine,
                           compactLeadingLyric: pair.leading,
                           compactTrailingLyric: pair.trailing,
-                          isPlaying: isPlaying,
-                          elapsed: elapsed,
-                          duration: duration,
-                          updatedAt: updatedAt
+                          isPlaying: isPlaying
                       )
                       if let act = liveActivityRef as? Activity<FengLyricsActivityAttributes>, act.activityState == .active {
-                          Task {
+                          isUpdatingLiveActivity = true
+                          Task { [weak self] in
                               if #available(iOS 16.2, *) {
                                   await act.update(ActivityContent(state: state, staleDate: nil))
                               } else {
                                   await act.update(using: state)
+                              }
+                              await MainActor.run {
+                                  guard let self = self else { return }
+                                  self.isUpdatingLiveActivity = false
+                                  if self.pendingLiveActivityForce && self.deferredLiveActivityWork == nil {
+                                      self.pendingLiveActivityForce = false
+                                      let playingNow = self.useEnginePlayer ? self.enginePlayer.isPlaying : ((self.player?.rate ?? 0) > 0)
+                                      let curNow = self.useEnginePlayer ? self.enginePlayer.currentTime : (self.player.map { CMTimeGetSeconds($0.currentTime()) } ?? 0)
+                                      self.syncLiveActivity(
+                                          isPlaying: playingNow,
+                                          elapsed: curNow.isFinite && curNow >= 0 ? curNow : 0,
+                                          duration: self.currentDuration,
+                                          updatedAt: Date().timeIntervalSince1970,
+                                          urgent: true
+                                      )
+                                  }
                               }
                           }
                       } else if isPlaying && !currentTitle.isEmpty {
@@ -3825,11 +3904,16 @@ jobs:
               }
 
               private func endLiveActivity() {
-                  lyricCarouselTimer?.invalidate()
+                  lyricCarouselTimer?.cancel()
                   lyricCarouselTimer = nil
+                  deferredLiveActivityWork?.cancel()
+                  deferredLiveActivityWork = nil
+                  pendingLiveActivityForce = false
+                  isUpdatingLiveActivity = false
                   #if canImport(ActivityKit)
                   if #available(iOS 16.1, *) {
-                      if let act = liveActivityRef as? Activity<FengLyricsActivityAttributes> {
+                      let allActs = Activity<FengLyricsActivityAttributes>.activities
+                      for act in allActs {
                           Task {
                               if #available(iOS 16.2, *) {
                                   let emptyContent: ActivityContent<FengLyricsActivityAttributes.ContentState>? = nil
@@ -3973,19 +4057,19 @@ jobs:
                       nativeLyrics = []
                       activeNativeLyricIdx = -1
                       marqueeChars = []
+                      marqueeNeedsScroll = false
                       marqueeOffset = 0
                       lastLiveActivitySig = ""
-                      lyricCarouselTimer?.invalidate()
+                      deferredLiveActivityWork?.cancel()
+                      deferredLiveActivityWork = nil
+                      pendingLiveActivityForce = false
+                      lyricCarouselTimer?.cancel()
                       lyricCarouselTimer = nil
                       try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [])
                       try? AVAudioSession.sharedInstance().setActive(true)
-                      if let rawLyrics = body["lyrics"] as? [[String: Any]] {
-                          setNativeLyrics(from: rawLyrics, offset: body["lyricOffset"] as? Double)
-                      } else {
-                          rebuildMarqueeBuffer(for: currentTitle)
-                          restartLyricCarousel()
-                      }
 
+                      let incomingLyrics = body["lyrics"] as? [[String: Any]]
+                      let incomingOffset = body["lyricOffset"] as? Double
                       let autoPlay = (body["autoPlay"] as? Bool) ?? false
                       enginePlayer.onTimeUpdate = { [weak self] cur, dur in
                           guard let self = self, self.useEnginePlayer else { return }
@@ -4008,6 +4092,12 @@ jobs:
                               fadeFactor: fxFadeFactor,
                               rampSec: 0.04
                           )
+                          if let rawLyrics = incomingLyrics, !rawLyrics.isEmpty {
+                              setNativeLyrics(from: rawLyrics, offset: incomingOffset)
+                          } else {
+                              rebuildMarqueeBuffer(for: currentTitle)
+                              restartLyricCarousel()
+                          }
                           sendEvent("loadedmetadata", extra: ["duration": currentDuration])
                           updateNowPlayingInfo(saveCoverToWidget: true)
                           if autoPlay {
@@ -4015,6 +4105,12 @@ jobs:
                               sendEvent("playing", extra: [:])
                           }
                           return
+                      }
+                      if let rawLyrics = incomingLyrics, !rawLyrics.isEmpty {
+                          setNativeLyrics(from: rawLyrics, offset: incomingOffset)
+                      } else {
+                          rebuildMarqueeBuffer(for: currentTitle)
+                          restartLyricCarousel()
                       }
 
                       let item = AVPlayerItem(url: url)
@@ -4297,20 +4393,14 @@ jobs:
                   public var compactLeadingLyric: String
                   public var compactTrailingLyric: String
                   public var isPlaying: Bool
-                  public var elapsed: Double
-                  public var duration: Double
-                  public var updatedAt: Double
 
-                  public init(title: String, artist: String, lyricLine: String, compactLeadingLyric: String, compactTrailingLyric: String, isPlaying: Bool, elapsed: Double, duration: Double, updatedAt: Double) {
+                  public init(title: String, artist: String, lyricLine: String, compactLeadingLyric: String, compactTrailingLyric: String, isPlaying: Bool) {
                       self.title = title
                       self.artist = artist
                       self.lyricLine = lyricLine
                       self.compactLeadingLyric = compactLeadingLyric
                       self.compactTrailingLyric = compactTrailingLyric
                       self.isPlaying = isPlaying
-                      self.elapsed = elapsed
-                      self.duration = duration
-                      self.updatedAt = updatedAt
                   }
               }
 
