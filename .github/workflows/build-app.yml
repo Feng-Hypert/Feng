@@ -3574,7 +3574,8 @@ jobs:
                       if let act = liveActivityRef as? Activity<FengLyricsActivityAttributes> {
                           Task {
                               if #available(iOS 16.2, *) {
-                                  await act.end(nil, dismissalPolicy: .immediate)
+                                  let emptyContent: ActivityContent<FengLyricsActivityAttributes.ContentState>? = nil
+                                  await act.end(emptyContent, dismissalPolicy: .immediate)
                               } else {
                                   await act.end(dismissalPolicy: .immediate)
                               }
@@ -3784,7 +3785,6 @@ jobs:
                           }
                       }
 
-                      let autoPlay = (body["autoPlay"] as? Bool) ?? false
                       if autoPlay {
                           newPlayer.play()
                           newPlayer.rate = currentRate
