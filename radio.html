@@ -314,10 +314,19 @@
       will-change: transform;
     }
     .cover-ambient-glow {
-      filter: blur(42px) saturate(190%);
-      transform: scale(1.08);
-      opacity: 0.58;
-      transition: opacity 0.6s ease, transform 0.6s ease;
+      filter: blur(42px) saturate(185%);
+      transform: scale(1.12) translateZ(0);
+      opacity: 0.54;
+      mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 1) 36%, rgba(0, 0, 0, 0) 76%);
+      -webkit-mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 1) 36%, rgba(0, 0, 0, 0) 76%);
+      transition: opacity 0.45s ease, transform 0.45s ease;
+      will-change: opacity, transform;
+    }
+
+    /* #8 Hand-written favorite gold ring — crisp hairline 1.25px */
+    .fav-gold-ring {
+      box-shadow: inset 0 0 0 1.25px rgba(252, 211, 77, 0.78), 0 0 12px rgba(251, 191, 36, 0.14) !important;
+      border-color: rgba(252, 211, 77, 0.52) !important;
     }
     .cover-glint-layer {
       background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0.06) 35%, transparent 70%);
@@ -392,6 +401,11 @@
 
     .lyric-line {
       font-size: var(--lyric-font-px);
+      max-width: 93%;
+      box-sizing: border-box;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: break-word;
       transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.35s ease, filter 0.35s ease, color 0.3s ease;
       transform-origin: left center;
     }
@@ -400,7 +414,7 @@
       filter: blur(0px);
       transform: scale(1.05);
       color: #ffffff;
-      text-shadow: 0 0 24px rgba(255, 255, 255, 0.32);
+      text-shadow: 0 2px 14px rgba(255, 255, 255, 0.16);
     }
     .lyric-near {
       opacity: 0.48;
@@ -460,6 +474,57 @@
     .lyrics-style-bounce .lyric-active {
       transform: scale(1.04);
       text-shadow: 0 4px 20px rgba(56, 189, 248, 0.35);
+    }
+
+    /* Independent Modifier A: True Vertical Staggered Spring Scroll (两段歌词交错衔接滚动) */
+    .lyrics-opt-stagger .lyric-line {
+      transition:
+        transform 0.64s cubic-bezier(0.22, 1.22, 0.36, 1) var(--lyric-stagger-delay, 0ms),
+        opacity 0.45s ease var(--lyric-stagger-delay, 0ms),
+        filter 0.45s ease var(--lyric-stagger-delay, 0ms),
+        color 0.32s ease;
+      will-change: transform, opacity;
+    }
+    .lyrics-opt-stagger .lyric-line.lyric-stagger-kick {
+      transition: none !important;
+      transform: translate3d(0, var(--lyric-kick-y, 26px), 0) scale(var(--lyric-kick-scale, 0.98)) !important;
+    }
+
+    /* Independent Modifier B: Refined Spatial 3D Curved-Drum Lyrics (立体歌词 — 100% compatible with Karaoke shimmer) */
+    .lyrics-opt-3d {
+      perspective: 1100px;
+      -webkit-perspective: 1100px;
+    }
+    .lyrics-opt-3d .lyric-line {
+      transform-origin: left center;
+      transition:
+        transform 0.56s cubic-bezier(0.22, 1.08, 0.36, 1) var(--lyric-stagger-delay, 0ms),
+        opacity 0.44s ease var(--lyric-stagger-delay, 0ms),
+        filter 0.44s ease var(--lyric-stagger-delay, 0ms);
+      will-change: transform, opacity, filter;
+    }
+    .lyrics-opt-3d .lyric-active {
+      opacity: 1;
+      transform: perspective(1100px) translate3d(0, 0, 44px) rotateX(0deg) scale(1.05);
+      filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.58));
+    }
+    .lyrics-opt-3d .lyric-near {
+      opacity: var(--lyric-3d-op, 0.54);
+      transform: perspective(1100px) translate3d(0, 0, var(--lyric-3d-tz, -22px)) rotateX(var(--lyric-3d-rx, 14deg)) scale(var(--lyric-3d-sc, 0.96));
+      filter: blur(var(--lyric-3d-blur, 0.4px)) drop-shadow(0 4px 8px rgba(0, 0, 0, 0.36));
+    }
+    .lyrics-opt-3d .lyric-far {
+      opacity: var(--lyric-3d-op, 0.20);
+      transform: perspective(1100px) translate3d(0, 0, var(--lyric-3d-tz, -76px)) rotateX(var(--lyric-3d-rx, 30deg)) scale(var(--lyric-3d-sc, 0.87));
+      filter: blur(var(--lyric-3d-blur, 1.5px));
+    }
+    /* Ensure karaoke gradient text stays pure & never occluded by text-shadow in 3D mode */
+    .lyrics-style-karaoke.lyrics-opt-3d .lyric-active {
+      text-shadow: none !important;
+      filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.56));
+    }
+    .lyrics-opt-stagger.lyrics-opt-3d .lyric-line.lyric-stagger-kick {
+      transform: perspective(1100px) translate3d(0, var(--lyric-kick-y, 26px), var(--lyric-3d-tz, 0px)) rotateX(var(--lyric-3d-rx, 0deg)) scale(var(--lyric-3d-sc, 0.98)) !important;
     }
     .lyric-char {
       display: inline-block;
@@ -817,34 +882,132 @@
     .cd-jewel-case.is-open {
       transform: translateX(58px) scale(0.90);
     }
+    @keyframes cdTrayAuroraFlow {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    @keyframes favAlbumSheen {
+      0%, 72% { transform: translateX(-140%) skewX(-22deg); opacity: 0; }
+      82% { opacity: 0.42; }
+      95% { transform: translateX(180%) skewX(-22deg); opacity: 0; }
+      100% { transform: translateX(180%) skewX(-22deg); opacity: 0; }
+    }
+    .fav-album-cover-wrap {
+      position: relative;
+      overflow: hidden;
+    }
+    .fav-album-cover-wrap::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      width: 58%;
+      background: linear-gradient(90deg, transparent 0%, rgba(254, 243, 199, 0.28) 48%, rgba(255, 255, 255, 0.35) 54%, transparent 100%);
+      pointer-events: none;
+      animation: favAlbumSheen 6.5s ease-in-out infinite;
+    }
+    /* Gold border ONLY on closed favorite CD front cover; removed once opened */
+    .fav-cd-case:not(.is-open) .cd-jewel-lid-front {
+      border: 1px solid rgba(252, 211, 77, 0.65) !important;
+      box-shadow: 0 14px 36px rgba(251, 191, 36, 0.16), inset 0 0 0 0.75px rgba(254, 243, 199, 0.40) !important;
+    }
+    /* Pro Apple Cash–inspired Obsidian EQ Studio Styling */
+    .eq-obsidian-card {
+      background: linear-gradient(165deg, #11141b 0%, #090b0f 55%, #06070a 100%);
+      border: 1px solid rgba(255, 255, 255, 0.11);
+      box-shadow: 0 22px 54px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    }
+    .eq-vfader-track {
+      position: relative;
+      width: 10px;
+      height: 152px;
+      border-radius: 9999px;
+      background: rgba(255, 255, 255, 0.08);
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.65);
+    }
+    .eq-vfader-zero {
+      position: absolute;
+      left: -5px;
+      right: -5px;
+      top: 50%;
+      height: 1px;
+      background: rgba(255, 255, 255, 0.24);
+      pointer-events: none;
+    }
+    .eq-vfader-fill {
+      position: absolute;
+      left: 1px;
+      right: 1px;
+      border-radius: 9999px;
+      background: linear-gradient(180deg, #fda4af 0%, #fde68a 48%, #6ee7b7 100%);
+      box-shadow: 0 0 12px rgba(110, 231, 183, 0.35);
+      pointer-events: none;
+    }
+    .eq-vfader-thumb {
+      position: absolute;
+      left: 50%;
+      width: 24px;
+      height: 14px;
+      transform: translate(-50%, 50%);
+      border-radius: 9999px;
+      background: linear-gradient(180deg, #ffffff 0%, #e2e8f0 100%);
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.6), 0 0 10px rgba(253, 230, 138, 0.35);
+      pointer-events: none;
+    }
+    .eq-vfader-input {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: ns-resize;
+      margin: 0;
+      writing-mode: vertical-lr;
+      direction: rtl;
+      -webkit-appearance: slider-vertical;
+      touch-action: none;
+    }
+    .stat-aurora-num {
+      background: linear-gradient(110deg, #7dd3fc 0%, #a5b4fc 52%, #f9a8d4 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
     .cd-jewel-tray {
       position: absolute;
       inset: 0;
       transform: translateZ(-2px);
       -webkit-transform: translateZ(-2px);
       border-radius: 7px 10px 10px 7px;
-      background: linear-gradient(135deg, rgba(24, 28, 36, 0.94), rgba(10, 12, 18, 0.98));
+      background: #0b0d12;
       border: 1px solid rgba(255, 255, 255, 0.22);
-      box-shadow: 0 24px 54px rgba(0, 0, 0, 0.62), inset 0 1px 0 rgba(255, 255, 255, 0.24);
+      box-shadow: 0 24px 54px rgba(0, 0, 0, 0.58), inset 0 1px 0 rgba(255, 255, 255, 0.24);
       display: flex;
       align-items: center;
+      overflow: hidden;
       z-index: 1;
     }
+    /* Keep spine pure opaque matte black — never tinted by tray aurora */
     .cd-jewel-spine {
+      position: relative;
+      z-index: 5;
       width: 24px;
       height: 100%;
       flex-shrink: 0;
       border-radius: 6px 0 0 6px;
-      background: repeating-linear-gradient(
+      background-color: #090b0f;
+      background-image: repeating-linear-gradient(
         90deg,
-        rgba(255, 255, 255, 0.10) 0px,
-        rgba(255, 255, 255, 0.10) 2px,
-        rgba(0, 0, 0, 0.42) 2px,
-        rgba(0, 0, 0, 0.42) 4px
+        rgba(255, 255, 255, 0.08) 0px,
+        rgba(255, 255, 255, 0.08) 2px,
+        #080a0e 2px,
+        #080a0e 4px
       );
-      border-right: 1px solid rgba(255, 255, 255, 0.18);
-      box-shadow: inset -2px 0 6px rgba(0, 0, 0, 0.45);
+      border-right: 1px solid rgba(255, 255, 255, 0.16);
+      box-shadow: inset -2px 0 6px rgba(0, 0, 0, 0.72);
     }
+    /* Right disc tray: luminous flowing aurora strictly inside the disc well */
     .cd-jewel-disc-well {
       position: relative;
       flex: 1;
@@ -853,7 +1016,13 @@
       align-items: center;
       justify-content: center;
       border-radius: 0 9px 9px 0;
-      background: radial-gradient(circle at center, rgba(255, 255, 255, 0.08) 0%, rgba(0, 0, 0, 0.55) 70%);
+      background-color: #101726;
+      background-image:
+        radial-gradient(circle at 24% 26%, var(--cd-tray-1, rgba(56, 189, 248, 0.58)), transparent 58%),
+        radial-gradient(circle at 80% 78%, var(--cd-tray-2, rgba(167, 139, 250, 0.52)), transparent 60%),
+        linear-gradient(128deg, rgba(15, 23, 42, 0.72) 0%, var(--cd-tray-1, rgba(56, 189, 248, 0.42)) 35%, var(--cd-tray-2, rgba(129, 140, 248, 0.38)) 68%, var(--cd-tray-3, rgba(45, 212, 191, 0.38)) 100%);
+      background-size: 165% 165%, 165% 165%, 260% 260%;
+      animation: cdTrayAuroraFlow 8.5s ease-in-out infinite;
     }
     .cd-jewel-disc {
       position: relative;
@@ -881,13 +1050,15 @@
       transition: opacity 0.28s ease;
     }
     .cd-jewel-case.is-open .cd-jewel-tray {
-      z-index: 20;
+      z-index: 30;
+      transform: translateZ(10px);
+      -webkit-transform: translateZ(10px);
     }
     .cd-jewel-case.is-open .cd-jewel-disc {
       opacity: 1;
       pointer-events: auto;
       touch-action: none;
-      z-index: 25;
+      z-index: 40;
       cursor: grab;
     }
     .cd-jewel-case.is-open .cd-jewel-disc:active {
@@ -923,8 +1094,9 @@
       z-index: 10;
     }
     .cd-jewel-case.is-open .cd-jewel-lid {
-      transform: translateZ(4px) rotateY(-126deg);
-      -webkit-transform: translateZ(4px) rotateY(-126deg);
+      transform: translateZ(0px) rotateY(-126deg);
+      -webkit-transform: translateZ(0px) rotateY(-126deg);
+      z-index: 5;
     }
     .cd-jewel-lid-front {
       position: absolute;
@@ -946,6 +1118,7 @@
       background: linear-gradient(125deg, rgba(255, 255, 255, 0.26) 0%, rgba(255, 255, 255, 0.04) 36%, transparent 55%, rgba(255, 255, 255, 0.10) 100%);
       pointer-events: none;
     }
+    /* Left inner detail page: deeper, cooler, reverse-phase frosted aurora for visual separation */
     .cd-jewel-lid-back {
       position: absolute;
       inset: 0;
@@ -954,14 +1127,22 @@
       backface-visibility: hidden;
       -webkit-backface-visibility: hidden;
       border-radius: 10px 7px 7px 10px;
-      background: linear-gradient(135deg, rgba(30, 36, 48, 0.95), rgba(14, 18, 28, 0.98));
-      border: 1px solid rgba(255, 255, 255, 0.22);
+      background-color: #0c111d;
+      background-image:
+        radial-gradient(circle at 78% 20%, var(--cd-tray-3, rgba(45, 212, 191, 0.30)), transparent 58%),
+        radial-gradient(circle at 22% 85%, var(--cd-tray-2, rgba(129, 140, 248, 0.28)), transparent 62%),
+        linear-gradient(225deg, rgba(10, 14, 24, 0.92) 0%, rgba(18, 25, 42, 0.86) 45%, var(--cd-tray-3, rgba(56, 189, 248, 0.22)) 100%);
+      background-size: 150% 150%, 150% 150%, 240% 240%;
+      animation: cdTrayAuroraFlow 13s ease-in-out infinite reverse;
+      border: 1px solid rgba(255, 255, 255, 0.20);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       padding: 12px 10px;
       text-align: center;
+      overflow: hidden;
     }
   </style>
 </head>
@@ -1274,18 +1455,37 @@
       <div id="stats-scroll-container" class="flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 space-y-4">
         <!-- Overview Panel -->
         <div id="stats-panel-overview" class="space-y-4">
-          <div class="grid grid-cols-3 gap-2.5">
-            <div class="liquid-panel rounded-3xl p-3.5">
-              <div class="text-[11px] text-white/55 mb-1">累计听歌次数</div>
-              <div id="stat-total-plays" class="text-xl sm:text-2xl font-bold text-white tabular-nums">0 次</div>
+          <div class="grid grid-cols-12 gap-2.5 items-stretch">
+            <!-- B2 Hero Left: Cumulative Listening Time -->
+            <div class="col-span-7 liquid-panel rounded-3xl p-4 flex flex-col justify-between min-h-[146px]">
+              <div class="text-[11px] font-medium text-white/55">累计聆听时长</div>
+              <div class="my-1">
+                <div class="flex items-baseline gap-1.5 flex-wrap">
+                  <span id="stat-total-minutes" class="stat-aurora-num font-extrabold tracking-tight tabular-nums leading-none" style="font-size:46px;">0</span>
+                  <span id="stat-total-minutes-unit" class="text-xs font-semibold text-white/65">分钟</span>
+                </div>
+              </div>
+              <div id="stat-total-minutes-sub" class="text-[11px] text-white/50 tabular-nums truncate">约 0 小时 0 分</div>
             </div>
-            <div class="liquid-panel rounded-3xl p-3.5">
-              <div class="text-[11px] text-white/55 mb-1">累计聆听时长</div>
-              <div id="stat-total-minutes" class="text-xl sm:text-2xl font-bold text-white tabular-nums">0 分钟</div>
-            </div>
-            <div class="liquid-panel rounded-3xl p-3.5">
-              <div class="text-[11px] text-white/55 mb-1">已听曲目</div>
-              <div id="stat-unique-tracks" class="text-xl sm:text-2xl font-bold text-sky-300 tabular-nums">0 / 0</div>
+            <!-- B2 Right Stacked: Plays + Explored Tracks -->
+            <div class="col-span-5 flex flex-col gap-2.5">
+              <div class="liquid-panel rounded-3xl p-3.5 flex-1 flex flex-col justify-between">
+                <div class="text-[11px] text-white/55">累计听歌次数</div>
+                <div class="flex items-baseline gap-1 mt-1">
+                  <span id="stat-total-plays" class="stat-aurora-num font-extrabold tabular-nums leading-tight" style="font-size:22px;">0</span>
+                  <span id="stat-total-plays-unit" class="text-[11px] text-white/55">次</span>
+                </div>
+              </div>
+              <div class="liquid-panel rounded-3xl p-3.5 flex-1 flex flex-col justify-between">
+                <div class="flex items-center justify-between gap-1">
+                  <span class="text-[11px] text-white/55">已听曲目</span>
+                  <span id="stat-unique-pct" class="text-[10px] text-white/45 tabular-nums">0%</span>
+                </div>
+                <div id="stat-unique-tracks" class="stat-aurora-num text-base font-extrabold tabular-nums leading-tight mt-0.5 truncate">0/0</div>
+                <div class="w-full h-1.5 rounded-full bg-white/10 overflow-hidden mt-1.5">
+                  <div id="stat-unique-bar" class="h-full rounded-full bg-gradient-to-r from-sky-300 via-indigo-300 to-pink-300 transition-all duration-500" style="width:0%;"></div>
+                </div>
+              </div>
             </div>
           </div>
           <div class="liquid-panel rounded-3xl p-4">
@@ -1315,7 +1515,7 @@
         <div class="flex items-center gap-3">
           <div>
             <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-white">界面 DIY 设置</h1>
-            <p class="text-xs text-white/55">FENG MUSIC v1.0.7</p>
+            <p class="text-xs text-white/55">FENG MUSIC v1.0.8</p>
           </div>
         </div>
       </header>
@@ -1380,27 +1580,9 @@
           </div>
         </div>
 
-        <!-- 4. Wave Visualizer, Lyric Font Size Slider & Glass Opacity Slider -->
+        <!-- 4. Glass Opacity Sliders (Wave toggle & Lyric size moved to Now Playing) -->
         <div class="liquid-panel rounded-3xl p-4 space-y-4">
-          <div class="flex items-center justify-between">
-            <div>
-              <h2 class="text-sm font-semibold text-white">封面音频律动波纹</h2>
-              <p class="text-xs text-white/50">播放时在封面下方显示实时节奏频谱光条</p>
-            </div>
-            <button id="btn-diy-toggle-waves" class="w-12 h-7 rounded-full bg-sky-500 p-1 transition-colors flex items-center justify-end">
-              <span class="w-5 h-5 rounded-full bg-white shadow"></span>
-            </button>
-          </div>
-
-          <div class="space-y-1.5 pt-2 border-t border-white/10">
-            <div class="flex justify-between text-xs text-white/70">
-              <span>同步歌词字号大小</span>
-              <span id="diy-lyric-size-val" class="tabular-nums">21px</span>
-            </div>
-            <input id="diy-lyric-size" type="range" min="14" max="28" value="21" class="feng-slider w-full" />
-          </div>
-
-          <div class="space-y-1.5 pt-2 border-t border-white/10">
+          <div class="space-y-1.5">
             <div class="flex justify-between text-xs text-white/70">
               <span>液态玻璃卡片通透度</span>
               <span id="diy-glass-val" class="tabular-nums">11%</span>
@@ -1813,6 +1995,40 @@
       </div>
     </div>
 
+    <!-- 3.5 Synced Lyric Font Size (Moved from DIY Settings for WYSIWYG editing) -->
+    <div class="space-y-2">
+      <div class="flex items-center justify-between text-xs text-white/70">
+        <span>同步歌词字号大小</span>
+        <span id="diy-lyric-size-val" class="text-sky-300 font-medium tabular-nums">21px</span>
+      </div>
+      <div class="fluid-slider-box">
+        <div class="fluid-slider-rail">
+          <div id="lyric-size-fill" class="fluid-slider-fill" style="left: 0%; width: 50%;"></div>
+          <div id="lyric-size-thumb" class="fluid-slider-thumb" style="left: 50%;"></div>
+        </div>
+        <input id="diy-lyric-size" type="range" min="14" max="28" step="1" value="21" class="fluid-slider-input" aria-label="同步歌词字号大小" />
+      </div>
+      <div class="flex justify-between text-[10px] text-white/40 tabular-nums">
+        <span>14px</span>
+        <span>21px</span>
+        <span>28px</span>
+      </div>
+      <div class="grid grid-cols-2 gap-2 pt-1.5">
+        <div class="flex items-center justify-between gap-2 px-3 py-2 rounded-2xl bg-white/8 border border-white/10">
+          <span class="text-xs text-white/85">交错滚动</span>
+          <button id="btn-np-lyric-stagger" class="w-10 h-5 rounded-full bg-white/15 p-0.5 transition-colors flex items-center justify-start shrink-0" aria-label="开关歌词交错滚动">
+            <span class="w-4 h-4 rounded-full bg-white shadow"></span>
+          </button>
+        </div>
+        <div class="flex items-center justify-between gap-2 px-3 py-2 rounded-2xl bg-white/8 border border-white/10">
+          <span class="text-xs text-white/85">立体歌词</span>
+          <button id="btn-np-lyric-3d" class="w-10 h-5 rounded-full bg-white/15 p-0.5 transition-colors flex items-center justify-start shrink-0" aria-label="开关立体歌词效果">
+            <span class="w-4 h-4 rounded-full bg-white shadow"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- 4. Cover Visual Style (Moved from DIY Settings) -->
     <div class="space-y-2">
       <div class="flex justify-between text-xs text-white/70">
@@ -1865,49 +2081,14 @@
           </div>
         </div>
 
-        <!-- 5-Band EQ -->
-        <div class="space-y-2">
-          <div class="flex items-center justify-between text-xs text-white/75">
-            <span>五段均衡器 (EQ)</span>
-            <button id="btn-fx-eq-toggle" class="w-10 h-5 rounded-full bg-white/15 p-0.5 transition-colors flex items-center justify-start" aria-label="开关均衡器">
-              <span class="w-4 h-4 rounded-full bg-white shadow"></span>
-            </button>
+        <!-- 5-Band EQ Entry Row (Opens Standalone EQ Page) -->
+        <button id="btn-open-eq-view" class="w-full py-2.5 px-3.5 rounded-2xl bg-white/8 hover:bg-white/14 border border-white/12 flex items-center justify-between gap-2 transition active:scale-[0.99]">
+          <span class="text-xs font-medium text-white/90">均衡器</span>
+          <div class="flex items-center gap-1.5 min-w-0">
+            <span id="np-eq-entry-badge" class="text-[11px] text-sky-300 font-medium truncate">已关闭</span>
+            <svg class="w-4 h-4 text-white/45 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
           </div>
-          <div class="grid grid-cols-5 gap-1.5">
-            <button data-eq-preset="flat" class="fx-eq-preset-btn py-1.5 rounded-xl text-[11px] font-medium bg-white/20 text-white">平坦</button>
-            <button data-eq-preset="bass" class="fx-eq-preset-btn py-1.5 rounded-xl text-[11px] font-medium bg-white/8 text-white/75">低音</button>
-            <button data-eq-preset="vocal" class="fx-eq-preset-btn py-1.5 rounded-xl text-[11px] font-medium bg-white/8 text-white/75">人声</button>
-            <button data-eq-preset="electronic" class="fx-eq-preset-btn py-1.5 rounded-xl text-[11px] font-medium bg-white/8 text-white/75">电子</button>
-            <button data-eq-preset="custom" class="fx-eq-preset-btn py-1.5 rounded-xl text-[11px] font-medium bg-white/8 text-white/75">自定义</button>
-          </div>
-          <div id="fx-eq-sliders" class="space-y-1.5 pt-1">
-            <div class="flex items-center gap-2">
-              <span class="w-11 text-[10px] text-white/55 tabular-nums shrink-0">60Hz</span>
-              <div class="fluid-slider-box flex-1"><div class="fluid-slider-rail"><div class="fluid-slider-notch"></div><div id="eq-fill-0" class="fluid-slider-fill" style="left:50%;width:0%;"></div><div id="eq-thumb-0" class="fluid-slider-thumb" style="left:50%;"></div></div><input id="eq-slider-0" data-eq-band="0" type="range" min="-12" max="12" step="0.5" value="0" class="fluid-slider-input eq-band-slider" aria-label="60Hz" /></div>
-              <span id="eq-val-0" class="w-10 text-right text-[10px] text-sky-300 tabular-nums shrink-0">0dB</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="w-11 text-[10px] text-white/55 tabular-nums shrink-0">230Hz</span>
-              <div class="fluid-slider-box flex-1"><div class="fluid-slider-rail"><div class="fluid-slider-notch"></div><div id="eq-fill-1" class="fluid-slider-fill" style="left:50%;width:0%;"></div><div id="eq-thumb-1" class="fluid-slider-thumb" style="left:50%;"></div></div><input id="eq-slider-1" data-eq-band="1" type="range" min="-12" max="12" step="0.5" value="0" class="fluid-slider-input eq-band-slider" aria-label="230Hz" /></div>
-              <span id="eq-val-1" class="w-10 text-right text-[10px] text-sky-300 tabular-nums shrink-0">0dB</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="w-11 text-[10px] text-white/55 tabular-nums shrink-0">910Hz</span>
-              <div class="fluid-slider-box flex-1"><div class="fluid-slider-rail"><div class="fluid-slider-notch"></div><div id="eq-fill-2" class="fluid-slider-fill" style="left:50%;width:0%;"></div><div id="eq-thumb-2" class="fluid-slider-thumb" style="left:50%;"></div></div><input id="eq-slider-2" data-eq-band="2" type="range" min="-12" max="12" step="0.5" value="0" class="fluid-slider-input eq-band-slider" aria-label="910Hz" /></div>
-              <span id="eq-val-2" class="w-10 text-right text-[10px] text-sky-300 tabular-nums shrink-0">0dB</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="w-11 text-[10px] text-white/55 tabular-nums shrink-0">3.6kHz</span>
-              <div class="fluid-slider-box flex-1"><div class="fluid-slider-rail"><div class="fluid-slider-notch"></div><div id="eq-fill-3" class="fluid-slider-fill" style="left:50%;width:0%;"></div><div id="eq-thumb-3" class="fluid-slider-thumb" style="left:50%;"></div></div><input id="eq-slider-3" data-eq-band="3" type="range" min="-12" max="12" step="0.5" value="0" class="fluid-slider-input eq-band-slider" aria-label="3.6kHz" /></div>
-              <span id="eq-val-3" class="w-10 text-right text-[10px] text-sky-300 tabular-nums shrink-0">0dB</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="w-11 text-[10px] text-white/55 tabular-nums shrink-0">14kHz</span>
-              <div class="fluid-slider-box flex-1"><div class="fluid-slider-rail"><div class="fluid-slider-notch"></div><div id="eq-fill-4" class="fluid-slider-fill" style="left:50%;width:0%;"></div><div id="eq-thumb-4" class="fluid-slider-thumb" style="left:50%;"></div></div><input id="eq-slider-4" data-eq-band="4" type="range" min="-12" max="12" step="0.5" value="0" class="fluid-slider-input eq-band-slider" aria-label="14kHz" /></div>
-              <span id="eq-val-4" class="w-10 text-right text-[10px] text-sky-300 tabular-nums shrink-0">0dB</span>
-            </div>
-          </div>
-        </div>
+        </button>
 
         <!-- Loudness Normalization -->
         <div class="space-y-1">
@@ -2344,6 +2525,189 @@
   </div>
 
   <!-- Toast Banner -->
+  <!-- ==================== STANDALONE FULLSCREEN EQ VIEW (Apple Cash Obsidian Pro Studio) ==================== -->
+  <div id="eq-fullscreen-modal" class="app-screen-shell fixed inset-0 z-[60] translate-y-full transition-transform duration-300 ease-out flex flex-col overflow-hidden bg-[#06070a]">
+    <header class="relative z-10 px-4 sm:px-6 pb-3 flex items-center justify-between gap-3 shrink-0" style="padding-top: calc(var(--safe-top) + 12px);">
+      <div class="flex items-center gap-3 min-w-0">
+        <button id="btn-eq-close" class="w-10 h-10 rounded-full bg-white/8 hover:bg-white/15 border border-white/12 flex items-center justify-center text-white shrink-0 transition" aria-label="返回">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+        </button>
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <h1 class="text-lg font-bold tracking-tight text-white truncate">FENG EQ</h1>
+            <span class="px-1.5 py-0.5 rounded-md bg-white/8 border border-white/12 text-[9px] font-semibold tracking-widest text-emerald-200/90 uppercase">STUDIO</span>
+          </div>
+          <p id="eq-view-ios-notice" class="hidden text-[10px] text-amber-300/90 truncate">原生播放模式下暂不生效（仍可调音与存预设）</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 shrink-0">
+        <button id="btn-eq-ab-compare" class="px-2.5 py-1 rounded-full bg-white/8 hover:bg-white/15 border border-white/12 text-[11px] font-semibold text-white/80 transition active:scale-95" title="直通对比原声与均衡效果">A/B 对比</button>
+        <button id="btn-fx-eq-toggle" class="w-11 h-6 rounded-full bg-white/15 p-0.5 transition-colors flex items-center justify-start" aria-label="开关均衡器">
+          <span class="w-5 h-5 rounded-full bg-white shadow"></span>
+        </button>
+      </div>
+    </header>
+
+    <div class="relative z-10 flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-16 space-y-4 max-w-xl w-full mx-auto">
+      <!-- Apple Cash–Inspired Obsidian Holographic Dot-Matrix Analyzer Card -->
+      <div class="eq-obsidian-card rounded-[28px] p-4 space-y-2.5">
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="w-2 h-2 rounded-full bg-emerald-300 shadow-[0_0_8px_rgba(110,231,183,0.8)] shrink-0"></span>
+            <span id="eq-current-preset-label" class="text-xs font-semibold text-white tracking-tight truncate">平坦</span>
+          </div>
+          <div class="flex items-center gap-2 text-[10px] font-mono text-white/50 shrink-0 tabular-nums">
+            <span id="eq-headroom-val">PEAK 0.0 dB</span>
+            <span class="text-white/25">|</span>
+            <span id="eq-master-status-lbl" class="text-emerald-200/80">BYPASS</span>
+          </div>
+        </div>
+
+        <div class="relative w-full h-52 rounded-2xl bg-[#07080a] overflow-hidden touch-none select-none">
+          <canvas id="eq-curve-canvas" class="w-full h-full block"></canvas>
+        </div>
+
+        <div class="flex items-center justify-between text-[10px] font-mono text-white/45 px-2 tabular-nums">
+          <span>60Hz</span><span>230Hz</span><span>910Hz</span><span>3.6kHz</span><span>14kHz</span>
+        </div>
+      </div>
+
+      <!-- 5-Band Pro Vertical Studio Console Faders -->
+      <div class="eq-obsidian-card rounded-[28px] p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-semibold tracking-wider text-white/75 uppercase">5-Band Parametric Console</span>
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] text-white/40">双击归零</span>
+            <button id="btn-eq-reset-all" class="px-2.5 py-1 rounded-full bg-white/8 hover:bg-white/15 border border-white/10 text-[10px] font-medium text-white/85 transition active:scale-95">全部归零</button>
+          </div>
+        </div>
+
+        <div id="fx-eq-sliders" class="grid grid-cols-5 gap-2 pt-1 pb-1">
+          <div class="eq-band-row flex flex-col items-center gap-2" data-eq-band="0">
+            <span id="eq-val-0" class="text-[11px] font-mono font-semibold text-emerald-200 tabular-nums">0.0</span>
+            <div class="relative flex items-center justify-center w-11 py-1">
+              <div class="eq-vfader-track">
+                <div class="eq-vfader-zero"></div>
+                <div id="eq-fill-0" class="eq-vfader-fill" style="bottom:50%;height:0%;"></div>
+                <div id="eq-thumb-0" class="eq-vfader-thumb" style="bottom:50%;"></div>
+              </div>
+              <input id="eq-slider-0" data-eq-band="0" type="range" min="-12" max="12" step="0.5" value="0" class="eq-vfader-input eq-band-slider" aria-label="60Hz" />
+            </div>
+            <div class="text-center leading-tight">
+              <div class="text-[11px] font-mono font-semibold text-white/85">60</div>
+              <div class="text-[9px] font-mono text-white/35">LS · Hz</div>
+            </div>
+          </div>
+
+          <div class="eq-band-row flex flex-col items-center gap-2" data-eq-band="1">
+            <span id="eq-val-1" class="text-[11px] font-mono font-semibold text-emerald-200 tabular-nums">0.0</span>
+            <div class="relative flex items-center justify-center w-11 py-1">
+              <div class="eq-vfader-track">
+                <div class="eq-vfader-zero"></div>
+                <div id="eq-fill-1" class="eq-vfader-fill" style="bottom:50%;height:0%;"></div>
+                <div id="eq-thumb-1" class="eq-vfader-thumb" style="bottom:50%;"></div>
+              </div>
+              <input id="eq-slider-1" data-eq-band="1" type="range" min="-12" max="12" step="0.5" value="0" class="eq-vfader-input eq-band-slider" aria-label="230Hz" />
+            </div>
+            <div class="text-center leading-tight">
+              <div class="text-[11px] font-mono font-semibold text-white/85">230</div>
+              <div class="text-[9px] font-mono text-white/35">PK · Hz</div>
+            </div>
+          </div>
+
+          <div class="eq-band-row flex flex-col items-center gap-2" data-eq-band="2">
+            <span id="eq-val-2" class="text-[11px] font-mono font-semibold text-amber-200 tabular-nums">0.0</span>
+            <div class="relative flex items-center justify-center w-11 py-1">
+              <div class="eq-vfader-track">
+                <div class="eq-vfader-zero"></div>
+                <div id="eq-fill-2" class="eq-vfader-fill" style="bottom:50%;height:0%;"></div>
+                <div id="eq-thumb-2" class="eq-vfader-thumb" style="bottom:50%;"></div>
+              </div>
+              <input id="eq-slider-2" data-eq-band="2" type="range" min="-12" max="12" step="0.5" value="0" class="eq-vfader-input eq-band-slider" aria-label="910Hz" />
+            </div>
+            <div class="text-center leading-tight">
+              <div class="text-[11px] font-mono font-semibold text-white/85">910</div>
+              <div class="text-[9px] font-mono text-white/35">PK · Hz</div>
+            </div>
+          </div>
+
+          <div class="eq-band-row flex flex-col items-center gap-2" data-eq-band="3">
+            <span id="eq-val-3" class="text-[11px] font-mono font-semibold text-amber-200 tabular-nums">0.0</span>
+            <div class="relative flex items-center justify-center w-11 py-1">
+              <div class="eq-vfader-track">
+                <div class="eq-vfader-zero"></div>
+                <div id="eq-fill-3" class="eq-vfader-fill" style="bottom:50%;height:0%;"></div>
+                <div id="eq-thumb-3" class="eq-vfader-thumb" style="bottom:50%;"></div>
+              </div>
+              <input id="eq-slider-3" data-eq-band="3" type="range" min="-12" max="12" step="0.5" value="0" class="eq-vfader-input eq-band-slider" aria-label="3.6kHz" />
+            </div>
+            <div class="text-center leading-tight">
+              <div class="text-[11px] font-mono font-semibold text-white/85">3.6k</div>
+              <div class="text-[9px] font-mono text-white/35">PK · Hz</div>
+            </div>
+          </div>
+
+          <div class="eq-band-row flex flex-col items-center gap-2" data-eq-band="4">
+            <span id="eq-val-4" class="text-[11px] font-mono font-semibold text-rose-200 tabular-nums">0.0</span>
+            <div class="relative flex items-center justify-center w-11 py-1">
+              <div class="eq-vfader-track">
+                <div class="eq-vfader-zero"></div>
+                <div id="eq-fill-4" class="eq-vfader-fill" style="bottom:50%;height:0%;"></div>
+                <div id="eq-thumb-4" class="eq-vfader-thumb" style="bottom:50%;"></div>
+              </div>
+              <input id="eq-slider-4" data-eq-band="4" type="range" min="-12" max="12" step="0.5" value="0" class="eq-vfader-input eq-band-slider" aria-label="14kHz" />
+            </div>
+            <div class="text-center leading-tight">
+              <div class="text-[11px] font-mono font-semibold text-white/85">14k</div>
+              <div class="text-[9px] font-mono text-white/35">HS · Hz</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Official Built-in Presets (Obsidian Matrix) -->
+      <div class="eq-obsidian-card rounded-[28px] p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-white/90">官方调音曲线</span>
+          <span class="text-[10px] text-white/40">品牌/目标曲线为五段近似拟合</span>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <button data-eq-preset="flat" class="fx-eq-preset-btn py-2.5 px-3 rounded-2xl text-xs font-medium bg-white/20 text-white text-left border border-white/10">平坦参考</button>
+          <button data-eq-preset="harman" class="fx-eq-preset-btn py-2.5 px-3 rounded-2xl text-xs font-medium bg-white/6 text-white/75 text-left border border-white/8">哈曼目标曲线 <span class="text-[10px] text-emerald-200/75">近似</span></button>
+          <button data-eq-preset="bass" class="fx-eq-preset-btn py-2.5 px-3 rounded-2xl text-xs font-medium bg-white/6 text-white/75 text-left border border-white/8">低音增强</button>
+          <button data-eq-preset="vocal" class="fx-eq-preset-btn py-2.5 px-3 rounded-2xl text-xs font-medium bg-white/6 text-white/75 text-left border border-white/8">人声清透</button>
+          <button data-eq-preset="electronic" class="fx-eq-preset-btn py-2.5 px-3 rounded-2xl text-xs font-medium bg-white/6 text-white/75 text-left border border-white/8">电子律动</button>
+          <button data-eq-preset="jbl" class="fx-eq-preset-btn py-2.5 px-3 rounded-2xl text-xs font-medium bg-white/6 text-white/75 text-left border border-white/8">JBL 风格 <span class="text-[10px] text-amber-200/75">近似</span></button>
+          <button data-eq-preset="sennheiser" class="fx-eq-preset-btn py-2.5 px-3 rounded-2xl text-xs font-medium bg-white/6 text-white/75 text-left border border-white/8">森海塞尔风格 <span class="text-[10px] text-amber-200/75">近似</span></button>
+          <button data-eq-preset="bose" class="fx-eq-preset-btn py-2.5 px-3 rounded-2xl text-xs font-medium bg-white/6 text-white/75 text-left border border-white/8">Bose 风格 <span class="text-[10px] text-amber-200/75">近似</span></button>
+        </div>
+      </div>
+
+      <!-- User Custom Presets + Import/Export -->
+      <div class="eq-obsidian-card rounded-[28px] p-4 space-y-3">
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-xs font-semibold text-white/90">我的自定义预设</span>
+          <div class="flex items-center gap-1.5">
+            <button id="btn-eq-save-custom" class="px-3 py-1 rounded-full bg-emerald-300/20 hover:bg-emerald-300/30 border border-emerald-200/35 text-[11px] font-semibold text-emerald-100 transition active:scale-95">存为预设</button>
+            <button id="btn-eq-toggle-io" class="px-3 py-1 rounded-full bg-white/8 hover:bg-white/15 border border-white/10 text-[11px] font-medium text-white/80 transition active:scale-95">导入 / 导出</button>
+          </div>
+        </div>
+        <div id="eq-save-row" class="hidden flex items-center gap-2">
+          <input id="eq-custom-name-input" type="text" maxlength="24" placeholder="输入预设名称（如：深夜监听）" class="flex-1 px-3 py-2 rounded-xl bg-black/50 border border-white/15 text-xs text-white placeholder-white/35 outline-none focus:border-emerald-300/60" />
+          <button id="btn-eq-save-confirm" class="px-3.5 py-2 rounded-xl bg-emerald-300 text-zinc-950 text-xs font-bold shrink-0">保存</button>
+        </div>
+        <div id="eq-custom-presets-list" class="space-y-1.5"></div>
+        <div id="eq-io-panel" class="hidden pt-2 border-t border-white/10 space-y-2">
+          <textarea id="eq-io-textarea" rows="3" placeholder='粘贴预设 JSON，例如：{"name":"我的调音","gains":[2,1,0,1.5,2]}' class="w-full p-2.5 rounded-xl bg-black/55 border border-white/15 text-[11px] font-mono text-white/90 placeholder-white/35 outline-none focus:border-emerald-300/60"></textarea>
+          <div class="flex items-center justify-end gap-2">
+            <button id="btn-eq-export-json" class="px-3 py-1.5 rounded-xl bg-white/8 hover:bg-white/15 border border-white/10 text-[11px] font-medium text-white/85">导出当前并复制</button>
+            <button id="btn-eq-import-json" class="px-3 py-1.5 rounded-xl bg-emerald-300/20 hover:bg-emerald-300/30 border border-emerald-200/35 text-[11px] font-semibold text-emerald-100">校验并导入</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="toast-banner" class="fixed left-1/2 -translate-x-1/2 z-[70] px-4 py-2.5 rounded-full liquid-dock text-xs font-medium text-white opacity-0 pointer-events-none transition-all duration-300 whitespace-nowrap" style="top: calc(var(--safe-top) + 14px);">
     提示信息
   </div>
@@ -2613,8 +2977,7 @@
           playerDim: 45,
           playerBlur: 8,
           coverStyle: 'rounded', // 'rounded' | 'vinyl' | 'disc'
-          showWaves: true,
-          waveStyle: 'bars', // 'bars' | 'wave' | 'pulse'
+                    waveStyle: 'bars', // 'bars' | 'wave' | 'pulse'
           playerEffect: 'sparks', // 'sparks' | 'snow' | 'fireflies' | 'petals' | 'off'
           lyricStyle: 'focus', // 'focus' | 'karaoke' | 'neon' | 'bounce'
           lyricFontSize: 21,
@@ -2790,8 +3153,7 @@
             playerDim: state.diy.playerDim,
             playerBlur: state.diy.playerBlur,
             coverStyle: state.diy.coverStyle,
-            showWaves: state.diy.showWaves,
-            waveStyle: state.diy.waveStyle,
+              waveStyle: state.diy.waveStyle,
             playerEffect: state.diy.playerEffect,
             lyricStyle: state.diy.lyricStyle,
             lyricFontSize: state.diy.lyricFontSize,
@@ -2839,11 +3201,48 @@
 
       const DEFAULT_APP_COVER = '/icon-512.png';
 
+      const DEFAULT_AURORA_COLORS = ['rgb(56, 189, 248)', 'rgb(99, 102, 241)', 'rgb(30, 41, 59)'];
+      let auroraExtractToken = 0;
+
+      function resetAuroraColorsToDefault() {
+        document.documentElement.style.setProperty('--aurora-1', DEFAULT_AURORA_COLORS[0]);
+        document.documentElement.style.setProperty('--aurora-2', DEFAULT_AURORA_COLORS[1]);
+        document.documentElement.style.setProperty('--aurora-3', DEFAULT_AURORA_COLORS[2]);
+      }
+
+      function syncAmbientCoverGlow(coverUrl) {
+        const el = $('np-cover-ambient-glow');
+        if (!el) return;
+        const isDefault = !coverUrl || coverUrl === DEFAULT_APP_COVER;
+        if (isDefault) {
+          el.style.opacity = '0';
+          el.removeAttribute('src');
+          return;
+        }
+        el.style.opacity = '0';
+        el.onload = () => {
+          el.style.opacity = '';
+        };
+        el.onerror = () => {
+          el.style.opacity = '0';
+        };
+        if (el.getAttribute('src') === coverUrl && el.complete && el.naturalWidth > 0) {
+          el.style.opacity = '';
+        } else {
+          el.src = coverUrl;
+        }
+      }
+
       function updateAuroraColorsFromCover(coverUrl) {
-        if (!coverUrl) return;
+        const myToken = ++auroraExtractToken;
+        if (!coverUrl || coverUrl === DEFAULT_APP_COVER) {
+          resetAuroraColorsToDefault();
+          return;
+        }
         const img = new Image();
         img.crossOrigin = 'anonymous';
         img.onload = () => {
+          if (myToken !== auroraExtractToken) return;
           try {
             const c = document.createElement('canvas');
             c.width = 24;
@@ -2867,8 +3266,15 @@
               document.documentElement.style.setProperty('--aurora-1', pick(samples[0]));
               document.documentElement.style.setProperty('--aurora-2', pick(samples[Math.floor(samples.length / 3)]));
               document.documentElement.style.setProperty('--aurora-3', pick(samples[Math.floor((samples.length * 2) / 3)]));
+            } else {
+              resetAuroraColorsToDefault();
             }
-          } catch {}
+          } catch {
+            resetAuroraColorsToDefault();
+          }
+        };
+        img.onerror = () => {
+          if (myToken === auroraExtractToken) resetAuroraColorsToDefault();
         };
         img.src = coverUrl;
       }
@@ -3682,7 +4088,7 @@
               $('np-cover-img-rounded').src = disp.cover;
               $('np-cover-img-vinyl').src = disp.cover;
               $('np-cover-img-disc').src = disp.cover;
-              $('np-cover-ambient-glow').src = disp.cover;
+              syncAmbientCoverGlow(disp.cover);
               updateAuroraColorsFromCover(disp.cover);
               if (nextLrc) {
                 state.parsedLyrics = parseLrcText(disp.lrc);
@@ -4047,7 +4453,8 @@
       }
 
       function applyLyricStyleUI() {
-        const style = state.diy.lyricStyle || 'focus';
+        let style = state.diy.lyricStyle || 'focus';
+        if (!['focus', 'karaoke', 'neon', 'bounce'].includes(style)) style = 'focus';
         const labels = {
           focus: '✨ 景深聚焦',
           karaoke: '🌈 流光渐变',
@@ -4065,10 +4472,29 @@
         const statusEl = $('lyric-style-status');
         if (statusEl) statusEl.textContent = shortNames[style] || '景深聚焦';
 
+        const staggerOn = Boolean(state.diy.lyricStagger);
+        const spatial3dOn = Boolean(state.diy.lyric3d);
         const container = $('lyrics-scroll-container');
         if (container) {
           container.classList.remove('lyrics-style-focus', 'lyrics-style-karaoke', 'lyrics-style-neon', 'lyrics-style-bounce');
           container.classList.add(`lyrics-style-${style}`);
+          container.classList.toggle('lyrics-opt-stagger', staggerOn);
+          container.classList.toggle('lyrics-opt-3d', spatial3dOn);
+        }
+
+        const staggerBtn = $('btn-np-lyric-stagger');
+        if (staggerBtn) {
+          staggerBtn.classList.toggle('bg-sky-500', staggerOn);
+          staggerBtn.classList.toggle('justify-end', staggerOn);
+          staggerBtn.classList.toggle('bg-white/15', !staggerOn);
+          staggerBtn.classList.toggle('justify-start', !staggerOn);
+        }
+        const l3dBtn = $('btn-np-lyric-3d');
+        if (l3dBtn) {
+          l3dBtn.classList.toggle('bg-sky-500', spatial3dOn);
+          l3dBtn.classList.toggle('justify-end', spatial3dOn);
+          l3dBtn.classList.toggle('bg-white/15', !spatial3dOn);
+          l3dBtn.classList.toggle('justify-start', !spatial3dOn);
         }
 
         document.querySelectorAll('.lyric-style-opt-btn').forEach((btn) => {
@@ -4166,8 +4592,51 @@
         const isBounceMode = (state.diy.lyricStyle || 'focus') === 'bounce';
         const container = $('lyrics-scroll-container');
         const lineEls = container.querySelectorAll('.lyric-line');
+        const staggerOn = Boolean(state.diy.lyricStagger);
+        const didAdvance = prevIdx >= 0 && activeIdx >= 0 && prevIdx !== activeIdx;
+        const moveDir = activeIdx >= prevIdx ? 1 : -1;
+        const kickEls = [];
+
         lineEls.forEach((el, idx) => {
-          const dist = Math.abs(idx - activeIdx);
+          const rel = activeIdx >= 0 ? idx - activeIdx : idx;
+          const dist = Math.abs(rel);
+
+          // Progressive cascade delay: outgoing line leads (0ms), active line follows (45ms), upcoming lines ripple in (+45ms each)
+          let cascadeOrder = 0;
+          if (staggerOn) {
+            if (moveDir > 0) {
+              // Advancing forward: prev line (-1) moves first, active (0) second, +1/+2/+3 follow in staggered wave
+              cascadeOrder = Math.max(0, Math.min(8, rel + 2));
+            } else {
+              // Seeking backward: reverse wave
+              cascadeOrder = Math.max(0, Math.min(8, 2 - rel));
+            }
+          }
+          el.style.setProperty('--lyric-stagger-delay', staggerOn ? `${cascadeOrder * 46}ms` : '0ms');
+
+          // Smooth curved 3D depth drum variables
+          const rx = Math.max(-34, Math.min(34, -rel * 11.5));
+          const tz = dist === 0 ? 46 : dist === 1 ? -18 : dist === 2 ? -50 : -Math.min(96, 54 + (dist - 2) * 18);
+          const sc = dist === 0 ? 1.06 : dist === 1 ? 0.965 : dist === 2 ? 0.915 : 0.86;
+          const op = dist === 0 ? 1 : dist === 1 ? 0.58 : dist === 2 ? 0.34 : 0.16;
+          const bl = dist === 0 ? 0 : dist === 1 ? 0.35 : dist === 2 ? 0.95 : 1.65;
+          el.style.setProperty('--lyric-3d-rx', `${rx}deg`);
+          el.style.setProperty('--lyric-3d-tz', `${tz}px`);
+          el.style.setProperty('--lyric-3d-sc', String(sc));
+          el.style.setProperty('--lyric-3d-op', String(op));
+          el.style.setProperty('--lyric-3d-blur', `${bl}px`);
+
+          if (staggerOn && didAdvance && dist <= 6) {
+            // Brief vertical spring offset that releases in staggered wave as lines transition
+            const kickY = moveDir * (dist === 0 ? 22 : 16 + Math.min(dist * 3, 14));
+            el.style.setProperty('--lyric-kick-y', `${kickY}px`);
+            el.style.setProperty('--lyric-kick-scale', String(sc));
+            el.classList.add('lyric-stagger-kick');
+            kickEls.push(el);
+          } else {
+            el.classList.remove('lyric-stagger-kick');
+          }
+
           el.classList.remove('lyric-active', 'lyric-near', 'lyric-far');
           const rawText = state.parsedLyrics[idx]?.text || '';
           if (idx === activeIdx) {
@@ -4185,6 +4654,13 @@
             else el.classList.add('lyric-far');
           }
         });
+
+        if (kickEls.length) {
+          void container.offsetHeight;
+          requestAnimationFrame(() => {
+            kickEls.forEach((el) => el.classList.remove('lyric-stagger-kick'));
+          });
+        }
 
         if (activeIdx >= 0 && lineEls[activeIdx] && (!state.lyricsUserScrolling || forceScroll)) {
           lineEls[activeIdx].scrollIntoView({ behavior: forceScroll ? 'auto' : 'smooth', block: 'center' });
@@ -4228,7 +4704,7 @@
             $('np-cover-img-rounded').src = DEFAULT_APP_COVER;
             $('np-cover-img-vinyl').src = DEFAULT_APP_COVER;
             $('np-cover-img-disc').src = DEFAULT_APP_COVER;
-            $('np-cover-ambient-glow').src = DEFAULT_APP_COVER;
+            syncAmbientCoverGlow(DEFAULT_APP_COVER);
           }
         } else if (state.currentTrackId) {
           const raw = state.tracks.find((t) => t.id === state.currentTrackId);
@@ -4485,7 +4961,7 @@
         $('np-cover-img-rounded').src = track.cover;
         $('np-cover-img-vinyl').src = track.cover;
         $('np-cover-img-disc').src = track.cover;
-        $('np-cover-ambient-glow').src = track.cover;
+        syncAmbientCoverGlow(track.cover);
 
         updateAuroraColorsFromCover(track.cover);
 
@@ -4825,7 +5301,7 @@
         }
         const plDetailView = $('view-playlist-detail');
         if (plDetailView) {
-          const plList = $('pl-detail-list');
+          const plList = $('playlist-detail-tracks');
           const allowPlCollapse = !state.plMultiSelectMode && !state.plCustomEditing;
           plDetailView.classList.toggle('is-scrolled', allowPlCollapse && Boolean(plList && plList.scrollTop > 44));
         }
@@ -4885,16 +5361,31 @@
         requestAnimationFrame(syncCollapsibleHeaders);
       }
 
+      function enforceSingleVisibleView(viewName) {
+        document.querySelectorAll('.app-view').forEach((v) => {
+          const shouldShow = v.id === `view-${viewName}`;
+          v.classList.toggle('hidden', !shouldShow);
+        });
+      }
+
       function switchView(viewName) {
         if (viewName === 'group-detail' && state.activeView !== 'group-detail') {
           state.groupReturnView = state.activeView || 'library';
         }
+        if (viewName !== 'library' && state.multiSelectMode) {
+          exitMultiSelectMode(false);
+        }
+        if (viewName !== 'library' && state.libCustomEditing) {
+          state.libCustomEditing = false;
+          syncMultiSelectBar();
+        }
+        if (viewName !== 'playlist-detail' && state.plMultiSelectMode) {
+          exitPlaylistMultiSelectMode(false);
+        }
         state.activeView = viewName;
         state.dockCollapsed = false;
 
-        document.querySelectorAll('.app-view').forEach((v) => v.classList.add('hidden'));
-        const target = $(`view-${viewName}`);
-        if (target) target.classList.remove('hidden');
+        enforceSingleVisibleView(viewName);
 
         document.querySelectorAll('.dock-nav-btn').forEach((btn) => {
           const active = btn.dataset.nav === viewName;
@@ -5148,6 +5639,9 @@
         if (delBtn) delBtn.textContent = '删除';
         syncMultiSelectBar();
         if (shouldRender) renderActiveLibraryTab();
+        enforceSingleVisibleView(state.activeView || 'library');
+        syncCollapsibleHeaders();
+        requestAnimationFrame(syncCollapsibleHeaders);
       }
 
       function attachSongRowListeners(container, enableMultiSelect = false) {
@@ -5385,7 +5879,7 @@
             const isFav = favSet.has(alb.name);
             const isChecked = isMs && state.selectedGroupKeys.has(alb.name);
             return `
-            <div data-album-name="${escapeHtml(alb.name)}" class="album-card relative clear-liquid-card rounded-3xl p-3 space-y-2.5 cursor-pointer active:scale-[0.98] transition ${isChecked ? 'ring-2 ring-sky-400 bg-sky-500/20' : isFav ? 'ring-2 ring-amber-300/70' : ''}">
+            <div data-album-name="${escapeHtml(alb.name)}" class="album-card relative clear-liquid-card rounded-3xl p-3 space-y-2.5 cursor-pointer active:scale-[0.98] transition ${isChecked ? 'ring-2 ring-sky-400 bg-sky-500/20' : isFav ? 'fav-gold-ring' : ''}">
               ${
                 isMs
                   ? `<div class="absolute top-4 left-4 z-10 w-6 h-6 rounded-full border-2 flex items-center justify-center shadow transition ${isChecked ? 'bg-sky-400 border-sky-400 text-zinc-950' : 'border-white/50 bg-black/45 text-transparent'}">
@@ -5393,7 +5887,9 @@
                     </div>`
                   : ''
               }
-              <img src="${alb.cover}" alt="" loading="lazy" decoding="async" class="w-full aspect-square rounded-2xl object-cover bg-white/10 shadow-md" />
+              <div class="w-full aspect-square rounded-2xl overflow-hidden bg-white/10 shadow-md ${isFav ? 'fav-album-cover-wrap' : ''}">
+                <img src="${alb.cover}" alt="" loading="lazy" decoding="async" class="w-full h-full object-cover" />
+              </div>
               <div class="px-0.5 flex items-center justify-between gap-1.5">
                 <div class="min-w-0 flex-1">
                   <div class="text-xs sm:text-sm font-bold text-white truncate">${escapeHtml(alb.name)}</div>
@@ -5471,7 +5967,7 @@
             const isFav = favSet.has(art.name);
             const isChecked = isMs && state.selectedGroupKeys.has(art.name);
             return `
-            <div data-artist-name="${escapeHtml(art.name)}" class="artist-card relative clear-liquid-card rounded-3xl p-3.5 text-center space-y-2.5 cursor-pointer active:scale-[0.98] transition ${isChecked ? 'ring-2 ring-sky-400 bg-sky-500/20' : isFav ? 'ring-2 ring-amber-300/70' : ''}">
+            <div data-artist-name="${escapeHtml(art.name)}" class="artist-card relative clear-liquid-card rounded-3xl p-3.5 text-center space-y-2.5 cursor-pointer active:scale-[0.98] transition ${isChecked ? 'ring-2 ring-sky-400 bg-sky-500/20' : isFav ? 'fav-gold-ring' : ''}">
               ${
                 isMs
                   ? `<div class="absolute top-3 left-3 z-10 w-6 h-6 rounded-full border-2 flex items-center justify-center shadow transition ${isChecked ? 'bg-sky-400 border-sky-400 text-zinc-950' : 'border-white/50 bg-black/45 text-transparent'}">
@@ -5750,9 +6246,67 @@
         return record;
       }
 
+      async function fetchWikiSummaryFromExactTitle(lang, pageTitle) {
+        if (!lang || !pageTitle) return null;
+        const url = `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(pageTitle)}`;
+        const res = await fetchJsonWithTimeout(url, 6500);
+        const page = res.ok ? res.data : null;
+        if (!page || page.type === 'disambiguation' || !page.extract) return null;
+        return {
+          lang,
+          title: page.title || pageTitle,
+          bio: String(page.extract || '').trim(),
+          photoUrl: page.thumbnail?.source || page.originalimage?.source || ''
+        };
+      }
+
+      async function fetchWikiFromMusicBrainzRelations(relations) {
+        if (!Array.isArray(relations) || !relations.length) return null;
+        let zhTitle = '';
+        let enTitle = '';
+        let wikidataId = '';
+
+        for (const rel of relations) {
+          const targetUrl = String(rel?.url?.resource || '');
+          if (!targetUrl) continue;
+          const wikiMatch = targetUrl.match(/^https?:\/\/([a-z-]+)\.wikipedia\.org\/wiki\/(.+)$/i);
+          if (wikiMatch) {
+            const lang = wikiMatch[1].toLowerCase();
+            const title = decodeURIComponent(wikiMatch[2].split('#')[0]).replace(/_/g, ' ');
+            if (lang === 'zh' && !zhTitle) zhTitle = title;
+            else if (lang === 'en' && !enTitle) enTitle = title;
+            continue;
+          }
+          const wdMatch = targetUrl.match(/wikidata\.org\/(?:wiki|entity)\/(Q\d+)/i);
+          if (wdMatch && !wikidataId) {
+            wikidataId = wdMatch[1].toUpperCase();
+          }
+        }
+
+        // If Wikidata link exists and zhwiki not yet known, resolve zhwiki/enwiki sitelinks
+        if (wikidataId && (!zhTitle || !enTitle)) {
+          const wdUrl = `https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${encodeURIComponent(wikidataId)}&props=sitelinks&sitefilter=zhwiki|enwiki&format=json&origin=*`;
+          const wdRes = await fetchJsonWithTimeout(wdUrl, 6500);
+          const sitelinks = wdRes.ok ? wdRes.data?.entities?.[wikidataId]?.sitelinks : null;
+          if (sitelinks?.zhwiki?.title && !zhTitle) zhTitle = sitelinks.zhwiki.title;
+          if (sitelinks?.enwiki?.title && !enTitle) enTitle = sitelinks.enwiki.title;
+        }
+
+        if (zhTitle) {
+          const zh = await fetchWikiSummaryFromExactTitle('zh', zhTitle);
+          if (zh) return zh;
+        }
+        if (enTitle) {
+          const en = await fetchWikiSummaryFromExactTitle('en', enTitle);
+          if (en) return en;
+        }
+        return null;
+      }
+
       async function fetchArtistMetadata(artistName, forceRefresh = false) {
         const normArtist = normalizeMetaQuery(artistName);
-        const cacheKey = `artist:${normArtist}`;
+        // v2 cache key invalidates any legacy raw-search Wikipedia mismatches (e.g. Aviva plc)
+        const cacheKey = `artist2:${normArtist}`;
 
         if (!forceRefresh) {
           const cached = await dbGet('metaCache', cacheKey);
@@ -5771,7 +6325,7 @@
           return cached || { key: cacheKey, type: 'artist', found: false, offline: true, fetchedAt: Date.now() };
         }
 
-        // 1. MusicBrainz artist facts (polite serial queue)
+        // 1. MusicBrainz artist search (strictly no direct Wikipedia name search)
         const mbUrl = `https://musicbrainz.org/ws/2/artist/?query=${encodeURIComponent(`artist:"${escapeMbLucene(normArtist)}"`)}&fmt=json&limit=5`;
         const mbRes = await mbEnqueue(() => fetchJsonWithTimeout(mbUrl, 8500));
         let mbArtist = null;
@@ -5791,10 +6345,7 @@
           }
         }
 
-        // 2. Wikipedia bio & photo (zh -> en fallback)
-        const wiki = await fetchWikiSummary(artistName);
-
-        if (!mbArtist && !wiki) {
+        if (!mbArtist) {
           if (!mbRes.ok) {
             const fallback = await dbGet('metaCache', cacheKey);
             return fallback || { key: cacheKey, type: 'artist', found: false, networkError: true, fetchedAt: Date.now() };
@@ -5804,18 +6355,27 @@
           return miss;
         }
 
-        const lifeBegin = mbArtist?.['life-span']?.begin ? String(mbArtist['life-span'].begin).slice(0, 4) : '';
-        const lifeEnd = mbArtist?.['life-span']?.end ? String(mbArtist['life-span'].end).slice(0, 4) : '';
+        // 2. Fetch MusicBrainz artist detail with url-rels to resolve exact Wikipedia/Wikidata link
+        const detailUrl = `https://musicbrainz.org/ws/2/artist/${encodeURIComponent(mbArtist.id)}?inc=url-rels+tags+genres&fmt=json`;
+        const detailRes = await mbEnqueue(() => fetchJsonWithTimeout(detailUrl, 8500));
+        const d = detailRes.ok && detailRes.data ? detailRes.data : mbArtist;
+        const wiki = await fetchWikiFromMusicBrainzRelations(d.relations || []);
+
+        const lifeBegin = d?.['life-span']?.begin ? String(d['life-span'].begin).slice(0, 4) : '';
+        const lifeEnd = d?.['life-span']?.end ? String(d['life-span'].end).slice(0, 4) : '';
         const activeYears = lifeBegin ? `${lifeBegin}${lifeEnd ? `–${lifeEnd}` : '–至今'}` : '';
-        const area = mbArtist?.area?.name || mbArtist?.['begin-area']?.name || '';
-        const tags = [...new Set((mbArtist?.tags || []).filter((t) => (t.count || 0) >= 1).map((t) => t.name))].slice(0, 4);
+        const area = d?.area?.name || d?.['begin-area']?.name || '';
+        const tags = [...new Set([
+          ...(d?.genres || []).map((g) => g.name),
+          ...(d?.tags || []).filter((t) => (t.count || 0) >= 1).map((t) => t.name)
+        ].filter(Boolean))].slice(0, 4);
 
         const record = {
           key: cacheKey,
           type: 'artist',
           found: true,
-          mbid: mbArtist?.id || '',
-          name: mbArtist?.name || wiki?.title || artistName,
+          mbid: d?.id || mbArtist.id || '',
+          name: d?.name || artistName,
           area,
           activeYears,
           tags,
@@ -6042,7 +6602,7 @@
           hero.innerHTML = `
             <div class="flex flex-col items-center text-center space-y-4">
               <div class="cd-jewel-stage">
-                <div id="album-cd-case" class="cd-jewel-case" title="点击打开 / 合上专辑盒">
+                <div id="album-cd-case" class="cd-jewel-case ${(state.favoriteAlbums || []).includes(name) ? 'fav-cd-case' : ''}" title="点击打开 / 合上专辑盒">
                   <div class="cd-jewel-tray">
                     <div class="cd-jewel-spine"></div>
                     <div class="cd-jewel-disc-well">
@@ -6058,6 +6618,7 @@
                       <div class="cd-jewel-spine"></div>
                       <img src="${cover}" alt="" class="flex-1 w-full h-full object-cover" />
                       <div class="cd-jewel-lid-glare"></div>
+                      ${(state.favoriteAlbums || []).includes(name) ? '<div class="absolute top-2 right-2 z-20 w-6 h-6 rounded-full bg-black/45 backdrop-blur-md border border-amber-300/50 text-amber-300 text-xs shadow flex items-center justify-center pointer-events-none" aria-label="已收藏">★</div>' : ''}
                     </div>
                     <div class="cd-jewel-lid-back">
                       <div class="w-full space-y-2 text-left px-1">
@@ -6116,6 +6677,37 @@
           const cdCase = $('album-cd-case');
           const cdDisc = $('album-cd-disc');
           const cdHud = $('album-cd-hud');
+
+          // Extract album cover palette directly onto CD tray aurora CSS variables
+          if (cdCase && cover && cover !== DEFAULT_APP_COVER) {
+            const trayImg = new Image();
+            trayImg.crossOrigin = 'anonymous';
+            trayImg.onload = () => {
+              try {
+                const c = document.createElement('canvas');
+                c.width = 20; c.height = 20;
+                const ctx = c.getContext('2d');
+                ctx.drawImage(trayImg, 0, 0, 20, 20);
+                const data = ctx.getImageData(0, 0, 20, 20).data;
+                const pts = [];
+                for (let i = 0; i < data.length; i += 16) {
+                  const r = data[i], g = data[i + 1], b = data[i + 2];
+                  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+                  const sat = max === 0 ? 0 : (max - min) / max;
+                  const lum = (r + g + b) / 3;
+                  if (lum > 30 && lum < 235) pts.push({ r, g, b, score: sat * 2.2 + (1 - Math.abs(lum - 140) / 140) });
+                }
+                pts.sort((a, b) => b.score - a.score);
+                if (pts.length >= 3) {
+                  const rgba = (s, a) => `rgba(${Math.min(255, Math.round(s.r * 1.15))}, ${Math.min(255, Math.round(s.g * 1.15))}, ${Math.min(255, Math.round(s.b * 1.15))}, ${a})`;
+                  cdCase.style.setProperty('--cd-tray-1', rgba(pts[0], 0.56));
+                  cdCase.style.setProperty('--cd-tray-2', rgba(pts[Math.floor(pts.length / 3)], 0.50));
+                  cdCase.style.setProperty('--cd-tray-3', rgba(pts[Math.floor((pts.length * 2) / 3)], 0.44));
+                }
+              } catch {}
+            };
+            trayImg.src = cover;
+          }
 
           const playCurrentAlbum = async () => {
             if (!matched.length) return;
@@ -6196,52 +6788,53 @@
             }
           };
 
+          let cdLastTapHandledAt = 0;
+
           const endCdGesture = async () => {
             if (!cdActivePointer) return;
             const elapsed = Date.now() - cdStartTime;
             const wasScrubbed = cdScrubbed;
-            const isCleanTap = !wasScrubbed && cdMaxDist < 8 && elapsed < 300;
+            const isCleanTap = !wasScrubbed && cdMaxDist < 14 && elapsed < 450;
             cdActivePointer = false;
             cdLastAngle = null;
             if (isCleanTap && cdCase.classList.contains('is-open')) {
+              cdLastTapHandledAt = Date.now();
               await toggleAlbumDiscPlay();
             }
             if (wasScrubbed) {
-              setTimeout(() => { cdScrubbed = false; }, 160);
+              setTimeout(() => { cdScrubbed = false; }, 180);
             }
           };
 
           if (cdDisc) {
-            on(cdDisc, 'touchstart', (e) => {
-              if (!cdCase.classList.contains('is-open') || !e.touches[0]) return;
+            on(cdDisc, 'pointerdown', (e) => {
+              if (!cdCase.classList.contains('is-open')) return;
+              if (e.pointerType === 'mouse' && e.button !== 0) return;
               e.stopPropagation();
-              beginCdGesture(e.touches[0].clientX, e.touches[0].clientY);
-            }, { passive: true });
-            on(cdDisc, 'touchmove', (e) => {
-              if (!cdActivePointer || !e.touches[0]) return;
-              e.stopPropagation();
-              moveCdGesture(e.touches[0].clientX, e.touches[0].clientY);
-            }, { passive: true });
-            on(cdDisc, 'touchend', (e) => {
-              if (!cdActivePointer) return;
-              e.stopPropagation();
-              e.preventDefault();
-              endCdGesture();
-            });
-            on(cdDisc, 'mousedown', (e) => {
-              if (!cdCase.classList.contains('is-open') || e.button !== 0) return;
-              e.stopPropagation();
+              try { cdDisc.setPointerCapture(e.pointerId); } catch {}
               beginCdGesture(e.clientX, e.clientY);
             });
-            on(window, 'mousemove', (e) => {
-              if (cdActivePointer) moveCdGesture(e.clientX, e.clientY);
+            on(cdDisc, 'pointermove', (e) => {
+              if (!cdActivePointer) return;
+              e.stopPropagation();
+              moveCdGesture(e.clientX, e.clientY);
             });
-            on(window, 'mouseup', () => {
-              if (cdActivePointer) endCdGesture();
+            on(cdDisc, 'pointerup', (e) => {
+              if (!cdActivePointer) return;
+              e.stopPropagation();
+              try { cdDisc.releasePointerCapture(e.pointerId); } catch {}
+              endCdGesture();
+            });
+            on(cdDisc, 'pointercancel', () => {
+              cdActivePointer = false;
+              cdLastAngle = null;
             });
             on(cdDisc, 'click', (e) => {
-              if (cdCase.classList.contains('is-open')) {
-                e.stopPropagation();
+              if (!cdCase.classList.contains('is-open')) return;
+              e.stopPropagation();
+              if (!cdScrubbed && Date.now() - cdLastTapHandledAt > 420) {
+                cdLastTapHandledAt = Date.now();
+                toggleAlbumDiscPlay();
               }
             });
           }
@@ -6359,7 +6952,7 @@
               </div>
               <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                 ${artistAlbums.map((alb) => `
-                  <div class="artist-detail-album-card clear-liquid-card rounded-2xl p-2.5 cursor-pointer transition hover:bg-white/15 active:scale-[0.98] ${favAlbumSet.has(alb.name) ? 'ring-2 ring-amber-300/70' : ''}" data-open-album="${escapeHtml(alb.name)}">
+                  <div class="artist-detail-album-card clear-liquid-card rounded-2xl p-2.5 cursor-pointer transition hover:bg-white/15 active:scale-[0.98] ${favAlbumSet.has(alb.name) ? 'fav-gold-ring' : ''}" data-open-album="${escapeHtml(alb.name)}">
                     <div class="aspect-square rounded-xl overflow-hidden bg-black/30 mb-2 border border-white/10">
                       <img src="${alb.cover}" alt="" loading="lazy" decoding="async" class="w-full h-full object-cover" />
                     </div>
@@ -6394,7 +6987,7 @@
           hero.classList.remove('hidden');
           hero.innerHTML = `
             <div class="flex flex-col items-center text-center space-y-4">
-              <div id="artist-hero-avatar" class="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border-2 border-white/20 shadow-2xl ${isFavArtist ? 'ring-2 ring-amber-300/70' : ''}">
+              <div id="artist-hero-avatar" class="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border-2 border-white/20 shadow-2xl ${isFavArtist ? 'fav-gold-ring' : ''}">
                 ${avatarInnerHtml}
               </div>
               <div class="space-y-1 px-2 max-w-full">
@@ -6406,16 +6999,16 @@
                   <span class="px-2.5 py-0.5 rounded-full bg-white/10">累计播放 ${totalPlays} 次</span>
                 </div>
               </div>
-              <div class="flex items-center justify-center gap-2.5 w-full max-w-sm">
-                <button id="btn-artist-play-all" class="flex-1 py-2.5 px-4 rounded-full bg-sky-400/25 hover:bg-sky-400/35 border border-sky-300/35 text-xs sm:text-sm font-semibold text-white flex items-center justify-center gap-1.5 active:scale-95 transition">
+              <div class="flex items-center justify-center gap-3 w-full max-w-sm">
+                <button id="btn-artist-play-all" class="flex-1 py-3 px-4 rounded-full bg-sky-400/25 hover:bg-sky-400/35 border border-sky-300/35 text-sm font-semibold text-white flex items-center justify-center gap-2 active:scale-95 transition">
                   <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
                   <span>播放全部</span>
                 </button>
-                <button id="btn-artist-shuffle" class="flex-1 py-2.5 px-4 rounded-full bg-white/12 hover:bg-white/20 border border-white/20 text-xs sm:text-sm font-semibold text-white flex items-center justify-center gap-1.5 active:scale-95 transition">
+                <button id="btn-artist-shuffle" class="flex-1 py-3 px-4 rounded-full bg-sky-400/25 hover:bg-sky-400/35 border border-sky-300/35 text-sm font-semibold text-white flex items-center justify-center gap-2 active:scale-95 transition">
                   <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><path stroke-linecap="round" stroke-linejoin="round" d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
                   <span>随机播放</span>
                 </button>
-                <button id="btn-artist-fav-toggle" class="w-11 h-11 rounded-full liquid-pill flex items-center justify-center shrink-0 active:scale-95 transition ${isFavArtist ? 'text-amber-300 ring-2 ring-amber-300/70' : 'text-white/75'}" title="${isFavArtist ? '取消收藏歌手' : '收藏歌手'}" aria-label="收藏歌手">
+                <button id="btn-artist-fav-toggle" class="w-12 h-12 rounded-full liquid-pill flex items-center justify-center shrink-0 active:scale-95 transition ${isFavArtist ? 'text-amber-300 fav-gold-ring' : 'text-white/75'}" title="${isFavArtist ? '取消收藏歌手' : '收藏歌手'}" aria-label="收藏歌手">
                   ${buildStarIconSvg(isFavArtist)}
                 </button>
               </div>
@@ -6456,12 +7049,10 @@
               favBtn.innerHTML = buildStarIconSvg(nowFav);
               favBtn.classList.toggle('text-amber-300', nowFav);
               favBtn.classList.toggle('text-white/75', !nowFav);
-              favBtn.classList.toggle('ring-2', nowFav);
-              favBtn.classList.toggle('ring-amber-300/70', nowFav);
+              favBtn.classList.toggle('fav-gold-ring', nowFav);
             }
             if (avatarEl) {
-              avatarEl.classList.toggle('ring-2', nowFav);
-              avatarEl.classList.toggle('ring-amber-300/70', nowFav);
+              avatarEl.classList.toggle('fav-gold-ring', nowFav);
             }
           });
           hero.querySelectorAll('.artist-detail-album-card').forEach((card) => {
@@ -6831,11 +7422,18 @@
             exitPlaylistMultiSelectMode(false);
           }
         }
-        if (state.activePlaylistId !== playlistId) {
+        const isSwitchingPlaylist = state.activePlaylistId !== playlistId;
+        if (isSwitchingPlaylist) {
           state.plCustomEditing = false;
         }
         state.activePlaylistId = playlistId;
         const validTracks = getSortedPlaylistTracks(pl);
+        if (isSwitchingPlaylist) {
+          const plListEl = $('playlist-detail-tracks');
+          if (plListEl) plListEl.scrollTop = 0;
+          const plDV = $('view-playlist-detail');
+          if (plDV) plDV.classList.remove('is-scrolled');
+        }
 
         $('detail-playlist-title').textContent = pl.name;
         const compactPlTitle = $('detail-playlist-title-compact');
@@ -7163,16 +7761,70 @@
           renderPeriodReport(state.statsTab);
           return;
         }
+        const totalPlays = Number(state.stats.totalPlays || 0);
+        const playsEl = $('stat-total-plays');
+        const playsUnitEl = $('stat-total-plays-unit');
+        if (playsEl) {
+          if (totalPlays >= 10000) {
+            const wanStr = (totalPlays / 10000).toFixed(1).replace(/\.0$/, '');
+            playsEl.textContent = wanStr;
+            if (playsUnitEl) playsUnitEl.textContent = '万次';
+            playsEl.style.fontSize = wanStr.length >= 5 ? '18px' : '21px';
+          } else {
+            const fmtPlays = totalPlays.toLocaleString('en-US');
+            playsEl.textContent = fmtPlays;
+            if (playsUnitEl) playsUnitEl.textContent = '次';
+            playsEl.style.fontSize = fmtPlays.length >= 5 ? '19px' : '23px';
+          }
+        }
+
         const mins = Math.floor((state.stats.totalSeconds || 0) / 60);
-        $('stat-total-plays').textContent = `${state.stats.totalPlays || 0} 次`;
-        $('stat-total-minutes').textContent = `${mins} 分钟`;
+        const minsEl = $('stat-total-minutes');
+        const minsUnitEl = $('stat-total-minutes-unit');
+        const minsSubEl = $('stat-total-minutes-sub');
+        if (minsEl) {
+          let mainStr = '0';
+          let unitStr = '分钟';
+          let subStr = '约 0 小时 0 分';
+          if (mins < 1000) {
+            mainStr = String(mins);
+            unitStr = '分钟';
+            const h = Math.floor(mins / 60);
+            const m = mins % 60;
+            subStr = `约 ${h} 小时 ${m} 分`;
+          } else if (mins < 10000) {
+            mainStr = (mins / 60).toFixed(1).replace(/\.0$/, '');
+            unitStr = '小时';
+            subStr = `${mins.toLocaleString('en-US')} 分钟`;
+          } else {
+            const hrs = Math.round(mins / 60);
+            mainStr = hrs.toLocaleString('en-US');
+            unitStr = '小时';
+            const days = Math.max(1, Math.round(mins / 1440));
+            subStr = `≈ ${days.toLocaleString('en-US')} 天`;
+          }
+          minsEl.textContent = mainStr;
+          if (minsUnitEl) minsUnitEl.textContent = unitStr;
+          if (minsSubEl) minsSubEl.textContent = subStr;
+          minsEl.style.fontSize = mainStr.length <= 3 ? '46px' : mainStr.length <= 5 ? '40px' : '34px';
+        }
 
         const validEntries = Object.entries(state.stats.trackPlays || {})
           .map(([id, count]) => ({ track: state.tracks.find((t) => t.id === id), count }))
           .filter((item) => item.track && item.count > 0)
           .sort((a, b) => b.count - a.count);
 
-        $('stat-unique-tracks').textContent = `${validEntries.length} / ${state.tracks.length}`;
+        const uniqueCount = validEntries.length;
+        const totalTracksCount = state.tracks.length;
+        const uniquePct = totalTracksCount > 0 ? Math.min(100, Math.round((uniqueCount / totalTracksCount) * 100)) : 0;
+        const uniqueEl = $('stat-unique-tracks');
+        if (uniqueEl) {
+          uniqueEl.textContent = `${uniqueCount.toLocaleString('en-US')}/${totalTracksCount.toLocaleString('en-US')}`;
+        }
+        const uniquePctEl = $('stat-unique-pct');
+        if (uniquePctEl) uniquePctEl.textContent = `${uniquePct}%`;
+        const uniqueBarEl = $('stat-unique-bar');
+        if (uniqueBarEl) uniqueBarEl.style.width = `${uniquePct}%`;
 
         const top20 = validEntries.slice(0, 20);
         const maxCount = top20[0]?.count || 1;
@@ -7380,6 +8032,10 @@
         syncPlaylistMultiSelectBar(0);
         if (shouldRender && state.activePlaylistId) {
           openPlaylistDetail(state.activePlaylistId);
+        } else {
+          enforceSingleVisibleView(state.activeView || 'playlists');
+          syncCollapsibleHeaders();
+          requestAnimationFrame(syncCollapsibleHeaders);
         }
       }
 
@@ -7567,18 +8223,44 @@
         $('np-cover-glint').classList.toggle('rounded-full', isCircularCover);
         $('np-cover-glint').classList.toggle('rounded-[32px]', !isCircularCover);
 
-        // Audio Waves Toggle
-        const waveBtn = $('btn-diy-toggle-waves');
-        waveBtn.classList.toggle('bg-sky-500', d.showWaves);
-        waveBtn.classList.toggle('justify-end', d.showWaves);
-        waveBtn.classList.toggle('bg-white/15', !d.showWaves);
-        waveBtn.classList.toggle('justify-start', !d.showWaves);
-        $('np-rhythm-waves').classList.toggle('hidden', !d.showWaves);
+        // #2 Audio Waves 4-mode ('bars' | 'wave' | 'pulse' | 'off')
+        if (!d.waveStyle) d.waveStyle = 'bars';
+        if (d.showWaves === false) d.waveStyle = 'off';
+        if ('showWaves' in d) delete d.showWaves;
+        const waveWrap = $('np-rhythm-waves');
+        if (waveWrap) {
+          const isWaveOff = d.waveStyle === 'off';
+          waveWrap.classList.remove('hidden');
+          waveWrap.dataset.waveOff = isWaveOff ? '1' : '0';
+          waveWrap.querySelectorAll('.rhythm-bar').forEach((b) => {
+            b.style.display = isWaveOff ? 'none' : '';
+          });
+          let offHint = $('np-wave-off-hint');
+          if (isWaveOff) {
+            if (!offHint) {
+              offHint = document.createElement('span');
+              offHint.id = 'np-wave-off-hint';
+              offHint.className = 'text-[10px] text-white/30 tracking-wider select-none';
+              offHint.textContent = '律动波纹已关闭 · 轻点切换';
+              waveWrap.appendChild(offHint);
+            }
+            offHint.classList.remove('hidden');
+          } else if (offHint) {
+            offHint.classList.add('hidden');
+          }
+        }
 
-        // Lyric Font Size & Glass Opacity
+        // #10 Lyric Font Size (now in #sheet-np-settings fluid slider) & Glass Opacity
         document.documentElement.style.setProperty('--lyric-font-px', `${d.lyricFontSize}px`);
-        $('diy-lyric-size').value = d.lyricFontSize;
-        $('diy-lyric-size-val').textContent = `${d.lyricFontSize}px`;
+        const lSizeEl = $('diy-lyric-size');
+        const lSizeVal = $('diy-lyric-size-val');
+        const lSizeFill = $('lyric-size-fill');
+        const lSizeThumb = $('lyric-size-thumb');
+        const lSizePct = Math.max(0, Math.min(100, ((Number(d.lyricFontSize || 21) - 14) / 14) * 100));
+        if (lSizeEl) lSizeEl.value = String(d.lyricFontSize);
+        if (lSizeVal) lSizeVal.textContent = `${d.lyricFontSize}px`;
+        if (lSizeFill) { lSizeFill.style.left = '0%'; lSizeFill.style.width = `${lSizePct}%`; }
+        if (lSizeThumb) lSizeThumb.style.left = `${lSizePct}%`;
 
         const alpha = (d.glassAlpha / 100).toFixed(2);
         const borderAlpha = Math.min(0.38, d.glassAlpha / 100 + 0.08).toFixed(2);
@@ -7619,9 +8301,24 @@
       ];
       const EQ_PRESETS = {
         flat: [0, 0, 0, 0, 0],
+        harman: [4.5, 1.0, -0.5, 2.5, 1.5],
         bass: [6, 4, 0, 0, 1],
         vocal: [-2, 1, 4, 3, 1],
-        electronic: [5, 2, -1, 3, 5]
+        electronic: [5, 2, -1, 3, 5],
+        jbl: [5.5, 2.0, -1.0, 2.0, 3.0],
+        sennheiser: [1.5, 0.5, 1.5, 2.5, 2.0],
+        bose: [4.0, 2.5, 0.5, 1.0, -1.0]
+      };
+      const EQ_PRESET_LABELS = {
+        flat: '平坦',
+        harman: '哈曼目标曲线（近似）',
+        bass: '低音增强',
+        vocal: '人声清透',
+        electronic: '电子律动',
+        jbl: 'JBL 风格（近似）',
+        sennheiser: '森海塞尔风格（近似）',
+        bose: 'Bose 风格（近似）',
+        custom: '自定义'
       };
 
       const audioFxRuntime = {
@@ -7654,9 +8351,11 @@
         }
       }
 
+      let eqAbBypassActive = false;
+
       function applyEqNodeGains() {
         if (!eqNodes.length) return;
-        const enabled = Boolean(state.audioFx.eqEnabled);
+        const enabled = Boolean(state.audioFx.eqEnabled) && !eqAbBypassActive;
         const gains = state.audioFx.eqGains || [0, 0, 0, 0, 0];
         eqNodes.forEach((node, i) => {
           node.gain.value = enabled ? Math.max(-12, Math.min(12, Number(gains[i]) || 0)) : 0;
@@ -7705,9 +8404,11 @@
         const notice = $('np-audiofx-ios-notice');
         const controls = $('np-audiofx-controls');
         if (notice) notice.classList.toggle('hidden', !isNativeIos);
+        const eqViewNotice = $('eq-view-ios-notice');
+        if (eqViewNotice) eqViewNotice.classList.toggle('hidden', !isNativeIos);
+        // Keep EQ entry clickable on iOS so user can still view/edit presets with clear notice
         if (controls) {
-          controls.classList.toggle('opacity-45', isNativeIos);
-          controls.classList.toggle('pointer-events-none', isNativeIos);
+          controls.classList.toggle('opacity-70', isNativeIos);
         }
 
         const fx = state.audioFx;
@@ -7741,26 +8442,39 @@
           btn.classList.toggle('text-white/75', !active);
         });
         const gains = fx.eqGains || [0, 0, 0, 0, 0];
+        let maxBoost = 0;
         for (let i = 0; i < 5; i++) {
           const val = Math.max(-12, Math.min(12, Number(gains[i]) || 0));
+          if (val > maxBoost) maxBoost = val;
           const sl = $(`eq-slider-${i}`);
           const fill = $(`eq-fill-${i}`);
           const thumb = $(`eq-thumb-${i}`);
           const lbl = $(`eq-val-${i}`);
           if (sl) sl.value = String(val);
-          if (lbl) lbl.textContent = `${val > 0 ? '+' : ''}${val}dB`;
+          if (lbl) lbl.textContent = `${val > 0 ? '+' : ''}${val.toFixed(1)}`;
           const pct = ((val + 12) / 24) * 100;
-          if (thumb) thumb.style.left = `${pct}%`;
+          if (thumb) thumb.style.bottom = `${pct}%`;
           if (fill) {
             if (val >= 0) {
-              fill.style.left = '50%';
-              fill.style.width = `${(val / 12) * 50}%`;
+              fill.style.bottom = '50%';
+              fill.style.height = `${(val / 12) * 50}%`;
             } else {
-              const w = (-val / 12) * 50;
-              fill.style.left = `${50 - w}%`;
-              fill.style.width = `${w}%`;
+              const h = (-val / 12) * 50;
+              fill.style.bottom = `${50 - h}%`;
+              fill.style.height = `${h}%`;
             }
           }
+        }
+        const headroomEl = $('eq-headroom-val');
+        if (headroomEl) {
+          headroomEl.textContent = `PEAK ${maxBoost > 0 ? '+' : ''}${maxBoost.toFixed(1)} dB`;
+        }
+        const abBtn = $('btn-eq-ab-compare');
+        if (abBtn) {
+          abBtn.classList.toggle('bg-amber-400/25', eqAbBypassActive);
+          abBtn.classList.toggle('border-amber-300/50', eqAbBypassActive);
+          abBtn.classList.toggle('text-amber-200', eqAbBypassActive);
+          abBtn.textContent = eqAbBypassActive ? '原声直通' : 'A/B 对比';
         }
 
         const loudBtn = $('btn-fx-loudness-toggle');
@@ -7770,6 +8484,347 @@
           loudBtn.classList.toggle('bg-white/15', !fx.loudnessEnabled);
           loudBtn.classList.toggle('justify-start', !fx.loudnessEnabled);
         }
+
+        // Sync EQ entry badge, master status label, custom presets & response curve
+        let activeLabel = EQ_PRESET_LABELS[fx.eqPreset] || '自定义';
+        if (String(fx.eqPreset || '').startsWith('user:')) {
+          const cid = fx.eqPreset.slice(5);
+          const cp = (fx.customPresets || []).find((p) => p.id === cid);
+          activeLabel = cp ? cp.name : '自定义';
+        }
+        const entryBadge = $('np-eq-entry-badge');
+        if (entryBadge) entryBadge.textContent = fx.eqEnabled ? activeLabel : '已关闭';
+        const eqPresetLbl = $('eq-current-preset-label');
+        if (eqPresetLbl) eqPresetLbl.textContent = fx.eqEnabled ? activeLabel : `${activeLabel}（未启用）`;
+        const eqMasterLbl = $('eq-master-status-lbl');
+        if (eqMasterLbl) eqMasterLbl.textContent = fx.eqEnabled ? '已开启' : '已关闭';
+        renderCustomEqPresets();
+        drawEqResponseCurve();
+      }
+
+      let eqCurveRafId = null;
+      let eqDragBandIdx = -1;
+      let eqHoloPhase = 0;
+      const EQ_BAND_NORM_XS = [0.08, 0.29, 0.50, 0.71, 0.92];
+
+      // Exact Fritsch-Carlson monotonic cubic Hermite spline:
+      // Guaranteed to pass PIXEL-FOR-PIXEL through all 5 (EQ_BAND_NORM_XS[i], gains[i]) nodes with zero overshoot!
+      function evalEqCurveAtNormX(t, gains) {
+        const xs = EQ_BAND_NORM_XS;
+        const ys = gains;
+        if (t <= xs[0]) return ys[0];
+        if (t >= xs[4]) return ys[4];
+
+        const d = [];
+        for (let i = 0; i < 4; i++) {
+          d.push((ys[i + 1] - ys[i]) / (xs[i + 1] - xs[i]));
+        }
+        const m = [d[0], 0, 0, 0, d[3]];
+        for (let i = 1; i < 4; i++) {
+          if (d[i - 1] * d[i] <= 0) m[i] = 0;
+          else m[i] = (d[i - 1] + d[i]) * 0.5;
+        }
+        for (let i = 0; i < 4; i++) {
+          if (Math.abs(d[i]) < 1e-6) {
+            m[i] = 0;
+            m[i + 1] = 0;
+          } else {
+            const a = m[i] / d[i];
+            const b = m[i + 1] / d[i];
+            const s = a * a + b * b;
+            if (s > 9) {
+              const tau = 3 / Math.sqrt(s);
+              m[i] = tau * a * d[i];
+              m[i + 1] = tau * b * d[i];
+            }
+          }
+        }
+
+        let seg = 0;
+        for (let i = 0; i < 4; i++) {
+          if (t >= xs[i] && t <= xs[i + 1]) {
+            seg = i;
+            break;
+          }
+        }
+        const h = xs[seg + 1] - xs[seg];
+        const u = (t - xs[seg]) / h;
+        const u2 = u * u;
+        const u3 = u2 * u;
+        const h00 = 2 * u3 - 3 * u2 + 1;
+        const h10 = u3 - 2 * u2 + u;
+        const h01 = -2 * u3 + 3 * u2;
+        const h11 = u3 - u2;
+        return Math.max(-12, Math.min(12, h00 * ys[seg] + h10 * h * m[seg] + h01 * ys[seg + 1] + h11 * h * m[seg + 1]));
+      }
+
+      function holoDotColor(nx, shimmerShift, alpha) {
+        // Reference-faithful vibrant acoustic spectrum:
+        // Teal/Mint (60Hz) -> Fresh Lime (230Hz) -> Warm Gold (910Hz) -> Sunset Coral-Orange (3.6kHz) -> Rose Pink (14kHz)
+        const stops = [
+          [45, 212, 191],  // vibrant teal-mint
+          [148, 226, 72],  // fresh lime green
+          [250, 204, 21],  // warm golden yellow
+          [251, 146, 60],  // warm sunset orange
+          [244, 114, 182]  // vibrant rose pink
+        ];
+        const p = Math.max(0, Math.min(0.999, nx + shimmerShift)) * (stops.length - 1);
+        const idx = Math.floor(p);
+        const f = p - idx;
+        const c1 = stops[idx];
+        const c2 = stops[Math.min(stops.length - 1, idx + 1)];
+        const r = Math.round(c1[0] + (c2[0] - c1[0]) * f);
+        const g = Math.round(c1[1] + (c2[1] - c1[1]) * f);
+        const b = Math.round(c1[2] + (c2[2] - c1[2]) * f);
+        return `rgba(${r},${g},${b},${alpha.toFixed(3)})`;
+      }
+
+      // Draw a razor-sharp knocked-out ♪ music note glyph centered inside each circle (font-independent vector path)
+      function drawKnockoutNoteGlyph(ctx, cx, cy, dotR, alpha) {
+        if (dotR < 2.6 || alpha <= 0.04) return;
+        const s = dotR * 0.56; // glyph scale relative to circle radius
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.fillStyle = `rgba(7, 8, 10, ${alpha.toFixed(3)})`;
+        ctx.strokeStyle = `rgba(7, 8, 10, ${alpha.toFixed(3)})`;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        // Tilted oval notehead (bottom-left of center)
+        ctx.beginPath();
+        ctx.ellipse(-s * 0.22, s * 0.44, s * 0.36, s * 0.27, -0.35, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Crisp vertical stem
+        ctx.lineWidth = Math.max(1.0, s * 0.24);
+        ctx.beginPath();
+        ctx.moveTo(s * 0.08, s * 0.36);
+        ctx.lineTo(s * 0.08, -s * 0.68);
+        ctx.stroke();
+
+        // Curved eighth-note flag
+        ctx.beginPath();
+        ctx.moveTo(s * 0.08, -s * 0.68);
+        ctx.bezierCurveTo(s * 0.68, -s * 0.56, s * 0.72, -s * 0.06, s * 0.36, s * 0.14);
+        ctx.stroke();
+
+        ctx.restore();
+      }
+
+      function drawEqResponseCurve() {
+        const canvas = $('eq-curve-canvas');
+        if (!canvas) return;
+        const parent = canvas.parentElement;
+        const cssW = parent ? parent.clientWidth : canvas.clientWidth;
+        const cssH = parent ? parent.clientHeight : canvas.clientHeight;
+        if (!cssW || !cssH) return;
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const w = Math.round(cssW * dpr);
+        const h = Math.round(cssH * dpr);
+        if (canvas.width !== w || canvas.height !== h) {
+          canvas.width = w;
+          canvas.height = h;
+        }
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, w, h);
+
+        eqHoloPhase += 0.018;
+        const activeEq = Boolean(state.audioFx.eqEnabled) && !eqAbBypassActive;
+        const padX = 14 * dpr;
+        const padY = 14 * dpr;
+        const plotW = w - padX * 2;
+        const plotH = h - padY * 2;
+        const midY = padY + plotH / 2;
+
+        // Pure matte obsidian studio backdrop
+        ctx.fillStyle = '#07080a';
+        ctx.fillRect(0, 0, w, h);
+
+        // Live spectrum normalized bins (if playing)
+        let hasLiveSpec = false;
+        if (analyserNode && analyserData && state.isPlaying) {
+          analyserNode.getByteFrequencyData(analyserData);
+          hasLiveSpec = true;
+        }
+
+        const rawGains = (state.audioFx.eqGains || [0, 0, 0, 0, 0]).map((g) => Math.max(-12, Math.min(12, Number(g) || 0)));
+        const effGains = activeEq ? rawGains : [0, 0, 0, 0, 0];
+
+        // 1. Staggered Hexagonal (Honeycomb) Dot-Matrix Ribbon Hugging the EQ Curve, with Crisp ♪ Inside Each Dot
+        const cols = 27;
+        const rows = 14;
+        const cellW = plotW / (cols - 0.5);
+        const cellH = plotH / (rows - 1);
+        const maxDotR = Math.min(cellW, cellH / 0.866) * 0.46;
+        const sweepPos = ((eqHoloPhase * 0.16) % 1.50) - 0.25;
+
+        for (let r = 0; r < rows; r++) {
+          const ny = r / (rows - 1);
+          const py = padY + ny * plotH;
+          const isOddRow = (r % 2) === 1;
+          const rowCols = isOddRow ? cols - 1 : cols;
+          const rowOffsetX = isOddRow ? cellW * 0.5 : 0;
+          for (let c = 0; c < rowCols; c++) {
+            const px = padX + rowOffsetX + c * cellW;
+            const nx = Math.max(0, Math.min(1, (px - padX) / Math.max(1, plotW)));
+
+            const curveDb = evalEqCurveAtNormX(nx, effGains);
+            const curveY = midY - (curveDb / 12) * (plotH / 2);
+
+            // Smooth Gaussian ribbon tightly hugging the EQ curve (large circles on curve -> tapering cleanly to pinpoints)
+            const distNorm = Math.abs(py - curveY) / (plotH * 0.23);
+            const gaussNear = Math.exp(-0.5 * distNorm * distNorm);
+
+            // Real-time audio spectrum gentle breathing lift
+            let specLift = 0;
+            if (hasLiveSpec) {
+              const binIdx = Math.min(analyserData.length - 1, Math.floor(Math.pow(nx, 1.45) * Math.min(44, analyserData.length - 1)));
+              const amp = analyserData[binIdx] / 255;
+              specLift = amp * gaussNear * 0.22;
+            }
+
+            // Slow, silky flowing current gliding along the curve
+            const dSweepX = (nx - sweepPos) / 0.18;
+            const sweepHead = Math.exp(-0.5 * dSweepX * dSweepX);
+            const flowLift = sweepHead * gaussNear;
+
+            const sizeFactor = Math.min(1.06, 0.10 + Math.pow(gaussNear, 0.85) * 0.86 + specLift + flowLift * 0.12);
+            const radius = Math.max(0.85 * dpr, maxDotR * sizeFactor);
+
+            const shimmerShift = flowLift * 0.045;
+            const alpha = activeEq
+              ? Math.min(0.96, 0.08 + Math.pow(gaussNear, 0.8) * 0.82 + flowLift * 0.14)
+              : Math.min(0.38, 0.05 + Math.pow(gaussNear, 0.9) * 0.26);
+
+            // Dot circle
+            ctx.beginPath();
+            ctx.arc(px, py, radius, 0, Math.PI * 2);
+            ctx.fillStyle = holoDotColor(nx, shimmerShift, alpha);
+            ctx.fill();
+
+            // Crisp knocked-out ♪ glyph inside every dot large enough to resolve cleanly
+            const glyphAlpha = Math.max(0, Math.min(0.86, (radius / dpr - 2.4) / 2.2)) * (activeEq ? 0.88 : 0.45);
+            if (glyphAlpha > 0.06) {
+              drawKnockoutNoteGlyph(ctx, px, py, radius, glyphAlpha);
+            }
+          }
+        }
+
+        // 2. Crisp Pure White Exact Monotonic Spline EQ Curve
+        ctx.save();
+        ctx.globalAlpha = activeEq ? 0.95 : 0.42;
+        ctx.beginPath();
+        const steps = 120;
+        for (let s = 0; s <= steps; s++) {
+          const t = s / steps;
+          const db = evalEqCurveAtNormX(t, rawGains);
+          const x = padX + t * plotW;
+          const y = midY - (db / 12) * (plotH / 2);
+          if (s === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.7 * dpr;
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
+        ctx.shadowBlur = 4 * dpr;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // 3. Precision 5-Band Control Nodes (Obsidian core + crisp white ring, 100% locked on curve)
+        EQ_BAND_NORM_XS.forEach((nx, i) => {
+          const x = padX + nx * plotW;
+          const y = midY - (rawGains[i] / 12) * (plotH / 2);
+          const isDragging = eqDragBandIdx === i;
+
+          if (isDragging) {
+            ctx.beginPath();
+            ctx.arc(x, y, 12 * dpr, 0, Math.PI * 2);
+            ctx.fillStyle = holoDotColor(nx, 0, 0.24);
+            ctx.fill();
+          }
+
+          ctx.beginPath();
+          ctx.arc(x, y, (isDragging ? 6.8 : 5.2) * dpr, 0, Math.PI * 2);
+          ctx.fillStyle = '#07080a';
+          ctx.fill();
+          ctx.lineWidth = 2.0 * dpr;
+          ctx.strokeStyle = '#ffffff';
+          ctx.stroke();
+        });
+        ctx.restore();
+      }
+
+      function startEqCurveLoop() {
+        if (eqCurveRafId) return;
+        const loop = () => {
+          const modal = $('eq-fullscreen-modal');
+          if (!modal || modal.classList.contains('translate-y-full')) {
+            eqCurveRafId = null;
+            return;
+          }
+          drawEqResponseCurve();
+          eqCurveRafId = requestAnimationFrame(loop);
+        };
+        eqCurveRafId = requestAnimationFrame(loop);
+      }
+
+      function renderCustomEqPresets() {
+        const listEl = $('eq-custom-presets-list');
+        if (!listEl) return;
+        const customs = Array.isArray(state.audioFx.customPresets) ? state.audioFx.customPresets : [];
+        if (!customs.length) {
+          listEl.innerHTML = '<div class="text-[11px] text-white/40 py-1">暂无自定义预设，调好频段后可点击「存为预设」保存</div>';
+          return;
+        }
+        listEl.innerHTML = customs.map((cp) => {
+          const active = state.audioFx.eqPreset === `user:${cp.id}`;
+          return `
+            <div class="flex items-center justify-between gap-2 px-3 py-2 rounded-2xl ${active ? 'bg-sky-400/20 border border-sky-300/35' : 'bg-white/6 border border-white/10'}">
+              <button data-custom-eq-apply="${escapeHtml(cp.id)}" class="btn-custom-eq-apply flex-1 text-left min-w-0">
+                <div class="text-xs font-medium text-white truncate">${escapeHtml(cp.name)}</div>
+                <div class="text-[10px] text-white/45 tabular-nums truncate">${(cp.gains || []).map((g) => `${g > 0 ? '+' : ''}${g}`).join(' / ')} dB</div>
+              </button>
+              <div class="flex items-center gap-1 shrink-0">
+                <button data-custom-eq-rename="${escapeHtml(cp.id)}" class="btn-custom-eq-rename w-7 h-7 rounded-full bg-white/8 hover:bg-white/18 text-[11px] text-white/75" title="重命名">✎</button>
+                <button data-custom-eq-del="${escapeHtml(cp.id)}" class="btn-custom-eq-del w-7 h-7 rounded-full bg-white/8 hover:bg-rose-500/30 text-xs text-white/75" title="删除">×</button>
+              </div>
+            </div>`;
+        }).join('');
+
+        listEl.querySelectorAll('.btn-custom-eq-apply').forEach((btn) => {
+          on(btn, 'click', async () => {
+            const cp = (state.audioFx.customPresets || []).find((p) => p.id === btn.dataset.customEqApply);
+            if (!cp || !Array.isArray(cp.gains) || cp.gains.length !== 5) return;
+            state.audioFx.eqPreset = `user:${cp.id}`;
+            state.audioFx.eqGains = cp.gains.map((g) => Math.max(-12, Math.min(12, Number(g) || 0)));
+            state.audioFx.eqEnabled = true;
+            ensureAudioContext();
+            applyEqNodeGains();
+            applyAudioFxUI();
+            await saveAppState();
+          });
+        });
+        listEl.querySelectorAll('.btn-custom-eq-rename').forEach((btn) => {
+          on(btn, 'click', async () => {
+            const cp = (state.audioFx.customPresets || []).find((p) => p.id === btn.dataset.customEqRename);
+            if (!cp) return;
+            const nextName = window.prompt('重命名预设：', cp.name);
+            if (!nextName || !nextName.trim()) return;
+            cp.name = nextName.trim().slice(0, 24);
+            applyAudioFxUI();
+            await saveAppState();
+          });
+        });
+        listEl.querySelectorAll('.btn-custom-eq-del').forEach((btn) => {
+          on(btn, 'click', async () => {
+            const id = btn.dataset.customEqDel;
+            state.audioFx.customPresets = (state.audioFx.customPresets || []).filter((p) => p.id !== id);
+            if (state.audioFx.eqPreset === `user:${id}`) state.audioFx.eqPreset = 'custom';
+            applyAudioFxUI();
+            await saveAppState();
+            showToast('已删除自定义预设');
+          });
+        });
       }
 
       function ensureAudioContext() {
@@ -7823,7 +8878,7 @@
         let phase = 0;
         const tick = () => {
           requestAnimationFrame(tick);
-          if (!state.diy.showWaves || nowPlayingModal.classList.contains('translate-y-full')) return;
+          if ((state.diy.waveStyle || 'bars') === 'off' || nowPlayingModal.classList.contains('translate-y-full')) return;
           const bars = container.querySelectorAll('.rhythm-bar');
           if (!bars.length) return;
 
@@ -8678,10 +9733,12 @@
         });
 
         on('np-rhythm-waves', () => {
-          const order = ['bars', 'wave', 'pulse'];
-          const names = { bars: '律动光条', wave: '流体声波', pulse: '极简脉冲' };
-          const next = order[(order.indexOf(state.diy.waveStyle) + 1) % order.length];
+          const order = ['bars', 'wave', 'pulse', 'off'];
+          const names = { bars: '律动光条', wave: '流体声波', pulse: '极简脉冲', off: '关闭' };
+          const curIdx = order.indexOf(state.diy.waveStyle || 'bars');
+          const next = order[(curIdx + 1) % order.length];
           state.diy.waveStyle = next;
+          applyDiySettings();
           saveAppState();
           showToast(`律动波纹已切换为：${names[next]}`);
         });
@@ -9034,7 +10091,7 @@
             $('np-cover-img-rounded').src = DEFAULT_APP_COVER;
             $('np-cover-img-vinyl').src = DEFAULT_APP_COVER;
             $('np-cover-img-disc').src = DEFAULT_APP_COVER;
-            $('np-cover-ambient-glow').src = DEFAULT_APP_COVER;
+            syncAmbientCoverGlow(DEFAULT_APP_COVER);
             updatePlayStateUI();
           }
         }
@@ -9614,7 +10671,7 @@
             $('np-cover-img-rounded').src = cur.cover;
             $('np-cover-img-vinyl').src = cur.cover;
             $('np-cover-img-disc').src = cur.cover;
-            $('np-cover-ambient-glow').src = cur.cover;
+            syncAmbientCoverGlow(cur.cover);
             updateAuroraColorsFromCover(cur.cover);
             state.parsedLyrics = parseLrcText(cur.lrc);
             renderLyricsList();
@@ -10300,6 +11357,21 @@
           });
         });
 
+        on('btn-np-lyric-stagger', async () => {
+          state.diy.lyricStagger = !state.diy.lyricStagger;
+          applyLyricStyleUI();
+          syncActiveLyric(true);
+          await saveAppState();
+          showToast(state.diy.lyricStagger ? '已开启歌词交错滚动' : '已关闭歌词交错滚动');
+        });
+        on('btn-np-lyric-3d', async () => {
+          state.diy.lyric3d = !state.diy.lyric3d;
+          applyLyricStyleUI();
+          syncActiveLyric(true);
+          await saveAppState();
+          showToast(state.diy.lyric3d ? '已开启立体歌词效果' : '已关闭立体歌词效果');
+        });
+
         on('lyric-offset-slider', 'input', (e) => {
           const val = Math.round(parseFloat(e.target.value) * 10) / 10;
           syncLyricOffsetSliderUI(val);
@@ -10687,6 +11759,184 @@
           });
           on(sl, 'change', saveAppState);
         });
+        on('btn-open-eq-view', () => {
+          closeAllBottomSheets(true);
+          const modal = $('eq-fullscreen-modal');
+          if (modal) {
+            modal.classList.remove('translate-y-full');
+            applyAudioFxUI();
+            startEqCurveLoop();
+          }
+        });
+        on('btn-eq-ab-compare', () => {
+          eqAbBypassActive = !eqAbBypassActive;
+          ensureAudioContext();
+          applyEqNodeGains();
+          applyAudioFxUI();
+          showToast(eqAbBypassActive ? 'A/B：已切换为原声直通' : 'A/B：已恢复均衡器效果');
+        });
+        const eqCanvas = $('eq-curve-canvas');
+        if (eqCanvas) {
+          const bandNormXs = EQ_BAND_NORM_XS;
+          const updateCanvasBand = (clientX, clientY, pickBand) => {
+            const rect = eqCanvas.getBoundingClientRect();
+            if (!rect.width || !rect.height) return;
+            const nx = Math.max(0, Math.min(1, (clientX - rect.left - 14) / Math.max(1, rect.width - 28)));
+            const ny = Math.max(0, Math.min(1, (clientY - rect.top - 14) / Math.max(1, rect.height - 28)));
+            if (pickBand) {
+              let best = 0, bestD = 99;
+              bandNormXs.forEach((bx, idx) => {
+                const d = Math.abs(nx - bx);
+                if (d < bestD) { bestD = d; best = idx; }
+              });
+              eqDragBandIdx = best;
+            }
+            if (eqDragBandIdx < 0) return;
+            const db = Math.round(((0.5 - ny) * 24) * 2) / 2;
+            state.audioFx.eqGains[eqDragBandIdx] = Math.max(-12, Math.min(12, db));
+            state.audioFx.eqPreset = 'custom';
+            state.audioFx.eqEnabled = true;
+            eqAbBypassActive = false;
+            ensureAudioContext();
+            applyEqNodeGains();
+            applyAudioFxUI();
+          };
+          on(eqCanvas, 'pointerdown', (e) => {
+            try { eqCanvas.setPointerCapture(e.pointerId); } catch {}
+            updateCanvasBand(e.clientX, e.clientY, true);
+          });
+          on(eqCanvas, 'pointermove', (e) => {
+            if (eqDragBandIdx >= 0) updateCanvasBand(e.clientX, e.clientY, false);
+          });
+          on(eqCanvas, 'pointerup', () => {
+            if (eqDragBandIdx >= 0) {
+              eqDragBandIdx = -1;
+              drawEqResponseCurve();
+              saveAppState();
+            }
+          });
+          on(eqCanvas, 'pointercancel', () => {
+            eqDragBandIdx = -1;
+            drawEqResponseCurve();
+          });
+        }
+        on('btn-eq-close', () => {
+          const modal = $('eq-fullscreen-modal');
+          if (modal) modal.classList.add('translate-y-full');
+        });
+        on('btn-eq-reset-all', async () => {
+          state.audioFx.eqGains = [0, 0, 0, 0, 0];
+          state.audioFx.eqPreset = 'flat';
+          ensureAudioContext();
+          applyEqNodeGains();
+          applyAudioFxUI();
+          await saveAppState();
+          showToast('已将五段均衡器全部归零');
+        });
+        document.querySelectorAll('.eq-band-row').forEach((row) => {
+          let lastTapAt = 0;
+          const resetBand = async () => {
+            const idx = Number(row.dataset.eqBand);
+            if (!Number.isInteger(idx) || idx < 0 || idx > 4) return;
+            state.audioFx.eqGains[idx] = 0;
+            state.audioFx.eqPreset = 'custom';
+            ensureAudioContext();
+            applyEqNodeGains();
+            applyAudioFxUI();
+            await saveAppState();
+            showToast('该频段已归零');
+          };
+          on(row, 'dblclick', resetBand);
+          on(row, 'touchend', () => {
+            const now = Date.now();
+            if (now - lastTapAt < 280) {
+              lastTapAt = 0;
+              resetBand();
+            } else {
+              lastTapAt = now;
+            }
+          });
+        });
+        on('btn-eq-save-custom', () => {
+          const row = $('eq-save-row');
+          if (row) {
+            row.classList.toggle('hidden');
+            if (!row.classList.contains('hidden')) $('eq-custom-name-input')?.focus();
+          }
+        });
+        on('btn-eq-save-confirm', async () => {
+          const inp = $('eq-custom-name-input');
+          const name = String(inp?.value || '').trim().slice(0, 24);
+          if (!name) {
+            showToast('请先输入预设名称');
+            return;
+          }
+          if (!Array.isArray(state.audioFx.customPresets)) state.audioFx.customPresets = [];
+          const id = `p_${Date.now().toString(36)}`;
+          state.audioFx.customPresets.unshift({
+            id,
+            name,
+            gains: (state.audioFx.eqGains || [0, 0, 0, 0, 0]).map((g) => Math.max(-12, Math.min(12, Number(g) || 0)))
+          });
+          state.audioFx.eqPreset = `user:${id}`;
+          if (inp) inp.value = '';
+          $('eq-save-row')?.classList.add('hidden');
+          applyAudioFxUI();
+          await saveAppState();
+          showToast(`已保存预设「${name}」`);
+        });
+        on('btn-eq-toggle-io', () => {
+          $('eq-io-panel')?.classList.toggle('hidden');
+        });
+        on('btn-eq-export-json', async () => {
+          const payload = JSON.stringify({
+            name: $('eq-current-preset-label')?.textContent || 'FENG EQ',
+            gains: (state.audioFx.eqGains || [0, 0, 0, 0, 0]).map((g) => Number(g) || 0)
+          });
+          const ta = $('eq-io-textarea');
+          if (ta) ta.value = payload;
+          try {
+            if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(payload);
+            showToast('已导出 EQ 预设 JSON 并复制到剪贴板');
+          } catch {
+            showToast('已导出 EQ 预设 JSON，请手动复制');
+          }
+        });
+        on('btn-eq-import-json', async () => {
+          const raw = String($('eq-io-textarea')?.value || '').trim();
+          if (!raw) {
+            showToast('请先粘贴预设 JSON');
+            return;
+          }
+          try {
+            const parsed = JSON.parse(raw);
+            const gains = Array.isArray(parsed) ? parsed : parsed?.gains;
+            if (!Array.isArray(gains) || gains.length !== 5) {
+              showToast('导入失败：需要包含 5 个频段增益值');
+              return;
+            }
+            const cleanGains = gains.map((v) => Number(v));
+            if (cleanGains.some((v) => !Number.isFinite(v) || v < -12 || v > 12)) {
+              showToast('导入失败：所有增益值必须在 -12 到 +12 dB 之间');
+              return;
+            }
+            const rounded = cleanGains.map((v) => Math.round(v * 2) / 2);
+            const name = String(parsed?.name || '导入预设').trim().slice(0, 24) || '导入预设';
+            if (!Array.isArray(state.audioFx.customPresets)) state.audioFx.customPresets = [];
+            const id = `p_${Date.now().toString(36)}`;
+            state.audioFx.customPresets.unshift({ id, name, gains: rounded });
+            state.audioFx.eqGains = [...rounded];
+            state.audioFx.eqPreset = `user:${id}`;
+            state.audioFx.eqEnabled = true;
+            ensureAudioContext();
+            applyEqNodeGains();
+            applyAudioFxUI();
+            await saveAppState();
+            showToast(`已导入预设「${name}」`);
+          } catch {
+            showToast('导入失败：JSON 格式无效');
+          }
+        });
         on('btn-fx-loudness-toggle', async () => {
           state.audioFx.loudnessEnabled = !state.audioFx.loudnessEnabled;
           audioFxRuntime.loudnessGain =
@@ -10923,7 +12173,7 @@
           };
           const backupObj = {
             app: 'FENG MUSIC',
-            version: '1.0.7',
+            version: '1.0.8',
             exportedAt: new Date().toISOString(),
             trackManifest,
             playlists: state.playlists,
@@ -11076,7 +12326,7 @@
               }
             }
             if (parsed.diy) {
-              const incomingDiy = { ...parsed.diy };
+              const incomingDiy = { ...parsed.diy }; if (incomingDiy.showWaves === false) incomingDiy.waveStyle = 'off'; delete incomingDiy.showWaves;
               if (incomingDiy.homeBgUrl) {
                 await dbPut('kv', { key: 'homeBgDataUrl', value: incomingDiy.homeBgUrl });
               } else {
@@ -11184,11 +12434,7 @@
           });
         });
 
-        on('btn-diy-toggle-waves', async () => {
-          state.diy.showWaves = !state.diy.showWaves;
-          applyDiySettings();
-          await saveAppState();
-        });
+
 
         on('diy-lyric-size', 'input', (e) => {
           state.diy.lyricFontSize = Number(e.target.value);
@@ -11405,7 +12651,7 @@
         $('np-cover-img-rounded').src = DEFAULT_APP_COVER;
         $('np-cover-img-vinyl').src = DEFAULT_APP_COVER;
         $('np-cover-img-disc').src = DEFAULT_APP_COVER;
-        $('np-cover-ambient-glow').src = DEFAULT_APP_COVER;
+        syncAmbientCoverGlow(DEFAULT_APP_COVER);
 
         bindEvents();
         setupInteractiveCoverStage();
@@ -11433,7 +12679,7 @@
             state.lyricOffsets = savedState.lyricOffsets || {};
             state.customMeta = savedState.customMeta || {};
             state.customLyrics = savedState.customLyrics || {};
-            if (savedState.diy) state.diy = { ...state.diy, ...savedState.diy };
+            if (savedState.diy) { state.diy = { ...state.diy, ...savedState.diy }; if (savedState.diy.showWaves === false) state.diy.waveStyle = 'off'; delete state.diy.showWaves; }
             if (savedState.playMode) state.playMode = savedState.playMode;
             if (savedState.audioFx && typeof savedState.audioFx === 'object') {
               state.audioFx = {
