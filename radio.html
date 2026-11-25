@@ -2993,7 +2993,9 @@
             eqGains: (state.audioFx?.eqGains || [0, 0, 0, 0, 0]).map((g) => Math.max(-12, Math.min(12, Number(g) || 0))),
             fadeEnabled: Boolean(state.audioFx?.fadeEnabled),
             fadeSecs: Number(state.audioFx?.fadeSecs) || 0,
-            loudnessGain: state.audioFx?.loudnessEnabled && Number.isFinite(audioFxRuntime?.loudnessGain) ? audioFxRuntime.loudnessGain : 1
+            loudnessGain: state.audioFx?.loudnessEnabled && Number.isFinite(audioFxRuntime?.loudnessGain) ? audioFxRuntime.loudnessGain : 1,
+            lyrics: (state.parsedLyrics || []).map((item) => ({ t: Number(item.time) || 0, text: String(item.text || '') })),
+            lyricOffset: Number(state.lyricOffsets[state.currentTrackId] || 0)
           });
         },
         async play() {
@@ -4675,7 +4677,19 @@
         });
 
         state.activeLyricIdx = -1;
+        pushNativeLyricsToBridge();
         syncActiveLyric(true);
+      }
+
+      function pushNativeLyricsToBridge() {
+        if (!hasNativeAudioBridge()) return;
+        try {
+          window.webkit.messageHandlers.fengAudio.postMessage({
+            action: 'setLyrics',
+            lyrics: (state.parsedLyrics || []).map((item) => ({ t: Number(item.time) || 0, text: String(item.text || '') })),
+            offset: Number(state.lyricOffsets[state.currentTrackId] || 0)
+          });
+        } catch {}
       }
 
       function syncActiveLyric(forceScroll = false) {
@@ -4989,6 +5003,7 @@
       }
 
       function syncMediaSessionPosition() {
+        if (hasNativeAudioBridge() || nativeAudioState.active) return;
         if (!('mediaSession' in navigator) || typeof navigator.mediaSession.setPositionState !== 'function') return;
         try {
           if (Number.isFinite(audio.duration) && audio.duration > 0) {
@@ -5057,6 +5072,7 @@
       };
 
       function syncMediaSessionHandlers() {
+        if (hasNativeAudioBridge() || nativeAudioState.active) return;
         if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.fengMedia) {
           try { window.webkit.messageHandlers.fengMedia.postMessage('sync'); } catch {}
         }
@@ -5171,7 +5187,7 @@
           audio.playbackRate = state.playbackRate || 1;
         }
 
-        if ('mediaSession' in navigator) {
+        if (!useNativeBridge && !hasNativeAudioBridge() && 'mediaSession' in navigator) {
           try {
             navigator.mediaSession.metadata = new MediaMetadata({
               title: track.title,
@@ -11835,12 +11851,14 @@
           if (!state.currentTrackId) return;
           const val = Math.round(parseFloat(e.target.value) * 10) / 10;
           state.lyricOffsets[state.currentTrackId] = val;
+          pushNativeLyricsToBridge();
           await saveAppState();
         });
         on('btn-lyric-offset-reset', async () => {
           syncLyricOffsetSliderUI(0);
           if (!state.currentTrackId) return;
           state.lyricOffsets[state.currentTrackId] = 0;
+          pushNativeLyricsToBridge();
           syncActiveLyric(true);
           await saveAppState();
           showToast('歌词时间轴已重置为 0.0s');
@@ -12080,7 +12098,7 @@
             applyMasterGain(0.15);
           }
           updatePlayStateUI();
-          if ('mediaSession' in navigator) {
+          if (!hasNativeAudioBridge() && !nativeAudioState.active && 'mediaSession' in navigator) {
             try { navigator.mediaSession.playbackState = 'playing'; } catch {}
             syncMediaSessionHandlers();
             syncMediaSessionPosition();
@@ -12090,7 +12108,7 @@
           state.consecutivePlayFailures = 0;
           state.isPlaying = true;
           updatePlayStateUI();
-          if ('mediaSession' in navigator) {
+          if (!hasNativeAudioBridge() && !nativeAudioState.active && 'mediaSession' in navigator) {
             try { navigator.mediaSession.playbackState = 'playing'; } catch {}
             syncMediaSessionHandlers();
             syncMediaSessionPosition();
@@ -12099,7 +12117,7 @@
         audio.addEventListener('pause', () => {
           state.isPlaying = false;
           updatePlayStateUI();
-          if ('mediaSession' in navigator) {
+          if (!hasNativeAudioBridge() && !nativeAudioState.active && 'mediaSession' in navigator) {
             try { navigator.mediaSession.playbackState = 'paused'; } catch {}
             syncMediaSessionPosition();
           }
