@@ -2179,8 +2179,6 @@ jobs:
           /usr/libexec/PlistBuddy -c "Add :LSSupportsOpeningDocumentsInPlace bool true" "$PLIST" || /usr/libexec/PlistBuddy -c "Set :LSSupportsOpeningDocumentsInPlace true" "$PLIST"
           /usr/libexec/PlistBuddy -c "Add :UIBackgroundModes array" "$PLIST" || true
           /usr/libexec/PlistBuddy -c "Add :UIBackgroundModes:0 string audio" "$PLIST" || true
-          /usr/libexec/PlistBuddy -c "Add :NSSupportsLiveActivities bool true" "$PLIST" || /usr/libexec/PlistBuddy -c "Set :NSSupportsLiveActivities true" "$PLIST"
-          /usr/libexec/PlistBuddy -c "Add :NSSupportsLiveActivitiesFrequentUpdates bool true" "$PLIST" || /usr/libexec/PlistBuddy -c "Set :NSSupportsLiveActivitiesFrequentUpdates true" "$PLIST"
           APP_GROUP="${{ inputs.app_group_id || 'group.78G3Q25PQG.1iKc' }}"
           /usr/libexec/PlistBuddy -c "Add :FengAppGroup string $APP_GROUP" "$PLIST" || /usr/libexec/PlistBuddy -c "Set :FengAppGroup $APP_GROUP" "$PLIST"
           /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes array" "$PLIST" || true
@@ -2205,9 +2203,335 @@ jobs:
           import WebKit
           import UniformTypeIdentifiers
           import WidgetKit
-          #if canImport(ActivityKit)
-          import ActivityKit
-          #endif
+          import AVKit
+          import CoreMedia
+          import CoreVideo
+
+          // Native iOS Picture-in-Picture Floating Desktop Lyrics Bar (AVSampleBufferDisplayLayer, 24fps R->L smooth marquee)
+          @available(iOS 15.0, *)
+          final class FengPiPLyricsManager: NSObject, AVPictureInPictureControllerDelegate, AVPictureInPictureControllerSampleBufferPlaybackDelegate {
+              private let canvasW: Int = 720
+              private let canvasH: Int = 128
+              private let displayLayer = AVSampleBufferDisplayLayer()
+              private var hostView: UIView?
+              private var pipController: AVPictureInPictureController?
+              private var renderTimer: DispatchSourceTimer?
+
+              private var isEnabled: Bool = false
+              private var isPlaying: Bool = false
+              private var isPiPActive: Bool = false
+              private var currentTitle: String = "FENG MUSIC"
+              private var currentLyric: String = ""
+              private var scrollX: CGFloat = 0
+              private var holdFrames: Int = 0
+              private var measuredLyricWidth: CGFloat = 0
+              private var needsScroll: Bool = false
+
+              var onTogglePlay: ((Bool) -> Void)?
+
+              func attach(to window: UIWindow?) {
+                  guard let win = window else { return }
+                  if hostView == nil {
+                      let v = UIView(frame: CGRect(x: 0, y: 0, width: 120, height: 22))
+                      v.alpha = 0.015
+                      v.isUserInteractionEnabled = false
+                      v.clipsToBounds = true
+                      displayLayer.frame = v.bounds
+                      displayLayer.videoGravity = .resizeAspect
+                      v.layer.addSublayer(displayLayer)
+                      win.addSubview(v)
+                      hostView = v
+                  } else if hostView?.superview !== win {
+                      hostView?.removeFromSuperview()
+                      if let v = hostView { win.addSubview(v) }
+                  }
+                  if pipController == nil, AVPictureInPictureController.isPictureInPictureSupported() {
+                      let source = AVPictureInPictureController.ContentSource(
+                          sampleBufferDisplayLayer: displayLayer,
+                          playbackDelegate: self
+                      )
+                      let ctrl = AVPictureInPictureController(contentSource: source)
+                      ctrl.delegate = self
+                      ctrl.requiresLinearPlayback = true
+                      ctrl.canStartPictureInPictureAutomaticallyFromInline = isEnabled
+                      pipController = ctrl
+                  }
+              }
+
+              func setEnabled(_ enabled: Bool, startNow: Bool = false, window: UIWindow? = nil) {
+                  isEnabled = enabled
+                  if enabled {
+                      attach(to: window)
+                      pipController?.canStartPictureInPictureAutomaticallyFromInline = true
+                      enqueueCurrentFrame()
+                      startRenderLoopIfNeeded()
+                      if startNow, let ctrl = pipController, !ctrl.isPictureInPictureActive {
+                          DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) { [weak self] in
+                              guard let self = self, self.isEnabled else { return }
+                              self.enqueueCurrentFrame()
+                              if let c = self.pipController, c.isPictureInPicturePossible, !c.isPictureInPictureActive {
+                                  c.startPictureInPicture()
+                              }
+                          }
+                      }
+                  } else {
+                      pipController?.canStartPictureInPictureAutomaticallyFromInline = false
+                      if let ctrl = pipController, ctrl.isPictureInPictureActive {
+                          ctrl.stopPictureInPicture()
+                      }
+                      stopRenderLoop()
+                  }
+              }
+
+              func updateTrackState(title: String, lyric: String, isPlaying: Bool) {
+                  let cleanTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+                  let cleanLyric = lyric.trimmingCharacters(in: .whitespacesAndNewlines)
+                  let effectiveLyric = cleanLyric.isEmpty ? (cleanTitle.isEmpty ? "FENG MUSIC" : cleanTitle) : cleanLyric
+                  let lyricChanged = (effectiveLyric != currentLyric)
+                  let playChanged = (isPlaying != self.isPlaying)
+
+                  currentTitle = cleanTitle.isEmpty ? "FENG MUSIC" : cleanTitle
+                  self.isPlaying = isPlaying
+
+                  if lyricChanged {
+                      currentLyric = effectiveLyric
+                      scrollX = 0
+                      holdFrames = 14
+                      let attrs: [NSAttributedString.Key: Any] = [
+                          .font: UIFont.systemFont(ofSize: 40, weight: .bold)
+                      ]
+                      measuredLyricWidth = (effectiveLyric as NSString).size(withAttributes: attrs).width
+                      needsScroll = measuredLyricWidth > CGFloat(canvasW - 56)
+                  }
+
+                  if playChanged {
+                      pipController?.invalidatePlaybackState()
+                  }
+
+                  if isEnabled || isPiPActive {
+                      enqueueCurrentFrame()
+                      if isPlaying {
+                          startRenderLoopIfNeeded()
+                      }
+                  }
+              }
+
+              func stopAll() {
+                  isPlaying = false
+                  pipController?.invalidatePlaybackState()
+                  if let ctrl = pipController, ctrl.isPictureInPictureActive {
+                      ctrl.stopPictureInPicture()
+                  }
+                  stopRenderLoop()
+              }
+
+              private func startRenderLoopIfNeeded() {
+                  guard renderTimer == nil else { return }
+                  let t = DispatchSource.makeTimerSource(queue: .main)
+                  t.schedule(deadline: .now() + 0.042, repeating: 0.042, leeway: .milliseconds(8))
+                  t.setEventHandler { [weak self] in
+                      guard let self = self else { return }
+                      guard self.isEnabled || self.isPiPActive else {
+                          self.stopRenderLoop()
+                          return
+                      }
+                      if self.isPlaying && self.needsScroll {
+                          if self.holdFrames > 0 {
+                              self.holdFrames -= 1
+                          } else {
+                              let loopSpan = self.measuredLyricWidth + 140.0
+                              self.scrollX += 2.6
+                              if self.scrollX >= loopSpan {
+                                  self.scrollX = 0
+                                  self.holdFrames = 10
+                              }
+                          }
+                          self.enqueueCurrentFrame()
+                      }
+                  }
+                  t.resume()
+                  renderTimer = t
+              }
+
+              private func stopRenderLoop() {
+                  renderTimer?.cancel()
+                  renderTimer = nil
+              }
+
+              private func enqueueCurrentFrame() {
+                  guard let sample = makeSampleBuffer() else { return }
+                  if displayLayer.status == .failed {
+                      displayLayer.flush()
+                  }
+                  displayLayer.enqueue(sample)
+              }
+
+              private func makeSampleBuffer() -> CMSampleBuffer? {
+                  var pixelBuffer: CVPixelBuffer?
+                  let attrs: [CFString: Any] = [
+                      kCVPixelBufferCGImageCompatibilityKey: true,
+                      kCVPixelBufferCGBitmapContextCompatibilityKey: true,
+                      kCVPixelBufferIOSurfacePropertiesKey: [:]
+                  ]
+                  let status = CVPixelBufferCreate(
+                      kCFAllocatorDefault,
+                      canvasW,
+                      canvasH,
+                      kCVPixelFormatType_32BGRA,
+                      attrs as CFDictionary,
+                      &pixelBuffer
+                  )
+                  guard status == kCVReturnSuccess, let pb = pixelBuffer else { return nil }
+
+                  CVPixelBufferLockBaseAddress(pb, [])
+                  if let baseAddr = CVPixelBufferGetBaseAddress(pb) {
+                      let bytesPerRow = CVPixelBufferGetBytesPerRow(pb)
+                      let colorSpace = CGColorSpaceCreateDeviceRGB()
+                      let bitmapInfo = CGBitmapInfo.byteOrder32Little.rawValue | CGImageAlphaInfo.premultipliedFirst.rawValue
+                      if let ctx = CGContext(
+                          data: baseAddr,
+                          width: canvasW,
+                          height: canvasH,
+                          bitsPerComponent: 8,
+                          bytesPerRow: bytesPerRow,
+                          space: colorSpace,
+                          bitmapInfo: bitmapInfo
+                      ) {
+                          let w = CGFloat(canvasW)
+                          let h = CGFloat(canvasH)
+
+                          // Deep Obsidian Glass Backdrop
+                          ctx.setFillColor(red: 0.045, green: 0.065, blue: 0.105, alpha: 1.0)
+                          ctx.fill(CGRect(x: 0, y: 0, width: w, height: h))
+
+                          // Subtle Aqua-Sky Ambient Glow
+                          let gradColors = [
+                              UIColor(red: 0.22, green: 0.80, blue: 0.96, alpha: 0.20).cgColor,
+                              UIColor(red: 0.045, green: 0.065, blue: 0.105, alpha: 0.0).cgColor
+                          ] as CFArray
+                          if let grad = CGGradient(colorsSpace: colorSpace, colors: gradColors, locations: [0.0, 1.0]) {
+                              ctx.drawRadialGradient(
+                                  grad,
+                                  startCenter: CGPoint(x: w * 0.5, y: h * 0.5),
+                                  startRadius: 10,
+                                  endCenter: CGPoint(x: w * 0.5, y: h * 0.5),
+                                  endRadius: w * 0.55,
+                                  options: []
+                              )
+                          }
+
+                          // Flip to UIKit coordinates for crisp NSString drawing
+                          ctx.saveGState()
+                          ctx.translateBy(x: 0, y: h)
+                          ctx.scaleBy(x: 1.0, y: -1.0)
+                          UIGraphicsPushContext(ctx)
+
+                          // Top subtle song title + live dot
+                          let titleAttrs: [NSAttributedString.Key: Any] = [
+                              .font: UIFont.systemFont(ofSize: 17, weight: .semibold),
+                              .foregroundColor: UIColor(red: 0.44, green: 0.90, blue: 0.92, alpha: isPlaying ? 0.88 : 0.55)
+                          ]
+                          let headerStr = (isPlaying ? "♪  " : "❚❚  ") + currentTitle
+                          let headerRect = CGRect(x: 28, y: 14, width: w - 56, height: 24)
+                          (headerStr as NSString).draw(in: headerRect, withAttributes: titleAttrs)
+
+                          // Main Lyric Line (Centered if fits, Smooth R->L Loop Marquee if longer)
+                          let shadow = NSShadow()
+                          shadow.shadowColor = UIColor.black.withAlphaComponent(0.55)
+                          shadow.shadowOffset = CGSize(width: 0, height: 2)
+                          shadow.shadowBlurRadius = 6
+
+                          let lyricAttrs: [NSAttributedString.Key: Any] = [
+                              .font: UIFont.systemFont(ofSize: 40, weight: .bold),
+                              .foregroundColor: UIColor.white,
+                              .shadow: shadow
+                          ]
+
+                          let displayLyric = currentLyric.isEmpty ? currentTitle : currentLyric
+                          ctx.saveGState()
+                          ctx.clip(to: CGRect(x: 24, y: 42, width: w - 48, height: 74))
+                          if !needsScroll {
+                              let drawX = max(28, (w - measuredLyricWidth) * 0.5)
+                              (displayLyric as NSString).draw(at: CGPoint(x: drawX, y: 52), withAttributes: lyricAttrs)
+                          } else {
+                              let loopSpan = measuredLyricWidth + 140.0
+                              let baseX = 28.0 - scrollX
+                              (displayLyric as NSString).draw(at: CGPoint(x: baseX, y: 52), withAttributes: lyricAttrs)
+                              (displayLyric as NSString).draw(at: CGPoint(x: baseX + loopSpan, y: 52), withAttributes: lyricAttrs)
+                          }
+                          ctx.restoreGState()
+
+                          UIGraphicsPopContext()
+                          ctx.restoreGState()
+                      }
+                  }
+                  CVPixelBufferUnlockBaseAddress(pb, [])
+
+                  var formatDesc: CMVideoFormatDescription?
+                  guard CMVideoFormatDescriptionCreateForImageBuffer(
+                      allocator: kCFAllocatorDefault,
+                      imageBuffer: pb,
+                      formatDescriptionOut: &formatDesc
+                  ) == noErr, let fmt = formatDesc else { return nil }
+
+                  var timing = CMSampleTimingInfo(
+                      duration: CMTime(value: 1, timescale: 24),
+                      presentationTimeStamp: CMClockGetTime(CMClockGetHostTimeClock()),
+                      decodeTimeStamp: .invalid
+                  )
+                  var sampleBuf: CMSampleBuffer?
+                  guard CMSampleBufferCreateReadyWithImageBuffer(
+                      allocator: kCFAllocatorDefault,
+                      imageBuffer: pb,
+                      formatDescription: fmt,
+                      sampleTiming: &timing,
+                      sampleBufferOut: &sampleBuf
+                  ) == noErr, let sb = sampleBuf else { return nil }
+
+                  if let attachments = CMSampleBufferGetSampleAttachmentsArray(sb, createIfNecessary: true) {
+                      let dict = unsafeBitCast(CFArrayGetValueAtIndex(attachments, 0), to: CFMutableDictionary.self)
+                      CFDictionarySetValue(
+                          dict,
+                          Unmanaged.passUnretained(kCMSampleAttachmentKey_DisplayImmediately).toOpaque(),
+                          Unmanaged.passUnretained(kCFBooleanTrue).toOpaque()
+                      )
+                  }
+                  return sb
+              }
+
+              // MARK: - AVPictureInPictureControllerDelegate
+              func pictureInPictureControllerDidStartPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
+                  isPiPActive = true
+                  enqueueCurrentFrame()
+                  startRenderLoopIfNeeded()
+              }
+
+              func pictureInPictureControllerDidStopPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
+                  isPiPActive = false
+                  if !isEnabled {
+                      stopRenderLoop()
+                  }
+              }
+
+              // MARK: - AVPictureInPictureControllerSampleBufferPlaybackDelegate
+              func pictureInPictureController(_ pictureInPictureController: AVPictureInPictureController, setPlaying playing: Bool) {
+                  onTogglePlay?(playing)
+              }
+
+              func pictureInPictureControllerTimeRangeForPlayback(_ pictureInPictureController: AVPictureInPictureController) -> CMTimeRange {
+                  return CMTimeRange(start: .zero, duration: .positiveInfinity)
+              }
+
+              func pictureInPictureControllerIsPlaybackPaused(_ pictureInPictureController: AVPictureInPictureController) -> Bool {
+                  return !isPlaying
+              }
+
+              func pictureInPictureController(_ pictureInPictureController: AVPictureInPictureController, didTransitionToRenderSize newRenderSize: CMVideoDimensions) {}
+
+              func pictureInPictureController(_ pictureInPictureController: AVPictureInPictureController, skipByInterval skipInterval: CMTime, completion completionHandler: @escaping () -> Void) {
+                  completionHandler()
+              }
+          }
 
           // Native AVAudioEngine Player with 5-Band AVAudioUnitEQ, AVAudioUnitTimePitch, and Smooth Gain Ramp
           final class FengAudioEnginePlayer {
@@ -2462,81 +2786,38 @@ jobs:
               private var nativeLyrics: [(time: Double, text: String)] = []
               private var nativeLyricOffset: Double = 0
               private var activeNativeLyricIdx: Int = -1
-              private var marqueeChars: [Character] = []
-              private var marqueeNeedsScroll: Bool = false
-              private var marqueeOffset: Int = 0
-              private var lastLiveActivitySig: String = ""
-              private var lastLiveActivityUpdateAt: TimeInterval = 0
-              private var isUpdatingLiveActivity: Bool = false
-              private var pendingLiveActivityForce: Bool = false
-              private var deferredLiveActivityWork: DispatchWorkItem? = nil
-              private var lyricCarouselTimer: DispatchSourceTimer? = nil
-              private var liveActivityRef: Any? = nil
+              private var pipLyricsStorage: Any? = nil
+              private var lastWidgetReloadAt: TimeInterval = 0
+              private var lastWidgetReloadSig: String = ""
 
-              private func charDisplayWeight(_ ch: Character) -> Double {
-                  if ch == " " { return 0.38 }
-                  return ch.isASCII ? 0.58 : 1.0
-              }
-
-              private func textDisplayWeight(_ str: String) -> Double {
-                  return str.reduce(0.0) { $0 + charDisplayWeight($1) }
-              }
-
-              private func rebuildMarqueeBuffer(for raw: String) {
-                  let base = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-                  let fallback = currentTitle.isEmpty ? "FENG MUSIC" : currentTitle
-                  let text = base.isEmpty ? fallback : base
-                  let totalW = textDisplayWeight(text)
-                  marqueeNeedsScroll = totalW > 13.4
-                  marqueeChars = marqueeNeedsScroll ? Array(text + "   ·   ") : Array(text)
-                  marqueeOffset = 0
-              }
-
-              private func sliceMarqueeWindow(startIdx: Int, maxWeight: Double, wrap: Bool) -> (text: String, nextIdx: Int) {
-                  guard !marqueeChars.isEmpty else { return ("", 0) }
-                  let total = marqueeChars.count
-                  var idx = wrap ? (((startIdx % total) + total) % total) : min(max(0, startIdx), total)
-                  var out = ""
-                  var w = 0.0
-                  var steps = 0
-                  while steps < total && (wrap || idx < total) {
-                      let ch = marqueeChars[idx]
-                      let cw = charDisplayWeight(ch)
-                      if w + cw > maxWeight && !out.isEmpty { break }
-                      out.append(ch)
-                      w += cw
-                      idx = wrap ? ((idx + 1) % total) : (idx + 1)
-                      steps += 1
+              @available(iOS 15.0, *)
+              private var pipManager: FengPiPLyricsManager {
+                  if let existing = pipLyricsStorage as? FengPiPLyricsManager {
+                      return existing
                   }
-                  return (out, idx)
+                  let mgr = FengPiPLyricsManager()
+                  mgr.onTogglePlay = { [weak self] shouldPlay in
+                      guard let self = self else { return }
+                      DispatchQueue.main.async {
+                          let isPlayingNow = self.useEnginePlayer ? self.enginePlayer.isPlaying : ((self.player?.rate ?? 0) > 0)
+                          if shouldPlay != isPlayingNow {
+                              self.executeWidgetCommand("toggle")
+                          }
+                      }
+                  }
+                  pipLyricsStorage = mgr
+                  return mgr
               }
 
-              private func currentCompactIslandPair() -> (leading: String, trailing: String) {
-                  if marqueeChars.isEmpty {
-                      rebuildMarqueeBuffer(for: currentLyricLine)
+              private func syncPiPLyrics() {
+                  if #available(iOS 15.0, *) {
+                      let isPlayingNow = useEnginePlayer ? enginePlayer.isPlaying : ((player?.rate ?? 0) > 0)
+                      pipManager.updateTrackState(
+                          title: currentTitle.isEmpty ? "FENG MUSIC" : currentTitle,
+                          lyric: currentLyricLine,
+                          isPlaying: isPlayingNow
+                      )
                   }
-                  if !marqueeNeedsScroll {
-                      let left = sliceMarqueeWindow(startIdx: 0, maxWeight: 6.8, wrap: false)
-                      let right = sliceMarqueeWindow(startIdx: left.nextIdx, maxWeight: 6.8, wrap: false)
-                      return (left.text, right.text)
-                  }
-                  let left = sliceMarqueeWindow(startIdx: marqueeOffset, maxWeight: 6.8, wrap: true)
-                  let right = sliceMarqueeWindow(startIdx: left.nextIdx, maxWeight: 6.8, wrap: true)
-                  return (left.text, right.text)
-              }
-
-              private func advanceMarqueeOffset() {
-                  guard marqueeNeedsScroll, !marqueeChars.isEmpty else { return }
-                  let total = marqueeChars.count
-                  var idx = marqueeOffset % total
-                  var movedW = 0.0
-                  var count = 0
-                  while movedW < 6.2 && count < total {
-                      movedW += charDisplayWeight(marqueeChars[idx])
-                      idx = (idx + 1) % total
-                      count += 1
-                  }
-                  marqueeOffset = idx
               }
 
               private func setNativeLyrics(from rawList: [[String: Any]]?, offset: Double?) {
@@ -2561,7 +2842,10 @@ jobs:
               }
 
               private func updateNativeLyricForTime(_ elapsed: Double, force: Bool = false) {
-                  guard !nativeLyrics.isEmpty else { return }
+                  guard !nativeLyrics.isEmpty else {
+                      if force { syncPiPLyrics() }
+                      return
+                  }
                   let effective = elapsed + nativeLyricOffset
                   var idx = -1
                   for i in 0..<nativeLyrics.count {
@@ -2577,50 +2861,8 @@ jobs:
                   let nextLine = nativeLyrics[targetIdx].text
                   if nextLine != currentLyricLine || force {
                       currentLyricLine = nextLine
-                      rebuildMarqueeBuffer(for: nextLine)
-                      restartLyricCarousel()
-                      let isPlayingNow = useEnginePlayer ? enginePlayer.isPlaying : ((player?.rate ?? 0) > 0)
-                      syncLiveActivity(
-                          isPlaying: isPlayingNow,
-                          elapsed: elapsed.isFinite && elapsed >= 0 ? elapsed : 0,
-                          duration: currentDuration,
-                          updatedAt: Date().timeIntervalSince1970,
-                          urgent: true
-                      )
+                      syncPiPLyrics()
                   }
-              }
-
-              private func restartLyricCarousel() {
-                  lyricCarouselTimer?.cancel()
-                  lyricCarouselTimer = nil
-                  guard marqueeNeedsScroll, !marqueeChars.isEmpty else { return }
-                  let timer = DispatchSource.makeTimerSource(queue: .main)
-                  // Budget-safe 3.2s cadence avoids iOS 18+/26 ActivityKit frequent-update throttling while scrolling long lines
-                  timer.schedule(deadline: .now() + 3.2, repeating: 3.2, leeway: .milliseconds(150))
-                  timer.setEventHandler { [weak self] in
-                      guard let self = self else { return }
-                      let isPlayingNow = self.useEnginePlayer ? self.enginePlayer.isPlaying : ((self.player?.rate ?? 0) > 0)
-                      guard isPlayingNow, self.marqueeNeedsScroll else { return }
-                      let elapsedNow = self.useEnginePlayer ? self.enginePlayer.currentTime : (self.player.map { CMTimeGetSeconds($0.currentTime()) } ?? 0)
-                      let safeElapsed = elapsedNow.isFinite && elapsedNow >= 0 ? elapsedNow : 0
-                      if !self.nativeLyrics.isEmpty {
-                          let prevIdx = self.activeNativeLyricIdx
-                          self.updateNativeLyricForTime(safeElapsed, force: false)
-                          if self.activeNativeLyricIdx != prevIdx {
-                              return
-                          }
-                      }
-                      self.advanceMarqueeOffset()
-                      self.syncLiveActivity(
-                          isPlaying: true,
-                          elapsed: safeElapsed,
-                          duration: self.currentDuration,
-                          updatedAt: Date().timeIntervalSince1970,
-                          urgent: false
-                      )
-                  }
-                  timer.resume()
-                  lyricCarouselTimer = timer
               }
               private var timeObserver: Any?
               private var endObserver: NSObjectProtocol?
@@ -3748,7 +3990,7 @@ jobs:
                   defaults.set(safeElapsed, forKey: "widget_elapsed")
                   defaults.set(currentDuration, forKey: "widget_duration")
                   defaults.set(nowTs, forKey: "widget_updatedAt")
-                  syncLiveActivity(isPlaying: isPlaying, elapsed: safeElapsed, duration: currentDuration, updatedAt: nowTs)
+                  syncPiPLyrics()
                   if remaining > 0 {
                       defaults.set(Date().timeIntervalSince1970 + remaining + 1.8, forKey: "widget_expectedEndAt")
                   } else {
@@ -3790,142 +4032,19 @@ jobs:
                       }
                   }
                   defaults.synchronize()
-                  triggerTargetedWidgetReloadNow()
+                  let reloadSig = "\(currentTitle)|\(isPlaying ? 1 : 0)|\(Int(safeElapsed / 5.0))"
+                  let nowReload = Date().timeIntervalSince1970
+                  if saveCover || reloadSig != lastWidgetReloadSig || (nowReload - lastWidgetReloadAt) >= 4.0 {
+                      lastWidgetReloadSig = reloadSig
+                      lastWidgetReloadAt = nowReload
+                      triggerTargetedWidgetReloadNow()
+                  }
               }
 
-              private func syncLiveActivity(isPlaying: Bool, elapsed: Double, duration: Double, updatedAt: Double, urgent: Bool = true) {
-                  #if canImport(ActivityKit)
-                  if #available(iOS 16.1, *) {
-                      guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
-                      if (liveActivityRef as? Activity<FengLyricsActivityAttributes>)?.activityState != .active {
-                          if let recovered = Activity<FengLyricsActivityAttributes>.activities.first(where: { $0.activityState == .active }) {
-                              liveActivityRef = recovered
-                          }
-                      }
-                      let pair = currentCompactIslandPair()
-                      let safeTitle = currentTitle.isEmpty ? "FENG MUSIC" : currentTitle
-                      let sig = "\(safeTitle)|\(currentLyricLine)|\(pair.leading)|\(pair.trailing)|\(isPlaying ? 1 : 0)"
-                      if let act = liveActivityRef as? Activity<FengLyricsActivityAttributes>,
-                         act.activityState == .active,
-                         sig == lastLiveActivitySig {
-                          return
-                      }
-
-                      // Enforce budget-safe minimum gap so iOS 18+/26 chronod never throttles & freezes the Live Activity
-                      let now = Date().timeIntervalSince1970
-                      let minGap: TimeInterval = urgent ? 1.65 : 2.8
-                      if let act = liveActivityRef as? Activity<FengLyricsActivityAttributes>,
-                         act.activityState == .active {
-                          let sinceLast = now - lastLiveActivityUpdateAt
-                          if isUpdatingLiveActivity || sinceLast < minGap {
-                              pendingLiveActivityForce = true
-                              deferredLiveActivityWork?.cancel()
-                              let delay = max(0.25, minGap - sinceLast)
-                              let work = DispatchWorkItem { [weak self] in
-                                  guard let self = self, self.pendingLiveActivityForce else { return }
-                                  self.pendingLiveActivityForce = false
-                                  let playingNow = self.useEnginePlayer ? self.enginePlayer.isPlaying : ((self.player?.rate ?? 0) > 0)
-                                  let curNow = self.useEnginePlayer ? self.enginePlayer.currentTime : (self.player.map { CMTimeGetSeconds($0.currentTime()) } ?? 0)
-                                  self.syncLiveActivity(
-                                      isPlaying: playingNow,
-                                      elapsed: curNow.isFinite && curNow >= 0 ? curNow : 0,
-                                      duration: self.currentDuration,
-                                      updatedAt: Date().timeIntervalSince1970,
-                                      urgent: true
-                                  )
-                              }
-                              deferredLiveActivityWork = work
-                              DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
-                              return
-                          }
-                      }
-
-                      deferredLiveActivityWork?.cancel()
-                      deferredLiveActivityWork = nil
-                      pendingLiveActivityForce = false
-                      lastLiveActivitySig = sig
-                      lastLiveActivityUpdateAt = now
-
-                      let state = FengLyricsActivityAttributes.ContentState(
-                          title: safeTitle,
-                          artist: currentArtist,
-                          lyricLine: currentLyricLine,
-                          compactLeadingLyric: pair.leading,
-                          compactTrailingLyric: pair.trailing,
-                          isPlaying: isPlaying
-                      )
-                      if let act = liveActivityRef as? Activity<FengLyricsActivityAttributes>, act.activityState == .active {
-                          isUpdatingLiveActivity = true
-                          Task { [weak self] in
-                              if #available(iOS 16.2, *) {
-                                  await act.update(ActivityContent(state: state, staleDate: nil))
-                              } else {
-                                  await act.update(using: state)
-                              }
-                              await MainActor.run {
-                                  guard let self = self else { return }
-                                  self.isUpdatingLiveActivity = false
-                                  if self.pendingLiveActivityForce && self.deferredLiveActivityWork == nil {
-                                      self.pendingLiveActivityForce = false
-                                      let playingNow = self.useEnginePlayer ? self.enginePlayer.isPlaying : ((self.player?.rate ?? 0) > 0)
-                                      let curNow = self.useEnginePlayer ? self.enginePlayer.currentTime : (self.player.map { CMTimeGetSeconds($0.currentTime()) } ?? 0)
-                                      self.syncLiveActivity(
-                                          isPlaying: playingNow,
-                                          elapsed: curNow.isFinite && curNow >= 0 ? curNow : 0,
-                                          duration: self.currentDuration,
-                                          updatedAt: Date().timeIntervalSince1970,
-                                          urgent: true
-                                      )
-                                  }
-                              }
-                          }
-                      } else if isPlaying && !currentTitle.isEmpty {
-                          let attrs = FengLyricsActivityAttributes(appName: "FENG MUSIC")
-                          do {
-                              if #available(iOS 16.2, *) {
-                                  let act = try Activity<FengLyricsActivityAttributes>.request(
-                                      attributes: attrs,
-                                      content: ActivityContent(state: state, staleDate: nil),
-                                      pushType: nil
-                                  )
-                                  self.liveActivityRef = act
-                              } else {
-                                  let act = try Activity<FengLyricsActivityAttributes>.request(
-                                      attributes: attrs,
-                                      contentState: state,
-                                      pushType: nil
-                                  )
-                                  self.liveActivityRef = act
-                              }
-                          } catch {}
-                      }
+              private func endPiPLyrics() {
+                  if #available(iOS 15.0, *) {
+                      pipManager.stopAll()
                   }
-                  #endif
-              }
-
-              private func endLiveActivity() {
-                  lyricCarouselTimer?.cancel()
-                  lyricCarouselTimer = nil
-                  deferredLiveActivityWork?.cancel()
-                  deferredLiveActivityWork = nil
-                  pendingLiveActivityForce = false
-                  isUpdatingLiveActivity = false
-                  #if canImport(ActivityKit)
-                  if #available(iOS 16.1, *) {
-                      let allActs = Activity<FengLyricsActivityAttributes>.activities
-                      for act in allActs {
-                          Task {
-                              if #available(iOS 16.2, *) {
-                                  let emptyContent: ActivityContent<FengLyricsActivityAttributes.ContentState>? = nil
-                                  await act.end(emptyContent, dismissalPolicy: .immediate)
-                              } else {
-                                  await act.end(dismissalPolicy: .immediate)
-                              }
-                          }
-                      }
-                      liveActivityRef = nil
-                  }
-                  #endif
               }
 
               private func updateNowPlayingInfo(saveCoverToWidget: Bool = false) {
@@ -4056,20 +4175,15 @@ jobs:
                       currentLyricLine = ""
                       nativeLyrics = []
                       activeNativeLyricIdx = -1
-                      marqueeChars = []
-                      marqueeNeedsScroll = false
-                      marqueeOffset = 0
-                      lastLiveActivitySig = ""
-                      deferredLiveActivityWork?.cancel()
-                      deferredLiveActivityWork = nil
-                      pendingLiveActivityForce = false
-                      lyricCarouselTimer?.cancel()
-                      lyricCarouselTimer = nil
                       try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [])
                       try? AVAudioSession.sharedInstance().setActive(true)
 
                       let incomingLyrics = body["lyrics"] as? [[String: Any]]
                       let incomingOffset = body["lyricOffset"] as? Double
+                      let pipPref = (body["pipLyricsEnabled"] as? Bool) ?? false
+                      if #available(iOS 15.0, *) {
+                          pipManager.setEnabled(pipPref, startNow: false, window: self.webView?.window)
+                      }
                       let autoPlay = (body["autoPlay"] as? Bool) ?? false
                       enginePlayer.onTimeUpdate = { [weak self] cur, dur in
                           guard let self = self, self.useEnginePlayer else { return }
@@ -4095,8 +4209,7 @@ jobs:
                           if let rawLyrics = incomingLyrics, !rawLyrics.isEmpty {
                               setNativeLyrics(from: rawLyrics, offset: incomingOffset)
                           } else {
-                              rebuildMarqueeBuffer(for: currentTitle)
-                              restartLyricCarousel()
+                              syncPiPLyrics()
                           }
                           sendEvent("loadedmetadata", extra: ["duration": currentDuration])
                           updateNowPlayingInfo(saveCoverToWidget: true)
@@ -4109,8 +4222,7 @@ jobs:
                       if let rawLyrics = incomingLyrics, !rawLyrics.isEmpty {
                           setNativeLyrics(from: rawLyrics, offset: incomingOffset)
                       } else {
-                          rebuildMarqueeBuffer(for: currentTitle)
-                          restartLyricCarousel()
+                          syncPiPLyrics()
                       }
 
                       let item = AVPlayerItem(url: url)
@@ -4225,26 +4337,24 @@ jobs:
                       }
                   } else if action == "setLyrics" {
                       setNativeLyrics(from: body["lyrics"] as? [[String: Any]], offset: body["offset"] as? Double)
+                  } else if action == "setPipLyrics" {
+                      let enabled = (body["enabled"] as? Bool) ?? false
+                      let startNow = (body["startNow"] as? Bool) ?? false
+                      if #available(iOS 15.0, *) {
+                          pipManager.setEnabled(enabled, startNow: startNow, window: self.webView?.window)
+                          syncPiPLyrics()
+                      }
                   } else if action == "updateLyric" {
                       if nativeLyrics.isEmpty {
                           let line = (body["lyricLine"] as? String) ?? ""
                           if line != currentLyricLine {
                               currentLyricLine = line
-                              rebuildMarqueeBuffer(for: line)
-                              restartLyricCarousel()
-                              let isPlayingNow = useEnginePlayer ? enginePlayer.isPlaying : ((player?.rate ?? 0) > 0)
-                              let elapsedNow = useEnginePlayer ? enginePlayer.currentTime : (player.map { CMTimeGetSeconds($0.currentTime()) } ?? 0)
-                              syncLiveActivity(
-                                  isPlaying: isPlayingNow,
-                                  elapsed: elapsedNow.isFinite && elapsedNow >= 0 ? elapsedNow : 0,
-                                  duration: currentDuration,
-                                  updatedAt: Date().timeIntervalSince1970
-                              )
+                              syncPiPLyrics()
                           }
                       }
                   } else if action == "stop" {
                       cleanupPlayer()
-                      endLiveActivity()
+                      endPiPLyrics()
                       MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
                   }
               }
@@ -4377,41 +4487,6 @@ jobs:
           </plist>
           EOF
 
-      - name: Write Shared FengLyricsActivityAttributes.swift (Live Activities)
-        run: |
-          cat << 'EOF' > ios/App/App/FengLyricsActivityAttributes.swift
-          import Foundation
-          #if canImport(ActivityKit)
-          import ActivityKit
-
-          @available(iOS 16.1, *)
-          public struct FengLyricsActivityAttributes: ActivityAttributes {
-              public struct ContentState: Codable, Hashable {
-                  public var title: String
-                  public var artist: String
-                  public var lyricLine: String
-                  public var compactLeadingLyric: String
-                  public var compactTrailingLyric: String
-                  public var isPlaying: Bool
-
-                  public init(title: String, artist: String, lyricLine: String, compactLeadingLyric: String, compactTrailingLyric: String, isPlaying: Bool) {
-                      self.title = title
-                      self.artist = artist
-                      self.lyricLine = lyricLine
-                      self.compactLeadingLyric = compactLeadingLyric
-                      self.compactTrailingLyric = compactTrailingLyric
-                      self.isPlaying = isPlaying
-                  }
-              }
-
-              public var appName: String
-              public init(appName: String = "FENG MUSIC") {
-                  self.appName = appName
-              }
-          }
-          #endif
-          EOF
-
       - name: Write FengWidget.swift (Liquid Glass UI)
         run: |
           cat << 'EOF' > ios/App/FengWidgetExtension/FengWidget.swift
@@ -4419,9 +4494,7 @@ jobs:
           import SwiftUI
           import UIKit
           import AppIntents
-          #if canImport(ActivityKit)
-          import ActivityKit
-          #endif
+
 
           private func fengWidgetGroupID() -> String {
               if let id = Bundle.main.object(forInfoDictionaryKey: "FengAppGroup") as? String, !id.isEmpty {
@@ -4606,13 +4679,27 @@ jobs:
                   let defaults = UserDefaults(suiteName: groupID)
                   let expectedEndTs = defaults?.double(forKey: "widget_expectedEndAt") ?? 0
                   let defaultNext = Calendar.current.date(byAdding: .minute, value: 15, to: now) ?? now.addingTimeInterval(900)
+                  var entries: [FengWidgetEntry] = [entry]
                   let nextRefresh: Date
-                  if entry.isPlaying && expectedEndTs > now.timeIntervalSince1970 + 2 {
-                      nextRefresh = min(defaultNext, Date(timeIntervalSince1970: expectedEndTs))
+                  if entry.isPlaying && entry.duration > 1.0 && expectedEndTs > now.timeIntervalSince1970 + 1.5 {
+                      let endDate = Date(timeIntervalSince1970: expectedEndTs)
+                      let endedEntry = FengWidgetEntry(
+                          date: endDate,
+                          title: entry.title,
+                          subtitle: entry.subtitle,
+                          isPlaying: false,
+                          hasLiveSync: entry.hasLiveSync,
+                          coverImage: entry.coverImage,
+                          elapsed: entry.duration,
+                          duration: entry.duration,
+                          updatedAt: expectedEndTs
+                      )
+                      entries.append(endedEntry)
+                      nextRefresh = min(defaultNext, endDate)
                   } else {
                       nextRefresh = defaultNext
                   }
-                  completion(Timeline(entries: [entry], policy: .after(nextRefresh)))
+                  completion(Timeline(entries: entries, policy: .after(nextRefresh)))
               }
           }
 
@@ -5083,8 +5170,8 @@ jobs:
                                       if #available(iOS 17.0, *) {
                                           Button(intent: FengSeekBackIntent()) {
                                               Group {
-                                                  if entry.isPlaying {
-                                                      Text(start, style: .timer)
+                                                  if entry.isPlaying, #available(iOS 16.0, *) {
+                                                      Text(timerInterval: start...end, countsDown: false)
                                                           .foregroundColor(.white.opacity(0.82))
                                                   } else {
                                                       Text(formatWidgetSeconds(entry.elapsed))
@@ -5191,124 +5278,7 @@ jobs:
               }
           }
 
-          #if canImport(ActivityKit)
-          @available(iOS 16.1, *)
-          struct FengLyricsLiveActivity: Widget {
-              var body: some WidgetConfiguration {
-                  ActivityConfiguration(for: FengLyricsActivityAttributes.self) { context in
-                      // Lock Screen / Notification Banner Live Lyrics Card
-                      VStack(alignment: .leading, spacing: 8) {
-                          HStack(spacing: 10) {
-                              Image(systemName: context.state.isPlaying ? "waveform" : "music.note")
-                                  .font(.system(size: 14, weight: .bold))
-                                  .foregroundColor(FengGlass.aqua)
-                                  .frame(width: 28, height: 28)
-                                  .background(Color.white.opacity(0.12))
-                                  .clipShape(Circle())
-                              VStack(alignment: .leading, spacing: 1) {
-                                  Text(context.state.title)
-                                      .font(.system(size: 13, weight: .bold))
-                                      .foregroundColor(.white)
-                                      .lineLimit(1)
-                                  if !context.state.artist.isEmpty {
-                                      Text(context.state.artist)
-                                          .font(.system(size: 11, weight: .medium))
-                                          .foregroundColor(.white.opacity(0.65))
-                                          .lineLimit(1)
-                                  }
-                              }
-                              Spacer()
-                              Text(context.state.isPlaying ? "LOSSLESS" : "PAUSED")
-                                  .font(.system(size: 9, weight: .bold, design: .rounded))
-                                  .foregroundColor(FengGlass.aqua)
-                                  .padding(.horizontal, 7)
-                                  .padding(.vertical, 3)
-                                  .background(Color.white.opacity(0.10))
-                                  .clipShape(Capsule())
-                          }
-
-                          Text(context.state.lyricLine.isEmpty ? "♪ \(context.state.title)" : context.state.lyricLine)
-                              .font(.system(size: 15, weight: .semibold))
-                              .foregroundColor(.white)
-                              .lineLimit(2)
-                      }
-                      .padding(14)
-                      .activityBackgroundTint(Color(red: 0.06, green: 0.08, blue: 0.13).opacity(0.88))
-                      .activitySystemActionForegroundColor(.white)
-                  } dynamicIsland: { context in
-                      DynamicIsland {
-                          DynamicIslandExpandedRegion(.leading) {
-                              Image(systemName: context.state.isPlaying ? "waveform" : "music.note")
-                                  .font(.system(size: 15, weight: .bold))
-                                  .foregroundColor(FengGlass.aqua)
-                                  .padding(.leading, 4)
-                          }
-                          DynamicIslandExpandedRegion(.trailing) {
-                              Text(context.state.isPlaying ? "LOSSLESS" : "PAUSED")
-                                  .font(.system(size: 9, weight: .bold, design: .rounded))
-                                  .foregroundColor(FengGlass.aqua)
-                                  .padding(.trailing, 4)
-                          }
-                          DynamicIslandExpandedRegion(.center) {
-                              VStack(spacing: 2) {
-                                  Text(context.state.title)
-                                      .font(.system(size: 12, weight: .semibold))
-                                      .foregroundColor(.white.opacity(0.80))
-                                      .lineLimit(1)
-                              }
-                          }
-                          DynamicIslandExpandedRegion(.bottom) {
-                              Text(context.state.lyricLine.isEmpty ? "♪ \(context.state.title)" : context.state.lyricLine)
-                                  .font(.system(size: 14.5, weight: .bold))
-                                  .foregroundColor(.white)
-                                  .lineLimit(2)
-                                  .multilineTextAlignment(.center)
-                                  .padding(.top, 2)
-                                  .padding(.bottom, 4)
-                          }
-                      } compactLeading: {
-                          let leftText = context.state.compactLeadingLyric.isEmpty
-                              ? (context.state.lyricLine.isEmpty ? context.state.title : context.state.lyricLine)
-                              : context.state.compactLeadingLyric
-                          Text(leftText)
-                              .font(.system(size: 11.5, weight: .semibold))
-                              .foregroundColor(.white)
-                              .lineLimit(1)
-                              .fixedSize(horizontal: true, vertical: false)
-                              .frame(maxWidth: 96, alignment: .leading)
-                              .clipped()
-                      } compactTrailing: {
-                          let rightText = context.state.compactTrailingLyric
-                          Text(rightText)
-                              .font(.system(size: 11.5, weight: .semibold))
-                              .foregroundColor(.white)
-                              .lineLimit(1)
-                              .fixedSize(horizontal: true, vertical: false)
-                              .frame(maxWidth: 96, alignment: .leading)
-                              .clipped()
-                      } minimal: {
-                          Image(systemName: context.state.isPlaying ? "waveform" : "music.note")
-                              .font(.system(size: 11, weight: .bold))
-                              .foregroundColor(FengGlass.aqua)
-                      }
-                      .widgetURL(URL(string: "fengmusic://nowplaying"))
-                  }
-              }
-          }
-          #endif
-
           @main
-          struct FengWidgetBundle: WidgetBundle {
-              var body: some Widget {
-                  FengNowPlayingWidget()
-                  #if canImport(ActivityKit)
-                  if #available(iOS 16.1, *) {
-                      FengLyricsLiveActivity()
-                  }
-                  #endif
-              }
-          }
-
           struct FengNowPlayingWidget: Widget {
               let kind: String = "FengNowPlayingWidget"
 
@@ -5351,9 +5321,6 @@ jobs:
 
           widget_target = project.new_target(:app_extension, 'FengWidgetExtension', :ios, '16.0')
           widget_group = project.main_group.new_group('FengWidgetExtension', 'FengWidgetExtension')
-          attrs_ref = app_group.new_file('FengLyricsActivityAttributes.swift')
-          app_target.add_file_references([attrs_ref])
-          widget_target.add_file_references([attrs_ref])
           swift_ref = widget_group.new_file('FengWidget.swift')
           icon_ref = widget_group.new_file('widget-icon.png')
           widget_group.new_file('Info.plist')
