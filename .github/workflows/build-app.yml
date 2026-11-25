@@ -96,6 +96,12 @@ jobs:
           if ! grep -q "FengWidgetProvider" "$MANIFEST"; then
             sed -i 's|</application>|    <receiver android:name=".FengWidgetProvider" android:exported="false" android:label="FENG MUSIC">\n            <intent-filter>\n                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />\n            </intent-filter>\n            <meta-data android:name="android.appwidget.provider" android:resource="@xml/feng_widget_info" />\n        </receiver>\n    </application>|' "$MANIFEST"
           fi
+          if ! grep -q "FOREGROUND_SERVICE_MEDIA_PLAYBACK" "$MANIFEST"; then
+            sed -i '/<manifest /a\    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />\n    <uses-permission android:name="android.permission.WAKE_LOCK" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />' "$MANIFEST"
+          fi
+          if ! grep -q "FengMediaKeepAliveService" "$MANIFEST"; then
+            sed -i 's|</application>|    <service android:name=".FengMediaKeepAliveService" android:exported="false" android:foregroundServiceType="mediaPlayback" />\n    </application>|' "$MANIFEST"
+          fi
 
           # 3. Write MainActivity.java implementing FengAndroidBridge (SAF + MediaStore + pickAudioFiles)
           PKG_PATH="$(echo "$BUNDLE_ID" | tr '.' '/')"
@@ -220,6 +226,27 @@ jobs:
               private final Handler widgetSyncHandler = new Handler(Looper.getMainLooper());
               private Runnable pendingWidgetSyncRunnable = null;
               private volatile boolean pendingOpenNowPlaying = false;
+              private volatile boolean webIsPlaying = false;
+              private volatile String webCurrentTitle = "FENG MUSIC";
+              private volatile String webCurrentArtist = "";
+
+              private void syncBackgroundKeepAliveService(boolean playing, String title, String artist) {
+                  webIsPlaying = playing;
+                  if (title != null && !title.isEmpty()) webCurrentTitle = title;
+                  webCurrentArtist = artist == null ? "" : artist;
+                  try {
+                      Intent svc = new Intent(getApplicationContext(), FengMediaKeepAliveService.class);
+                      if (playing) {
+                          svc.setAction(FengMediaKeepAliveService.ACTION_START_OR_UPDATE);
+                          svc.putExtra("title", webCurrentTitle);
+                          svc.putExtra("artist", webCurrentArtist);
+                          ContextCompat.startForegroundService(getApplicationContext(), svc);
+                      } else {
+                          getApplicationContext().stopService(svc);
+                      }
+                  } catch (Exception ignored) {
+                  }
+              }
 
               public static boolean dispatchWidgetCommand(String cmd) {
                   MainActivity host = widgetHost != null ? widgetHost.get() : null;
@@ -261,7 +288,7 @@ jobs:
                   }, 180);
               }
 
-              private void scheduleWidgetSync(String title, String artist, boolean isPlaying, String coverDataUrl) {
+              private void scheduleWidgetSync(String title, String artist, String album, boolean isPlaying, double elapsed, double duration, String coverDataUrl) {
                   if (pendingWidgetSyncRunnable != null) {
                       widgetSyncHandler.removeCallbacks(pendingWidgetSyncRunnable);
                   }
@@ -291,7 +318,10 @@ jobs:
                                   .putBoolean("w_has_data", title != null && !title.isEmpty())
                                   .putString("w_title", title == null ? "" : title)
                                   .putString("w_artist", artist == null ? "" : artist)
+                                  .putString("w_album", album == null ? "" : album)
                                   .putBoolean("w_playing", isPlaying)
+                                  .putFloat("w_elapsed", (float) Math.max(0.0, elapsed))
+                                  .putFloat("w_duration", (float) Math.max(0.0, duration))
                                   .commit();
                               FengWidgetProvider.refreshAll(getApplicationContext());
                           } catch (Exception ignored) {
@@ -418,7 +448,34 @@ jobs:
               }
 
               @Override
+              public void onPause() {
+                  super.onPause();
+                  // Keep WebView <audio> & Web Audio graph alive in background instead of Capacitor pausing it
+                  if (webIsPlaying && getBridge() != null && getBridge().getWebView() != null) {
+                      try {
+                          WebView wv = getBridge().getWebView();
+                          wv.onResume();
+                          wv.resumeTimers();
+                      } catch (Exception ignored) {
+                      }
+                  }
+              }
+
+              @Override
+              @SuppressWarnings("deprecation")
+              public void onBackPressed() {
+                  if (webIsPlaying) {
+                      moveTaskToBack(true);
+                      return;
+                  }
+                  super.onBackPressed();
+              }
+
+              @Override
               public void onDestroy() {
+                  try {
+                      getApplicationContext().stopService(new Intent(getApplicationContext(), FengMediaKeepAliveService.class));
+                  } catch (Exception ignored) {}
                   destroyedFlag = true;
                   widgetSyncHandler.removeCallbacksAndMessages(null);
                   MainActivity current = widgetHost != null ? widgetHost.get() : null;
@@ -453,9 +510,13 @@ jobs:
                               } else if ("widgetSync".equals(action)) {
                                   String wTitle = msg.optString("title", "");
                                   String wArtist = msg.optString("artist", "");
+                                  String wAlbum = msg.optString("album", "");
                                   boolean wPlaying = msg.optBoolean("isPlaying", false);
+                                  double wElapsed = msg.optDouble("elapsed", 0.0);
+                                  double wDuration = msg.optDouble("duration", 0.0);
                                   String wCover = msg.isNull("cover") ? null : msg.optString("cover", "");
-                                  scheduleWidgetSync(wTitle, wArtist, wPlaying, wCover);
+                                  syncBackgroundKeepAliveService(wPlaying, wTitle, wArtist);
+                                  scheduleWidgetSync(wTitle, wArtist, wAlbum, wPlaying, wElapsed, wDuration, wCover);
                               }
                               if (pendingOpenNowPlaying) {
                                   flushPendingOpenNowPlaying();
@@ -1262,7 +1323,7 @@ jobs:
           }
           JAVAEOF
 
-          # 4. Write FengWidgetProvider.java (§13 Android Home Screen Widget, aligned with iOS)
+          # 4. Write FengWidgetProvider.java (1-to-1 iOS FengWidget Replica: Adaptive Liquid Glass + Peeking Vinyl + Progress + Glass Capsule Dock)
           WIDGET_ACT="android/app/src/main/java/${PKG_PATH}/FengWidgetProvider.java"
           echo "package ${BUNDLE_ID};" > "$WIDGET_ACT"
           cat << 'JAVAEOF' >> "$WIDGET_ACT"
@@ -1278,7 +1339,10 @@ jobs:
           import android.graphics.BitmapFactory;
           import android.graphics.BitmapShader;
           import android.graphics.Canvas;
+          import android.graphics.Color;
+          import android.graphics.LinearGradient;
           import android.graphics.Paint;
+          import android.graphics.RadialGradient;
           import android.graphics.RectF;
           import android.graphics.Shader;
           import android.view.View;
@@ -1342,32 +1406,55 @@ jobs:
                   boolean hasData = sp.getBoolean("w_has_data", false);
                   String title = sp.getString("w_title", "");
                   String artist = sp.getString("w_artist", "");
+                  String album = sp.getString("w_album", "");
                   boolean isPlaying = sp.getBoolean("w_playing", false);
+                  float elapsed = sp.getFloat("w_elapsed", 0f);
+                  float duration = sp.getFloat("w_duration", 0f);
 
-                  if (hasData && title != null && !title.isEmpty()) {
-                      views.setTextViewText(R.id.widget_title, title);
-                      views.setTextViewText(R.id.widget_artist, artist == null ? "" : artist);
-                      views.setViewVisibility(R.id.widget_artist, (artist != null && !artist.isEmpty()) ? View.VISIBLE : View.GONE);
+                  boolean hasLive = hasData && title != null && !title.isEmpty() && !"FENG MUSIC".equals(title);
+
+                  if (hasLive) {
+                      views.setViewVisibility(R.id.widget_live_meta, View.VISIBLE);
+                      views.setViewVisibility(R.id.widget_idle_quote, View.GONE);
                       views.setTextViewText(R.id.widget_status, isPlaying ? "● LOSSLESS" : "● PAUSED");
-                      views.setViewVisibility(R.id.widget_status, View.VISIBLE);
+                      views.setTextColor(R.id.widget_status, isPlaying ? Color.parseColor("#E642E6D9") : Color.parseColor("#B3FFFFFF"));
+                      views.setTextViewText(R.id.widget_title, title);
+                      String sub = artist == null ? "" : artist;
+                      if (album != null && !album.isEmpty() && !"未知专辑".equals(album)) {
+                          sub = sub.isEmpty() ? album : (sub + " · " + album);
+                      }
+                      views.setTextViewText(R.id.widget_artist, sub.isEmpty() ? "FENG MUSIC" : sub);
                   } else {
-                      views.setTextViewText(R.id.widget_title, "FENG MUSIC");
-                      views.setTextViewText(R.id.widget_artist, "");
-                      views.setViewVisibility(R.id.widget_artist, View.GONE);
-                      views.setViewVisibility(R.id.widget_status, View.GONE);
+                      views.setViewVisibility(R.id.widget_live_meta, View.GONE);
+                      views.setViewVisibility(R.id.widget_idle_quote, View.VISIBLE);
+                  }
+
+                  if (hasLive && duration > 1f) {
+                      int pct = Math.max(0, Math.min(1000, Math.round((elapsed / duration) * 1000f)));
+                      views.setProgressBar(R.id.widget_progress, 1000, pct, false);
+                      views.setViewVisibility(R.id.widget_progress, View.VISIBLE);
+                      views.setViewVisibility(R.id.widget_idle_line, View.GONE);
+                  } else {
+                      views.setViewVisibility(R.id.widget_progress, View.GONE);
+                      views.setViewVisibility(R.id.widget_idle_line, View.VISIBLE);
                   }
 
                   views.setImageViewResource(
                       R.id.widget_btn_toggle,
-                      isPlaying ? R.drawable.ic_widget_pause : R.drawable.ic_widget_play
+                      isPlaying ? R.drawable.ic_widget_pause_dark : R.drawable.ic_widget_play_dark
                   );
 
-                  // Cover art with native rounded corners (~18dp); fallback to app icon
-                  Bitmap rounded = loadRoundedCover(context);
-                  if (rounded != null) {
-                      views.setImageViewBitmap(R.id.widget_cover, rounded);
-                  } else {
-                      views.setImageViewResource(R.id.widget_cover, R.mipmap.ic_launcher);
+                  Bitmap rawCover = loadRawCoverBitmap(context);
+                  Bitmap vinylStage = renderCoverWithPeekingVinyl(context, rawCover, isPlaying);
+                  if (vinylStage != null) {
+                      views.setImageViewBitmap(R.id.widget_cover_stage, vinylStage);
+                  }
+                  Bitmap adaptiveBg = renderAdaptiveLiquidBackground(context, rawCover, hasLive);
+                  if (adaptiveBg != null) {
+                      views.setImageViewBitmap(R.id.widget_bg_image, adaptiveBg);
+                  }
+                  if (rawCover != null && !rawCover.isRecycled()) {
+                      rawCover.recycle();
                   }
 
                   String pkg = context.getPackageName();
@@ -1399,40 +1486,171 @@ jobs:
                   );
               }
 
-              private static Bitmap loadRoundedCover(Context context) {
+              private static Bitmap loadRawCoverBitmap(Context context) {
                   try {
                       File f = new File(context.getFilesDir(), MainActivity.WIDGET_COVER_FILE);
-                      if (!f.exists() || f.length() == 0) return null;
-                      BitmapFactory.Options opts = new BitmapFactory.Options();
-                      opts.inJustDecodeBounds = true;
-                      BitmapFactory.decodeFile(f.getAbsolutePath(), opts);
-                      int maxDim = Math.max(opts.outWidth, opts.outHeight);
-                      int sample = 1;
-                      while (maxDim / sample > 360) sample *= 2;
-                      BitmapFactory.Options decodeOpts = new BitmapFactory.Options();
-                      decodeOpts.inSampleSize = sample;
-                      Bitmap raw = BitmapFactory.decodeFile(f.getAbsolutePath(), decodeOpts);
-                      if (raw == null) return null;
+                      if (f.exists() && f.length() > 0) {
+                          BitmapFactory.Options opts = new BitmapFactory.Options();
+                          opts.inJustDecodeBounds = true;
+                          BitmapFactory.decodeFile(f.getAbsolutePath(), opts);
+                          int maxDim = Math.max(opts.outWidth, opts.outHeight);
+                          int sample = 1;
+                          while (maxDim / sample > 360) sample *= 2;
+                          BitmapFactory.Options decodeOpts = new BitmapFactory.Options();
+                          decodeOpts.inSampleSize = sample;
+                          Bitmap b = BitmapFactory.decodeFile(f.getAbsolutePath(), decodeOpts);
+                          if (b != null) return b;
+                      }
+                  } catch (Exception ignored) {}
+                  try {
+                      return BitmapFactory.decodeResource(context.getResources(), R.mipmap.ic_launcher);
+                  } catch (Exception ignored) {
+                      return null;
+                  }
+              }
 
-                      int target = 240;
-                      int sw = raw.getWidth();
-                      int sh = raw.getHeight();
-                      int side = Math.min(sw, sh);
-                      int x = (sw - side) / 2;
-                      int y = (sh - side) / 2;
-                      Bitmap square = Bitmap.createBitmap(raw, x, y, side, side);
-                      Bitmap scaled = Bitmap.createScaledBitmap(square, target, target, true);
-                      if (square != raw) square.recycle();
-                      raw.recycle();
+              private static Bitmap renderCoverWithPeekingVinyl(Context context, Bitmap rawCover, boolean isPlaying) {
+                  try {
+                      int w = 310;
+                      int h = 240;
+                      int coverSize = 224;
+                      int topY = (h - coverSize) / 2;
+                      float cornerR = 54f;
 
-                      float density = context.getResources().getDisplayMetrics().density;
-                      float radiusPx = Math.min(target * 0.22f, 18f * (density > 0f ? density : 2f));
-                      Bitmap out = Bitmap.createBitmap(target, target, Bitmap.Config.ARGB_8888);
+                      Bitmap out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
                       Canvas canvas = new Canvas(out);
-                      Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-                      paint.setShader(new BitmapShader(scaled, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP));
-                      canvas.drawRoundRect(new RectF(0f, 0f, target, target), radiusPx, radiusPx, paint);
-                      scaled.recycle();
+                      Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+                      float vinylR = 102f;
+                      float vinylCx = isPlaying ? 198f : 158f;
+                      float vinylCy = h * 0.5f;
+
+                      p.setShader(new RadialGradient(
+                          vinylCx, vinylCy, vinylR,
+                          new int[]{Color.parseColor("#2A2F3A"), Color.parseColor("#111319"), Color.parseColor("#08090D")},
+                          new float[]{0.15f, 0.65f, 1.0f},
+                          Shader.TileMode.CLAMP
+                      ));
+                      canvas.drawCircle(vinylCx, vinylCy, vinylR, p);
+                      p.setShader(null);
+
+                      Paint groove = new Paint(Paint.ANTI_ALIAS_FLAG);
+                      groove.setStyle(Paint.Style.STROKE);
+                      groove.setStrokeWidth(1.2f);
+                      groove.setColor(Color.argb(36, 255, 255, 255));
+                      for (float r = 46f; r <= 94f; r += 9f) {
+                          canvas.drawCircle(vinylCx, vinylCy, r, groove);
+                      }
+
+                      Paint hub = new Paint(Paint.ANTI_ALIAS_FLAG);
+                      hub.setColor(isPlaying ? Color.parseColor("#42E6D9") : Color.parseColor("#47C7FF"));
+                      canvas.drawCircle(vinylCx, vinylCy, 26f, hub);
+                      hub.setColor(Color.parseColor("#0B0E16"));
+                      canvas.drawCircle(vinylCx, vinylCy, 9f, hub);
+
+                      groove.setStrokeWidth(2.0f);
+                      groove.setColor(Color.argb(72, 255, 255, 255));
+                      canvas.drawCircle(vinylCx, vinylCy, vinylR - 1f, groove);
+
+                      RectF coverRect = new RectF(4f, topY, 4f + coverSize, topY + coverSize);
+                      if (rawCover != null) {
+                          int sw = rawCover.getWidth();
+                          int sh = rawCover.getHeight();
+                          int side = Math.min(sw, sh);
+                          Bitmap sq = Bitmap.createBitmap(rawCover, (sw - side) / 2, (sh - side) / 2, side, side);
+                          Bitmap scaled = Bitmap.createScaledBitmap(sq, coverSize, coverSize, true);
+                          if (sq != rawCover) sq.recycle();
+
+                          Paint coverPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                          BitmapShader shader = new BitmapShader(scaled, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+                          android.graphics.Matrix mat = new android.graphics.Matrix();
+                          mat.setTranslate(coverRect.left, coverRect.top);
+                          shader.setLocalMatrix(mat);
+                          coverPaint.setShader(shader);
+                          canvas.drawRoundRect(coverRect, cornerR, cornerR, coverPaint);
+                          scaled.recycle();
+                      } else {
+                          Paint fallback = new Paint(Paint.ANTI_ALIAS_FLAG);
+                          fallback.setColor(Color.parseColor("#182235"));
+                          canvas.drawRoundRect(coverRect, cornerR, cornerR, fallback);
+                      }
+
+                      Paint rim = new Paint(Paint.ANTI_ALIAS_FLAG);
+                      rim.setStyle(Paint.Style.STROKE);
+                      rim.setStrokeWidth(2.6f);
+                      rim.setShader(new LinearGradient(
+                          coverRect.left, coverRect.top, coverRect.right, coverRect.bottom,
+                          new int[]{Color.argb(210, 255, 255, 255), Color.argb(55, 255, 255, 255), Color.argb(130, 255, 255, 255)},
+                          new float[]{0f, 0.5f, 1f},
+                          Shader.TileMode.CLAMP
+                      ));
+                      canvas.drawRoundRect(coverRect, cornerR, cornerR, rim);
+                      return out;
+                  } catch (Exception ignored) {
+                      return null;
+                  }
+              }
+
+              private static Bitmap renderAdaptiveLiquidBackground(Context context, Bitmap rawCover, boolean hasLive) {
+                  try {
+                      int w = 520;
+                      int h = 240;
+                      float radius = 52f;
+                      Bitmap out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+                      Canvas canvas = new Canvas(out);
+                      RectF bounds = new RectF(0f, 0f, w, h);
+
+                      android.graphics.Path clip = new android.graphics.Path();
+                      clip.addRoundRect(bounds, radius, radius, android.graphics.Path.Direction.CW);
+                      canvas.save();
+                      canvas.clipPath(clip);
+
+                      if (hasLive && rawCover != null) {
+                          Bitmap tiny = Bitmap.createScaledBitmap(rawCover, 14, 14, true);
+                          Bitmap soft = Bitmap.createScaledBitmap(tiny, w, h, true);
+                          tiny.recycle();
+                          canvas.drawBitmap(soft, 0f, 0f, new Paint(Paint.FILTER_BITMAP_FLAG));
+                          soft.recycle();
+
+                          Paint scrim = new Paint(Paint.ANTI_ALIAS_FLAG);
+                          scrim.setShader(new LinearGradient(
+                              0f, 0f, w, h,
+                              new int[]{Color.argb(150, 10, 16, 28), Color.argb(185, 8, 13, 24)},
+                              null,
+                              Shader.TileMode.CLAMP
+                          ));
+                          canvas.drawRect(bounds, scrim);
+                      } else {
+                          Paint idleBg = new Paint(Paint.ANTI_ALIAS_FLAG);
+                          idleBg.setShader(new LinearGradient(
+                              0f, 0f, w, h,
+                              new int[]{Color.parseColor("#0B1626"), Color.parseColor("#13263E"), Color.parseColor("#0A1220")},
+                              new float[]{0f, 0.52f, 1f},
+                              Shader.TileMode.CLAMP
+                          ));
+                          canvas.drawRect(bounds, idleBg);
+                      }
+
+                      Paint sheen = new Paint(Paint.ANTI_ALIAS_FLAG);
+                      sheen.setShader(new RadialGradient(
+                          w * 0.22f, h * 0.10f, w * 0.65f,
+                          new int[]{Color.argb(42, 255, 255, 255), Color.argb(0, 255, 255, 255)},
+                          null,
+                          Shader.TileMode.CLAMP
+                      ));
+                      canvas.drawRect(bounds, sheen);
+                      canvas.restore();
+
+                      Paint border = new Paint(Paint.ANTI_ALIAS_FLAG);
+                      border.setStyle(Paint.Style.STROKE);
+                      border.setStrokeWidth(2.2f);
+                      border.setShader(new LinearGradient(
+                          0f, 0f, w, h,
+                          new int[]{Color.argb(145, 255, 255, 255), Color.argb(38, 255, 255, 255), Color.argb(95, 255, 255, 255)},
+                          new float[]{0f, 0.5f, 1f},
+                          Shader.TileMode.CLAMP
+                      ));
+                      canvas.drawRoundRect(new RectF(1.2f, 1.2f, w - 1.2f, h - 1.2f), radius, radius, border);
                       return out;
                   } catch (Exception ignored) {
                       return null;
@@ -1441,184 +1659,430 @@ jobs:
           }
           JAVAEOF
 
-          # 5. Write Android Widget Resources (layout, background, vector icons, provider metadata)
+          # 4.5 Write FengMediaKeepAliveService.java (Media Playback Foreground Service for uninterrupted background WebView audio)
+          KEEPALIVE_ACT="android/app/src/main/java/${PKG_PATH}/FengMediaKeepAliveService.java"
+          echo "package ${BUNDLE_ID};" > "$KEEPALIVE_ACT"
+          cat << 'JAVAEOF' >> "$KEEPALIVE_ACT"
+
+          import android.app.Notification;
+          import android.app.NotificationChannel;
+          import android.app.NotificationManager;
+          import android.app.PendingIntent;
+          import android.app.Service;
+          import android.content.Intent;
+          import android.content.pm.ServiceInfo;
+          import android.os.Build;
+          import android.os.IBinder;
+          import android.os.PowerManager;
+
+          public class FengMediaKeepAliveService extends Service {
+              public static final String ACTION_START_OR_UPDATE = "FENG_MEDIA_KEEPALIVE_UPDATE";
+              private static final String CHANNEL_ID = "feng_music_playback";
+              private static final int NOTIF_ID = 7001;
+
+              private PowerManager.WakeLock wakeLock;
+
+              @Override
+              public IBinder onBind(Intent intent) {
+                  return null;
+              }
+
+              @Override
+              public int onStartCommand(Intent intent, int flags, int startId) {
+                  String title = intent != null ? intent.getStringExtra("title") : null;
+                  String artist = intent != null ? intent.getStringExtra("artist") : null;
+                  if (title == null || title.isEmpty()) title = "FENG MUSIC";
+                  if (artist == null) artist = "";
+
+                  ensureChannel();
+                  Notification notif = buildNotification(title, artist);
+                  try {
+                      if (Build.VERSION.SDK_INT >= 29) {
+                          startForeground(NOTIF_ID, notif, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
+                      } else {
+                          startForeground(NOTIF_ID, notif);
+                      }
+                  } catch (Exception ignored) {
+                      try {
+                          startForeground(NOTIF_ID, notif);
+                      } catch (Exception ignored2) {}
+                  }
+                  acquireWakeLock();
+                  return START_NOT_STICKY;
+              }
+
+              @Override
+              public void onTaskRemoved(Intent rootIntent) {
+                  releaseWakeLock();
+                  stopForeground(true);
+                  stopSelf();
+                  super.onTaskRemoved(rootIntent);
+              }
+
+              @Override
+              public void onDestroy() {
+                  releaseWakeLock();
+                  stopForeground(true);
+                  super.onDestroy();
+              }
+
+              private void ensureChannel() {
+                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                      NotificationManager nm = getSystemService(NotificationManager.class);
+                      if (nm != null && nm.getNotificationChannel(CHANNEL_ID) == null) {
+                          NotificationChannel ch = new NotificationChannel(
+                              CHANNEL_ID,
+                              "音乐后台播放",
+                              NotificationManager.IMPORTANCE_LOW
+                          );
+                          ch.setDescription("保持 FENG MUSIC 在后台与锁屏时持续播放");
+                          ch.setShowBadge(false);
+                          ch.setSound(null, null);
+                          nm.createNotificationChannel(ch);
+                      }
+                  }
+              }
+
+              private Notification buildNotification(String title, String artist) {
+                  Intent openIntent = new Intent(this, MainActivity.class);
+                  openIntent.putExtra(MainActivity.EXTRA_WIDGET_OPEN, "nowplaying");
+                  openIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                  PendingIntent contentPi = PendingIntent.getActivity(
+                      this, 200, openIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+                  );
+
+                  String pkg = getPackageName();
+                  PendingIntent prevPi = buildBroadcastAction(pkg + ".WIDGET_PREV", 201);
+                  PendingIntent togglePi = buildBroadcastAction(pkg + ".WIDGET_TOGGLE", 202);
+                  PendingIntent nextPi = buildBroadcastAction(pkg + ".WIDGET_NEXT", 203);
+
+                  Notification.Builder builder = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+                      ? new Notification.Builder(this, CHANNEL_ID)
+                      : new Notification.Builder(this);
+
+                  builder
+                      .setSmallIcon(R.mipmap.ic_launcher)
+                      .setContentTitle(title)
+                      .setContentText(artist.isEmpty() ? "正在后台播放" : artist)
+                      .setContentIntent(contentPi)
+                      .setOngoing(true)
+                      .setOnlyAlertOnce(true)
+                      .setVisibility(Notification.VISIBILITY_PUBLIC)
+                      .addAction(new Notification.Action.Builder(R.drawable.ic_widget_prev, "上一首", prevPi).build())
+                      .addAction(new Notification.Action.Builder(R.drawable.ic_widget_pause, "暂停", togglePi).build())
+                      .addAction(new Notification.Action.Builder(R.drawable.ic_widget_next, "下一首", nextPi).build());
+
+                  return builder.build();
+              }
+
+              private PendingIntent buildBroadcastAction(String action, int reqCode) {
+                  Intent i = new Intent(this, FengWidgetProvider.class);
+                  i.setAction(action);
+                  return PendingIntent.getBroadcast(
+                      this, reqCode, i, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+                  );
+              }
+
+              private void acquireWakeLock() {
+                  try {
+                      if (wakeLock == null) {
+                          PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
+                          if (pm != null) {
+                              wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, getPackageName() + ":FengPlaybackWakeLock");
+                              wakeLock.setReferenceCounted(false);
+                          }
+                      }
+                      if (wakeLock != null && !wakeLock.isHeld()) {
+                          wakeLock.acquire(4 * 60 * 60 * 1000L);
+                      }
+                  } catch (Exception ignored) {}
+              }
+
+              private void releaseWakeLock() {
+                  try {
+                      if (wakeLock != null && wakeLock.isHeld()) {
+                          wakeLock.release();
+                      }
+                  } catch (Exception ignored) {}
+              }
+          }
+          JAVAEOF
+
+          # 5. Write Android Widget Resources (1-to-1 iOS Liquid Glass Layout, Pill, Progress Bar & Capsule Dock)
           mkdir -p android/app/src/main/res/layout android/app/src/main/res/drawable android/app/src/main/res/xml
 
           cat << 'XMLEOF' > android/app/src/main/res/drawable/feng_widget_bg.xml
           <?xml version="1.0" encoding="utf-8"?>
           <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-              <solid android:color="#E6151B28" />
-              <corners android:radius="24dp" />
-              <stroke android:width="1dp" android:color="#2A3648" />
+              <solid android:color="#00000000" />
+              <corners android:radius="26dp" />
           </shape>
+          XMLEOF
+
+          cat << 'XMLEOF' > android/app/src/main/res/drawable/feng_widget_pill_bg.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+              <solid android:color="#29FFFFFF" />
+              <corners android:radius="999dp" />
+              <stroke android:width="0.8dp" android:color="#66FFFFFF" />
+          </shape>
+          XMLEOF
+
+          cat << 'XMLEOF' > android/app/src/main/res/drawable/feng_widget_dock_bg.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+              <gradient android:angle="315" android:startColor="#33FFFFFF" android:endColor="#3D000000" />
+              <corners android:radius="999dp" />
+              <stroke android:width="1dp" android:color="#80FFFFFF" />
+          </shape>
+          XMLEOF
+
+          cat << 'XMLEOF' > android/app/src/main/res/drawable/feng_widget_side_btn_bg.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
+              <solid android:color="#24FFFFFF" />
+              <stroke android:width="0.9dp" android:color="#73FFFFFF" />
+          </shape>
+          XMLEOF
+
+          cat << 'XMLEOF' > android/app/src/main/res/drawable/feng_widget_play_btn_bg.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
+              <gradient android:angle="315" android:startColor="#FFFFFFFF" android:centerColor="#FFB8E8FF" android:endColor="#FF47C7FF" />
+              <stroke android:width="1.2dp" android:color="#F2FFFFFF" />
+          </shape>
+          XMLEOF
+
+          cat << 'XMLEOF' > android/app/src/main/res/drawable/feng_widget_progress.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+              <item android:id="@android:id/background">
+                  <shape android:shape="rectangle">
+                      <corners android:radius="999dp" />
+                      <solid android:color="#38FFFFFF" />
+                  </shape>
+              </item>
+              <item android:id="@android:id/progress">
+                  <clip>
+                      <shape android:shape="rectangle">
+                          <corners android:radius="999dp" />
+                          <gradient android:angle="0" android:startColor="#FF47C7FF" android:endColor="#FF42E6D9" />
+                      </shape>
+                  </clip>
+              </item>
+          </layer-list>
           XMLEOF
 
           cat << 'XMLEOF' > android/app/src/main/res/drawable/ic_widget_play.xml
           <?xml version="1.0" encoding="utf-8"?>
-          <vector xmlns:android="http://schemas.android.com/apk/res/android"
-              android:width="24dp"
-              android:height="24dp"
-              android:viewportWidth="24"
-              android:viewportHeight="24">
+          <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
               <path android:fillColor="#FFFFFFFF" android:pathData="M8,5.14v14l11,-7z" />
           </vector>
           XMLEOF
 
           cat << 'XMLEOF' > android/app/src/main/res/drawable/ic_widget_pause.xml
           <?xml version="1.0" encoding="utf-8"?>
-          <vector xmlns:android="http://schemas.android.com/apk/res/android"
-              android:width="24dp"
-              android:height="24dp"
-              android:viewportWidth="24"
-              android:viewportHeight="24">
+          <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
               <path android:fillColor="#FFFFFFFF" android:pathData="M6,5h4v14H6zM14,5h4v14h-4z" />
+          </vector>
+          XMLEOF
+
+          cat << 'XMLEOF' > android/app/src/main/res/drawable/ic_widget_play_dark.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+              <path android:fillColor="#FF0F294D" android:pathData="M8.5,5.14v14l11,-7z" />
+          </vector>
+          XMLEOF
+
+          cat << 'XMLEOF' > android/app/src/main/res/drawable/ic_widget_pause_dark.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+              <path android:fillColor="#FF0F294D" android:pathData="M6,5h4v14H6zM14,5h4v14h-4z" />
           </vector>
           XMLEOF
 
           cat << 'XMLEOF' > android/app/src/main/res/drawable/ic_widget_prev.xml
           <?xml version="1.0" encoding="utf-8"?>
-          <vector xmlns:android="http://schemas.android.com/apk/res/android"
-              android:width="24dp"
-              android:height="24dp"
-              android:viewportWidth="24"
-              android:viewportHeight="24">
-              <path android:fillColor="#FFFFFFFF" android:pathData="M6,6h2v12H6zM9.5,12l8.5,6V6z" />
+          <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+              <path android:fillColor="#EBFFFFFF" android:pathData="M6,6h2v12H6zM9.5,12l8.5,6V6z" />
           </vector>
           XMLEOF
 
           cat << 'XMLEOF' > android/app/src/main/res/drawable/ic_widget_next.xml
           <?xml version="1.0" encoding="utf-8"?>
-          <vector xmlns:android="http://schemas.android.com/apk/res/android"
-              android:width="24dp"
-              android:height="24dp"
-              android:viewportWidth="24"
-              android:viewportHeight="24">
-              <path android:fillColor="#FFFFFFFF" android:pathData="M16,6h2v12h-2zM6,18l8.5,-6L6,6z" />
+          <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+              <path android:fillColor="#EBFFFFFF" android:pathData="M16,6h2v12h-2zM6,18l8.5,-6L6,6z" />
           </vector>
           XMLEOF
 
           cat << 'XMLEOF' > android/app/src/main/res/layout/feng_widget.xml
           <?xml version="1.0" encoding="utf-8"?>
-          <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+          <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
               android:id="@+id/widget_root"
               android:layout_width="match_parent"
               android:layout_height="match_parent"
-              android:background="@drawable/feng_widget_bg"
-              android:gravity="center_vertical"
-              android:orientation="horizontal"
-              android:padding="14dp">
+              android:background="@drawable/feng_widget_bg">
+
+              <ImageView
+                  android:id="@+id/widget_bg_image"
+                  android:layout_width="match_parent"
+                  android:layout_height="match_parent"
+                  android:contentDescription="Widget Backdrop"
+                  android:scaleType="fitXY" />
 
               <LinearLayout
-                  android:layout_width="wrap_content"
-                  android:layout_height="wrap_content"
-                  android:gravity="center_horizontal"
-                  android:orientation="vertical">
+                  android:layout_width="match_parent"
+                  android:layout_height="match_parent"
+                  android:gravity="center_vertical"
+                  android:orientation="horizontal"
+                  android:paddingStart="12dp"
+                  android:paddingTop="10dp"
+                  android:paddingEnd="12dp"
+                  android:paddingBottom="10dp">
 
                   <ImageView
-                      android:id="@+id/widget_cover"
-                      android:layout_width="84dp"
-                      android:layout_height="84dp"
-                      android:contentDescription="Album Cover"
-                      android:scaleType="centerCrop"
-                      android:src="@mipmap/ic_launcher" />
-
-                  <TextView
-                      android:id="@+id/widget_status"
-                      android:layout_width="wrap_content"
-                      android:layout_height="wrap_content"
-                      android:layout_marginTop="4dp"
-                      android:ellipsize="end"
-                      android:maxLines="1"
-                      android:text="● PAUSED"
-                      android:textColor="#8CFFFFFF"
-                      android:textSize="10sp"
-                      android:visibility="gone" />
-              </LinearLayout>
-
-              <LinearLayout
-                  android:layout_width="0dp"
-                  android:layout_height="wrap_content"
-                  android:layout_marginStart="12dp"
-                  android:layout_weight="1"
-                  android:orientation="vertical">
-
-                  <TextView
-                      android:id="@+id/widget_title"
-                      android:layout_width="match_parent"
-                      android:layout_height="wrap_content"
-                      android:ellipsize="end"
-                      android:maxLines="1"
-                      android:text="FENG MUSIC"
-                      android:textColor="#FFFFFFFF"
-                      android:textSize="15sp"
-                      android:textStyle="bold" />
-
-                  <TextView
-                      android:id="@+id/widget_artist"
-                      android:layout_width="match_parent"
-                      android:layout_height="wrap_content"
-                      android:layout_marginTop="2dp"
-                      android:ellipsize="end"
-                      android:maxLines="1"
-                      android:text=""
-                      android:textColor="#99FFFFFF"
-                      android:textSize="12sp"
-                      android:visibility="gone" />
+                      android:id="@+id/widget_cover_stage"
+                      android:layout_width="136dp"
+                      android:layout_height="106dp"
+                      android:contentDescription="Album Cover and Vinyl"
+                      android:scaleType="fitCenter" />
 
                   <LinearLayout
-                      android:layout_width="wrap_content"
+                      android:layout_width="0dp"
                       android:layout_height="wrap_content"
-                      android:layout_marginTop="8dp"
-                      android:gravity="center_vertical"
-                      android:orientation="horizontal">
+                      android:layout_marginStart="6dp"
+                      android:layout_weight="1"
+                      android:gravity="end"
+                      android:orientation="vertical">
 
-                      <ImageButton
-                          android:id="@+id/widget_btn_prev"
-                          android:layout_width="38dp"
-                          android:layout_height="38dp"
-                          android:background="@android:color/transparent"
-                          android:contentDescription="Previous"
-                          android:padding="7dp"
-                          android:scaleType="fitCenter"
-                          android:src="@drawable/ic_widget_prev" />
+                      <LinearLayout
+                          android:id="@+id/widget_live_meta"
+                          android:layout_width="match_parent"
+                          android:layout_height="wrap_content"
+                          android:gravity="end"
+                          android:orientation="vertical"
+                          android:visibility="gone">
 
-                      <ImageButton
-                          android:id="@+id/widget_btn_toggle"
-                          android:layout_width="38dp"
-                          android:layout_height="38dp"
-                          android:layout_marginStart="4dp"
-                          android:layout_marginEnd="4dp"
-                          android:background="@android:color/transparent"
-                          android:contentDescription="Play or Pause"
-                          android:padding="6dp"
-                          android:scaleType="fitCenter"
-                          android:src="@drawable/ic_widget_play" />
+                          <TextView
+                              android:id="@+id/widget_status"
+                              android:layout_width="wrap_content"
+                              android:layout_height="wrap_content"
+                              android:background="@drawable/feng_widget_pill_bg"
+                              android:paddingStart="8dp"
+                              android:paddingTop="2dp"
+                              android:paddingEnd="8dp"
+                              android:paddingBottom="2dp"
+                              android:text="● LOSSLESS"
+                              android:textColor="#E642E6D9"
+                              android:textSize="9sp"
+                              android:textStyle="bold" />
 
-                      <ImageButton
-                          android:id="@+id/widget_btn_next"
-                          android:layout_width="38dp"
-                          android:layout_height="38dp"
-                          android:background="@android:color/transparent"
-                          android:contentDescription="Next"
-                          android:padding="7dp"
-                          android:scaleType="fitCenter"
-                          android:src="@drawable/ic_widget_next" />
+                          <TextView
+                              android:id="@+id/widget_title"
+                              android:layout_width="match_parent"
+                              android:layout_height="wrap_content"
+                              android:layout_marginTop="4dp"
+                              android:ellipsize="end"
+                              android:gravity="end"
+                              android:maxLines="1"
+                              android:text="FENG MUSIC"
+                              android:textColor="#FFFFFFFF"
+                              android:textSize="15sp"
+                              android:textStyle="bold" />
+
+                          <TextView
+                              android:id="@+id/widget_artist"
+                              android:layout_width="match_parent"
+                              android:layout_height="wrap_content"
+                              android:layout_marginTop="1dp"
+                              android:ellipsize="end"
+                              android:gravity="end"
+                              android:maxLines="1"
+                              android:text=""
+                              android:textColor="#C2FFFFFF"
+                              android:textSize="11sp" />
+                      </LinearLayout>
+
+                      <TextView
+                          android:id="@+id/widget_idle_quote"
+                          android:layout_width="match_parent"
+                          android:layout_height="wrap_content"
+                          android:ellipsize="end"
+                          android:fontFamily="serif"
+                          android:gravity="end"
+                          android:lineSpacingExtra="2dp"
+                          android:maxLines="3"
+                          android:text="All the promises I&#10;made at sunset were&#10;as real as any other"
+                          android:textColor="#F2FFFFFF"
+                          android:textSize="11.5sp"
+                          android:textStyle="italic" />
+
+                      <ProgressBar
+                          android:id="@+id/widget_progress"
+                          style="?android:attr/progressBarStyleHorizontal"
+                          android:layout_width="match_parent"
+                          android:layout_height="4dp"
+                          android:layout_marginTop="7dp"
+                          android:layout_marginBottom="7dp"
+                          android:max="1000"
+                          android:progress="0"
+                          android:progressDrawable="@drawable/feng_widget_progress"
+                          android:visibility="gone" />
+
+                      <View
+                          android:id="@+id/widget_idle_line"
+                          android:layout_width="match_parent"
+                          android:layout_height="2.5dp"
+                          android:layout_marginTop="8dp"
+                          android:layout_marginBottom="8dp"
+                          android:background="#38FFFFFF" />
+
+                      <LinearLayout
+                          android:layout_width="wrap_content"
+                          android:layout_height="wrap_content"
+                          android:background="@drawable/feng_widget_dock_bg"
+                          android:gravity="center_vertical"
+                          android:orientation="horizontal"
+                          android:paddingStart="7dp"
+                          android:paddingTop="4dp"
+                          android:paddingEnd="7dp"
+                          android:paddingBottom="4dp">
+
+                          <ImageButton
+                              android:id="@+id/widget_btn_prev"
+                              android:layout_width="30dp"
+                              android:layout_height="30dp"
+                              android:background="@drawable/feng_widget_side_btn_bg"
+                              android:contentDescription="Previous"
+                              android:padding="7dp"
+                              android:scaleType="fitCenter"
+                              android:src="@drawable/ic_widget_prev" />
+
+                          <ImageButton
+                              android:id="@+id/widget_btn_toggle"
+                              android:layout_width="36dp"
+                              android:layout_height="36dp"
+                              android:layout_marginStart="8dp"
+                              android:layout_marginEnd="8dp"
+                              android:background="@drawable/feng_widget_play_btn_bg"
+                              android:contentDescription="Play or Pause"
+                              android:padding="8dp"
+                              android:scaleType="fitCenter"
+                              android:src="@drawable/ic_widget_play_dark" />
+
+                          <ImageButton
+                              android:id="@+id/widget_btn_next"
+                              android:layout_width="30dp"
+                              android:layout_height="30dp"
+                              android:background="@drawable/feng_widget_side_btn_bg"
+                              android:contentDescription="Next"
+                              android:padding="7dp"
+                              android:scaleType="fitCenter"
+                              android:src="@drawable/ic_widget_next" />
+                      </LinearLayout>
                   </LinearLayout>
               </LinearLayout>
-
-              <TextView
-                  android:id="@+id/widget_quote"
-                  android:layout_width="wrap_content"
-                  android:layout_height="wrap_content"
-                  android:layout_marginStart="8dp"
-                  android:ellipsize="end"
-                  android:gravity="end"
-                  android:lineSpacingExtra="2dp"
-                  android:maxLines="3"
-                  android:text="All the promises I made&#10;at sunset were as real&#10;as any other"
-                  android:textColor="#BFFFFFFF"
-                  android:textSize="11sp" />
-          </LinearLayout>
+          </FrameLayout>
           XMLEOF
 
           cat << 'XMLEOF' > android/app/src/main/res/xml/feng_widget_info.xml
@@ -1684,6 +2148,8 @@ jobs:
           /usr/libexec/PlistBuddy -c "Add :LSSupportsOpeningDocumentsInPlace bool true" "$PLIST" || /usr/libexec/PlistBuddy -c "Set :LSSupportsOpeningDocumentsInPlace true" "$PLIST"
           /usr/libexec/PlistBuddy -c "Add :UIBackgroundModes array" "$PLIST" || true
           /usr/libexec/PlistBuddy -c "Add :UIBackgroundModes:0 string audio" "$PLIST" || true
+          /usr/libexec/PlistBuddy -c "Add :NSSupportsLiveActivities bool true" "$PLIST" || /usr/libexec/PlistBuddy -c "Set :NSSupportsLiveActivities true" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :NSSupportsLiveActivitiesFrequentUpdates bool true" "$PLIST" || /usr/libexec/PlistBuddy -c "Set :NSSupportsLiveActivitiesFrequentUpdates true" "$PLIST"
           APP_GROUP="${{ inputs.app_group_id || 'group.78G3Q25PQG.1iKc' }}"
           /usr/libexec/PlistBuddy -c "Add :FengAppGroup string $APP_GROUP" "$PLIST" || /usr/libexec/PlistBuddy -c "Set :FengAppGroup $APP_GROUP" "$PLIST"
           /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes array" "$PLIST" || true
@@ -1708,6 +2174,234 @@ jobs:
           import WebKit
           import UniformTypeIdentifiers
           import WidgetKit
+          #if canImport(ActivityKit)
+          import ActivityKit
+          #endif
+
+          // Native AVAudioEngine Player with 5-Band AVAudioUnitEQ, AVAudioUnitTimePitch, and Smooth Gain Ramp
+          final class FengAudioEnginePlayer {
+              private let engine = AVAudioEngine()
+              private let playerNode = AVAudioPlayerNode()
+              private let timePitch = AVAudioUnitTimePitch()
+              private let eqNode = AVAudioUnitEQ(numberOfBands: 5)
+              private var audioFile: AVAudioFile?
+              private var sampleRate: Double = 44100.0
+              private var totalFrames: AVAudioFramePosition = 0
+              private var seekOffsetFrames: AVAudioFramePosition = 0
+              private var scheduleGeneration: Int = 0
+              private var isRunningPlay = false
+              private var isConfigured = false
+              private var currentRate: Float = 1.0
+              private var targetVolume: Float = 1.0
+              private var rampTimer: Timer?
+              private var timeTimer: Timer?
+
+              var onTimeUpdate: ((Double, Double) -> Void)?
+              var onEnded: (() -> Void)?
+
+              var duration: Double {
+                  guard sampleRate > 0, totalFrames > 0 else { return 0 }
+                  return Double(totalFrames) / sampleRate
+              }
+
+              var isPlaying: Bool {
+                  return isRunningPlay && playerNode.isPlaying
+              }
+
+              var currentTime: Double {
+                  guard sampleRate > 0 else { return 0 }
+                  if isRunningPlay,
+                     let nodeTime = playerNode.lastRenderTime,
+                     let playerTime = playerNode.playerTime(forNodeTime: nodeTime) {
+                      let frames = seekOffsetFrames + playerTime.sampleTime
+                      let sec = Double(max(0, frames)) / sampleRate
+                      return min(duration > 0 ? duration : sec, sec)
+                  }
+                  return min(duration > 0 ? duration : 0, Double(max(0, seekOffsetFrames)) / sampleRate)
+              }
+
+              private func setupEngineIfNeeded() {
+                  guard !isConfigured else { return }
+                  isConfigured = true
+                  engine.attach(playerNode)
+                  engine.attach(timePitch)
+                  engine.attach(eqNode)
+
+                  let freqs: [Float] = [60, 230, 910, 3600, 14000]
+                  for i in 0..<5 {
+                      let band = eqNode.bands[i]
+                      band.frequency = freqs[i]
+                      band.bandwidth = 1.0
+                      band.gain = 0
+                      band.bypass = false
+                      if i == 0 {
+                          band.filterType = .lowShelf
+                      } else if i == 4 {
+                          band.filterType = .highShelf
+                      } else {
+                          band.filterType = .parametric
+                      }
+                  }
+                  eqNode.bypass = true
+
+                  engine.connect(playerNode, to: timePitch, format: nil)
+                  engine.connect(timePitch, to: eqNode, format: nil)
+                  engine.connect(eqNode, to: engine.mainMixerNode, format: nil)
+              }
+
+              func load(url: URL, resumeTime: Double, rate: Float, autoPlay: Bool) -> Bool {
+                  guard url.isFileURL else { return false }
+                  stop()
+                  setupEngineIfNeeded()
+                  do {
+                      let file = try AVAudioFile(forReading: url)
+                      let fmt = file.processingFormat
+                      guard fmt.sampleRate > 0, file.length > 0 else { return false }
+                      self.audioFile = file
+                      self.sampleRate = fmt.sampleRate
+                      self.totalFrames = file.length
+                      self.currentRate = max(0.25, min(2.0, rate))
+                      self.timePitch.rate = self.currentRate
+                      self.seekOffsetFrames = min(
+                          max(0, AVAudioFramePosition(resumeTime * fmt.sampleRate)),
+                          max(0, file.length - 1)
+                      )
+
+                      engine.disconnectNodeOutput(playerNode)
+                      engine.connect(playerNode, to: timePitch, format: fmt)
+                      engine.connect(timePitch, to: eqNode, format: fmt)
+                      engine.connect(eqNode, to: engine.mainMixerNode, format: fmt)
+                      if !engine.isRunning {
+                          try engine.start()
+                      }
+                      scheduleFromOffset(autoPlay: autoPlay)
+                      startTimeTimer()
+                      return true
+                  } catch {
+                      self.audioFile = nil
+                      return false
+                  }
+              }
+
+              private func scheduleFromOffset(autoPlay: Bool) {
+                  guard let file = audioFile else { return }
+                  scheduleGeneration += 1
+                  let myGen = scheduleGeneration
+                  playerNode.stop()
+                  let remaining = max(0, totalFrames - seekOffsetFrames)
+                  guard remaining > 0 else {
+                      isRunningPlay = false
+                      return
+                  }
+                  playerNode.scheduleSegment(
+                      file,
+                      startingFrame: seekOffsetFrames,
+                      frameCount: AVAudioFrameCount(min(remaining, AVAudioFramePosition(UInt32.max))),
+                      at: nil,
+                      completionCallbackType: .dataPlayedBack
+                  ) { [weak self] _ in
+                      DispatchQueue.main.async {
+                          guard let self = self, self.scheduleGeneration == myGen, self.isRunningPlay else { return }
+                          self.isRunningPlay = false
+                          self.seekOffsetFrames = self.totalFrames
+                          self.onEnded?()
+                      }
+                  }
+                  if autoPlay {
+                      if !engine.isRunning { try? engine.start() }
+                      playerNode.play()
+                      isRunningPlay = true
+                  } else {
+                      isRunningPlay = false
+                  }
+              }
+
+              func play() {
+                  guard audioFile != nil else { return }
+                  try? AVAudioSession.sharedInstance().setActive(true)
+                  if !engine.isRunning { try? engine.start() }
+                  if !isRunningPlay {
+                      scheduleFromOffset(autoPlay: true)
+                  } else if !playerNode.isPlaying {
+                      playerNode.play()
+                  }
+                  startTimeTimer()
+              }
+
+              func pause() {
+                  guard audioFile != nil else { return }
+                  let curSec = currentTime
+                  seekOffsetFrames = min(max(0, AVAudioFramePosition(curSec * sampleRate)), max(0, totalFrames - 1))
+                  isRunningPlay = false
+                  scheduleGeneration += 1
+                  playerNode.pause()
+              }
+
+              func seek(to seconds: Double) {
+                  guard audioFile != nil, sampleRate > 0 else { return }
+                  let clamped = max(0, min(duration > 0 ? duration - 0.05 : seconds, seconds))
+                  let wasPlaying = isPlaying
+                  seekOffsetFrames = AVAudioFramePosition(clamped * sampleRate)
+                  scheduleFromOffset(autoPlay: wasPlaying)
+              }
+
+              func setRate(_ rate: Float) {
+                  currentRate = max(0.25, min(2.0, rate))
+                  timePitch.rate = currentRate
+              }
+
+              func applyFx(eqEnabled: Bool, eqGains: [Float], loudnessGain: Float, fadeFactor: Float, rampSec: Double) {
+                  setupEngineIfNeeded()
+                  eqNode.bypass = !eqEnabled
+                  for i in 0..<min(5, eqGains.count) {
+                      eqNode.bands[i].gain = eqEnabled ? max(-12.0, min(12.0, eqGains[i])) : 0.0
+                  }
+                  let newVol = max(0.0, min(2.0, loudnessGain * fadeFactor))
+                  targetVolume = newVol
+                  rampTimer?.invalidate()
+                  rampTimer = nil
+                  if rampSec <= 0.04 {
+                      engine.mainMixerNode.outputVolume = newVol
+                  } else {
+                      let startVol = engine.mainMixerNode.outputVolume
+                      let steps = max(2, Int(rampSec / 0.02))
+                      var stepIdx = 0
+                      rampTimer = Timer.scheduledTimer(withTimeInterval: 0.02, repeats: true) { [weak self] t in
+                          guard let self = self else { t.invalidate(); return }
+                          stepIdx += 1
+                          let frac = min(1.0, Float(stepIdx) / Float(steps))
+                          self.engine.mainMixerNode.outputVolume = startVol + (newVol - startVol) * frac
+                          if stepIdx >= steps {
+                              t.invalidate()
+                              self.rampTimer = nil
+                          }
+                      }
+                  }
+              }
+
+              private func startTimeTimer() {
+                  timeTimer?.invalidate()
+                  timeTimer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { [weak self] _ in
+                      guard let self = self, self.audioFile != nil else { return }
+                      self.onTimeUpdate?(self.currentTime, self.duration)
+                  }
+              }
+
+              func stop() {
+                  scheduleGeneration += 1
+                  isRunningPlay = false
+                  timeTimer?.invalidate()
+                  timeTimer = nil
+                  rampTimer?.invalidate()
+                  rampTimer = nil
+                  if isConfigured {
+                      playerNode.stop()
+                  }
+                  audioFile = nil
+                  totalFrames = 0
+                  seekOffsetFrames = 0
+              }
+          }
 
           final class FengRemoteMediaBridge: NSObject, WKScriptMessageHandler, UITabBarDelegate, UIDocumentPickerDelegate {
               static let shared = FengRemoteMediaBridge()
@@ -1723,6 +2417,14 @@ jobs:
               private let bookmarkDefaultsKey = "feng_security_scoped_folder_bookmarks_v3"
 
               private var player: AVPlayer?
+              private let enginePlayer = FengAudioEnginePlayer()
+              private var useEnginePlayer = false
+              private var fxEqEnabled = false
+              private var fxEqGains: [Float] = [0, 0, 0, 0, 0]
+              private var fxLoudnessGain: Float = 1.0
+              private var fxFadeFactor: Float = 1.0
+              private var currentLyricLine: String = ""
+              private var liveActivityRef: Any? = nil
               private var timeObserver: Any?
               private var endObserver: NSObjectProtocol?
               private var failedObserver: NSObjectProtocol?
@@ -2698,7 +3400,17 @@ jobs:
               func executeWidgetCommand(_ cmd: String) {
                   DispatchQueue.main.async {
                       if cmd == "toggle" {
-                          if let p = self.player {
+                          if self.useEnginePlayer {
+                              if self.enginePlayer.isPlaying {
+                                  self.enginePlayer.pause()
+                                  self.updateNowPlayingInfo()
+                                  self.sendEvent("pause", extra: [:])
+                              } else {
+                                  self.enginePlayer.play()
+                                  self.updateNowPlayingInfo()
+                                  self.sendEvent("play", extra: [:])
+                              }
+                          } else if let p = self.player {
                               if p.rate > 0 {
                                   p.pause()
                                   self.updateNowPlayingInfo()
@@ -2750,19 +3462,23 @@ jobs:
               private func syncWidgetState(saveCover: Bool = false) {
                   let groupID = resolvedAppGroupID()
                   guard let defaults = UserDefaults(suiteName: groupID) else { return }
-                  let isPlaying = (player?.rate ?? 0) > 0
-                  let elapsed = player.map { CMTimeGetSeconds($0.currentTime()) } ?? 0
-                  let safeElapsed = elapsed.isFinite && elapsed >= 0 ? elapsed : 0
+                  let isPlaying = useEnginePlayer ? enginePlayer.isPlaying : ((player?.rate ?? 0) > 0)
+                  let rawElapsed = useEnginePlayer ? enginePlayer.currentTime : (player.map { CMTimeGetSeconds($0.currentTime()) } ?? 0)
+                  let safeElapsed = rawElapsed.isFinite && rawElapsed >= 0 ? rawElapsed : 0
                   let rateVal = Double(max(currentRate, 0.5))
                   let remaining = (isPlaying && currentDuration > safeElapsed + 1.0)
                       ? ((currentDuration - safeElapsed) / rateVal)
                       : 0
+                  let nowTs = Date().timeIntervalSince1970
 
                   defaults.set(currentTitle, forKey: "widget_title")
                   defaults.set(currentArtist, forKey: "widget_artist")
                   defaults.set(currentAlbum, forKey: "widget_album")
                   defaults.set(isPlaying, forKey: "widget_isPlaying")
-                  defaults.set(Date().timeIntervalSince1970, forKey: "widget_updatedAt")
+                  defaults.set(safeElapsed, forKey: "widget_elapsed")
+                  defaults.set(currentDuration, forKey: "widget_duration")
+                  defaults.set(nowTs, forKey: "widget_updatedAt")
+                  syncLiveActivity(isPlaying: isPlaying, elapsed: safeElapsed, duration: currentDuration, updatedAt: nowTs)
                   if remaining > 0 {
                       defaults.set(Date().timeIntervalSince1970 + remaining + 1.8, forKey: "widget_expectedEndAt")
                   } else {
@@ -2807,14 +3523,78 @@ jobs:
                   triggerTargetedWidgetReloadNow()
               }
 
+              private func syncLiveActivity(isPlaying: Bool, elapsed: Double, duration: Double, updatedAt: Double) {
+                  #if canImport(ActivityKit)
+                  if #available(iOS 16.1, *) {
+                      guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+                      let state = FengLyricsActivityAttributes.ContentState(
+                          title: currentTitle.isEmpty ? "FENG MUSIC" : currentTitle,
+                          artist: currentArtist,
+                          lyricLine: currentLyricLine,
+                          isPlaying: isPlaying,
+                          elapsed: elapsed,
+                          duration: duration,
+                          updatedAt: updatedAt
+                      )
+                      if let act = liveActivityRef as? Activity<FengLyricsActivityAttributes>, act.activityState == .active {
+                          Task {
+                              if #available(iOS 16.2, *) {
+                                  await act.update(ActivityContent(state: state, staleDate: nil))
+                              } else {
+                                  await act.update(using: state)
+                              }
+                          }
+                      } else if isPlaying && !currentTitle.isEmpty {
+                          let attrs = FengLyricsActivityAttributes(appName: "FENG MUSIC")
+                          do {
+                              if #available(iOS 16.2, *) {
+                                  let act = try Activity<FengLyricsActivityAttributes>.request(
+                                      attributes: attrs,
+                                      content: ActivityContent(state: state, staleDate: nil),
+                                      pushType: nil
+                                  )
+                                  self.liveActivityRef = act
+                              } else {
+                                  let act = try Activity<FengLyricsActivityAttributes>.request(
+                                      attributes: attrs,
+                                      contentState: state,
+                                      pushType: nil
+                                  )
+                                  self.liveActivityRef = act
+                              }
+                          } catch {}
+                      }
+                  }
+                  #endif
+              }
+
+              private func endLiveActivity() {
+                  #if canImport(ActivityKit)
+                  if #available(iOS 16.1, *) {
+                      if let act = liveActivityRef as? Activity<FengLyricsActivityAttributes> {
+                          Task {
+                              if #available(iOS 16.2, *) {
+                                  await act.end(nil, dismissalPolicy: .immediate)
+                              } else {
+                                  await act.end(dismissalPolicy: .immediate)
+                              }
+                          }
+                      }
+                      liveActivityRef = nil
+                  }
+                  #endif
+              }
+
               private func updateNowPlayingInfo(saveCoverToWidget: Bool = false) {
+                  let isPlayingNow = useEnginePlayer ? enginePlayer.isPlaying : ((player?.rate ?? 0) > 0)
+                  let elapsedNow = useEnginePlayer ? enginePlayer.currentTime : (player.map { CMTimeGetSeconds($0.currentTime()) } ?? 0)
                   var info: [String: Any] = [
                       MPMediaItemPropertyTitle: currentTitle,
                       MPMediaItemPropertyArtist: currentArtist,
                       MPMediaItemPropertyAlbumTitle: currentAlbum,
-                      MPNowPlayingInfoPropertyElapsedPlaybackTime: player.map { CMTimeGetSeconds($0.currentTime()) } ?? 0,
+                      MPNowPlayingInfoPropertyElapsedPlaybackTime: elapsedNow,
                       MPMediaItemPropertyPlaybackDuration: currentDuration,
-                      MPNowPlayingInfoPropertyPlaybackRate: (player?.rate ?? 0) > 0 ? Double(currentRate) : 0.0
+                      MPNowPlayingInfoPropertyPlaybackRate: isPlayingNow ? Double(currentRate) : 0.0
                   ]
                   if let art = currentArtwork {
                       info[MPMediaItemPropertyArtwork] = art
@@ -2836,6 +3616,8 @@ jobs:
                       NotificationCenter.default.removeObserver(fObs)
                   }
                   failedObserver = nil
+                  enginePlayer.stop()
+                  useEnginePlayer = false
                   player?.pause()
                   player = nil
               }
@@ -2917,6 +3699,43 @@ jobs:
                       didSendError = false
                       currentArtwork = decodeArtwork(from: (body["cover"] as? String) ?? "")
 
+                      if let eqOn = body["eqEnabled"] as? Bool { fxEqEnabled = eqOn }
+                      if let gains = body["eqGains"] as? [NSNumber], gains.count == 5 {
+                          fxEqGains = gains.map { $0.floatValue }
+                      }
+                      if let lg = body["loudnessGain"] as? Double { fxLoudnessGain = Float(lg) }
+                      currentLyricLine = ""
+
+                      let autoPlay = (body["autoPlay"] as? Bool) ?? false
+                      enginePlayer.onTimeUpdate = { [weak self] cur, dur in
+                          guard let self = self, self.useEnginePlayer else { return }
+                          self.sendEvent("timeupdate", extra: ["currentTime": cur, "duration": dur])
+                      }
+                      enginePlayer.onEnded = { [weak self] in
+                          guard let self = self, self.useEnginePlayer else { return }
+                          self.updateNowPlayingInfo()
+                          self.sendEvent("ended", extra: [:])
+                      }
+                      if enginePlayer.load(url: url, resumeTime: pendingResumeTime, rate: currentRate, autoPlay: autoPlay) {
+                          useEnginePlayer = true
+                          currentDuration = enginePlayer.duration
+                          didSendMeta = true
+                          enginePlayer.applyFx(
+                              eqEnabled: fxEqEnabled,
+                              eqGains: fxEqGains,
+                              loudnessGain: fxLoudnessGain,
+                              fadeFactor: fxFadeFactor,
+                              rampSec: 0.04
+                          )
+                          sendEvent("loadedmetadata", extra: ["duration": currentDuration])
+                          updateNowPlayingInfo(saveCoverToWidget: true)
+                          if autoPlay {
+                              sendEvent("play", extra: [:])
+                              sendEvent("playing", extra: [:])
+                          }
+                          return
+                      }
+
                       let item = AVPlayerItem(url: url)
                       let newPlayer = AVPlayer(playerItem: item)
                       self.player = newPlayer
@@ -2976,25 +3795,73 @@ jobs:
                           updateNowPlayingInfo(saveCoverToWidget: true)
                       }
                   } else if action == "play" {
-                      player?.play()
-                      player?.rate = currentRate
-                      updateNowPlayingInfo()
-                  } else if action == "pause" {
-                      player?.pause()
-                      updateNowPlayingInfo()
-                  } else if action == "seek" {
-                      let t = (body["time"] as? Double) ?? 0
-                      player?.seek(to: CMTime(seconds: t, preferredTimescale: 600)) { [weak self] _ in
-                          DispatchQueue.main.async { self?.updateNowPlayingInfo() }
-                      }
-                  } else if action == "rate" {
-                      currentRate = Float((body["rate"] as? Double) ?? 1.0)
-                      if (player?.rate ?? 0) != 0 {
+                      if useEnginePlayer {
+                          enginePlayer.play()
+                      } else {
+                          player?.play()
                           player?.rate = currentRate
                       }
                       updateNowPlayingInfo()
+                  } else if action == "pause" {
+                      if useEnginePlayer {
+                          enginePlayer.pause()
+                      } else {
+                          player?.pause()
+                      }
+                      updateNowPlayingInfo()
+                  } else if action == "seek" {
+                      let t = (body["time"] as? Double) ?? 0
+                      if useEnginePlayer {
+                          enginePlayer.seek(to: t)
+                          updateNowPlayingInfo()
+                      } else {
+                          player?.seek(to: CMTime(seconds: t, preferredTimescale: 600)) { [weak self] _ in
+                              DispatchQueue.main.async { self?.updateNowPlayingInfo() }
+                          }
+                      }
+                  } else if action == "rate" {
+                      currentRate = Float((body["rate"] as? Double) ?? 1.0)
+                      if useEnginePlayer {
+                          enginePlayer.setRate(currentRate)
+                      } else if (player?.rate ?? 0) != 0 {
+                          player?.rate = currentRate
+                      }
+                      updateNowPlayingInfo()
+                  } else if action == "setAudioFx" {
+                      if let eqOn = body["eqEnabled"] as? Bool { fxEqEnabled = eqOn }
+                      if let gains = body["eqGains"] as? [NSNumber], gains.count == 5 {
+                          fxEqGains = gains.map { $0.floatValue }
+                      }
+                      if let lg = body["loudnessGain"] as? Double { fxLoudnessGain = Float(lg) }
+                      if let ff = body["fadeFactor"] as? Double { fxFadeFactor = Float(ff) }
+                      let ramp = (body["rampSec"] as? Double) ?? 0.08
+                      if useEnginePlayer {
+                          enginePlayer.applyFx(
+                              eqEnabled: fxEqEnabled,
+                              eqGains: fxEqGains,
+                              loudnessGain: fxLoudnessGain,
+                              fadeFactor: fxFadeFactor,
+                              rampSec: ramp
+                          )
+                      } else {
+                          player?.volume = max(0.0, min(1.0, fxLoudnessGain * fxFadeFactor))
+                      }
+                  } else if action == "updateLyric" {
+                      let line = (body["lyricLine"] as? String) ?? ""
+                      if line != currentLyricLine {
+                          currentLyricLine = line
+                          let isPlayingNow = useEnginePlayer ? enginePlayer.isPlaying : ((player?.rate ?? 0) > 0)
+                          let elapsedNow = useEnginePlayer ? enginePlayer.currentTime : (player.map { CMTimeGetSeconds($0.currentTime()) } ?? 0)
+                          syncLiveActivity(
+                              isPlaying: isPlayingNow,
+                              elapsed: elapsedNow.isFinite && elapsedNow >= 0 ? elapsedNow : 0,
+                              duration: currentDuration,
+                              updatedAt: Date().timeIntervalSince1970
+                          )
+                      }
                   } else if action == "stop" {
                       cleanupPlayer()
+                      endLiveActivity()
                       MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
                   }
               }
@@ -3127,6 +3994,43 @@ jobs:
           </plist>
           EOF
 
+      - name: Write Shared FengLyricsActivityAttributes.swift (Live Activities)
+        run: |
+          cat << 'EOF' > ios/App/App/FengLyricsActivityAttributes.swift
+          import Foundation
+          #if canImport(ActivityKit)
+          import ActivityKit
+
+          @available(iOS 16.1, *)
+          public struct FengLyricsActivityAttributes: ActivityAttributes {
+              public struct ContentState: Codable, Hashable {
+                  public var title: String
+                  public var artist: String
+                  public var lyricLine: String
+                  public var isPlaying: Bool
+                  public var elapsed: Double
+                  public var duration: Double
+                  public var updatedAt: Double
+
+                  public init(title: String, artist: String, lyricLine: String, isPlaying: Bool, elapsed: Double, duration: Double, updatedAt: Double) {
+                      self.title = title
+                      self.artist = artist
+                      self.lyricLine = lyricLine
+                      self.isPlaying = isPlaying
+                      self.elapsed = elapsed
+                      self.duration = duration
+                      self.updatedAt = updatedAt
+                  }
+              }
+
+              public var appName: String
+              public init(appName: String = "FENG MUSIC") {
+                  self.appName = appName
+              }
+          }
+          #endif
+          EOF
+
       - name: Write FengWidget.swift (Liquid Glass UI)
         run: |
           cat << 'EOF' > ios/App/FengWidgetExtension/FengWidget.swift
@@ -3134,6 +4038,9 @@ jobs:
           import SwiftUI
           import UIKit
           import AppIntents
+          #if canImport(ActivityKit)
+          import ActivityKit
+          #endif
 
           private func fengWidgetGroupID() -> String {
               if let id = Bundle.main.object(forInfoDictionaryKey: "FengAppGroup") as? String, !id.isEmpty {
@@ -3203,6 +4110,9 @@ jobs:
               let isPlaying: Bool
               let hasLiveSync: Bool
               let coverImage: UIImage?
+              let elapsed: Double
+              let duration: Double
+              let updatedAt: Double
           }
 
           struct FengWidgetProvider: TimelineProvider {
@@ -3234,13 +4144,19 @@ jobs:
                       sub = "FENG MUSIC"
                   }
 
+                  let elapsedVal = defaults?.double(forKey: "widget_elapsed") ?? 0
+                  let durationVal = defaults?.double(forKey: "widget_duration") ?? 0
+                  let updatedAtVal = defaults?.double(forKey: "widget_updatedAt") ?? date.timeIntervalSince1970
                   return FengWidgetEntry(
                       date: date,
                       title: hasLive ? syncedTitle : "FENG MUSIC",
                       subtitle: sub,
                       isPlaying: isPlaying,
                       hasLiveSync: hasLive,
-                      coverImage: cover ?? loadBundledAppIcon()
+                      coverImage: cover ?? loadBundledAppIcon(),
+                      elapsed: elapsedVal,
+                      duration: durationVal,
+                      updatedAt: updatedAtVal > 0 ? updatedAtVal : date.timeIntervalSince1970
                   )
               }
 
@@ -3727,26 +4643,31 @@ jobs:
                                   .frame(maxWidth: .infinity, alignment: .trailing)
                           }
 
-                          // Dual-State Cyan Waveform (expanded & glowing when playing; calm flat line when paused/idle)
-                          ZStack {
-                              if entry.isPlaying {
-                                  AdaptiveWaveShape(active: true)
-                                      .stroke(FengGlass.aqua.opacity(0.68), style: StrokeStyle(lineWidth: 4.2, lineCap: .round))
-                                      .blur(radius: 3.2)
+                          // Real-Time Native System Progress Bar (ProgressView timerInterval when playing, static when paused)
+                          Group {
+                              if entry.hasLiveSync && entry.duration > 1.0 {
+                                  if entry.isPlaying, #available(iOS 16.0, *) {
+                                      let start = Date(timeIntervalSince1970: max(0, entry.updatedAt - entry.elapsed))
+                                      let end = start.addingTimeInterval(max(1.0, entry.duration))
+                                      ProgressView(timerInterval: start...end, countsDown: false) {
+                                          EmptyView()
+                                      } currentValueLabel: {
+                                          EmptyView()
+                                      }
+                                      .progressViewStyle(.linear)
+                                      .tint(FengGlass.aqua)
+                                  } else {
+                                      ProgressView(value: min(max(0, entry.elapsed), entry.duration), total: entry.duration)
+                                          .progressViewStyle(.linear)
+                                          .tint(Color.white.opacity(0.65))
+                                  }
+                              } else {
+                                  Capsule()
+                                      .fill(Color.white.opacity(0.22))
+                                      .frame(height: 3)
                               }
-                              AdaptiveWaveShape(active: entry.isPlaying)
-                                  .stroke(
-                                      LinearGradient(
-                                          colors: entry.isPlaying
-                                              ? [FengGlass.sky.opacity(0.75), Color.white.opacity(0.95), FengGlass.aqua]
-                                              : [Color.white.opacity(0.28), FengGlass.sky.opacity(0.42), Color.white.opacity(0.28)],
-                                          startPoint: .leading,
-                                          endPoint: .trailing
-                                      ),
-                                      style: StrokeStyle(lineWidth: entry.isPlaying ? 1.6 : 1.1, lineCap: .round)
-                                  )
                           }
-                          .frame(height: 16)
+                          .frame(height: 14)
                           .padding(.horizontal, 2)
 
                           GlassCapsuleControlDock(isPlaying: entry.isPlaying)
@@ -3784,7 +4705,145 @@ jobs:
               }
           }
 
+          #if canImport(ActivityKit)
+          @available(iOS 16.1, *)
+          struct FengLyricsLiveActivity: Widget {
+              var body: some WidgetConfiguration {
+                  ActivityConfiguration(for: FengLyricsActivityAttributes.self) { context in
+                      // Lock Screen / Notification Banner Live Lyrics Card
+                      VStack(alignment: .leading, spacing: 8) {
+                          HStack(spacing: 10) {
+                              Image(systemName: context.state.isPlaying ? "waveform" : "music.note")
+                                  .font(.system(size: 14, weight: .bold))
+                                  .foregroundColor(FengGlass.aqua)
+                                  .frame(width: 28, height: 28)
+                                  .background(Color.white.opacity(0.12))
+                                  .clipShape(Circle())
+                              VStack(alignment: .leading, spacing: 1) {
+                                  Text(context.state.title)
+                                      .font(.system(size: 13, weight: .bold))
+                                      .foregroundColor(.white)
+                                      .lineLimit(1)
+                                  if !context.state.artist.isEmpty {
+                                      Text(context.state.artist)
+                                          .font(.system(size: 11, weight: .medium))
+                                          .foregroundColor(.white.opacity(0.65))
+                                          .lineLimit(1)
+                                  }
+                              }
+                              Spacer()
+                              Text(context.state.isPlaying ? "LOSSLESS" : "PAUSED")
+                                  .font(.system(size: 9, weight: .bold, design: .rounded))
+                                  .foregroundColor(FengGlass.aqua)
+                                  .padding(.horizontal, 7)
+                                  .padding(.vertical, 3)
+                                  .background(Color.white.opacity(0.10))
+                                  .clipShape(Capsule())
+                          }
+
+                          Text(context.state.lyricLine.isEmpty ? "♪ \(context.state.title)" : context.state.lyricLine)
+                              .font(.system(size: 15, weight: .semibold))
+                              .foregroundColor(.white)
+                              .lineLimit(2)
+
+                          if context.state.duration > 1.0 {
+                              if context.state.isPlaying {
+                                  let start = Date(timeIntervalSince1970: max(0, context.state.updatedAt - context.state.elapsed))
+                                  let end = start.addingTimeInterval(max(1.0, context.state.duration))
+                                  ProgressView(timerInterval: start...end, countsDown: false) {
+                                      EmptyView()
+                                  } currentValueLabel: {
+                                      EmptyView()
+                                  }
+                                  .progressViewStyle(.linear)
+                                  .tint(FengGlass.aqua)
+                              } else {
+                                  ProgressView(value: min(max(0, context.state.elapsed), context.state.duration), total: context.state.duration)
+                                      .progressViewStyle(.linear)
+                                      .tint(Color.white.opacity(0.55))
+                              }
+                          }
+                      }
+                      .padding(14)
+                      .activityBackgroundTint(Color(red: 0.06, green: 0.08, blue: 0.13).opacity(0.88))
+                      .activitySystemActionForegroundColor(.white)
+                  } dynamicIsland: { context in
+                      DynamicIsland {
+                          DynamicIslandExpandedRegion(.leading) {
+                              Image(systemName: context.state.isPlaying ? "waveform" : "music.note")
+                                  .font(.system(size: 15, weight: .bold))
+                                  .foregroundColor(FengGlass.aqua)
+                                  .padding(.leading, 4)
+                          }
+                          DynamicIslandExpandedRegion(.trailing) {
+                              Text(context.state.isPlaying ? "LOSSLESS" : "PAUSED")
+                                  .font(.system(size: 9, weight: .bold, design: .rounded))
+                                  .foregroundColor(FengGlass.aqua)
+                                  .padding(.trailing, 4)
+                          }
+                          DynamicIslandExpandedRegion(.center) {
+                              VStack(spacing: 2) {
+                                  Text(context.state.title)
+                                      .font(.system(size: 12, weight: .semibold))
+                                      .foregroundColor(.white.opacity(0.80))
+                                      .lineLimit(1)
+                              }
+                          }
+                          DynamicIslandExpandedRegion(.bottom) {
+                              VStack(spacing: 6) {
+                                  Text(context.state.lyricLine.isEmpty ? "♪ \(context.state.title)" : context.state.lyricLine)
+                                      .font(.system(size: 14, weight: .bold))
+                                      .foregroundColor(.white)
+                                      .lineLimit(2)
+                                      .multilineTextAlignment(.center)
+                                  if context.state.duration > 1.0 && context.state.isPlaying {
+                                      let start = Date(timeIntervalSince1970: max(0, context.state.updatedAt - context.state.elapsed))
+                                      let end = start.addingTimeInterval(max(1.0, context.state.duration))
+                                      ProgressView(timerInterval: start...end, countsDown: false) {
+                                          EmptyView()
+                                      } currentValueLabel: {
+                                          EmptyView()
+                                      }
+                                      .progressViewStyle(.linear)
+                                      .tint(FengGlass.aqua)
+                                      .padding(.horizontal, 6)
+                                  }
+                              }
+                              .padding(.top, 2)
+                          }
+                      } compactLeading: {
+                          Image(systemName: context.state.isPlaying ? "waveform" : "music.note")
+                              .font(.system(size: 12, weight: .bold))
+                              .foregroundColor(FengGlass.aqua)
+                      } compactTrailing: {
+                          Text(context.state.lyricLine.isEmpty ? context.state.title : context.state.lyricLine)
+                              .font(.system(size: 11, weight: .semibold))
+                              .foregroundColor(.white)
+                              .lineLimit(1)
+                              .frame(maxWidth: 96)
+                      } minimal: {
+                          Image(systemName: context.state.isPlaying ? "waveform" : "music.note")
+                              .font(.system(size: 11, weight: .bold))
+                              .foregroundColor(FengGlass.aqua)
+                      }
+                      .widgetURL(URL(string: "fengmusic://nowplaying"))
+                  }
+              }
+          }
+          #endif
+
           @main
+          struct FengWidgetBundle: WidgetBundle {
+              var body: some Widget {
+                  FengNowPlayingWidget()
+                  #if canImport(ActivityKit)
+                  if #available(iOS 16.1, *) {
+                      FengLyricsLiveActivity()
+                  }
+                  #endif
+              }
+          }
+
           struct FengNowPlayingWidget: Widget {
               let kind: String = "FengNowPlayingWidget"
 
@@ -3827,6 +4886,9 @@ jobs:
 
           widget_target = project.new_target(:app_extension, 'FengWidgetExtension', :ios, '16.0')
           widget_group = project.main_group.new_group('FengWidgetExtension', 'FengWidgetExtension')
+          attrs_ref = app_group.new_file('FengLyricsActivityAttributes.swift')
+          app_target.add_file_references([attrs_ref])
+          widget_target.add_file_references([attrs_ref])
           swift_ref = widget_group.new_file('FengWidget.swift')
           icon_ref = widget_group.new_file('widget-icon.png')
           widget_group.new_file('Info.plist')
