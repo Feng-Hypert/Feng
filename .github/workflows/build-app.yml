@@ -1432,10 +1432,14 @@ jobs:
                   if (hasLive && duration > 1f) {
                       int pct = Math.max(0, Math.min(1000, Math.round((elapsed / duration) * 1000f)));
                       views.setProgressBar(R.id.widget_progress, 1000, pct, false);
-                      views.setViewVisibility(R.id.widget_progress, View.VISIBLE);
+                      int eSec = Math.max(0, Math.round(elapsed));
+                      int dSec = Math.max(0, Math.round(duration));
+                      views.setTextViewText(R.id.widget_time_elapsed, String.format(java.util.Locale.US, "%d:%02d", eSec / 60, eSec % 60));
+                      views.setTextViewText(R.id.widget_time_total, String.format(java.util.Locale.US, "%d:%02d", dSec / 60, dSec % 60));
+                      views.setViewVisibility(R.id.widget_progress_row, View.VISIBLE);
                       views.setViewVisibility(R.id.widget_idle_line, View.GONE);
                   } else {
-                      views.setViewVisibility(R.id.widget_progress, View.GONE);
+                      views.setViewVisibility(R.id.widget_progress_row, View.GONE);
                       views.setViewVisibility(R.id.widget_idle_line, View.VISIBLE);
                   }
 
@@ -2017,17 +2021,44 @@ jobs:
                           android:textSize="11.5sp"
                           android:textStyle="italic" />
 
-                      <ProgressBar
-                          android:id="@+id/widget_progress"
-                          style="?android:attr/progressBarStyleHorizontal"
+                      <LinearLayout
+                          android:id="@+id/widget_progress_row"
                           android:layout_width="match_parent"
-                          android:layout_height="4dp"
-                          android:layout_marginTop="7dp"
-                          android:layout_marginBottom="7dp"
-                          android:max="1000"
-                          android:progress="0"
-                          android:progressDrawable="@drawable/feng_widget_progress"
-                          android:visibility="gone" />
+                          android:layout_height="wrap_content"
+                          android:layout_marginTop="5dp"
+                          android:layout_marginBottom="5dp"
+                          android:gravity="center_vertical"
+                          android:orientation="horizontal"
+                          android:visibility="gone">
+
+                          <TextView
+                              android:id="@+id/widget_time_elapsed"
+                              android:layout_width="wrap_content"
+                              android:layout_height="wrap_content"
+                              android:text="0:00"
+                              android:textColor="#C7FFFFFF"
+                              android:textSize="9sp" />
+
+                          <ProgressBar
+                              android:id="@+id/widget_progress"
+                              style="?android:attr/progressBarStyleHorizontal"
+                              android:layout_width="0dp"
+                              android:layout_height="3.5dp"
+                              android:layout_marginStart="5dp"
+                              android:layout_marginEnd="5dp"
+                              android:layout_weight="1"
+                              android:max="1000"
+                              android:progress="0"
+                              android:progressDrawable="@drawable/feng_widget_progress" />
+
+                          <TextView
+                              android:id="@+id/widget_time_total"
+                              android:layout_width="wrap_content"
+                              android:layout_height="wrap_content"
+                              android:text="0:00"
+                              android:textColor="#B8FFFFFF"
+                              android:textSize="9sp" />
+                      </LinearLayout>
 
                       <View
                           android:id="@+id/widget_idle_line"
@@ -2424,7 +2455,83 @@ jobs:
               private var fxLoudnessGain: Float = 1.0
               private var fxFadeFactor: Float = 1.0
               private var currentLyricLine: String = ""
+              private var compactLyricChunks: [String] = []
+              private var compactLyricIndex: Int = 0
+              private var lyricCarouselTimer: Timer? = nil
               private var liveActivityRef: Any? = nil
+
+              private func buildCompactLyricChunks(from raw: String) -> [String] {
+                  let text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+                  guard !text.isEmpty else { return [] }
+                  var chunks: [String] = []
+                  var current = ""
+                  var curWeight = 0.0
+                  let maxWeight = 12.5
+
+                  func flushCurrent() {
+                      let trimmed = current.trimmingCharacters(in: .whitespacesAndNewlines)
+                      if !trimmed.isEmpty { chunks.append(trimmed) }
+                      current = ""
+                      curWeight = 0.0
+                  }
+
+                  // Split naturally on punctuation or word/CJK boundaries
+                  let tokens = text.split(separator: " ", omittingEmptySubsequences: true).map(String.init)
+                  for token in tokens {
+                      let tokenWeight = token.reduce(0.0) { acc, ch in
+                          acc + (ch.isASCII ? 0.62 : 1.0)
+                      }
+                      if tokenWeight > maxWeight {
+                          flushCurrent()
+                          var sub = ""
+                          var subW = 0.0
+                          for ch in token {
+                              let w = ch.isASCII ? 0.62 : 1.0
+                              if subW + w > maxWeight && !sub.isEmpty {
+                                  chunks.append(sub)
+                                  sub = String(ch)
+                                  subW = w
+                              } else {
+                                  sub.append(ch)
+                                  subW += w
+                              }
+                          }
+                          if !sub.isEmpty { chunks.append(sub) }
+                      } else if curWeight + (current.isEmpty ? 0 : 0.4) + tokenWeight > maxWeight {
+                          flushCurrent()
+                          current = token
+                          curWeight = tokenWeight
+                      } else {
+                          if !current.isEmpty {
+                              current.append(" ")
+                              curWeight += 0.4
+                          }
+                          current.append(token)
+                          curWeight += tokenWeight
+                      }
+                  }
+                  flushCurrent()
+                  return chunks
+              }
+
+              private func restartLyricCarousel() {
+                  lyricCarouselTimer?.invalidate()
+                  lyricCarouselTimer = nil
+                  guard compactLyricChunks.count > 1 else { return }
+                  lyricCarouselTimer = Timer.scheduledTimer(withTimeInterval: 1.55, repeats: true) { [weak self] _ in
+                      guard let self = self else { return }
+                      let isPlayingNow = self.useEnginePlayer ? self.enginePlayer.isPlaying : ((self.player?.rate ?? 0) > 0)
+                      guard isPlayingNow, self.compactLyricChunks.count > 1 else { return }
+                      self.compactLyricIndex = (self.compactLyricIndex + 1) % self.compactLyricChunks.count
+                      let elapsedNow = self.useEnginePlayer ? self.enginePlayer.currentTime : (self.player.map { CMTimeGetSeconds($0.currentTime()) } ?? 0)
+                      self.syncLiveActivity(
+                          isPlaying: true,
+                          elapsed: elapsedNow.isFinite && elapsedNow >= 0 ? elapsedNow : 0,
+                          duration: self.currentDuration,
+                          updatedAt: Date().timeIntervalSince1970
+                      )
+                  }
+              }
               private var timeObserver: Any?
               private var endObserver: NSObjectProtocol?
               private var failedObserver: NSObjectProtocol?
@@ -2480,6 +2587,7 @@ jobs:
                   cmd.nextTrackCommand.isEnabled = true
                   cmd.playCommand.isEnabled = true
                   cmd.pauseCommand.isEnabled = true
+                  cmd.togglePlayPauseCommand.isEnabled = true
                   cmd.changePlaybackPositionCommand.isEnabled = true
 
                   cmd.previousTrackCommand.addTarget { [weak self] _ in
@@ -2498,29 +2606,55 @@ jobs:
 
                   cmd.playCommand.addTarget { [weak self] _ in
                       DispatchQueue.main.async {
-                          guard let self = self, let p = self.player else { return }
-                          p.play()
-                          p.rate = self.currentRate
-                          self.updateNowPlayingInfo()
-                          self.sendEvent("play", extra: [:])
+                          guard let self = self else { return }
+                          if self.useEnginePlayer {
+                              self.enginePlayer.play()
+                              self.updateNowPlayingInfo()
+                              self.sendEvent("play", extra: [:])
+                          } else if let p = self.player {
+                              try? AVAudioSession.sharedInstance().setActive(true)
+                              p.play()
+                              p.rate = self.currentRate
+                              self.updateNowPlayingInfo()
+                              self.sendEvent("play", extra: [:])
+                          }
                       }
                       return .success
                   }
 
                   cmd.pauseCommand.addTarget { [weak self] _ in
                       DispatchQueue.main.async {
-                          guard let self = self, let p = self.player else { return }
-                          p.pause()
-                          self.updateNowPlayingInfo()
-                          self.sendEvent("pause", extra: [:])
+                          guard let self = self else { return }
+                          if self.useEnginePlayer {
+                              self.enginePlayer.pause()
+                              self.updateNowPlayingInfo()
+                              self.sendEvent("pause", extra: [:])
+                          } else if let p = self.player {
+                              p.pause()
+                              self.updateNowPlayingInfo()
+                              self.sendEvent("pause", extra: [:])
+                          }
                       }
+                      return .success
+                  }
+
+                  cmd.togglePlayPauseCommand.addTarget { [weak self] _ in
+                      self?.executeWidgetCommand("toggle")
                       return .success
                   }
 
                   cmd.changePlaybackPositionCommand.addTarget { [weak self] event in
                       guard let self = self,
-                            let posEvent = event as? MPChangePlaybackPositionCommandEvent,
-                            let p = self.player else { return .commandFailed }
+                            let posEvent = event as? MPChangePlaybackPositionCommandEvent else { return .commandFailed }
+                      if self.useEnginePlayer {
+                          DispatchQueue.main.async {
+                              self.enginePlayer.seek(to: posEvent.positionTime)
+                              self.updateNowPlayingInfo()
+                              self.sendEvent("timeupdate", extra: ["currentTime": posEvent.positionTime, "duration": self.currentDuration])
+                          }
+                          return .success
+                      }
+                      guard let p = self.player else { return .commandFailed }
                       let target = CMTime(seconds: posEvent.positionTime, preferredTimescale: 600)
                       p.seek(to: target) { _ in
                           DispatchQueue.main.async {
@@ -2539,18 +2673,28 @@ jobs:
                   DispatchQueue.main.async {
                       switch type {
                       case .began:
-                          self.player?.pause()
+                          if self.useEnginePlayer {
+                              self.enginePlayer.pause()
+                          } else {
+                              self.player?.pause()
+                          }
                           self.updateNowPlayingInfo()
                           self.sendEvent("pause", extra: [:])
                       case .ended:
                           let optVal = (info[AVAudioSessionInterruptionOptionKey] as? UInt) ?? 0
                           let options = AVAudioSession.InterruptionOptions(rawValue: optVal)
-                          if options.contains(.shouldResume), let p = self.player {
-                              try? AVAudioSession.sharedInstance().setActive(true)
-                              p.play()
-                              p.rate = self.currentRate
-                              self.updateNowPlayingInfo()
-                              self.sendEvent("play", extra: [:])
+                          if options.contains(.shouldResume) {
+                              if self.useEnginePlayer {
+                                  self.enginePlayer.play()
+                                  self.updateNowPlayingInfo()
+                                  self.sendEvent("play", extra: [:])
+                              } else if let p = self.player {
+                                  try? AVAudioSession.sharedInstance().setActive(true)
+                                  p.play()
+                                  p.rate = self.currentRate
+                                  self.updateNowPlayingInfo()
+                                  self.sendEvent("play", extra: [:])
+                              }
                           }
                       @unknown default:
                           break
@@ -2564,10 +2708,17 @@ jobs:
                         let reason = AVAudioSession.RouteChangeReason(rawValue: reasonVal) else { return }
                   if reason == .oldDeviceUnavailable {
                       DispatchQueue.main.async {
-                          guard let p = self.player, p.rate > 0 else { return }
-                          p.pause()
-                          self.updateNowPlayingInfo()
-                          self.sendEvent("pause", extra: [:])
+                          if self.useEnginePlayer {
+                              guard self.enginePlayer.isPlaying else { return }
+                              self.enginePlayer.pause()
+                              self.updateNowPlayingInfo()
+                              self.sendEvent("pause", extra: [:])
+                          } else {
+                              guard let p = self.player, p.rate > 0 else { return }
+                              p.pause()
+                              self.updateNowPlayingInfo()
+                              self.sendEvent("pause", extra: [:])
+                          }
                       }
                   }
               }
@@ -3381,11 +3532,15 @@ jobs:
                           bridge.executeWidgetCommand("next")
                       } else if str.hasSuffix(".prev") {
                           bridge.executeWidgetCommand("prev")
+                      } else if str.hasSuffix(".seekback") {
+                          bridge.executeWidgetCommand("seekback")
+                      } else if str.hasSuffix(".seekfwd") {
+                          bridge.executeWidgetCommand("seekfwd")
                       }
                   }
                   let observerPtr = Unmanaged.passUnretained(self).toOpaque()
                   let center = CFNotificationCenterGetDarwinNotifyCenter()
-                  for suffix in ["toggle", "next", "prev"] {
+                  for suffix in ["toggle", "next", "prev", "seekback", "seekfwd"] {
                       CFNotificationCenterAddObserver(
                           center,
                           observerPtr,
@@ -3429,6 +3584,22 @@ jobs:
                           self.webView?.evaluateJavaScript("window.__fengNextTrack && window.__fengNextTrack()", completionHandler: nil)
                       } else if cmd == "prev" {
                           self.webView?.evaluateJavaScript("window.__fengPrevTrack && window.__fengPrevTrack()", completionHandler: nil)
+                      } else if cmd == "seekback" || cmd == "seekfwd" {
+                          let delta: Double = (cmd == "seekfwd") ? 15.0 : -15.0
+                          let cur = self.useEnginePlayer ? self.enginePlayer.currentTime : (self.player.map { CMTimeGetSeconds($0.currentTime()) } ?? 0)
+                          let target = max(0.0, min(max(0.0, self.currentDuration - 0.5), (cur.isFinite ? cur : 0.0) + delta))
+                          if self.useEnginePlayer {
+                              self.enginePlayer.seek(to: target)
+                              self.updateNowPlayingInfo()
+                              self.sendEvent("timeupdate", extra: ["currentTime": target, "duration": self.currentDuration])
+                          } else if let p = self.player {
+                              p.seek(to: CMTime(seconds: target, preferredTimescale: 600)) { _ in
+                                  DispatchQueue.main.async {
+                                      self.updateNowPlayingInfo()
+                                      self.sendEvent("timeupdate", extra: ["currentTime": target, "duration": self.currentDuration])
+                                  }
+                              }
+                          }
                       }
                   }
               }
@@ -3527,10 +3698,14 @@ jobs:
                   #if canImport(ActivityKit)
                   if #available(iOS 16.1, *) {
                       guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+                      let activeCompact = compactLyricChunks.isEmpty
+                          ? (currentLyricLine.isEmpty ? (currentTitle.isEmpty ? "FENG MUSIC" : currentTitle) : currentLyricLine)
+                          : compactLyricChunks[compactLyricIndex % compactLyricChunks.count]
                       let state = FengLyricsActivityAttributes.ContentState(
                           title: currentTitle.isEmpty ? "FENG MUSIC" : currentTitle,
                           artist: currentArtist,
                           lyricLine: currentLyricLine,
+                          compactLyric: activeCompact,
                           isPlaying: isPlaying,
                           elapsed: elapsed,
                           duration: duration,
@@ -3569,6 +3744,8 @@ jobs:
               }
 
               private func endLiveActivity() {
+                  lyricCarouselTimer?.invalidate()
+                  lyricCarouselTimer = nil
                   #if canImport(ActivityKit)
                   if #available(iOS 16.1, *) {
                       if let act = liveActivityRef as? Activity<FengLyricsActivityAttributes> {
@@ -3706,6 +3883,10 @@ jobs:
                       }
                       if let lg = body["loudnessGain"] as? Double { fxLoudnessGain = Float(lg) }
                       currentLyricLine = ""
+                      compactLyricChunks = []
+                      compactLyricIndex = 0
+                      lyricCarouselTimer?.invalidate()
+                      lyricCarouselTimer = nil
 
                       let autoPlay = (body["autoPlay"] as? Bool) ?? false
                       enginePlayer.onTimeUpdate = { [weak self] cur, dur in
@@ -3850,6 +4031,9 @@ jobs:
                       let line = (body["lyricLine"] as? String) ?? ""
                       if line != currentLyricLine {
                           currentLyricLine = line
+                          compactLyricChunks = buildCompactLyricChunks(from: line)
+                          compactLyricIndex = 0
+                          restartLyricCarousel()
                           let isPlayingNow = useEnginePlayer ? enginePlayer.isPlaying : ((player?.rate ?? 0) > 0)
                           let elapsedNow = useEnginePlayer ? enginePlayer.currentTime : (player.map { CMTimeGetSeconds($0.currentTime()) } ?? 0)
                           syncLiveActivity(
@@ -4007,15 +4191,17 @@ jobs:
                   public var title: String
                   public var artist: String
                   public var lyricLine: String
+                  public var compactLyric: String
                   public var isPlaying: Bool
                   public var elapsed: Double
                   public var duration: Double
                   public var updatedAt: Double
 
-                  public init(title: String, artist: String, lyricLine: String, isPlaying: Bool, elapsed: Double, duration: Double, updatedAt: Double) {
+                  public init(title: String, artist: String, lyricLine: String, compactLyric: String, isPlaying: Bool, elapsed: Double, duration: Double, updatedAt: Double) {
                       self.title = title
                       self.artist = artist
                       self.lyricLine = lyricLine
+                      self.compactLyric = compactLyric
                       self.isPlaying = isPlaying
                       self.elapsed = elapsed
                       self.duration = duration
@@ -4101,6 +4287,34 @@ jobs:
                   try? await Task.sleep(nanoseconds: 550_000_000)
                   return .result()
               }
+          }
+
+          @available(iOS 17.0, *)
+          struct FengSeekBackIntent: AppIntent {
+              static var title: LocalizedStringResource = "快退 15 秒"
+              static var openAppWhenRun: Bool = false
+
+              func perform() async throws -> some IntentResult {
+                  postDarwinWidgetCommand("seekback")
+                  return .result()
+              }
+          }
+
+          @available(iOS 17.0, *)
+          struct FengSeekForwardIntent: AppIntent {
+              static var title: LocalizedStringResource = "快进 15 秒"
+              static var openAppWhenRun: Bool = false
+
+              func perform() async throws -> some IntentResult {
+                  postDarwinWidgetCommand("seekfwd")
+                  return .result()
+              }
+          }
+
+          private func formatWidgetSeconds(_ sec: Double) -> String {
+              guard sec.isFinite && sec >= 0 else { return "0:00" }
+              let total = Int(sec.rounded(.down))
+              return String(format: "%d:%02d", total / 60, total % 60)
           }
 
           struct FengWidgetEntry: TimelineEntry {
@@ -4643,23 +4857,65 @@ jobs:
                                   .frame(maxWidth: .infinity, alignment: .trailing)
                           }
 
-                          // Real-Time Native System Progress Bar (ProgressView timerInterval when playing, static when paused)
+                          // Real-Time Progress Bar + Live Ticking Elapsed / Total Duration (tap left/right time to seek -15s/+15s on iOS 17+)
                           Group {
                               if entry.hasLiveSync && entry.duration > 1.0 {
-                                  if entry.isPlaying, #available(iOS 16.0, *) {
-                                      let start = Date(timeIntervalSince1970: max(0, entry.updatedAt - entry.elapsed))
-                                      let end = start.addingTimeInterval(max(1.0, entry.duration))
-                                      ProgressView(timerInterval: start...end, countsDown: false) {
-                                          EmptyView()
-                                      } currentValueLabel: {
-                                          EmptyView()
+                                  let start = Date(timeIntervalSince1970: max(0, entry.updatedAt - entry.elapsed))
+                                  let end = start.addingTimeInterval(max(1.0, entry.duration))
+                                  HStack(spacing: 5) {
+                                      if #available(iOS 17.0, *) {
+                                          Button(intent: FengSeekBackIntent()) {
+                                              if entry.isPlaying {
+                                                  Text(start, style: .timer)
+                                                      .font(.system(size: 9, weight: .semibold, design: .rounded))
+                                                      .monospacedDigit()
+                                                      .foregroundColor(.white.opacity(0.78))
+                                                      .frame(minWidth: 26, alignment: .leading)
+                                              } else {
+                                                  Text(formatWidgetSeconds(entry.elapsed))
+                                                      .font(.system(size: 9, weight: .semibold, design: .rounded))
+                                                      .monospacedDigit()
+                                                      .foregroundColor(.white.opacity(0.65))
+                                                      .frame(minWidth: 26, alignment: .leading)
+                                              }
+                                          }
+                                          .buttonStyle(.plain)
+                                      } else {
+                                          Text(formatWidgetSeconds(entry.elapsed))
+                                              .font(.system(size: 9, weight: .semibold, design: .rounded))
+                                              .monospacedDigit()
+                                              .foregroundColor(.white.opacity(0.70))
                                       }
-                                      .progressViewStyle(.linear)
-                                      .tint(FengGlass.aqua)
-                                  } else {
-                                      ProgressView(value: min(max(0, entry.elapsed), entry.duration), total: entry.duration)
+
+                                      if entry.isPlaying, #available(iOS 16.0, *) {
+                                          ProgressView(timerInterval: start...end, countsDown: false) {
+                                              EmptyView()
+                                          } currentValueLabel: {
+                                              EmptyView()
+                                          }
                                           .progressViewStyle(.linear)
-                                          .tint(Color.white.opacity(0.65))
+                                          .tint(FengGlass.aqua)
+                                      } else {
+                                          ProgressView(value: min(max(0, entry.elapsed), entry.duration), total: entry.duration)
+                                              .progressViewStyle(.linear)
+                                              .tint(Color.white.opacity(0.65))
+                                      }
+
+                                      if #available(iOS 17.0, *) {
+                                          Button(intent: FengSeekForwardIntent()) {
+                                              Text(formatWidgetSeconds(entry.duration))
+                                                  .font(.system(size: 9, weight: .semibold, design: .rounded))
+                                                  .monospacedDigit()
+                                                  .foregroundColor(.white.opacity(0.72))
+                                                  .frame(minWidth: 26, alignment: .trailing)
+                                          }
+                                          .buttonStyle(.plain)
+                                      } else {
+                                          Text(formatWidgetSeconds(entry.duration))
+                                              .font(.system(size: 9, weight: .semibold, design: .rounded))
+                                              .monospacedDigit()
+                                              .foregroundColor(.white.opacity(0.70))
+                                      }
                                   }
                               } else {
                                   Capsule()
@@ -4667,8 +4923,8 @@ jobs:
                                       .frame(height: 3)
                               }
                           }
-                          .frame(height: 14)
-                          .padding(.horizontal, 2)
+                          .frame(height: 16)
+                          .padding(.horizontal, 1)
 
                           GlassCapsuleControlDock(isPlaying: entry.isPlaying)
                       }
@@ -4816,11 +5072,17 @@ jobs:
                               .font(.system(size: 12, weight: .bold))
                               .foregroundColor(FengGlass.aqua)
                       } compactTrailing: {
-                          Text(context.state.lyricLine.isEmpty ? context.state.title : context.state.lyricLine)
+                          let displaySlice = context.state.compactLyric.isEmpty
+                              ? (context.state.lyricLine.isEmpty ? context.state.title : context.state.lyricLine)
+                              : context.state.compactLyric
+                          Text(displaySlice)
                               .font(.system(size: 11, weight: .semibold))
                               .foregroundColor(.white)
                               .lineLimit(1)
-                              .frame(maxWidth: 96)
+                              .minimumScaleFactor(0.82)
+                              .frame(maxWidth: 132, alignment: .trailing)
+                              .id(displaySlice)
+                              .transition(.opacity)
                       } minimal: {
                           Image(systemName: context.state.isPlaying ? "waveform" : "music.note")
                               .font(.system(size: 11, weight: .bold))
