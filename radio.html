@@ -274,11 +274,59 @@
     }
 
     .liquid-sheet {
-      background: linear-gradient(180deg, rgba(28, 31, 42, 0.90), rgba(14, 16, 24, 0.96));
-      backdrop-filter: blur(42px) saturate(210%);
-      -webkit-backdrop-filter: blur(42px) saturate(210%);
-      border-top: 1px solid rgba(255, 255, 255, 0.22);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 -20px 50px rgba(0, 0, 0, 0.68);
+      background: linear-gradient(155deg, rgba(255, 255, 255, 0.12) 0%, rgba(20, 26, 40, 0.46) 45%, rgba(10, 14, 24, 0.56) 100%);
+      backdrop-filter: blur(36px) saturate(190%);
+      -webkit-backdrop-filter: blur(36px) saturate(190%);
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.42),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.08),
+        0 24px 64px rgba(0, 0, 0, 0.50);
+    }
+    .sheet-glass-group {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    }
+    .sheet-primary-cta {
+      background: linear-gradient(135deg, rgba(125, 211, 252, 0.46), rgba(56, 189, 248, 0.34));
+      border: 1px solid rgba(186, 230, 253, 0.58);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.46), 0 10px 26px rgba(56, 189, 248, 0.24);
+      color: #ffffff;
+    }
+    .queue-row-zipper-focus {
+      transform: scale(0.945) !important;
+      background: rgba(255, 255, 255, 0.14) !important;
+      border-color: rgba(186, 230, 253, 0.42) !important;
+    }
+    .sheet-primary-cta:hover {
+      background: linear-gradient(135deg, rgba(125, 211, 252, 0.56), rgba(56, 189, 248, 0.44));
+    }
+    .glass-check-ring {
+      width: 22px;
+      height: 22px;
+      border-radius: 9999px;
+      border: 1.5px solid rgba(255, 255, 255, 0.42);
+      background: rgba(255, 255, 255, 0.06);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    }
+    .peer:checked + .glass-check-ring {
+      border-color: rgba(186, 230, 253, 0.9);
+      background: linear-gradient(135deg, rgba(125, 211, 252, 0.92), rgba(56, 189, 248, 0.85));
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+      color: #ffffff;
+    }
+    .peer:not(:checked) + .glass-check-ring svg {
+      opacity: 0;
+      transform: scale(0.5);
+    }
+    .peer:checked + .glass-check-ring svg {
+      opacity: 1;
+      transform: scale(1);
     }
 
     /* Hide Scrollbars */
@@ -476,18 +524,42 @@
       text-shadow: 0 4px 20px rgba(56, 189, 248, 0.35);
     }
 
-    /* Independent Modifier A: True Vertical Staggered Spring Scroll (两段歌词交错衔接滚动) */
+    /* Independent Modifier A: Transient Handoff Cross-Glide (仅在歌词更替瞬间：上句左掠、新句右入，静止时保持齐整左对齐) */
+    @keyframes lyricOutgoingCrossLeft {
+      0% { transform: translate3d(0, 6px, 0) scale(1.04); opacity: 0.92; }
+      42% { transform: translate3d(-24px, -3px, 0) skewX(-3deg) scale(0.97); opacity: 0.58; }
+      100% { transform: translate3d(0, 0, 0) skewX(0deg) scale(0.97); }
+    }
+    @keyframes lyricIncomingCrossRight {
+      0% { transform: translate3d(28px, 14px, 0) skewX(3deg) scale(0.96); opacity: 0.55; }
+      68% { transform: translate3d(-3px, -2px, 0) skewX(-0.6deg) scale(1.06); opacity: 1; }
+      100% { transform: translate3d(0, 0, 0) skewX(0deg) scale(1.05); opacity: 1; }
+    }
     .lyrics-opt-stagger .lyric-line {
+      max-width: 91%;
       transition:
-        transform 0.64s cubic-bezier(0.22, 1.22, 0.36, 1) var(--lyric-stagger-delay, 0ms),
-        opacity 0.45s ease var(--lyric-stagger-delay, 0ms),
-        filter 0.45s ease var(--lyric-stagger-delay, 0ms),
+        transform 0.58s cubic-bezier(0.22, 1.16, 0.36, 1) var(--lyric-stagger-delay, 0ms),
+        opacity 0.42s ease var(--lyric-stagger-delay, 0ms),
+        filter 0.42s ease var(--lyric-stagger-delay, 0ms),
         color 0.32s ease;
       will-change: transform, opacity;
     }
+    .lyrics-opt-stagger .lyric-line.lyric-handoff-out {
+      animation: lyricOutgoingCrossLeft 0.62s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .lyrics-opt-stagger .lyric-line.lyric-handoff-in {
+      animation: lyricIncomingCrossRight 0.66s cubic-bezier(0.22, 1.18, 0.36, 1) both;
+    }
+    /* Keep Karaoke shimmer & Neon pulse running concurrently with stagger handoff (never overwrite animation!) */
+    .lyrics-style-karaoke.lyrics-opt-stagger .lyric-line.lyric-handoff-in {
+      animation: lyricIncomingCrossRight 0.66s cubic-bezier(0.22, 1.18, 0.36, 1) both, lyricShimmerSweep 3.2s linear infinite !important;
+    }
+    .lyrics-style-neon.lyrics-opt-stagger .lyric-line.lyric-handoff-in {
+      animation: lyricIncomingCrossRight 0.66s cubic-bezier(0.22, 1.18, 0.36, 1) both, neonBreathPulse 2.2s ease-in-out infinite !important;
+    }
     .lyrics-opt-stagger .lyric-line.lyric-stagger-kick {
       transition: none !important;
-      transform: translate3d(0, var(--lyric-kick-y, 26px), 0) scale(var(--lyric-kick-scale, 0.98)) !important;
+      transform: translate3d(0, var(--lyric-kick-y, 18px), 0) scale(var(--lyric-kick-scale, 0.96)) !important;
     }
 
     /* Independent Modifier B: Refined Spatial 3D Curved-Drum Lyrics (立体歌词 — 100% compatible with Karaoke shimmer) */
@@ -524,7 +596,7 @@
       filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.56));
     }
     .lyrics-opt-stagger.lyrics-opt-3d .lyric-line.lyric-stagger-kick {
-      transform: perspective(1100px) translate3d(0, var(--lyric-kick-y, 26px), var(--lyric-3d-tz, 0px)) rotateX(var(--lyric-3d-rx, 0deg)) scale(var(--lyric-3d-sc, 0.98)) !important;
+      transform: perspective(1100px) translate3d(0, var(--lyric-kick-y, 18px), var(--lyric-3d-tz, 0px)) rotateX(var(--lyric-3d-rx, 0deg)) scale(var(--lyric-3d-sc, 0.96)) !important;
     }
     .lyric-char {
       display: inline-block;
@@ -1440,7 +1512,17 @@
     </section>
 
     <!-- ==================== VIEW 8: LISTENING STATS (听歌足迹 + 周报/月报) ==================== -->
-    <section id="view-stats" class="app-view hidden flex-1 flex flex-col overflow-hidden">
+    <section id="view-stats" class="app-view relative hidden flex-1 flex flex-col overflow-hidden">
+      <div class="collapsible-compact-bar px-4 sm:px-6 items-center justify-between shrink-0" style="padding-top: calc(var(--safe-top) + 10px);">
+        <button id="btn-stats-scroll-top" class="liquid-pill w-9 h-9 rounded-full text-white flex items-center justify-center shrink-0" title="返回顶部" aria-label="返回顶部">
+          <svg class="w-4 h-4 text-white/90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 19V5m0 0l-6 6m6-6l6 6" />
+          </svg>
+        </button>
+        <span class="text-base font-bold tracking-tight text-white">听歌足迹</span>
+        <span class="w-9 h-9 shrink-0"></span>
+      </div>
+      <div class="collapsible-expanded-area shrink-0">
       <header class="px-4 sm:px-6 pb-2.5 flex items-center justify-between gap-3 shrink-0" style="padding-top: calc(var(--safe-top) + 12px);">
         <div>
           <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-white">听歌足迹</h1>
@@ -1452,7 +1534,8 @@
           <button data-stats-tab="monthly" class="stats-tab-btn px-3 py-1 rounded-full text-xs font-semibold text-white/75 hover:text-white transition">月报</button>
         </div>
       </header>
-      <div id="stats-scroll-container" class="flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 space-y-4">
+      </div>
+      <div id="stats-scroll-container" class="pl-scroll-pad flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 space-y-4">
         <!-- Overview Panel -->
         <div id="stats-panel-overview" class="space-y-4">
           <div class="grid grid-cols-12 gap-2.5 items-stretch">
@@ -1510,7 +1593,17 @@
     </section>
 
     <!-- ==================== VIEW 9: UI DIY SETTINGS (界面 DIY 设置) ==================== -->
-    <section id="view-diy" class="app-view hidden flex-1 flex flex-col overflow-hidden">
+    <section id="view-diy" class="app-view relative hidden flex-1 flex flex-col overflow-hidden">
+      <div class="collapsible-compact-bar px-4 sm:px-6 items-center justify-between shrink-0" style="padding-top: calc(var(--safe-top) + 10px);">
+        <button id="btn-diy-scroll-top" class="liquid-pill w-9 h-9 rounded-full text-white flex items-center justify-center shrink-0" title="返回顶部" aria-label="返回顶部">
+          <svg class="w-4 h-4 text-white/90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 19V5m0 0l-6 6m6-6l6 6" />
+          </svg>
+        </button>
+        <span class="text-base font-bold tracking-tight text-white">设置</span>
+        <span class="w-9 h-9 shrink-0"></span>
+      </div>
+      <div class="collapsible-expanded-area shrink-0">
       <header class="px-4 sm:px-6 pb-3 flex items-center justify-between gap-3 shrink-0" style="padding-top: calc(var(--safe-top) + 12px);">
         <div class="flex items-center gap-3">
           <div>
@@ -1519,8 +1612,9 @@
           </div>
         </div>
       </header>
+      </div>
 
-      <div id="diy-scroll-container" class="flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 space-y-4">
+      <div id="diy-scroll-container" class="pl-scroll-pad flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 space-y-4">
         <!-- 1. Home Background Wallpaper -->
         <div class="liquid-panel rounded-3xl p-4 space-y-3.5">
           <div>
@@ -1605,17 +1699,17 @@
             <h2 class="text-sm font-semibold text-white">实用工具与白噪音</h2>
           </div>
           <div class="grid grid-cols-2 gap-2.5">
-            <button id="btn-diy-open-whitenoise" class="liquid-pill py-3 px-3 rounded-2xl text-xs font-medium text-teal-200 flex items-center justify-center gap-1.5">
+            <button id="btn-diy-open-whitenoise" class="liquid-pill py-3 px-3 rounded-2xl text-xs font-medium text-sky-200 flex items-center justify-center gap-1.5">
               <span>白噪音空间</span>
-              <span id="diy-wn-badge" class="hidden px-1.5 py-0.5 rounded-full bg-teal-400/25 text-[10px] tabular-nums">0</span>
+              <span id="diy-wn-badge" class="hidden px-1.5 py-0.5 rounded-full bg-sky-400/25 text-[10px] tabular-nums">0</span>
             </button>
-            <button id="btn-diy-backup" class="liquid-pill py-3 px-3 rounded-2xl text-xs font-medium text-white/85 flex items-center justify-center gap-1.5">
+            <button id="btn-diy-backup" class="liquid-pill py-3 px-3 rounded-2xl text-xs font-medium text-sky-200 flex items-center justify-center gap-1.5">
               <span>备份与部署指南</span>
             </button>
             <button id="btn-diy-add-ios" class="liquid-pill py-3 px-3 rounded-2xl text-xs font-medium text-sky-200 flex items-center justify-center gap-1.5">
               <span>iPhone 添加音乐</span>
             </button>
-            <button id="btn-diy-add-android" class="liquid-pill py-3 px-3 rounded-2xl text-xs font-medium text-emerald-200 flex items-center justify-center gap-1.5">
+            <button id="btn-diy-add-android" class="liquid-pill py-3 px-3 rounded-2xl text-xs font-medium text-sky-200 flex items-center justify-center gap-1.5">
               <span>Android 添加音乐</span>
             </button>
           </div>
@@ -1913,10 +2007,10 @@
   <!-- =========================================================================
        BOTTOM SHEETS & MODALS
        ========================================================================= -->
-  <div id="modal-backdrop" class="fixed inset-0 z-50 bg-black/65 backdrop-blur-xs opacity-0 pointer-events-none transition-opacity duration-250"></div>
+  <div id="modal-backdrop" class="fixed inset-0 z-50 bg-black/38 backdrop-blur-[2px] opacity-0 pointer-events-none transition-opacity duration-250"></div>
 
   <!-- 1. Now Playing Top-Right Settings Drawer -->
-  <div id="sheet-np-settings" class="fixed left-0 right-0 bottom-0 z-50 liquid-sheet rounded-t-[32px] translate-y-full transition-transform duration-300 max-w-xl mx-auto p-5 space-y-4 max-h-[85vh] overflow-y-auto no-scrollbar" style="padding-bottom: calc(var(--safe-bottom) + 22px);">
+  <div id="sheet-np-settings" class="fixed left-3 right-3 bottom-3 z-50 liquid-sheet rounded-[34px] translate-y-[115%] transition-transform duration-300 max-w-xl mx-auto p-5 space-y-4 max-h-[85vh] overflow-y-auto no-scrollbar" style="padding-bottom: calc(var(--safe-bottom) + 22px);">
     <div class="w-10 h-1 rounded-full bg-white/25 mx-auto"></div>
     <div class="flex items-center justify-between">
       <h3 class="text-base font-bold text-white">播放设置与工具</h3>
@@ -2115,7 +2209,7 @@
   </div>
 
   <!-- 2. Track Action Sheet (··· Menu on any song) -->
-  <div id="sheet-track-actions" class="fixed left-0 right-0 bottom-0 z-50 liquid-sheet rounded-t-[32px] translate-y-full transition-transform duration-300 max-w-xl mx-auto p-5 space-y-3" style="padding-bottom: calc(var(--safe-bottom) + 22px);">
+  <div id="sheet-track-actions" class="fixed left-3 right-3 bottom-3 z-50 liquid-sheet rounded-[34px] translate-y-[115%] transition-transform duration-300 max-w-xl mx-auto p-5 space-y-3" style="padding-bottom: calc(var(--safe-bottom) + 22px);">
     <div class="w-10 h-1 rounded-full bg-white/25 mx-auto"></div>
     <div class="flex items-center gap-3 pb-2 border-b border-white/10">
       <img id="sheet-track-cover" src="" alt="" class="w-12 h-12 rounded-xl object-cover bg-white/10" />
@@ -2145,7 +2239,7 @@
   </div>
 
   <!-- 3. Current Playback Queue Drawer -->
-  <div id="sheet-queue" class="fixed left-0 right-0 bottom-0 z-50 liquid-sheet rounded-t-[32px] translate-y-full transition-transform duration-300 max-w-xl mx-auto p-5 flex flex-col max-h-[75vh]" style="padding-bottom: calc(var(--safe-bottom) + 18px);">
+  <div id="sheet-queue" class="fixed left-3 right-3 bottom-3 z-50 liquid-sheet rounded-[34px] translate-y-[115%] transition-transform duration-300 max-w-xl mx-auto p-5 flex flex-col max-h-[75vh]" style="padding-bottom: calc(var(--safe-bottom) + 18px);">
     <div class="w-10 h-1 rounded-full bg-white/25 mx-auto mb-3 shrink-0"></div>
     <div class="flex items-center justify-between pb-3 border-b border-white/10 shrink-0">
       <div>
@@ -2157,11 +2251,20 @@
         <button class="btn-close-sheets px-3 py-1.5 rounded-full bg-white/10 text-xs text-white/80">关闭</button>
       </div>
     </div>
-    <div id="queue-list-container" class="flex-1 overflow-y-auto no-scrollbar py-2 space-y-1.5"></div>
+    <div class="relative flex-1 min-h-0 flex items-stretch gap-1">
+      <div id="queue-list-container" class="flex-1 overflow-y-auto no-scrollbar py-2 space-y-1.5 pr-1"></div>
+      <div id="queue-zipper-rail" class="w-9 shrink-0 relative touch-none select-none cursor-ns-resize flex items-center justify-center my-2" aria-label="快速滑动播放列表">
+        <svg id="queue-zipper-svg" class="w-full h-full overflow-visible pointer-events-none" viewBox="0 0 38 240" preserveAspectRatio="none">
+          <path id="queue-zipper-teeth" d="" fill="none" stroke="rgba(255,255,255,0.34)" stroke-width="4" stroke-dasharray="2.2 5.2" stroke-linecap="round" />
+          <path id="queue-zipper-spine" d="M 30 8 L 30 232" fill="none" stroke="rgba(186,230,253,0.78)" stroke-width="2.2" stroke-linecap="round" />
+          <circle id="queue-zipper-knob" cx="30" cy="120" r="4" fill="#ffffff" opacity="0.8" />
+        </svg>
+      </div>
+    </div>
   </div>
 
   <!-- 4. Add Track to Playlist Sheet -->
-  <div id="sheet-pick-playlist" class="fixed left-0 right-0 bottom-0 z-50 liquid-sheet rounded-t-[32px] translate-y-full transition-transform duration-300 max-w-xl mx-auto p-5 flex flex-col max-h-[70vh]" style="padding-bottom: calc(var(--safe-bottom) + 18px);">
+  <div id="sheet-pick-playlist" class="fixed left-3 right-3 bottom-3 z-50 liquid-sheet rounded-[34px] translate-y-[115%] transition-transform duration-300 max-w-xl mx-auto p-5 flex flex-col max-h-[70vh]" style="padding-bottom: calc(var(--safe-bottom) + 18px);">
     <div class="w-10 h-1 rounded-full bg-white/25 mx-auto mb-3 shrink-0"></div>
     <div class="flex items-center justify-between pb-3 border-b border-white/10 shrink-0">
       <h3 class="text-base font-bold text-white">添加到歌单</h3>
@@ -2181,7 +2284,7 @@
         <button id="btn-select-songs-cancel" class="text-xs text-white/65 hover:text-white px-2.5 py-1 rounded-full bg-white/10">取消</button>
       </div>
       <div id="select-songs-list" class="flex-1 overflow-y-auto no-scrollbar py-3 space-y-1.5"></div>
-      <button id="btn-select-songs-confirm" class="mt-3 w-full py-3 rounded-2xl bg-sky-500 hover:bg-sky-400 text-sm font-semibold text-zinc-950 shrink-0">确认添加</button>
+      <button id="btn-select-songs-confirm" class="mt-3 w-full py-3 rounded-full sheet-primary-cta text-sm font-semibold active:scale-[0.98] transition shrink-0">确认添加</button>
     </div>
   </div>
 
@@ -2195,7 +2298,7 @@
       <input id="input-playlist-name" type="text" placeholder="输入歌单名称，例如：深夜循环" class="w-full px-4 py-3 rounded-2xl bg-white/10 border border-white/15 text-sm text-white placeholder-white/40 outline-none focus:border-sky-400" />
       <div class="flex gap-2.5">
         <button id="btn-playlist-name-cancel" class="flex-1 py-2.5 rounded-2xl bg-white/10 text-sm font-medium text-white/80">取消</button>
-        <button id="btn-playlist-name-submit" class="flex-1 py-2.5 rounded-2xl bg-sky-500 text-sm font-semibold text-zinc-950">确定</button>
+        <button id="btn-playlist-name-submit" class="flex-1 py-2.5 rounded-full sheet-primary-cta text-sm font-semibold active:scale-[0.98] transition">确定</button>
       </div>
     </div>
   </div>
@@ -2312,15 +2415,18 @@
         <!-- Header & Date Seal -->
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
-            <span class="px-2.5 py-1 rounded-full bg-amber-400/20 border border-amber-300/30 text-[11px] font-semibold text-amber-200">今日音乐签</span>
+            <span id="fortune-kind-badge" class="px-2.5 py-1 rounded-full bg-amber-400/20 border border-amber-300/30 text-[11px] font-semibold text-amber-200">今日音乐签</span>
             <span id="fortune-date-tag" class="text-[11px] text-white/50 tabular-nums"></span>
           </div>
           <button id="btn-fortune-close" class="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-xs text-white/75">✕</button>
         </div>
 
-        <!-- Cover & Track Info -->
-        <div class="relative w-32 h-32 mx-auto pt-1">
-          <img id="fortune-cover" src="" alt="" class="w-32 h-32 rounded-3xl object-cover shadow-2xl border border-white/20" />
+        <!-- Cover & Track / Album / Artist Visual -->
+        <div class="relative w-36 h-32 mx-auto pt-1 flex items-center justify-center">
+          <div id="fortune-album-disc" class="hidden absolute right-1 top-3 w-24 h-24 rounded-full border border-white/25 shadow-xl pointer-events-none" style="background: conic-gradient(from 30deg, rgba(255,255,255,0.45), rgba(56,189,248,0.35), rgba(167,139,250,0.35), rgba(251,191,36,0.30), rgba(255,255,255,0.45));">
+            <div class="absolute inset-[36%] rounded-full bg-[#0c1018] border border-white/35"></div>
+          </div>
+          <img id="fortune-cover" src="" alt="" class="relative z-10 w-32 h-32 rounded-3xl object-cover shadow-2xl border border-white/20 transition-all duration-300" />
         </div>
         <div class="space-y-0.5">
           <h3 id="fortune-title" class="text-base font-bold text-white truncate px-2">歌曲名</h3>
@@ -2363,7 +2469,7 @@
   </div>
 
   <!-- 12. Playlist Card Layout/Size/Shape Sheet -->
-  <div id="sheet-playlist-layout" class="fixed left-0 right-0 bottom-0 z-50 liquid-sheet rounded-t-[32px] translate-y-full transition-transform duration-300 max-w-xl mx-auto p-5 space-y-4" style="padding-bottom: calc(var(--safe-bottom) + 22px);">
+  <div id="sheet-playlist-layout" class="fixed left-3 right-3 bottom-3 z-50 liquid-sheet rounded-[34px] translate-y-[115%] transition-transform duration-300 max-w-xl mx-auto p-5 space-y-4" style="padding-bottom: calc(var(--safe-bottom) + 22px);">
     <div class="w-10 h-1 rounded-full bg-white/25 mx-auto"></div>
     <div class="flex items-center justify-between">
       <h3 class="text-base font-bold text-white">歌单卡片设置</h3>
@@ -2424,7 +2530,7 @@
   </div>
 
   <!-- 14A. iPhone Add Music Sheet (单曲/歌词 + FENG MUSIC) -->
-  <div id="sheet-add-music-ios" class="fixed left-0 right-0 bottom-0 z-50 liquid-sheet rounded-t-[32px] translate-y-full transition-transform duration-300 max-w-xl mx-auto p-5 space-y-4" style="padding-bottom: calc(var(--safe-bottom) + 22px);">
+  <div id="sheet-add-music-ios" class="fixed left-3 right-3 bottom-3 z-50 liquid-sheet rounded-[34px] translate-y-[115%] transition-transform duration-300 max-w-xl mx-auto p-5 space-y-4" style="padding-bottom: calc(var(--safe-bottom) + 22px);">
     <div class="w-10 h-1 rounded-full bg-white/25 mx-auto"></div>
     <div class="flex items-center justify-between">
       <div>
@@ -2458,7 +2564,7 @@
   </div>
 
   <!-- 14B. Android Add Music Sheet (扫描音乐 + 关联文件夹) -->
-  <div id="sheet-add-music-android" class="fixed left-0 right-0 bottom-0 z-50 liquid-sheet rounded-t-[32px] translate-y-full transition-transform duration-300 max-w-xl mx-auto p-5 space-y-4 max-h-[82vh] overflow-y-auto no-scrollbar" style="padding-bottom: calc(var(--safe-bottom) + 22px);">
+  <div id="sheet-add-music-android" class="fixed left-3 right-3 bottom-3 z-50 liquid-sheet rounded-[34px] translate-y-[115%] transition-transform duration-300 max-w-xl mx-auto p-5 space-y-4 max-h-[82vh] overflow-y-auto no-scrollbar" style="padding-bottom: calc(var(--safe-bottom) + 22px);">
     <div class="w-10 h-1 rounded-full bg-white/25 mx-auto"></div>
     <div class="flex items-center justify-between">
       <div>
@@ -2495,7 +2601,7 @@
   </div>
 
   <!-- 15. Shared Sort Mode Sheet (Library & Playlist) -->
-  <div id="sheet-sort-menu" class="fixed left-0 right-0 bottom-0 z-50 liquid-sheet rounded-t-[32px] translate-y-full transition-transform duration-300 max-w-xl mx-auto p-5 space-y-3" style="padding-bottom: calc(var(--safe-bottom) + 22px);">
+  <div id="sheet-sort-menu" class="fixed left-3 right-3 bottom-3 z-50 liquid-sheet rounded-[34px] translate-y-[115%] transition-transform duration-300 max-w-xl mx-auto p-5 space-y-3" style="padding-bottom: calc(var(--safe-bottom) + 22px);">
     <div class="w-10 h-1 rounded-full bg-white/25 mx-auto"></div>
     <div class="flex items-center justify-between pb-1">
       <h3 id="sort-sheet-title" class="text-base font-bold text-white">排序方式</h3>
@@ -2665,21 +2771,25 @@
         </div>
       </div>
 
-      <!-- Official Built-in Presets (Obsidian Matrix) -->
-      <div class="eq-obsidian-card rounded-[28px] p-4 space-y-3">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-semibold text-white/90">官方调音曲线</span>
-          <span class="text-[10px] text-white/40">品牌/目标曲线为五段近似拟合</span>
+      <!-- Official Built-in Presets (Grouped: 4 Default + 4 Brand Signature) -->
+      <div class="eq-obsidian-card rounded-[28px] p-4 space-y-3.5">
+        <div class="space-y-2">
+          <div class="text-[11px] font-semibold tracking-wider text-white/55 uppercase">基础预设</div>
+          <div class="grid grid-cols-2 gap-2">
+            <button data-eq-preset="flat" class="fx-eq-preset-btn py-2.5 px-3 rounded-2xl text-xs font-medium bg-white/20 text-white text-left border border-white/10">平坦参考</button>
+            <button data-eq-preset="bass" class="fx-eq-preset-btn py-2.5 px-3 rounded-2xl text-xs font-medium bg-white/6 text-white/75 text-left border border-white/8">低音增强</button>
+            <button data-eq-preset="vocal" class="fx-eq-preset-btn py-2.5 px-3 rounded-2xl text-xs font-medium bg-white/6 text-white/75 text-left border border-white/8">人声清透</button>
+            <button data-eq-preset="electronic" class="fx-eq-preset-btn py-2.5 px-3 rounded-2xl text-xs font-medium bg-white/6 text-white/75 text-left border border-white/8">电子律动</button>
+          </div>
         </div>
-        <div class="grid grid-cols-2 gap-2">
-          <button data-eq-preset="flat" class="fx-eq-preset-btn py-2.5 px-3 rounded-2xl text-xs font-medium bg-white/20 text-white text-left border border-white/10">平坦参考</button>
-          <button data-eq-preset="harman" class="fx-eq-preset-btn py-2.5 px-3 rounded-2xl text-xs font-medium bg-white/6 text-white/75 text-left border border-white/8">哈曼目标曲线 <span class="text-[10px] text-emerald-200/75">近似</span></button>
-          <button data-eq-preset="bass" class="fx-eq-preset-btn py-2.5 px-3 rounded-2xl text-xs font-medium bg-white/6 text-white/75 text-left border border-white/8">低音增强</button>
-          <button data-eq-preset="vocal" class="fx-eq-preset-btn py-2.5 px-3 rounded-2xl text-xs font-medium bg-white/6 text-white/75 text-left border border-white/8">人声清透</button>
-          <button data-eq-preset="electronic" class="fx-eq-preset-btn py-2.5 px-3 rounded-2xl text-xs font-medium bg-white/6 text-white/75 text-left border border-white/8">电子律动</button>
-          <button data-eq-preset="jbl" class="fx-eq-preset-btn py-2.5 px-3 rounded-2xl text-xs font-medium bg-white/6 text-white/75 text-left border border-white/8">JBL 风格 <span class="text-[10px] text-amber-200/75">近似</span></button>
-          <button data-eq-preset="sennheiser" class="fx-eq-preset-btn py-2.5 px-3 rounded-2xl text-xs font-medium bg-white/6 text-white/75 text-left border border-white/8">森海塞尔风格 <span class="text-[10px] text-amber-200/75">近似</span></button>
-          <button data-eq-preset="bose" class="fx-eq-preset-btn py-2.5 px-3 rounded-2xl text-xs font-medium bg-white/6 text-white/75 text-left border border-white/8">Bose 风格 <span class="text-[10px] text-amber-200/75">近似</span></button>
+        <div class="pt-2.5 border-t border-white/8 space-y-2">
+          <div class="text-[11px] font-semibold tracking-wider text-emerald-200/75 uppercase">特调大厂曲线</div>
+          <div class="grid grid-cols-2 gap-2">
+            <button data-eq-preset="harman" class="fx-eq-preset-btn py-2.5 px-3 rounded-2xl text-xs font-medium bg-white/6 text-white/75 text-left border border-white/8">哈曼目标曲线</button>
+            <button data-eq-preset="jbl" class="fx-eq-preset-btn py-2.5 px-3 rounded-2xl text-xs font-medium bg-white/6 text-white/75 text-left border border-white/8">JBL 风格</button>
+            <button data-eq-preset="sennheiser" class="fx-eq-preset-btn py-2.5 px-3 rounded-2xl text-xs font-medium bg-white/6 text-white/75 text-left border border-white/8">森海塞尔风格</button>
+            <button data-eq-preset="bose" class="fx-eq-preset-btn py-2.5 px-3 rounded-2xl text-xs font-medium bg-white/6 text-white/75 text-left border border-white/8">Bose 风格</button>
+          </div>
         </div>
       </div>
 
@@ -2878,7 +2988,12 @@
             cover: meta.cover || '',
             autoPlay: Boolean(autoPlay),
             resumeTime: Number(resumeTime) || 0,
-            rate: nativeAudioState.playbackRate || 1
+            rate: nativeAudioState.playbackRate || 1,
+            eqEnabled: Boolean(state.audioFx?.eqEnabled) && !eqAbBypassActive,
+            eqGains: (state.audioFx?.eqGains || [0, 0, 0, 0, 0]).map((g) => Math.max(-12, Math.min(12, Number(g) || 0))),
+            fadeEnabled: Boolean(state.audioFx?.fadeEnabled),
+            fadeSecs: Number(state.audioFx?.fadeSecs) || 0,
+            loudnessGain: state.audioFx?.loudnessEnabled && Number.isFinite(audioFxRuntime?.loudnessGain) ? audioFxRuntime.loudnessGain : 1
           });
         },
         async play() {
@@ -4588,6 +4703,15 @@
             : state.parsedLyrics[1]?.text || '轻触切换至滚动歌词视图';
         $('np-mini-lyric-1').textContent = curLine;
         $('np-mini-lyric-2').textContent = nextLine;
+        if (hasNativeAudioBridge() && curLine) {
+          try {
+            window.webkit.messageHandlers.fengAudio.postMessage({
+              action: 'updateLyric',
+              lyricLine: curLine,
+              nextLyricLine: nextLine || ''
+            });
+          } catch {}
+        }
 
         const isBounceMode = (state.diy.lyricStyle || 'focus') === 'bounce';
         const container = $('lyrics-scroll-container');
@@ -4626,15 +4750,26 @@
           el.style.setProperty('--lyric-3d-op', String(op));
           el.style.setProperty('--lyric-3d-blur', `${bl}px`);
 
-          if (staggerOn && didAdvance && dist <= 6) {
-            // Brief vertical spring offset that releases in staggered wave as lines transition
-            const kickY = moveDir * (dist === 0 ? 22 : 16 + Math.min(dist * 3, 14));
-            el.style.setProperty('--lyric-kick-y', `${kickY}px`);
-            el.style.setProperty('--lyric-kick-scale', String(sc));
-            el.classList.add('lyric-stagger-kick');
-            kickEls.push(el);
-          } else {
-            el.classList.remove('lyric-stagger-kick');
+          el.classList.remove('lyric-handoff-out', 'lyric-handoff-in', 'lyric-stagger-kick');
+          if (staggerOn && didAdvance) {
+            if (idx === prevIdx) {
+              // Outgoing line briefly glides LEFT and settles back cleanly
+              void el.offsetWidth;
+              el.classList.add('lyric-handoff-out');
+              setTimeout(() => el.classList.remove('lyric-handoff-out'), 680);
+            } else if (idx === activeIdx) {
+              // Incoming active line sweeps in from RIGHT with spring overshoot
+              void el.offsetWidth;
+              el.classList.add('lyric-handoff-in');
+              setTimeout(() => el.classList.remove('lyric-handoff-in'), 700);
+            } else if (dist <= 5) {
+              // Neighbor lines follow with subtle vertical staggered ripple only (staying cleanly aligned)
+              const kickY = moveDir * (12 + Math.min(dist * 2.5, 12));
+              el.style.setProperty('--lyric-kick-y', `${kickY}px`);
+              el.style.setProperty('--lyric-kick-scale', String(sc));
+              el.classList.add('lyric-stagger-kick');
+              kickEls.push(el);
+            }
           }
 
           el.classList.remove('lyric-active', 'lyric-near', 'lyric-far');
@@ -4885,17 +5020,24 @@
         const disp = rawTrack ? getTrackDisplay(rawTrack) : null;
         const title = disp ? String(disp.title || 'FENG MUSIC') : '';
         const artist = disp ? String(disp.artist || '') : '';
+        const album = disp ? String(disp.album || '') : '';
         const isPlaying = Boolean(disp && audio && !audio.paused && !audio.ended);
+        const elapsed = Number.isFinite(audio?.currentTime) ? Math.max(0, audio.currentTime) : 0;
+        const duration = Number.isFinite(audio?.duration) && audio.duration > 0 ? audio.duration : (Number(disp?.duration) || 0);
         const rawCover = disp ? String(disp.cover || '') : '';
         const cover = rawCover.startsWith('data:image/') ? rawCover : null;
-        const sig = `${disp ? disp.id : ''}|${title}|${artist}|${isPlaying ? 1 : 0}|${cover ? 1 : 0}`;
+        const progressBucket = duration > 1 ? Math.floor((elapsed / duration) * 20) : 0;
+        const sig = `${disp ? disp.id : ''}|${title}|${artist}|${album}|${isPlaying ? 1 : 0}|${cover ? 1 : 0}|${progressBucket}`;
         if (!force && sig === lastAndroidWidgetSig) return;
         lastAndroidWidgetSig = sig;
         postFolderMessage({
           action: 'widgetSync',
           title,
           artist,
+          album,
           isPlaying,
+          elapsed,
+          duration,
           cover
         });
       }
@@ -5258,13 +5400,21 @@
       // =========================================================================
       // 4-TAB DOCK & NATIVE iOS UITabBar LIQUID GLASS DOCK BRIDGE
       // =========================================================================
+      let lastDockWasHidden = false;
       function syncNativeDockState() {
         enforceNativeBridgeVisibility();
         const npOpen = !nowPlayingModal.classList.contains('translate-y-full');
+        const eqModal = $('eq-fullscreen-modal');
+        const eqOpen = Boolean(eqModal && !eqModal.classList.contains('translate-y-full'));
         const backdropOpen = !modalBackdrop.classList.contains('pointer-events-none');
         const isMainTab = ['library', 'playlists', 'stats', 'diy'].includes(state.activeView);
-        const hidden = npOpen || backdropOpen || !isMainTab;
-        const canCollapse = isMainTab && !hidden;
+        const hidden = npOpen || eqOpen || backdropOpen || !isMainTab;
+        // Whenever returning from any modal/overlay/detail view to a main tab, always expand Dock cleanly
+        if (lastDockWasHidden && !hidden) {
+          state.dockCollapsed = false;
+        }
+        lastDockWasHidden = hidden;
+        const canCollapse = isMainTab && !hidden && !state.multiSelectMode && !state.libCustomEditing;
         const collapsed = Boolean(state.dockCollapsed && canCollapse);
         document.documentElement.classList.toggle('dock-hidden', hidden);
         document.documentElement.classList.toggle('dock-collapsed', collapsed);
@@ -5304,6 +5454,16 @@
           const plList = $('playlist-detail-tracks');
           const allowPlCollapse = !state.plMultiSelectMode && !state.plCustomEditing;
           plDetailView.classList.toggle('is-scrolled', allowPlCollapse && Boolean(plList && plList.scrollTop > 44));
+        }
+        const statsView = $('view-stats');
+        if (statsView) {
+          const stScroll = $('stats-scroll-container');
+          statsView.classList.toggle('is-scrolled', Boolean(stScroll && stScroll.scrollTop > 44));
+        }
+        const diyView = $('view-diy');
+        if (diyView) {
+          const diyScroll = $('diy-scroll-container');
+          diyView.classList.toggle('is-scrolled', Boolean(diyScroll && diyScroll.scrollTop > 44));
         }
       }
 
@@ -5639,9 +5799,11 @@
         if (delBtn) delBtn.textContent = '删除';
         syncMultiSelectBar();
         if (shouldRender) renderActiveLibraryTab();
+        state.dockCollapsed = false;
         enforceSingleVisibleView(state.activeView || 'library');
         syncCollapsibleHeaders();
         requestAnimationFrame(syncCollapsibleHeaders);
+        syncNativeDockState();
       }
 
       function attachSongRowListeners(container, enableMultiSelect = false) {
@@ -8310,14 +8472,14 @@
         bose: [4.0, 2.5, 0.5, 1.0, -1.0]
       };
       const EQ_PRESET_LABELS = {
-        flat: '平坦',
-        harman: '哈曼目标曲线（近似）',
+        flat: '平坦参考',
+        harman: '哈曼目标曲线',
         bass: '低音增强',
         vocal: '人声清透',
         electronic: '电子律动',
-        jbl: 'JBL 风格（近似）',
-        sennheiser: '森海塞尔风格（近似）',
-        bose: 'Bose 风格（近似）',
+        jbl: 'JBL 风格',
+        sennheiser: '森海塞尔风格',
+        bose: 'Bose 风格',
         custom: '自定义'
       };
 
@@ -8332,8 +8494,31 @@
         loudnessSamples: 0
       };
 
+      function syncNativeAudioFxToIos(rampSec = 0.08) {
+        if (!hasNativeAudioBridge()) return;
+        const fx = state.audioFx || {};
+        const fade = Math.min(audioFxRuntime.crossFadeFactor, audioFxRuntime.sleepFadeFactor);
+        const loud = fx.loudnessEnabled ? (audioFxRuntime.loudnessGain || 1) : 1;
+        try {
+          window.webkit.messageHandlers.fengAudio.postMessage({
+            action: 'setAudioFx',
+            eqEnabled: Boolean(fx.eqEnabled) && !eqAbBypassActive,
+            eqGains: (fx.eqGains || [0, 0, 0, 0, 0]).map((g) => Math.max(-12, Math.min(12, Number(g) || 0))),
+            fadeEnabled: Boolean(fx.fadeEnabled),
+            fadeSecs: Number(fx.fadeSecs) || 0,
+            loudnessGain: Math.max(0.25, Math.min(2.0, Number(loud) || 1)),
+            fadeFactor: Math.max(0, Math.min(1, Number(fade))),
+            rampSec: Math.max(0.02, Number(rampSec) || 0.08)
+          });
+        } catch {}
+      }
+
       function applyMasterGain(rampSec = 0.05) {
-        if (hasNativeAudioBridge() || !masterGainNode || !audioCtx) return;
+        if (hasNativeAudioBridge()) {
+          syncNativeAudioFxToIos(rampSec);
+          return;
+        }
+        if (!masterGainNode || !audioCtx) return;
         rawAudio.volume = 1;
         const fade = Math.min(audioFxRuntime.crossFadeFactor, audioFxRuntime.sleepFadeFactor);
         const target = Math.max(0, Math.min(2.0, audioFxRuntime.loudnessGain * fade));
@@ -8354,6 +8539,9 @@
       let eqAbBypassActive = false;
 
       function applyEqNodeGains() {
+        if (hasNativeAudioBridge()) {
+          syncNativeAudioFxToIos(0.06);
+        }
         if (!eqNodes.length) return;
         const enabled = Boolean(state.audioFx.eqEnabled) && !eqAbBypassActive;
         const gains = state.audioFx.eqGains || [0, 0, 0, 0, 0];
@@ -8403,12 +8591,12 @@
         const isNativeIos = hasNativeAudioBridge();
         const notice = $('np-audiofx-ios-notice');
         const controls = $('np-audiofx-controls');
-        if (notice) notice.classList.toggle('hidden', !isNativeIos);
+        // iOS native AVAudioEngine FX is now supported — keep controls crisp & hide legacy notice
+        if (notice) notice.classList.add('hidden');
         const eqViewNotice = $('eq-view-ios-notice');
-        if (eqViewNotice) eqViewNotice.classList.toggle('hidden', !isNativeIos);
-        // Keep EQ entry clickable on iOS so user can still view/edit presets with clear notice
+        if (eqViewNotice) eqViewNotice.classList.add('hidden');
         if (controls) {
-          controls.classList.toggle('opacity-70', isNativeIos);
+          controls.classList.remove('opacity-70', 'opacity-45', 'pointer-events-none');
         }
 
         const fx = state.audioFx;
@@ -8683,18 +8871,18 @@
               specLift = amp * gaussNear * 0.22;
             }
 
-            // Slow, silky flowing current gliding along the curve
-            const dSweepX = (nx - sweepPos) / 0.18;
+            // Clearly visible silky flowing current gliding along the curve (tuned for mobile high-DPI screens)
+            const dSweepX = (nx - sweepPos) / 0.16;
             const sweepHead = Math.exp(-0.5 * dSweepX * dSweepX);
-            const flowLift = sweepHead * gaussNear;
+            const flowLift = sweepHead * Math.pow(gaussNear, 0.72);
 
-            const sizeFactor = Math.min(1.06, 0.10 + Math.pow(gaussNear, 0.85) * 0.86 + specLift + flowLift * 0.12);
+            const sizeFactor = Math.min(1.18, 0.10 + Math.pow(gaussNear, 0.85) * 0.78 + specLift + flowLift * 0.34);
             const radius = Math.max(0.85 * dpr, maxDotR * sizeFactor);
 
-            const shimmerShift = flowLift * 0.045;
+            const shimmerShift = flowLift * 0.11;
             const alpha = activeEq
-              ? Math.min(0.96, 0.08 + Math.pow(gaussNear, 0.8) * 0.82 + flowLift * 0.14)
-              : Math.min(0.38, 0.05 + Math.pow(gaussNear, 0.9) * 0.26);
+              ? Math.min(1.0, 0.07 + Math.pow(gaussNear, 0.82) * 0.66 + flowLift * 0.36)
+              : Math.min(0.40, 0.05 + Math.pow(gaussNear, 0.9) * 0.24 + flowLift * 0.12);
 
             // Dot circle
             ctx.beginPath();
@@ -8723,12 +8911,39 @@
           if (s === 0) ctx.moveTo(x, y);
           else ctx.lineTo(x, y);
         }
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 1.7 * dpr;
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.82)';
+        ctx.lineWidth = 1.6 * dpr;
         ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
         ctx.shadowBlur = 4 * dpr;
         ctx.stroke();
         ctx.shadowBlur = 0;
+
+        // Visible luminous wave crest gliding smoothly along the curve
+        if (activeEq) {
+          const crestStart = Math.max(0, sweepPos - 0.15);
+          const crestEnd = Math.min(1, sweepPos + 0.15);
+          if (crestEnd > crestStart) {
+            const crestGrad = ctx.createLinearGradient(padX + crestStart * plotW, 0, padX + crestEnd * plotW, 0);
+            crestGrad.addColorStop(0, 'rgba(255,255,255,0)');
+            crestGrad.addColorStop(0.5, 'rgba(255,255,255,0.96)');
+            crestGrad.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.beginPath();
+            for (let cs = 0; cs <= 32; cs++) {
+              const t = crestStart + (cs / 32) * (crestEnd - crestStart);
+              const db = evalEqCurveAtNormX(t, rawGains);
+              const cx = padX + t * plotW;
+              const cy = midY - (db / 12) * (plotH / 2);
+              if (cs === 0) ctx.moveTo(cx, cy);
+              else ctx.lineTo(cx, cy);
+            }
+            ctx.strokeStyle = crestGrad;
+            ctx.lineWidth = 3.0 * dpr;
+            ctx.shadowColor = holoDotColor(Math.max(0, Math.min(1, sweepPos)), 0, 0.65);
+            ctx.shadowBlur = 9 * dpr;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+          }
+        }
 
         // 3. Precision 5-Band Control Nodes (Obsidian core + crisp white ring, 100% locked on curve)
         EQ_BAND_NORM_XS.forEach((nx, i) => {
@@ -8834,6 +9049,19 @@
         }
         if (audioCtx && audioCtx.state === 'suspended') {
           audioCtx.resume().catch(() => {});
+        }
+        if (audioCtx && !audioCtx.__fengStateGuardAttached) {
+          audioCtx.__fengStateGuardAttached = true;
+          audioCtx.onstatechange = () => {
+            if (state.isPlaying && !hasNativeAudioBridge() && audioCtx && audioCtx.state === 'suspended') {
+              audioCtx.resume().catch(() => {});
+            }
+          };
+          document.addEventListener('visibilitychange', () => {
+            if (state.isPlaying && !hasNativeAudioBridge() && audioCtx && audioCtx.state === 'suspended') {
+              audioCtx.resume().catch(() => {});
+            }
+          });
         }
         if (audioCtx && !analyserNode && !hasNativeAudioBridge()) {
           try {
@@ -9751,7 +9979,10 @@
         modalBackdrop.classList.add('opacity-0', 'pointer-events-none');
         ['sheet-np-settings', 'sheet-track-actions', 'sheet-queue', 'sheet-pick-playlist', 'sheet-playlist-layout', 'sheet-add-music-ios', 'sheet-add-music-android', 'sheet-sort-menu'].forEach((id) => {
           const el = $(id);
-          if (el) el.classList.add('translate-y-full');
+          if (el) {
+            el.classList.add('translate-y-[115%]');
+            el.classList.remove('translate-y-full');
+          }
         });
         [
           'modal-select-songs',
@@ -9767,14 +9998,20 @@
           if (el) el.classList.add('hidden');
         });
         resetDeleteConfirm();
-        if (!skipDockSync) syncNativeDockState();
+        if (skipDockSync !== true) {
+          state.dockCollapsed = false;
+          syncNativeDockState();
+        }
       }
 
       function openBottomSheet(sheetId) {
         closeAllBottomSheets(true);
         modalBackdrop.classList.remove('opacity-0', 'pointer-events-none');
         const el = $(sheetId);
-        if (el) el.classList.remove('translate-y-full');
+        if (el) {
+          el.classList.remove('translate-y-[115%]');
+          el.classList.remove('translate-y-full');
+        }
         syncNativeDockState();
       }
 
@@ -9794,6 +10031,7 @@
 
       function closeNowPlaying() {
         nowPlayingModal.classList.add('translate-y-full');
+        state.dockCollapsed = false;
         syncNativeDockState();
       }
 
@@ -9812,6 +10050,100 @@
         }
       }
 
+      let queueZipperBound = false;
+      function setupQueueZipperRail() {
+        const rail = $('queue-zipper-rail');
+        const list = $('queue-list-container');
+        const spine = $('queue-zipper-spine');
+        const teeth = $('queue-zipper-teeth');
+        const knob = $('queue-zipper-knob');
+        if (!rail || !list || !spine || !teeth || !knob) return;
+
+        const drawZipperWave = (activeFrac, bulgeStrength) => {
+          const H = 240;
+          const baseX = 30;
+          const activeY = 8 + Math.max(0, Math.min(1, activeFrac)) * (H - 16);
+          const pts = [];
+          const steps = 48;
+          for (let i = 0; i <= steps; i++) {
+            const y = 8 + (i / steps) * (H - 16);
+            const dy = (y - activeY) / 34;
+            const bulge = bulgeStrength * Math.exp(-0.5 * dy * dy);
+            const x = baseX - bulge;
+            pts.push(`${i === 0 ? 'M' : 'L'} ${x.toFixed(2)} ${y.toFixed(2)}`);
+          }
+          const d = pts.join(' ');
+          spine.setAttribute('d', d);
+          teeth.setAttribute('d', d);
+          knob.setAttribute('cx', (baseX - bulgeStrength).toFixed(2));
+          knob.setAttribute('cy', activeY.toFixed(2));
+          knob.setAttribute('r', bulgeStrength > 1 ? '5.6' : '3.6');
+          knob.setAttribute('opacity', bulgeStrength > 1 ? '1' : '0.75');
+        };
+
+        const syncZipperFromScroll = () => {
+          const maxScroll = Math.max(1, list.scrollHeight - list.clientHeight);
+          const frac = Math.max(0, Math.min(1, list.scrollTop / maxScroll));
+          drawZipperWave(frac, 0);
+        };
+        syncZipperFromScroll();
+
+        if (queueZipperBound) return;
+        queueZipperBound = true;
+
+        let zipperActive = false;
+        let lastFocusedRow = null;
+
+        const clearFocusedRow = () => {
+          if (lastFocusedRow) {
+            lastFocusedRow.classList.remove('queue-row-zipper-focus');
+            lastFocusedRow = null;
+          }
+        };
+
+        const scrubAtClientY = (clientY) => {
+          const rect = rail.getBoundingClientRect();
+          if (!rect.height) return;
+          const frac = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
+          drawZipperWave(frac, 22.5);
+
+          const maxScroll = Math.max(0, list.scrollHeight - list.clientHeight);
+          list.scrollTop = frac * maxScroll;
+
+          const rows = list.querySelectorAll('.queue-row');
+          if (rows.length) {
+            const targetIdx = Math.min(rows.length - 1, Math.max(0, Math.round(frac * (rows.length - 1))));
+            const targetRow = rows[targetIdx];
+            if (targetRow !== lastFocusedRow) {
+              clearFocusedRow();
+              targetRow.classList.add('queue-row-zipper-focus');
+              lastFocusedRow = targetRow;
+            }
+          }
+        };
+
+        on(rail, 'pointerdown', (e) => {
+          zipperActive = true;
+          try { rail.setPointerCapture(e.pointerId); } catch {}
+          scrubAtClientY(e.clientY);
+        });
+        on(rail, 'pointermove', (e) => {
+          if (!zipperActive) return;
+          scrubAtClientY(e.clientY);
+        });
+        const endZipper = () => {
+          if (!zipperActive) return;
+          zipperActive = false;
+          clearFocusedRow();
+          syncZipperFromScroll();
+        };
+        on(rail, 'pointerup', endZipper);
+        on(rail, 'pointercancel', endZipper);
+        on(list, 'scroll', () => {
+          if (!zipperActive) syncZipperFromScroll();
+        }, { passive: true });
+      }
+
       function renderQueue() {
         const validQueue = state.queue.map((id) => state.tracks.find((t) => t.id === id)).filter(Boolean).map(getTrackDisplay);
         $('queue-count-label').textContent = `共 ${validQueue.length} 首`;
@@ -9826,7 +10158,7 @@
           .map((t) => {
             const active = t.id === state.currentTrackId;
             return `
-              <div data-queue-id="${t.id}" class="queue-row rounded-2xl px-3 py-2 flex items-center justify-between gap-2.5 cursor-pointer ${active ? 'bg-sky-500/20 text-sky-300' : 'hover:bg-white/8 text-white'}">
+              <div data-queue-id="${t.id}" class="queue-row rounded-2xl px-3 py-2 flex items-center justify-between gap-2.5 cursor-pointer transition ${active ? 'bg-white/16 border border-white/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] text-white' : 'hover:bg-white/10 border border-transparent text-white/90'}">
                 <div class="flex items-center gap-2.5 min-w-0 flex-1">
                   <img src="${t.cover}" alt="" class="w-9 h-9 rounded-xl object-cover shrink-0 bg-white/10" />
                   <div class="min-w-0">
@@ -9846,6 +10178,7 @@
           });
         });
 
+        setupQueueZipperRail();
         container.querySelectorAll('.btn-queue-remove').forEach((btn) => {
           on(btn, 'click', async (e) => {
             e.stopPropagation();
@@ -10310,40 +10643,136 @@
       function openDailyFortuneModal(forceRandom = false, playlistId = null) {
         const effectivePlId = forceRandom && playlistId === null ? state.fortuneScopePlaylistId : (playlistId || null);
         state.fortuneScopePlaylistId = effectivePlId;
-        let scopedTracks = state.tracks;
-        if (effectivePlId) {
-          const pl = state.playlists.find((p) => p.id === effectivePlId);
-          const plIds = new Set(pl?.trackIds || []);
-          scopedTracks = state.tracks.filter((t) => plIds.has(t.id));
-          if (!scopedTracks.length) {
-            showToast('歌单是空的');
-            return;
-          }
-        } else if (!scopedTracks.length) {
-          showToast('曲库为空，请先导入音乐');
-          return;
-        }
-        let pickTrack = null;
-        if (!forceRandom && state.fortuneTrackId) {
-          pickTrack = scopedTracks.find((t) => t.id === state.fortuneTrackId);
-        }
-        if (!pickTrack) {
-          const candidates = scopedTracks.filter((t) => t.id !== state.fortuneTrackId);
-          const pool = candidates.length ? candidates : scopedTracks;
-          pickTrack = pool[Math.floor(Math.random() * pool.length)];
-          state.fortuneTrackId = pickTrack.id;
-        }
 
-        const t = getTrackDisplay(pickTrack);
+        const fortuneKind =
+          !effectivePlId && state.activeView === 'library' && state.libTab === 'albums'
+            ? 'album'
+            : !effectivePlId && state.activeView === 'library' && state.libTab === 'artists'
+            ? 'artist'
+            : 'song';
+        state.fortuneKind = fortuneKind;
+
         const now = new Date();
         $('fortune-date-tag').textContent = `${now.getMonth() + 1}月${now.getDate()}日`;
-        $('fortune-cover').src = t.cover;
-        $('fortune-title').textContent = t.title;
-        $('fortune-artist').textContent = `${t.artist} · ${t.album}`;
+        const badgeEl = $('fortune-kind-badge');
+        const coverEl = $('fortune-cover');
+        const discEl = $('fortune-album-disc');
+        const addPlBtn = $('btn-fortune-add-pl');
+        const playBtn = $('btn-fortune-play');
 
-        const lyricExcerpt = extractTrackLyricQuote(t);
-        $('fortune-lyric-quote').textContent =
-          lyricExcerpt || FORTUNE_FALLBACK_QUOTES[Math.floor(Math.random() * FORTUNE_FALLBACK_QUOTES.length)];
+        if (fortuneKind === 'album') {
+          const albums = getSortedAlbums();
+          if (!albums.length) {
+            showToast('暂无专辑可抽取');
+            return;
+          }
+          let picked = null;
+          if (!forceRandom && state.fortuneAlbumName) {
+            picked = albums.find((a) => a.name === state.fortuneAlbumName);
+          }
+          if (!picked) {
+            const pool = albums.filter((a) => a.name !== state.fortuneAlbumName);
+            const src = pool.length ? pool : albums;
+            picked = src[Math.floor(Math.random() * src.length)];
+            state.fortuneAlbumName = picked.name;
+          }
+          state.fortuneTrackId = picked.tracks[0]?.id || null;
+          if (badgeEl) {
+            badgeEl.textContent = '今日专辑签';
+            badgeEl.className = 'px-2.5 py-1 rounded-full bg-amber-400/20 border border-amber-300/35 text-[11px] font-semibold text-amber-200';
+          }
+          if (discEl) discEl.classList.remove('hidden');
+          if (coverEl) {
+            coverEl.src = picked.cover || DEFAULT_APP_COVER;
+            coverEl.className = 'relative z-10 w-28 h-28 -ml-6 rounded-2xl object-cover shadow-2xl border border-white/25 transition-all duration-300';
+          }
+          $('fortune-title').textContent = picked.name;
+          $('fortune-artist').textContent = `${picked.artist} · 共 ${picked.tracks.length} 首歌曲`;
+          const sampleDisp = picked.tracks[0] ? getTrackDisplay(picked.tracks[0]) : null;
+          const lyricExcerpt = sampleDisp ? extractTrackLyricQuote(sampleDisp) : '';
+          $('fortune-lyric-quote').textContent =
+            lyricExcerpt || `「${picked.name}」是一张值得从第一轨听到最后一轨的完整专辑。`;
+          if (addPlBtn) addPlBtn.classList.add('hidden');
+          if (playBtn) playBtn.textContent = '打开专辑';
+        } else if (fortuneKind === 'artist') {
+          const artists = getSortedArtists();
+          if (!artists.length) {
+            showToast('暂无歌手可抽取');
+            return;
+          }
+          let picked = null;
+          if (!forceRandom && state.fortuneArtistName) {
+            picked = artists.find((a) => a.name === state.fortuneArtistName);
+          }
+          if (!picked) {
+            const pool = artists.filter((a) => a.name !== state.fortuneArtistName);
+            const src = pool.length ? pool : artists;
+            picked = src[Math.floor(Math.random() * src.length)];
+            state.fortuneArtistName = picked.name;
+          }
+          const albumSet = new Set(picked.tracks.map((tr) => getTrackDisplay(tr).album));
+          state.fortuneTrackId = picked.tracks[0]?.id || null;
+          if (badgeEl) {
+            badgeEl.textContent = '今日歌手签';
+            badgeEl.className = 'px-2.5 py-1 rounded-full bg-sky-400/20 border border-sky-300/35 text-[11px] font-semibold text-sky-200';
+          }
+          if (discEl) discEl.classList.add('hidden');
+          if (coverEl) {
+            coverEl.src = picked.cover || DEFAULT_APP_COVER;
+            coverEl.className = 'relative z-10 w-32 h-32 rounded-full object-cover shadow-2xl border-2 border-sky-300/40 transition-all duration-300';
+          }
+          $('fortune-title').textContent = picked.name;
+          $('fortune-artist').textContent = `${albumSet.size} 张专辑 · ${picked.tracks.length} 首歌曲`;
+          const sampleDisp = picked.tracks[0] ? getTrackDisplay(picked.tracks[0]) : null;
+          const lyricExcerpt = sampleDisp ? extractTrackLyricQuote(sampleDisp) : '';
+          $('fortune-lyric-quote').textContent =
+            lyricExcerpt || `今天把耳朵交给 ${picked.name}，重温 TA 曲库里的每一段旋律。`;
+          if (addPlBtn) addPlBtn.classList.add('hidden');
+          if (playBtn) playBtn.textContent = '进入歌手页';
+        } else {
+          let scopedTracks = state.tracks;
+          if (effectivePlId) {
+            const pl = state.playlists.find((p) => p.id === effectivePlId);
+            const plIds = new Set(pl?.trackIds || []);
+            scopedTracks = state.tracks.filter((t) => plIds.has(t.id));
+            if (!scopedTracks.length) {
+              showToast('歌单是空的');
+              return;
+            }
+          } else if (!scopedTracks.length) {
+            showToast('曲库为空，请先导入音乐');
+            return;
+          }
+          let pickTrack = null;
+          if (!forceRandom && state.fortuneTrackId) {
+            pickTrack = scopedTracks.find((t) => t.id === state.fortuneTrackId);
+          }
+          if (!pickTrack) {
+            const candidates = scopedTracks.filter((t) => t.id !== state.fortuneTrackId);
+            const pool = candidates.length ? candidates : scopedTracks;
+            pickTrack = pool[Math.floor(Math.random() * pool.length)];
+            state.fortuneTrackId = pickTrack.id;
+          }
+
+          const t = getTrackDisplay(pickTrack);
+          if (badgeEl) {
+            badgeEl.textContent = '今日音乐签';
+            badgeEl.className = 'px-2.5 py-1 rounded-full bg-amber-400/20 border border-amber-300/30 text-[11px] font-semibold text-amber-200';
+          }
+          if (discEl) discEl.classList.add('hidden');
+          if (coverEl) {
+            coverEl.src = t.cover;
+            coverEl.className = 'relative z-10 w-32 h-32 rounded-3xl object-cover shadow-2xl border border-white/20 transition-all duration-300';
+          }
+          $('fortune-title').textContent = t.title;
+          $('fortune-artist').textContent = `${t.artist} · ${t.album}`;
+
+          const lyricExcerpt = extractTrackLyricQuote(t);
+          $('fortune-lyric-quote').textContent =
+            lyricExcerpt || FORTUNE_FALLBACK_QUOTES[Math.floor(Math.random() * FORTUNE_FALLBACK_QUOTES.length)];
+          if (addPlBtn) addPlBtn.classList.remove('hidden');
+          if (playBtn) playBtn.textContent = '立即聆听';
+        }
 
         const color = FORTUNE_COLORS[Math.floor(Math.random() * FORTUNE_COLORS.length)];
         $('fortune-color-dot').style.backgroundColor = color.hex;
@@ -10866,6 +11295,18 @@
                   if (st > 44) plView.classList.add('is-scrolled');
                   else if (st < 18) plView.classList.remove('is-scrolled');
                 }
+              } else if (scrollId === 'stats-scroll-container') {
+                const statsView = $('view-stats');
+                if (statsView) {
+                  if (st > 44) statsView.classList.add('is-scrolled');
+                  else if (st < 18) statsView.classList.remove('is-scrolled');
+                }
+              } else if (scrollId === 'diy-scroll-container') {
+                const diyView = $('view-diy');
+                if (diyView) {
+                  if (st > 44) diyView.classList.add('is-scrolled');
+                  else if (st < 18) diyView.classList.remove('is-scrolled');
+                }
               }
               if (st <= 10) {
                 if (state.dockCollapsed) {
@@ -11003,6 +11444,14 @@
         on('btn-pl-scroll-top', () => {
           const box = $('playlists-grid');
           if (box) box.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        on('btn-stats-scroll-top', () => {
+          const sc = $('stats-scroll-container');
+          if (sc) sc.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        on('btn-diy-scroll-top', () => {
+          const sc = $('diy-scroll-container');
+          if (sc) sc.scrollTo({ top: 0, behavior: 'smooth' });
         });
         on('btn-playlist-back-compact', () => {
           resetDeletePlaylistConfirm();
@@ -11224,12 +11673,15 @@
           list.innerHTML = getSortedTracks()
             .map(
               (t) => `
-              <label class="flex items-center gap-3 p-2.5 rounded-2xl hover:bg-white/10 cursor-pointer">
-                <input type="checkbox" value="${t.id}" ${existingSet.has(t.id) ? 'checked' : ''} class="w-4 h-4 accent-sky-400 rounded" />
-                <img src="${t.cover}" alt="" class="w-10 h-10 rounded-xl object-cover bg-white/10" />
+              <label class="flex items-center gap-3 p-2.5 rounded-2xl hover:bg-white/10 active:bg-white/12 cursor-pointer transition">
+                <input type="checkbox" value="${t.id}" ${existingSet.has(t.id) ? 'checked' : ''} class="sr-only peer" />
+                <span class="glass-check-ring">
+                  <svg class="w-3.5 h-3.5 transition-all duration-150" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                </span>
+                <img src="${t.cover}" alt="" loading="lazy" decoding="async" class="w-10 h-10 rounded-xl object-cover bg-white/10 border border-white/15 shrink-0" />
                 <div class="min-w-0 flex-1">
                   <div class="text-xs font-semibold text-white truncate">${escapeHtml(t.title)}</div>
-                  <div class="text-[11px] text-white/50 truncate">${escapeHtml(t.artist)}</div>
+                  <div class="text-[11px] text-white/55 truncate">${escapeHtml(t.artist)}</div>
                 </div>
               </label>`
             )
@@ -11823,6 +12275,8 @@
         on('btn-eq-close', () => {
           const modal = $('eq-fullscreen-modal');
           if (modal) modal.classList.add('translate-y-full');
+          state.dockCollapsed = false;
+          syncNativeDockState();
         });
         on('btn-eq-reset-all', async () => {
           state.audioFx.eqGains = [0, 0, 0, 0, 0];
@@ -12135,9 +12589,18 @@
           showToast(!wasActive ? `已叠加白噪音：${chName}` : `已关闭白噪音：${chName}`);
         });
         on('btn-fortune-play', async () => {
+          const kind = state.fortuneKind || 'song';
           const tid = state.fortuneTrackId;
+          const albName = state.fortuneAlbumName;
+          const artName = state.fortuneArtistName;
           closeAllBottomSheets();
-          if (tid) await loadTrack(tid, true);
+          if (kind === 'album' && albName) {
+            openGroupDetail('album', albName);
+          } else if (kind === 'artist' && artName) {
+            openGroupDetail('artist', artName);
+          } else if (tid) {
+            await loadTrack(tid, true);
+          }
         });
 
         // Backup & Guide Modal
