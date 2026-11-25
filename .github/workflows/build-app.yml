@@ -2209,7 +2209,7 @@ jobs:
 
           // Native iOS Picture-in-Picture Floating Desktop Lyrics Bar (AVSampleBufferDisplayLayer, 24fps R->L smooth marquee)
           @available(iOS 15.0, *)
-          final class FengPiPLyricsManager: NSObject, AVPictureInPictureControllerDelegate, AVPictureInPictureControllerSampleBufferPlaybackDelegate {
+          final class FengPiPLyricsManager: NSObject, AVPictureInPictureControllerDelegate, AVPictureInPictureSampleBufferPlaybackDelegate {
               private let canvasW: Int = 720
               private let canvasH: Int = 128
               private let displayLayer = AVSampleBufferDisplayLayer()
@@ -2371,7 +2371,7 @@ jobs:
                   let attrs: [CFString: Any] = [
                       kCVPixelBufferCGImageCompatibilityKey: true,
                       kCVPixelBufferCGBitmapContextCompatibilityKey: true,
-                      kCVPixelBufferIOSurfacePropertiesKey: [:]
+                      kCVPixelBufferIOSurfacePropertiesKey: NSDictionary()
                   ]
                   let status = CVPixelBufferCreate(
                       kCFAllocatorDefault,
@@ -2409,7 +2409,8 @@ jobs:
                               UIColor(red: 0.22, green: 0.80, blue: 0.96, alpha: 0.20).cgColor,
                               UIColor(red: 0.045, green: 0.065, blue: 0.105, alpha: 0.0).cgColor
                           ] as CFArray
-                          if let grad = CGGradient(colorsSpace: colorSpace, colors: gradColors, locations: [0.0, 1.0]) {
+                          let gradLocs: [CGFloat] = [0.0, 1.0]
+                          if let grad = CGGradient(colorsSpace: colorSpace, colors: gradColors, locations: gradLocs) {
                               ctx.drawRadialGradient(
                                   grad,
                                   startCenter: CGPoint(x: w * 0.5, y: h * 0.5),
@@ -2472,7 +2473,7 @@ jobs:
                       allocator: kCFAllocatorDefault,
                       imageBuffer: pb,
                       formatDescriptionOut: &formatDesc
-                  ) == noErr, let fmt = formatDesc else { return nil }
+                  ) == OSStatus(0), let fmt = formatDesc else { return nil }
 
                   var timing = CMSampleTimingInfo(
                       duration: CMTime(value: 1, timescale: 24),
@@ -2486,7 +2487,7 @@ jobs:
                       formatDescription: fmt,
                       sampleTiming: &timing,
                       sampleBufferOut: &sampleBuf
-                  ) == noErr, let sb = sampleBuf else { return nil }
+                  ) == OSStatus(0), let sb = sampleBuf else { return nil }
 
                   if let attachments = CMSampleBufferGetSampleAttachmentsArray(sb, createIfNecessary: true) {
                       let dict = unsafeBitCast(CFArrayGetValueAtIndex(attachments, 0), to: CFMutableDictionary.self)
@@ -2513,7 +2514,7 @@ jobs:
                   }
               }
 
-              // MARK: - AVPictureInPictureControllerSampleBufferPlaybackDelegate
+              // MARK: - AVPictureInPictureSampleBufferPlaybackDelegate
               func pictureInPictureController(_ pictureInPictureController: AVPictureInPictureController, setPlaying playing: Bool) {
                   onTogglePlay?(playing)
               }
