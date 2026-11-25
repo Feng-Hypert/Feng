@@ -2121,6 +2121,15 @@
           </button>
         </div>
       </div>
+      <div id="row-np-pip-lyrics" class="flex items-center justify-between gap-2 px-3 py-2.5 mt-1.5 rounded-2xl bg-white/8 border border-white/10">
+        <div class="min-w-0">
+          <div class="text-xs text-white/90 font-medium">桌面悬浮歌词（画中画）</div>
+          <div class="text-[10px] text-white/50 truncate">iOS 后台丝滑滚动，不卡顿不抢灵动岛</div>
+        </div>
+        <button id="btn-np-pip-lyrics" class="w-10 h-5 rounded-full bg-white/15 p-0.5 transition-colors flex items-center justify-start shrink-0" aria-label="开关桌面悬浮歌词">
+          <span class="w-4 h-4 rounded-full bg-white shadow"></span>
+        </button>
+      </div>
     </div>
 
     <!-- 4. Cover Visual Style (Moved from DIY Settings) -->
@@ -2995,7 +3004,8 @@
             fadeSecs: Number(state.audioFx?.fadeSecs) || 0,
             loudnessGain: state.audioFx?.loudnessEnabled && Number.isFinite(audioFxRuntime?.loudnessGain) ? audioFxRuntime.loudnessGain : 1,
             lyrics: (state.parsedLyrics || []).map((item) => ({ t: Number(item.time) || 0, text: String(item.text || '') })),
-            lyricOffset: Number(state.lyricOffsets[state.currentTrackId] || 0)
+            lyricOffset: Number(state.lyricOffsets[state.currentTrackId] || 0),
+            pipLyricsEnabled: Boolean(state.diy?.pipLyrics)
           });
         },
         async play() {
@@ -4612,6 +4622,18 @@
           l3dBtn.classList.toggle('justify-end', spatial3dOn);
           l3dBtn.classList.toggle('bg-white/15', !spatial3dOn);
           l3dBtn.classList.toggle('justify-start', !spatial3dOn);
+        }
+        const pipRow = $('row-np-pip-lyrics');
+        if (pipRow) {
+          pipRow.classList.toggle('hidden', !hasNativeAudioBridge());
+        }
+        const pipBtn = $('btn-np-pip-lyrics');
+        if (pipBtn) {
+          const onPip = Boolean(state.diy.pipLyrics);
+          pipBtn.classList.toggle('bg-sky-500', onPip);
+          pipBtn.classList.toggle('justify-end', onPip);
+          pipBtn.classList.toggle('bg-white/15', !onPip);
+          pipBtn.classList.toggle('justify-start', !onPip);
         }
 
         document.querySelectorAll('.lyric-style-opt-btn').forEach((btn) => {
@@ -11838,6 +11860,23 @@
           syncActiveLyric(true);
           await saveAppState();
           showToast(state.diy.lyric3d ? '已开启立体歌词效果' : '已关闭立体歌词效果');
+        });
+        on('btn-np-pip-lyrics', async () => {
+          if (!hasNativeAudioBridge()) {
+            showToast('画中画悬浮歌词仅支持 iOS 客户端');
+            return;
+          }
+          state.diy.pipLyrics = !state.diy.pipLyrics;
+          applyLyricStyleUI();
+          await saveAppState();
+          try {
+            window.webkit.messageHandlers.fengAudio.postMessage({
+              action: 'setPipLyrics',
+              enabled: Boolean(state.diy.pipLyrics),
+              startNow: Boolean(state.diy.pipLyrics)
+            });
+          } catch {}
+          showToast(state.diy.pipLyrics ? '已开启画中画悬浮歌词，返回桌面自动悬浮' : '已关闭画中画悬浮歌词');
         });
 
         on('lyric-offset-slider', 'input', (e) => {
