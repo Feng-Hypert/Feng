@@ -76,8 +76,8 @@ jobs:
           BUNDLE_ID: ${{ inputs.bundle_id || 'com.feng.music' }}
           BUILD_NUM: ${{ github.run_number }}
         run: |
-          # 0. Stamp Android app versionName "1.0.7" and versionCode
-          sed -i 's/versionName "[^"]*"/versionName "1.0.7"/' android/app/build.gradle
+          # 0. Stamp Android app versionName "1.0.8" and versionCode
+          sed -i 's/versionName "[^"]*"/versionName "1.0.8"/' android/app/build.gradle
           sed -i "s/versionCode [0-9][0-9]*/versionCode ${BUILD_NUM}/" android/app/build.gradle
 
           # 1. Add androidx.documentfile and androidx.core dependencies to android/app/build.gradle
@@ -1695,7 +1695,7 @@ jobs:
       - name: Stamp Build Version
         run: |
           PLIST="ios/App/App/Info.plist"
-          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0.7" "$PLIST" || /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string 1.0.7" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0.8" "$PLIST" || /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string 1.0.8" "$PLIST"
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${{ github.run_number }}" "$PLIST" || /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string ${{ github.run_number }}" "$PLIST"
 
       - name: Enable Native iOS AVPlayer, Lock Screen Controls, UITabBar Liquid Glass Dock & Security-Scoped Bookmarks
@@ -3113,7 +3113,7 @@ jobs:
             <key>CFBundlePackageType</key>
             <string>XPC!</string>
             <key>CFBundleShortVersionString</key>
-            <string>1.0.7</string>
+            <string>1.0.8</string>
             <key>CFBundleVersion</key>
             <string>${BUILD_NUM}</string>
             <key>FengAppGroup</key>
