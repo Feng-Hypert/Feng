@@ -30,6 +30,8 @@
       --feng-inset-bottom: 0px;
       --safe-top: max(env(safe-area-inset-top, 0px), var(--feng-inset-top, 0px));
       --safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--feng-inset-bottom, 0px));
+      --safe-left: env(safe-area-inset-left, 0px);
+      --safe-right: env(safe-area-inset-right, 0px);
       --native-dock-height: 78px;
       --app-full-height: 100lvh;
     }
@@ -1240,7 +1242,7 @@
     }
 
     /* =========================================================================
-       INFINITE POSTER CANVAS (无界海报画布 — Full-Bleed Dual Fields + Center Spine)
+       INFINITE POSTER CANVAS 2.0 (2D Omnidirectional Sea + Tethered Liquid Glass Spine + 3D Flip)
        ========================================================================= */
     html.canvas-immersive #view-library .collapsible-expanded-area,
     html.canvas-immersive #view-library .collapsible-compact-bar,
@@ -1251,7 +1253,13 @@
     }
     #lib-canvas {
       padding-top: 0;
-      overscroll-behavior: contain;
+      background: #000000;
+      overscroll-behavior: none;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      perspective: 1100px;
+      -webkit-perspective: 1100px;
     }
     #lib-canvas::before {
       content: '';
@@ -1259,10 +1267,10 @@
       top: 0;
       left: 0;
       right: 0;
-      height: calc(var(--safe-top) + 34px);
-      z-index: 12;
+      height: calc(var(--safe-top) + 32px);
+      z-index: 14;
       pointer-events: none;
-      background: linear-gradient(180deg, rgba(6, 8, 13, 0.72) 0%, rgba(6, 8, 13, 0) 100%);
+      background: linear-gradient(180deg, rgba(6, 8, 13, 0.68) 0%, rgba(6, 8, 13, 0) 100%);
     }
     #lib-canvas::after {
       content: '';
@@ -1270,55 +1278,73 @@
       bottom: 0;
       left: 0;
       right: 0;
-      height: calc(var(--safe-bottom) + 36px);
-      z-index: 12;
+      height: calc(var(--safe-bottom) + 32px);
+      z-index: 14;
       pointer-events: none;
-      background: linear-gradient(0deg, rgba(6, 8, 13, 0.78) 0%, rgba(6, 8, 13, 0) 100%);
+      background: linear-gradient(0deg, rgba(6, 8, 13, 0.72) 0%, rgba(6, 8, 13, 0) 100%);
     }
-    .canvas-field {
-      flex: 1 1 0%;
-      min-width: 0;
+    .canvas-2d-field {
+      position: absolute;
+      top: 0;
+      bottom: 0;
       overflow: hidden;
-      position: relative;
-      touch-action: pan-x;
-      user-select: none;
-      -webkit-user-select: none;
+      z-index: 2;
+      touch-action: none;
     }
-    .canvas-strip {
+    .canvas-2d-world {
       position: absolute;
       top: 0;
       left: 0;
-      right: 0;
+      width: 0;
+      height: 0;
       will-change: transform;
       transform: translate3d(0, 0, 0);
     }
-    .canvas-row {
+    .canvas-card-wrap {
       position: absolute;
-      left: 6px;
-      right: 6px;
       top: 0;
-      display: flex;
-      gap: 10px;
+      left: 0;
       will-change: transform;
-    }
-    .canvas-slot {
-      flex: 1 1 0%;
-      min-width: 0;
-      height: 100%;
+      perspective: 900px;
+      -webkit-perspective: 900px;
     }
     .canvas-card {
       position: relative;
       width: 100%;
       height: 100%;
-      border-radius: 14px;
+      border-radius: 0;
       overflow: hidden;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.10);
+      background: #0b0e14;
+      border: none;
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.62), inset 0 1px 0 rgba(255, 255, 255, 0.12);
       cursor: pointer;
-      transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.24s ease;
+      transform-style: preserve-3d;
+      -webkit-transform-style: preserve-3d;
+      transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.24s ease;
     }
     .canvas-card:active {
-      transform: scale(0.975);
+      transform: scale(0.965);
+    }
+    .canvas-card-wrap.is-flipping {
+      z-index: 60 !important;
+    }
+    .canvas-card.is-flipping {
+      animation: canvasCardFlipOpen 0.34s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      box-shadow: 0 18px 42px rgba(0, 0, 0, 0.58), 0 0 24px rgba(125, 211, 252, 0.45);
+    }
+    @keyframes canvasCardFlipOpen {
+      0% {
+        transform: perspective(900px) rotateY(0deg) scale(1);
+        filter: brightness(1);
+      }
+      55% {
+        transform: perspective(900px) rotateY(108deg) scale(1.08);
+        filter: brightness(1.22);
+      }
+      100% {
+        transform: perspective(900px) rotateY(180deg) scale(1.04);
+        filter: brightness(1.05);
+      }
     }
     .canvas-card img {
       position: absolute;
@@ -1331,46 +1357,82 @@
     .canvas-card-scrim {
       position: absolute;
       inset: 0;
-      background: linear-gradient(transparent 52%, rgba(0, 0, 0, 0.68) 100%);
+      background: linear-gradient(180deg, rgba(0, 0, 0, 0.04) 0%, transparent 46%, rgba(0, 0, 0, 0.78) 100%);
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.58), inset 0 1px 0 rgba(255, 255, 255, 0.11);
       pointer-events: none;
     }
     .canvas-card-meta {
       position: absolute;
-      left: 8px;
-      right: 8px;
-      bottom: 7px;
+      left: 7px;
+      right: 7px;
+      bottom: 6px;
       pointer-events: none;
     }
     .canvas-card-title {
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 600;
-      line-height: 1.25;
+      line-height: 1.22;
       color: #ffffff;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.55);
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.65);
     }
     .canvas-card-sub {
-      font-size: 10px;
-      line-height: 1.3;
-      color: rgba(255, 255, 255, 0.58);
+      font-size: 9.5px;
+      line-height: 1.25;
+      color: rgba(255, 255, 255, 0.60);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
       margin-top: 1px;
     }
     .canvas-card-playing {
-      box-shadow: 0 0 0 1.5px rgba(56, 189, 248, 0.92), 0 0 18px rgba(45, 212, 191, 0.42), 0 0 28px rgba(129, 140, 248, 0.28);
-      border-color: rgba(125, 211, 252, 0.85);
+      box-shadow: 0 0 0 1.5px rgba(56, 189, 248, 0.92), 0 0 18px rgba(45, 212, 191, 0.44), 0 0 28px rgba(129, 140, 248, 0.28);
+      border-color: rgba(125, 211, 252, 0.88);
+    }
+    .canvas-card-located {
+      box-shadow: inset 0 0 0 2.5px rgba(56, 224, 248, 0.98), 0 0 26px rgba(34, 211, 238, 0.65) !important;
+      z-index: 12;
+      animation: canvasLocatedPulse 1.35s ease-in-out infinite;
+    }
+    @keyframes canvasLocatedPulse {
+      0%, 100% { filter: brightness(1.06); }
+      50% { filter: brightness(1.22); }
+    }
+    #canvas-search-capsule {
+      position: absolute;
+      left: 50%;
+      bottom: calc(var(--safe-bottom) + 18px);
+      transform: translateX(-50%) translateY(16px);
+      width: min(336px, calc(100% - 28px));
+      z-index: 34;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px 8px 14px;
+      border-radius: 9999px;
+      background: rgba(10, 14, 22, 0.90);
+      backdrop-filter: blur(22px) saturate(160%);
+      -webkit-backdrop-filter: blur(22px) saturate(160%);
+      border: 1px solid rgba(125, 211, 252, 0.30);
+      box-shadow: 0 14px 36px rgba(0, 0, 0, 0.62), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease;
+    }
+    #canvas-search-capsule.is-open {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+      pointer-events: auto;
     }
     .canvas-eq-badge {
       position: absolute;
-      top: 7px;
-      right: 7px;
+      top: 6px;
+      right: 6px;
       z-index: 4;
-      width: 22px;
-      height: 22px;
+      width: 20px;
+      height: 20px;
       border-radius: 9999px;
       background: rgba(9, 12, 20, 0.72);
       border: 1px solid rgba(125, 211, 252, 0.45);
@@ -1378,7 +1440,7 @@
       align-items: flex-end;
       justify-content: center;
       gap: 2px;
-      padding-bottom: 5px;
+      padding-bottom: 4px;
       pointer-events: none;
     }
     .canvas-card-playing .canvas-eq-badge {
@@ -1391,28 +1453,47 @@
       background: linear-gradient(180deg, #7dd3fc, #2dd4bf);
       animation: canvasEqBounce 0.85s ease-in-out infinite alternate;
     }
-    .canvas-eq-badge i:nth-child(1) { height: 6px; animation-delay: 0s; }
-    .canvas-eq-badge i:nth-child(2) { height: 11px; animation-delay: 0.22s; }
-    .canvas-eq-badge i:nth-child(3) { height: 8px; animation-delay: 0.42s; }
+    .canvas-eq-badge i:nth-child(1) { height: 5px; animation-delay: 0s; }
+    .canvas-eq-badge i:nth-child(2) { height: 10px; animation-delay: 0.22s; }
+    .canvas-eq-badge i:nth-child(3) { height: 7px; animation-delay: 0.42s; }
     @keyframes canvasEqBounce {
       0% { transform: scaleY(0.35); }
       100% { transform: scaleY(1); }
     }
+
+    /* Pure Black Spine with Upper-Zone Honeycomb Hex Matrix */
     #canvas-spine {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
       width: 56px;
-      flex-shrink: 0;
-      z-index: 20;
-      background: rgba(9, 11, 17, 0.82);
-      backdrop-filter: blur(22px) saturate(140%);
-      -webkit-backdrop-filter: blur(22px) saturate(140%);
-      border-left: 1px solid rgba(255, 255, 255, 0.08);
-      border-right: 1px solid rgba(255, 255, 255, 0.08);
+      z-index: 22;
+      will-change: left;
+      background: #000000;
+      border-left: 1px solid rgba(255, 255, 255, 0.14);
+      border-right: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 0 24px rgba(0, 0, 0, 0.55);
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 6px;
       padding-top: calc(var(--safe-top) + 14px);
       padding-bottom: calc(var(--safe-bottom) + 16px);
+      overflow: hidden;
+    }
+    #canvas-spine-dots {
+      position: absolute !important;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1 !important;
+      opacity: 0.96;
+    }
+    #canvas-spine > *:not(#canvas-spine-dots) {
+      position: relative;
+      z-index: 2;
     }
     @media (max-width: 379px) {
       #canvas-spine {
@@ -1422,15 +1503,16 @@
     .canvas-spine-heading {
       font-size: 11px;
       font-weight: 700;
-      color: rgba(255, 255, 255, 0.92);
+      color: rgba(255, 255, 255, 0.95);
       letter-spacing: 0.06em;
+      text-shadow: 0 1px 6px rgba(0, 0, 0, 0.55);
       margin-bottom: 2px;
       user-select: none;
     }
     .canvas-spine-section-tag {
       font-size: 9px;
       font-weight: 600;
-      color: rgba(255, 255, 255, 0.36);
+      color: rgba(255, 255, 255, 0.48);
       letter-spacing: 0.08em;
       margin-top: 2px;
       user-select: none;
@@ -1447,9 +1529,10 @@
       font-size: 11px;
       font-weight: 600;
       line-height: 1.15;
-      color: rgba(255, 255, 255, 0.48);
+      color: rgba(255, 255, 255, 0.68);
       background: transparent;
       border: 1px solid transparent;
+      text-shadow: 0 1px 5px rgba(0, 0, 0, 0.65);
       transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
       flex-shrink: 0;
     }
@@ -1458,9 +1541,9 @@
     }
     .canvas-spine-tab.is-active {
       color: #ffffff;
-      background: rgba(255, 255, 255, 0.16);
-      border-color: rgba(255, 255, 255, 0.22);
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+      background: rgba(255, 255, 255, 0.22);
+      border-color: rgba(255, 255, 255, 0.34);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 4px 14px rgba(0, 0, 0, 0.32);
     }
     .canvas-spine-icon-btn {
       width: 36px;
@@ -1469,24 +1552,60 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      color: rgba(255, 255, 255, 0.72);
-      background: transparent;
+      color: rgba(255, 255, 255, 0.84);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
       transition: background 0.18s ease, color 0.18s ease, transform 0.15s ease;
       flex-shrink: 0;
     }
     .canvas-spine-icon-btn:hover,
     .canvas-spine-icon-btn:active {
-      background: rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.20);
       color: #ffffff;
       transform: scale(0.92);
+    }
+    .canvas-spine-glow-ring {
+      position: relative;
+      border-color: rgba(255, 255, 255, 0.08);
+      isolation: isolate;
+    }
+    .canvas-spine-glow-ring::before {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: 9999px;
+      padding: 1.25px;
+      background: conic-gradient(
+        from 0deg,
+        rgba(56, 189, 248, 0.03) 0deg,
+        rgba(56, 189, 248, 0.08) 115deg,
+        rgba(56, 189, 248, 0.44) 172deg,
+        rgba(94, 234, 212, 0.50) 205deg,
+        rgba(255, 255, 255, 0.40) 225deg,
+        rgba(129, 140, 248, 0.34) 260deg,
+        rgba(56, 189, 248, 0.04) 315deg,
+        rgba(56, 189, 248, 0.03) 360deg
+      );
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask-composite: exclude;
+      pointer-events: none;
+      animation: canvasRimOrbit 4.8s linear infinite;
+      animation-delay: var(--rim-delay, 0s);
+      opacity: 0.56;
+    }
+    @keyframes canvasRimOrbit {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
     #btn-canvas-np {
       width: 34px;
       height: 34px;
       border-radius: 9999px;
       overflow: hidden;
-      border: 1.5px solid rgba(255, 255, 255, 0.28);
-      background: rgba(255, 255, 255, 0.08);
+      border: 1.5px solid rgba(255, 255, 255, 0.38);
+      background: rgba(255, 255, 255, 0.10);
       flex-shrink: 0;
       transition: transform 0.16s ease, box-shadow 0.25s ease, border-color 0.25s ease;
     }
@@ -1494,8 +1613,128 @@
       transform: scale(0.92);
     }
     #btn-canvas-np.is-playing {
-      border-color: rgba(56, 189, 248, 0.85);
-      box-shadow: 0 0 12px rgba(56, 189, 248, 0.45);
+      border-color: rgba(125, 211, 252, 0.92);
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.55);
+    }
+
+    /* ==================== MOBILE LANDSCAPE MODE OPTIMIZATION ==================== */
+    @media (max-height: 520px) and (orientation: landscape) {
+      html.is-native-ios {
+        --safe-top: env(safe-area-inset-top, 0px);
+      }
+      #app-shell,
+      #now-playing-modal,
+      #eq-fullscreen-modal {
+        padding-left: var(--safe-left);
+        padding-right: var(--safe-right);
+      }
+      /* Compact Dock & Mini-Player in Landscape */
+      #bottom-tab-dock {
+        bottom: calc(var(--safe-bottom) + 6px) !important;
+        height: 54px !important;
+      }
+      #mini-player-wrapper {
+        bottom: calc(var(--safe-bottom) + 66px) !important;
+      }
+      #mini-player-bar {
+        height: 48px !important;
+      }
+      /* Bottom Sheets fit cleanly inside short landscape viewports */
+      .liquid-sheet {
+        max-height: 86vh !important;
+        overflow-y: auto !important;
+        padding: 14px 18px calc(var(--safe-bottom) + 14px) !important;
+      }
+      #sheet-canvas-subview {
+        max-height: 86vh !important;
+      }
+      /* Now Playing Cover View: 2-Column Horizontal Hi-Fi Layout */
+      #now-playing-modal header {
+        padding-top: calc(var(--safe-top) + 6px) !important;
+        padding-bottom: 4px !important;
+      }
+      #np-panel-cover {
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 24px !important;
+        max-width: min(760px, 94vw) !important;
+        padding-left: max(16px, var(--safe-left)) !important;
+        padding-right: max(16px, var(--safe-right)) !important;
+        padding-bottom: calc(var(--safe-bottom) + 10px) !important;
+      }
+      #np-cover-swipe-zone {
+        flex: 0 0 auto !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+      }
+      #cover-style-rounded,
+      #cover-style-vinyl,
+      #cover-style-disc {
+        width: min(56vh, 220px) !important;
+        max-width: 220px !important;
+      }
+      #np-rhythm-waves {
+        margin-top: 8px !important;
+        height: 16px !important;
+      }
+      #np-panel-cover > div:last-child {
+        flex: 1 1 0% !important;
+        min-width: 0 !important;
+        max-width: 380px !important;
+      }
+      #np-panel-cover > div:last-child.space-y-4 > :not([hidden]) ~ :not([hidden]) {
+        margin-top: 10px !important;
+      }
+      /* Infinite Canvas Spine: Compact + Scrollable in Landscape */
+      #canvas-spine {
+        width: 50px;
+        gap: 3px;
+        padding-top: calc(var(--safe-top) + 6px);
+        padding-bottom: calc(var(--safe-bottom) + 8px);
+        overflow-y: auto;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+        touch-action: pan-y;
+      }
+      #canvas-spine::-webkit-scrollbar {
+        display: none;
+      }
+      .canvas-spine-heading {
+        font-size: 10px;
+        margin-bottom: 0;
+      }
+      .canvas-spine-tab {
+        width: 30px;
+        padding: 4px 0;
+        font-size: 10px;
+        gap: 1px;
+      }
+      #canvas-spine-transport {
+        width: 32px !important;
+        height: 76px !important;
+        padding-top: 2px !important;
+        padding-bottom: 2px !important;
+      }
+      #btn-canvas-prev,
+      #btn-canvas-playpause,
+      #btn-canvas-next {
+        width: 22px !important;
+        height: 22px !important;
+      }
+      .canvas-spine-icon-btn,
+      #btn-canvas-np {
+        width: 28px !important;
+        height: 28px !important;
+      }
+      .canvas-spine-icon-btn svg {
+        width: 15px !important;
+        height: 15px !important;
+      }
+      #canvas-search-capsule {
+        bottom: calc(var(--safe-bottom) + 10px);
+        padding: 6px 10px 6px 12px;
+      }
     }
   </style>
 </head>
@@ -1620,15 +1859,18 @@
       <div id="albums-grid" class="lib-scroll-pad hidden flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5 content-start"></div>
       <!-- Sub-panel 3: Artists Grid -->
       <div id="artists-grid" class="lib-scroll-pad hidden flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5 content-start"></div>
-      <!-- Sub-panel 4: Infinite Poster Canvas (无界海报画布) -->
-      <div id="lib-canvas" class="hidden flex-1 flex flex-row overflow-hidden relative">
-        <div id="canvas-field-left" class="canvas-field">
-          <div class="canvas-strip"></div>
+      <!-- Sub-panel 4: Infinite 2D Omnidirectional Poster Canvas (无界海报画布 2.0) -->
+      <div id="lib-canvas" class="hidden flex-1 overflow-hidden relative">
+        <div id="canvas-field-left" class="canvas-2d-field">
+          <div id="canvas-world-left" class="canvas-2d-world"></div>
+        </div>
+        <div id="canvas-field-right" class="canvas-2d-field">
+          <div id="canvas-world-right" class="canvas-2d-world"></div>
         </div>
         <div id="canvas-spine" aria-label="画布控制中脊">
-          <!-- Top: Editorial Library Title + Daily Fortune + Vertical Pill Tabs -->
+          <canvas id="canvas-spine-dots" aria-hidden="true"></canvas>
           <div class="canvas-spine-heading">曲库</div>
-          <button id="btn-canvas-fortune" class="canvas-spine-icon-btn text-rose-300/90" title="今日音乐签" aria-label="今日音乐签">
+          <button id="btn-canvas-fortune" class="canvas-spine-icon-btn text-rose-300" title="今日音乐签" aria-label="今日音乐签">
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
           </button>
 
@@ -1641,40 +1883,70 @@
           <button data-canvas-tab="artists" class="canvas-spine-tab" title="歌手" aria-label="歌手">
             <span>歌</span><span>手</span>
           </button>
-          <button id="btn-canvas-playlists" class="canvas-spine-tab" title="歌单" aria-label="歌单">
-            <span>歌</span><span>单</span>
-          </button>
 
-          <div class="flex-1 min-h-[12px]"></div>
+          <div class="flex-1 min-h-[8px]"></div>
 
-          <!-- Bottom: Consolidated Now Playing + Search + Sort + Stats + Settings + Exit -->
+          <div id="canvas-spine-transport" class="relative w-[36px] h-[96px] rounded-full bg-white/[0.08] py-1 flex flex-col items-center justify-between shrink-0" aria-label="快捷播放控制">
+            <svg id="canvas-transport-progress-svg" class="pointer-events-none absolute inset-0 w-full h-full overflow-visible" viewBox="0 0 36 96" aria-hidden="true">
+              <defs>
+                <linearGradient id="canvasTransportProgGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" style="stop-color: var(--aurora-1, #38bdf8);" />
+                  <stop offset="45%" style="stop-color: var(--aurora-2, #818cf8);" />
+                  <stop offset="82%" style="stop-color: var(--aurora-3, #2dd4bf);" />
+                  <stop offset="100%" stop-color="#ffffff" />
+                </linearGradient>
+              </defs>
+              <path d="M 18 1.2 A 16.8 16.8 0 0 1 34.8 18 L 34.8 78 A 16.8 16.8 0 0 1 1.2 78 L 1.2 18 A 16.8 16.8 0 0 1 18 1.2 Z" fill="none" stroke="rgba(255,255,255,0.14)" stroke-width="1.4" />
+              <path id="canvas-transport-progress-ring" pathLength="100" d="M 18 1.2 A 16.8 16.8 0 0 1 34.8 18 L 34.8 78 A 16.8 16.8 0 0 1 1.2 78 L 1.2 18 A 16.8 16.8 0 0 1 18 1.2 Z" fill="none" stroke="url(#canvasTransportProgGrad)" stroke-width="2" stroke-linecap="round" stroke-dasharray="100" stroke-dashoffset="100" style="filter: drop-shadow(0 0 3px var(--aurora-1, rgba(56,189,248,0.65))); transition: stroke-dashoffset 0.22s linear;" />
+            </svg>
+            <button id="btn-canvas-prev" class="relative z-[1] w-7 h-7 rounded-full flex items-center justify-center text-white/80 hover:text-white hover:bg-white/12 transition active:scale-90" title="上一首" aria-label="上一首">
+              <svg class="w-3.5 h-3.5 rotate-90" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
+            </button>
+            <button id="btn-canvas-playpause" class="relative z-[1] w-7 h-7 rounded-full bg-white/18 hover:bg-white/28 flex items-center justify-center text-white transition active:scale-90" title="播放 / 暂停" aria-label="播放或暂停">
+              <svg id="canvas-play-icon" class="w-3.5 h-3.5 translate-x-[0.5px]" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+              <svg id="canvas-pause-icon" class="w-3.5 h-3.5 hidden" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>
+            </button>
+            <button id="btn-canvas-next" class="relative z-[1] w-7 h-7 rounded-full flex items-center justify-center text-white/80 hover:text-white hover:bg-white/12 transition active:scale-90" title="下一首" aria-label="下一首">
+              <svg class="w-3.5 h-3.5 rotate-90" viewBox="0 0 24 24" fill="currentColor"><path d="M16 6h2v12h-2zM6 18l8.5-6L6 6z"/></svg>
+            </button>
+          </div>
+
           <div class="canvas-spine-section-tag">控制</div>
           <button id="btn-canvas-np" title="打开正在播放" aria-label="打开正在播放">
             <img id="canvas-np-cover" src="/icon-512.png" alt="" class="w-full h-full object-cover opacity-45" />
           </button>
-          <button id="btn-canvas-search" class="canvas-spine-icon-btn" title="搜索" aria-label="搜索">
+          <button id="btn-canvas-search" class="canvas-spine-icon-btn canvas-spine-glow-ring" style="--rim-delay: 0s;" title="搜索" aria-label="搜索">
             <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><circle cx="11" cy="11" r="7"/><path stroke-linecap="round" d="M20 20l-3.5-3.5"/></svg>
           </button>
-          <button id="btn-canvas-sort" class="canvas-spine-icon-btn" title="排序与视图" aria-label="排序与视图">
+          <button id="btn-canvas-sort" class="canvas-spine-icon-btn canvas-spine-glow-ring" style="--rim-delay: -0.8s;" title="排序与视图" aria-label="排序与视图">
             <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
           </button>
-          <button id="btn-canvas-stats" class="canvas-spine-icon-btn" title="听歌足迹" aria-label="听歌足迹">
+          <button id="btn-canvas-playlists" class="canvas-spine-icon-btn canvas-spine-glow-ring" style="--rim-delay: -1.6s;" title="歌单" aria-label="歌单">
+            <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h10M4 18h7m9-4v6m0 0l-2-2m2 2l2-2"/></svg>
+          </button>
+          <button id="btn-canvas-stats" class="canvas-spine-icon-btn canvas-spine-glow-ring" style="--rim-delay: -2.4s;" title="听歌足迹" aria-label="听歌足迹">
             <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 19V11m7 8V5m7 14v-6"/></svg>
           </button>
-          <button id="btn-canvas-diy" class="canvas-spine-icon-btn" title="外观与设置" aria-label="外观与设置">
+          <button id="btn-canvas-diy" class="canvas-spine-icon-btn canvas-spine-glow-ring" style="--rim-delay: -3.2s;" title="外观与设置" aria-label="外观与设置">
             <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
-          <button id="btn-canvas-exit" class="canvas-spine-icon-btn text-sky-300/90" title="退出画布返回列表" aria-label="退出画布返回列表">
+          <button id="btn-canvas-exit" class="canvas-spine-icon-btn canvas-spine-glow-ring text-sky-300" style="--rim-delay: -4.0s;" title="退出画布返回列表" aria-label="退出画布返回列表">
             <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><path stroke-linecap="round" stroke-linejoin="round" d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
           </button>
         </div>
-        <div id="canvas-field-right" class="canvas-field">
-          <div class="canvas-strip"></div>
+        <div id="canvas-search-capsule" role="search" aria-label="画布定位搜索">
+          <svg class="w-4 h-4 text-sky-300 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path stroke-linecap="round" d="M20 20l-3.5-3.5"/></svg>
+          <input id="canvas-search-input" type="search" autocomplete="off" spellcheck="false" placeholder="在歌曲画布中定位歌曲..." class="flex-1 min-w-0 bg-transparent text-[13px] text-white placeholder-white/40 focus:outline-none" />
+          <span id="canvas-search-status" class="text-[11px] text-sky-200/80 tabular-nums shrink-0 hidden"></span>
+          <button id="btn-canvas-search-next" class="hidden w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white text-xs shrink-0 transition active:scale-90" title="下一个匹配" aria-label="下一个匹配">›</button>
+          <button id="btn-canvas-search-close" class="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/75 hover:text-white shrink-0 transition active:scale-90" title="关闭搜索" aria-label="关闭搜索">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path stroke-linecap="round" d="M6 6l12 12M18 6L6 18"/></svg>
+          </button>
         </div>
         <div id="canvas-empty-overlay" class="hidden absolute inset-0 z-10 pointer-events-none flex items-center justify-center p-6">
           <div class="liquid-panel rounded-3xl px-5 py-6 text-center space-y-2 max-w-[240px] border border-white/15">
             <div class="text-sm font-bold text-white">曲库空空如也</div>
-            <div class="text-[11px] text-white/55">导入本地音乐后，即可在无界海报画布中漫游专辑与歌单</div>
+            <div class="text-[11px] text-white/55">导入本地音乐后，即可在无界海报画布中全方位漫游专辑与歌单</div>
           </div>
         </div>
       </div>
@@ -3001,6 +3273,13 @@
     </div>
   </div>
 
+  <!-- 16. Canvas Mode Unified Floating Subview Sheet (Albums / Artists / Playlists / Stats / Settings) -->
+  <div id="sheet-canvas-subview" class="fixed left-3 right-3 bottom-3 z-50 liquid-sheet rounded-[34px] translate-y-[115%] transition-transform duration-300 max-w-xl mx-auto p-5 flex flex-col max-h-[80vh]" style="padding-bottom: calc(var(--safe-bottom) + 20px);">
+    <div class="w-10 h-1 rounded-full bg-white/25 mx-auto mb-3 shrink-0"></div>
+    <div id="canvas-subview-header" class="flex items-center justify-between gap-2 pb-3 border-b border-white/10 shrink-0"></div>
+    <div id="canvas-subview-body" class="flex-1 overflow-y-auto no-scrollbar pt-3 space-y-2"></div>
+  </div>
+
   <!-- Toast Banner -->
   <!-- ==================== STANDALONE FULLSCREEN EQ VIEW (Apple Cash Obsidian Pro Studio) ==================== -->
   <div id="eq-fullscreen-modal" class="app-screen-shell fixed inset-0 z-[60] translate-y-full transition-transform duration-300 ease-out flex flex-col overflow-hidden bg-[#06070a]">
@@ -3242,6 +3521,14 @@
           nativeAudioState.ended = false;
         } else if (type === 'pause') {
           nativeAudioState.paused = true;
+        } else if (type === 'autoAdvanced') {
+          nativeAudioState.paused = false;
+          nativeAudioState.ended = false;
+          nativeAudioState.currentTime = 0;
+          if (typeof handleNativeAutoAdvanced === 'function') {
+            handleNativeAutoAdvanced(payload);
+          }
+          return;
         } else if (type === 'ended') {
           nativeAudioState.paused = true;
           nativeAudioState.ended = true;
@@ -3352,6 +3639,7 @@
           nativeAudioState.duration = 0;
           window.webkit.messageHandlers.fengAudio.postMessage({
             action: 'load',
+            trackId: meta.id || state.currentTrackId || '',
             url,
             title: meta.title || 'FENG MUSIC',
             artist: meta.artist || '',
@@ -3471,6 +3759,8 @@
                     waveStyle: 'bars', // 'bars' | 'wave' | 'pulse'
           playerEffect: 'sparks', // 'sparks' | 'snow' | 'fireflies' | 'petals' | 'off'
           lyricStyle: 'focus', // 'focus' | 'karaoke' | 'neon' | 'bounce'
+          lyricStagger: true,
+          lyric3d: true,
           lyricFontSize: 21,
           glassAlpha: 11,
           songCardAlpha: 11,
@@ -3648,6 +3938,8 @@
               waveStyle: state.diy.waveStyle,
             playerEffect: state.diy.playerEffect,
             lyricStyle: state.diy.lyricStyle,
+            lyricStagger: Boolean(state.diy.lyricStagger),
+            lyric3d: Boolean(state.diy.lyric3d),
             lyricFontSize: state.diy.lyricFontSize,
             glassAlpha: state.diy.glassAlpha,
             songCardAlpha: state.diy.songCardAlpha,
@@ -5499,6 +5791,161 @@
         });
       }
 
+      let nativeNextUpSeq = 0;
+      async function syncNativeNextUp() {
+        if (!hasNativeAudioBridge()) return;
+        const seq = ++nativeNextUpSeq;
+        const postClear = () => {
+          try {
+            window.webkit.messageHandlers.fengAudio.postMessage({ action: 'setNextUp', trackId: null });
+          } catch {}
+        };
+        if (!state.currentTrackId || !state.queue || !state.queue.length) {
+          postClear();
+          return;
+        }
+
+        let nextId = null;
+        if (state.playMode === 'one') {
+          nextId = state.currentTrackId;
+        } else if (state.playMode === 'shuffle' && state.queue.length > 1) {
+          syncShuffleBag(state.currentTrackId);
+          if (!state.shuffleBag.length) {
+            const fresh = shuffleArray(state.queue);
+            if (fresh.length > 1 && fresh[0] === state.currentTrackId) {
+              const swapIdx = 1 + Math.floor(Math.random() * (fresh.length - 1));
+              [fresh[0], fresh[swapIdx]] = [fresh[swapIdx], fresh[0]];
+            }
+            state.shuffleBag = fresh;
+          }
+          nextId = state.shuffleBag[0] || null;
+        } else {
+          const curIdx = state.queue.indexOf(state.currentTrackId);
+          const nextIdx = curIdx >= 0 ? (curIdx + 1) % state.queue.length : 0;
+          nextId = state.queue[nextIdx] || null;
+        }
+
+        if (!nextId) {
+          postClear();
+          return;
+        }
+        const nextRaw = state.tracks.find((t) => t.id === nextId);
+        if (!nextRaw) {
+          postClear();
+          return;
+        }
+
+        let nextNativeUrl = '';
+        if (nextRaw.src && /^https?:\/\//i.test(nextRaw.src)) {
+          nextNativeUrl = nextRaw.src;
+        } else if (nextRaw.isNativeDoc && (nextRaw.nativeUri || nextRaw.nativePath)) {
+          nextNativeUrl = await resolveNativeRawFileUri(nextRaw.nativePath, nextRaw.nativeUri || '');
+        }
+        if (seq !== nativeNextUpSeq) return; // superseded by newer track/queue update
+        if (!nextNativeUrl) {
+          postClear();
+          return;
+        }
+
+        const disp = getTrackDisplay(nextRaw);
+        const parsedNextLyrics = parseLrcText(disp.lrc);
+        const loudnessGain =
+          state.audioFx?.loudnessEnabled && Number.isFinite(state.trackLoudness[nextRaw.id])
+            ? state.trackLoudness[nextRaw.id]
+            : 1;
+
+        try {
+          window.webkit.messageHandlers.fengAudio.postMessage({
+            action: 'setNextUp',
+            forTrackId: state.currentTrackId,
+            trackId: nextRaw.id,
+            url: nextNativeUrl,
+            title: disp.title || 'FENG MUSIC',
+            artist: disp.artist || '',
+            album: disp.album || '',
+            duration: Number(nextRaw.duration) || 0,
+            cover: disp.cover || '',
+            autoPlay: true,
+            resumeTime: 0,
+            rate: state.playbackRate || 1,
+            eqEnabled: Boolean(state.audioFx?.eqEnabled) && !eqAbBypassActive,
+            eqGains: (state.audioFx?.eqGains || [0, 0, 0, 0, 0]).map((g) => Math.max(-12, Math.min(12, Number(g) || 0))),
+            loudnessGain,
+            lyrics: (parsedNextLyrics || []).map((item) => ({ t: Number(item.time) || 0, text: String(item.text || '') })),
+            lyricOffset: Number(state.lyricOffsets[nextRaw.id] || 0),
+            pipLyricsEnabled: Boolean(state.diy?.pipLyrics),
+            islandLyricsEnabled: state.diy?.islandLyrics !== false
+          });
+        } catch {}
+      }
+
+      async function handleNativeAutoAdvanced(payload = {}) {
+        const nextId = payload.trackId;
+        if (!nextId) return;
+        const rawTrack = state.tracks.find((t) => t.id === nextId);
+        if (!rawTrack) {
+          syncNativeNextUp();
+          return;
+        }
+
+        finalizeLoudnessMeasurement(state.currentTrackId);
+        state.currentTrackId = nextId;
+        state.isPlaying = true;
+        state.consecutivePlayFailures = 0;
+
+        if (!state.queue.includes(nextId)) {
+          state.queue = state.tracks.map((t) => t.id);
+        }
+        if (state.playMode === 'shuffle' && state.queue.length > 1) {
+          syncShuffleBag(nextId);
+          if (state.shuffleBag[0] === nextId) {
+            state.shuffleBag.shift();
+          } else {
+            state.shuffleBag = state.shuffleBag.filter((id) => id !== nextId);
+          }
+          if (state.shuffleBagPlayed[state.shuffleBagPlayed.length - 1] !== nextId) {
+            state.shuffleBagPlayed.push(nextId);
+          }
+        }
+
+        const track = getTrackDisplay(rawTrack);
+        $('mini-cover').src = track.cover;
+        $('mini-title').textContent = track.title;
+        $('mini-artist').textContent = `${track.artist} · ${track.album}`;
+        $('np-title').textContent = track.title;
+        $('np-artist').textContent = `${track.artist} · ${track.album}`;
+        $('np-cover-img-rounded').src = track.cover;
+        $('np-cover-img-vinyl').src = track.cover;
+        $('np-cover-img-disc').src = track.cover;
+        syncAmbientCoverGlow(track.cover);
+        updateAuroraColorsFromCover(track.cover);
+
+        const offset = state.lyricOffsets[nextId] || 0;
+        syncLyricOffsetSliderUI(offset);
+        state.parsedLyrics = parseLrcText(track.lrc);
+        renderLyricsList();
+
+        const dur = Number(payload.duration) || Number(rawTrack.duration) || 0;
+        if (dur > 0) {
+          nativeAudioState.duration = dur;
+          $('np-time-duration').textContent = formatTime(dur);
+          if (!rawTrack.duration) {
+            rawTrack.duration = dur;
+            if (!rawTrack.isRemote) dbPut('tracks', toStorableTrackRecord(rawTrack)).catch(() => {});
+          }
+        }
+
+        resetLoudnessAccumulator(nextId);
+        recordTrackPlay(nextId);
+        updatePlayStateUI();
+        renderLibrary();
+        renderQueue();
+        if (state.activeView === 'stats') renderStats();
+        saveAppState();
+        // Immediately pre-arm the subsequent track for the next natural end
+        syncNativeNextUp();
+      }
+
       async function loadTrack(trackId, autoPlay = true, resumeTime = 0) {
         const rawTrack = state.tracks.find((t) => t.id === trackId);
         if (!rawTrack) return;
@@ -5578,6 +6025,7 @@
         if (useNativeBridge) {
           audio.playbackRate = state.playbackRate || 1;
           audio.loadNative(nativeRawUrl, track, autoPlay, resumeTime);
+          syncNativeNextUp();
         } else {
           if (playableUrl) {
             audio.src = playableUrl;
@@ -5800,6 +6248,7 @@
       }
 
       function updatePlayModeButton() {
+        if (typeof syncNativeNextUp === 'function') syncNativeNextUp();
         const btn = $('btn-np-mode');
         if (state.playMode === 'loop') {
           btn.title = '列表循环';
@@ -5965,6 +6414,7 @@
         }
         if (viewName !== 'library') {
           if (typeof stopCanvasInertia === 'function') stopCanvasInertia();
+          if (typeof stopSpineDotLoop === 'function') stopSpineDotLoop();
           if (state.multiSelectMode) exitMultiSelectMode(false);
         }
         if (viewName !== 'library' && state.libCustomEditing) {
@@ -6105,8 +6555,10 @@
             showToast(nextView === 'canvas' ? '已切换至无界海报画布' : '已切换至列表视图');
           });
         });
+        const hideCustomInCanvas = effContext !== 'playlist' && state.libViewMode === 'canvas';
         document.querySelectorAll('.sort-opt-btn').forEach((btn) => {
           const opt = btn.dataset.sortOpt;
+          btn.classList.toggle('hidden', opt === 'custom' && hideCustomInCanvas);
           const labelSpan = btn.querySelector('span.text-sm, div.text-sm');
           if (labelSpan && labelMap[opt]) labelSpan.textContent = labelMap[opt];
           const isCur = opt === currentMode;
@@ -6805,17 +7257,20 @@
       let mbLastRequestAt = 0;
 
       // =========================================================================
-      // INFINITE POSTER CANVAS ENGINE (无界海报画布)
+      // INFINITE 2D OMNIDIRECTIONAL POSTER CANVAS ENGINE (Split-Clipped Around Spine)
       // =========================================================================
       const canvasScroll = {
-        pos: 0,
-        vel: 0,
+        posX: 0,
+        posY: 0,
+        velX: 0,
+        velY: 0,
+        spineOffsetX: 0,
         rafId: 0,
         lastFrameTs: 0,
         dragging: false,
-        lockedAxis: null, // 'y' | 'x' | null
         startX: 0,
         startY: 0,
+        lastX: 0,
         lastY: 0,
         totalDist: 0,
         scrubbed: false,
@@ -6823,13 +7278,26 @@
         longPressTimer: null,
         longPressTriggered: false,
         longPressCard: null,
+        flipping: false,
+        lastGlowTs: 0,
         eventsBound: false
       };
-      const canvasPosByTab = { songs: 0, albums: 0, artists: 0 };
-      const canvasModel = {
-        left: { rows: [], H: 0, fieldW: 0, colW: 0, pool: new Map(), freePool: [] },
-        right: { rows: [], H: 0, fieldW: 0, colW: 0, pool: new Map(), freePool: [] }
+      const canvasPosByTab = {
+        songs: { x: 0, y: 0, spineX: 0 },
+        albums: { x: 0, y: 0, spineX: 0 },
+        artists: { x: 0, y: 0, spineX: 0 }
       };
+      const canvas2D = {
+        items: [], // { x, y, w, h, card }
+        tileW: 0,
+        tileH: 0,
+        fields: {
+          left: { pool: new Map(), freePool: [] },
+          right: { pool: new Map(), freePool: [] }
+        }
+      };
+      const canvasColorCache = new Map();
+      let canvasColorSamplerCtx = null;
 
       function fnv1aHash(str) {
         let h = 2166136261 >>> 0;
@@ -6841,12 +7309,60 @@
         return h;
       }
 
+      function sampleCoverVibrantRgb(coverUrl) {
+        if (!coverUrl || coverUrl === DEFAULT_APP_COVER) return [56, 189, 248];
+        if (canvasColorCache.has(coverUrl)) return canvasColorCache.get(coverUrl);
+        const h = fnv1aHash(coverUrl);
+        const fallback = [60 + (h % 140), 110 + ((h >> 8) % 120), 150 + ((h >> 16) % 100)];
+        canvasColorCache.set(coverUrl, fallback);
+        try {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => {
+            try {
+              if (!canvasColorSamplerCtx) {
+                const c = document.createElement('canvas');
+                c.width = 8;
+                c.height = 8;
+                canvasColorSamplerCtx = c.getContext('2d', { willReadFrequently: true });
+              }
+              if (!canvasColorSamplerCtx) return;
+              canvasColorSamplerCtx.drawImage(img, 0, 0, 8, 8);
+              const data = canvasColorSamplerCtx.getImageData(0, 0, 8, 8).data;
+              let rSum = 0, gSum = 0, bSum = 0, weightSum = 0;
+              for (let i = 0; i < data.length; i += 4) {
+                const r = data[i], g = data[i + 1], b = data[i + 2];
+                const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+                const sat = mx > 0 ? (mx - mn) / mx : 0;
+                const lum = (r + g + b) / 3;
+                const w = (0.25 + sat * 2.2) * (lum > 24 && lum < 235 ? 1.2 : 0.35);
+                rSum += r * w;
+                gSum += g * w;
+                bSum += b * w;
+                weightSum += w;
+              }
+              if (weightSum > 0) {
+                const rgb = [
+                  Math.min(255, Math.max(48, Math.round((rSum / weightSum) * 1.15))),
+                  Math.min(255, Math.max(48, Math.round((gSum / weightSum) * 1.15))),
+                  Math.min(255, Math.max(58, Math.round((bSum / weightSum) * 1.15)))
+                ];
+                canvasColorCache.set(coverUrl, rgb);
+              }
+            } catch {}
+          };
+          img.src = coverUrl;
+        } catch {}
+        return fallback;
+      }
+
       function stopCanvasInertia() {
         if (canvasScroll.rafId) {
           cancelAnimationFrame(canvasScroll.rafId);
           canvasScroll.rafId = 0;
         }
-        canvasScroll.vel = 0;
+        canvasScroll.velX = 0;
+        canvasScroll.velY = 0;
         canvasScroll.lastFrameTs = 0;
       }
 
@@ -6897,40 +7413,29 @@
             };
           });
         }
+        // Songs tab: show actual individual SONGS (title + artist)
         const sortedTracks = getSortedTracks();
-        const albumMap = new Map();
-        const allAlbums = getSortedAlbums();
-        const canonicalCoverMap = new Map(allAlbums.map((a) => [a.name, a.cover || DEFAULT_APP_COVER]));
-        const canonicalCountMap = new Map(allAlbums.map((a) => [a.name, a.tracks.length]));
-        const canonicalIdsMap = new Map(allAlbums.map((a) => [a.name, a.tracks.map((t) => t.id)]));
-        const cards = [];
-        for (const t of sortedTracks) {
-          const albName = t.album || '未知专辑';
-          if (albumMap.has(albName)) continue;
-          albumMap.set(albName, true);
-          const cnt = canonicalCountMap.get(albName) || 1;
-          cards.push({
-            kind: 'album',
-            key: `album:${albName}`,
-            name: albName,
-            title: albName,
-            sub: `专辑 · ${cnt} 首`,
-            cover: canonicalCoverMap.get(albName) || t.cover || DEFAULT_APP_COVER,
-            isFav: favAlbumSet.has(albName),
-            trackIds: canonicalIdsMap.get(albName) || [t.id]
-          });
-        }
-        return cards;
+        return sortedTracks.map((t) => ({
+          kind: 'song',
+          key: `song:${t.id}`,
+          trackId: t.id,
+          name: t.title,
+          title: t.title,
+          sub: t.artist || '未知歌手',
+          cover: t.cover || DEFAULT_APP_COVER,
+          isFav: false,
+          trackIds: [t.id]
+        }));
       }
 
-      function interleavePlaylistsIntoField(fieldCards, tab) {
-        if ((tab !== 'albums' && tab !== 'songs') || !state.playlists || !state.playlists.length || !fieldCards.length) {
-          return fieldCards;
+      function mixPlaylistsIntoCards(baseCards, tab) {
+        if (tab !== 'albums' || !state.playlists || !state.playlists.length || !baseCards.length) {
+          return baseCards;
         }
         const out = [];
         let plCursor = 0;
-        for (let i = 0; i < fieldCards.length; i++) {
-          out.push(fieldCards[i]);
+        for (let i = 0; i < baseCards.length; i++) {
+          out.push(baseCards[i]);
           if ((i + 1) % 7 === 0) {
             const pl = state.playlists[plCursor % state.playlists.length];
             plCursor++;
@@ -6952,49 +7457,64 @@
         return out;
       }
 
-      function buildFieldRowModel(cards, fieldW) {
-        const GAP = 10;
-        const innerW = Math.max(80, fieldW - 12);
-        const colW = Math.max(36, (innerW - GAP) / 2);
-        const normalH = Math.round(colW * 1.32);
-        const heroH = Math.round(innerW * 0.58);
-        if (!cards.length) return { rows: [], H: 0, fieldW, colW };
+      // Deterministic 2D Dense Bento Macro-Tile Packer (4px tight gap, randomized organic card sizes, zero holes)
+      function build2DBentoTile(cards) {
+        if (!cards.length) return { items: [], tileW: 0, tileH: 0 };
+        const GAP = 0;
+        const UNIT = window.innerWidth < 430 ? 92 : 108;
+        const COLS = 16; // ~1472px mobile / ~1728px desktop: eliminates same-screen left/right repetition
+        const targetRows = Math.max(12, Math.min(28, Math.ceil((cards.length * 2.1) / COLS)));
+        const grid = Array.from({ length: targetRows }, () => new Uint8Array(COLS));
 
-        const heroCount = Math.min(cards.length, Math.max(2, Math.round(cards.length * 0.06)));
-        const ranked = cards
-          .map((c, idx) => ({ idx, hash: fnv1aHash(c.hashKey || c.key) }))
-          .sort((a, b) => a.hash - b.hash || a.idx - b.idx);
-        const heroIdxSet = new Set(ranked.slice(0, heroCount).map((x) => x.idx));
-
-        const rows = [];
-        let pendingNormal = null;
-        let curY = 0;
-        const pushRow = (type, items, h) => {
-          rows.push({ type, items, y: curY, h });
-          curY += h + GAP;
-        };
-
-        for (let i = 0; i < cards.length; i++) {
-          const card = cards[i];
-          if (heroIdxSet.has(i)) {
-            if (pendingNormal) {
-              pushRow('normal', [pendingNormal, null], normalH);
-              pendingNormal = null;
-            }
-            pushRow('hero', [card], heroH);
-          } else {
-            if (!pendingNormal) {
-              pendingNormal = card;
-            } else {
-              pushRow('normal', [pendingNormal, card], normalH);
-              pendingNormal = null;
+        const canPlace = (gx, gy, s) => {
+          if (gx + s > COLS || gy + s > targetRows) return false;
+          for (let y = gy; y < gy + s; y++) {
+            for (let x = gx; x < gx + s; x++) {
+              if (grid[y][x]) return false;
             }
           }
+          return true;
+        };
+        const markPlaced = (gx, gy, s) => {
+          for (let y = gy; y < gy + s; y++) {
+            for (let x = gx; x < gx + s; x++) {
+              grid[y][x] = 1;
+            }
+          }
+        };
+
+        // Pure 1:1 multi-scale square vinyl wall (1x1 compact, 2x2 medium hero, 3x3 showcase hero — zero awkward strips)
+        const sizePalette = [2, 1, 2, 1, 3, 1, 2, 1, 1, 2];
+
+        const items = [];
+        let cardIdx = 0;
+        for (let gy = 0; gy < targetRows; gy++) {
+          for (let gx = 0; gx < COLS; gx++) {
+            if (grid[gy][gx]) continue;
+            const card = cards[cardIdx % cards.length];
+            const h = fnv1aHash(`${card.hashKey || card.key}:${gx}:${gy}:${cardIdx}`);
+            const preferred = sizePalette[h % sizePalette.length];
+            const candidates = preferred === 3 ? [3, 2, 1] : (preferred === 2 ? [2, 1] : [1]);
+            let chosen = 1;
+            for (const s of candidates) {
+              if (canPlace(gx, gy, s)) {
+                chosen = s;
+                break;
+              }
+            }
+            markPlaced(gx, gy, chosen);
+            const px = gx * (UNIT + GAP);
+            const py = gy * (UNIT + GAP);
+            const sizePx = chosen * UNIT + (chosen - 1) * GAP;
+            items.push({ x: px, y: py, w: sizePx, h: sizePx, card });
+            cardIdx++;
+          }
         }
-        if (pendingNormal) {
-          pushRow('normal', [pendingNormal, null], normalH);
-        }
-        return { rows, H: curY, fieldW, colW };
+        return {
+          items,
+          tileW: COLS * (UNIT + GAP),
+          tileH: targetRows * (UNIT + GAP)
+        };
       }
 
       function isCanvasCardPlaying(card) {
@@ -7002,18 +7522,9 @@
         return Array.isArray(card.trackIds) && card.trackIds.includes(state.currentTrackId);
       }
 
-      function populateCanvasCardNode(cardEl, card) {
-        cardEl._canvasCard = card;
-        cardEl.className = 'canvas-card' + (card.isFav ? ' fav-gold-ring' : '') + (isCanvasCardPlaying(card) ? ' canvas-card-playing' : '');
-        const img = cardEl._imgEl;
-        if (img.getAttribute('src') !== card.cover) {
-          img.setAttribute('src', card.cover);
-        }
-        cardEl._titleEl.textContent = card.title || '';
-        cardEl._subEl.textContent = card.sub || '';
-      }
-
-      function createCanvasCardNode() {
+      function createCanvasCardWrap() {
+        const wrap = document.createElement('div');
+        wrap.className = 'canvas-card-wrap';
         const cardEl = document.createElement('div');
         cardEl.className = 'canvas-card';
         const img = document.createElement('img');
@@ -7037,117 +7548,190 @@
         cardEl.appendChild(scrim);
         cardEl.appendChild(eq);
         cardEl.appendChild(meta);
-        cardEl._imgEl = img;
-        cardEl._titleEl = title;
-        cardEl._subEl = sub;
-        return cardEl;
+        wrap.appendChild(cardEl);
+        wrap._cardEl = cardEl;
+        wrap._imgEl = img;
+        wrap._titleEl = title;
+        wrap._subEl = sub;
+        return wrap;
       }
 
-      function createCanvasRowNode() {
-        const rowEl = document.createElement('div');
-        rowEl.className = 'canvas-row';
-        const slot0 = document.createElement('div');
-        slot0.className = 'canvas-slot';
-        const card0 = createCanvasCardNode();
-        slot0.appendChild(card0);
-        const slot1 = document.createElement('div');
-        slot1.className = 'canvas-slot';
-        const card1 = createCanvasCardNode();
-        slot1.appendChild(card1);
-        rowEl.appendChild(slot0);
-        rowEl.appendChild(slot1);
-        rowEl._slot0 = slot0;
-        rowEl._slot1 = slot1;
-        rowEl._card0 = card0;
-        rowEl._card1 = card1;
-        return rowEl;
+      function populateCanvasCardWrap(wrap, item) {
+        const card = item.card;
+        const cardEl = wrap._cardEl;
+        cardEl._canvasCard = card;
+        cardEl._canvasWrap = wrap;
+        const isLocated = Boolean(canvasSearchState.locatedKey && card.key === canvasSearchState.locatedKey);
+        cardEl.className = 'canvas-card' + (card.isFav ? ' fav-gold-ring' : '') + (isCanvasCardPlaying(card) ? ' canvas-card-playing' : '') + (isLocated ? ' canvas-card-located' : '');
+        wrap.classList.remove('is-flipping');
+        if (wrap._imgEl.getAttribute('src') !== card.cover) {
+          wrap._imgEl.setAttribute('src', card.cover);
+        }
+        wrap._titleEl.textContent = card.title || '';
+        wrap._subEl.textContent = card.sub || '';
+        wrap.style.width = `${item.w}px`;
+        wrap.style.height = `${item.h}px`;
       }
 
-      function renderCanvasFieldWindow(side, offsetPx, viewportH) {
-        const model = canvasModel[side];
-        const fieldEl = $(side === 'left' ? 'canvas-field-left' : 'canvas-field-right');
-        const stripEl = fieldEl?.querySelector('.canvas-strip');
-        if (!stripEl || !model.rows.length || model.H <= 0) {
-          if (stripEl) stripEl.innerHTML = '';
-          model.pool.clear();
-          model.freePool = [];
+      const canvasLayoutCache = {
+        vw: 0,
+        vh: 0,
+        sw: 0,
+        lastWinW: 0,
+        lastWinH: 0,
+        lastSpineLeft: -1,
+        lastVw: -1
+      };
+
+      function refreshCanvasViewportMetrics() {
+        const canvasEl = $('lib-canvas');
+        const spineEl = $('canvas-spine');
+        const winW = window.innerWidth || 390;
+        const winH = window.innerHeight || 700;
+        const vw = canvasEl?.clientWidth || winW;
+        const vh = canvasEl?.clientHeight || winH;
+        const sw = spineEl?.offsetWidth || (vw < 380 ? 48 : 56);
+        canvasLayoutCache.vw = vw;
+        canvasLayoutCache.vh = vh;
+        canvasLayoutCache.sw = sw;
+        canvasLayoutCache.lastWinW = winW;
+        canvasLayoutCache.lastWinH = winH;
+        canvasLayoutCache.lastSpineLeft = -1;
+      }
+
+      function getSpineLayoutGeometry() {
+        const winW = window.innerWidth || 390;
+        const winH = window.innerHeight || 700;
+        if (!canvasLayoutCache.vw || !canvasLayoutCache.vh || winW !== canvasLayoutCache.lastWinW || winH !== canvasLayoutCache.lastWinH) {
+          refreshCanvasViewportMetrics();
+        }
+        const vw = canvasLayoutCache.vw;
+        const sw = canvasLayoutCache.sw;
+        const maxOff = Math.max(0, (vw - sw) * 0.5);
+        canvasScroll.spineOffsetX = Math.max(-maxOff, Math.min(maxOff, canvasScroll.spineOffsetX));
+        const spineLeft = Math.max(0, Math.min(vw - sw, Math.round((vw - sw) * 0.5 + canvasScroll.spineOffsetX)));
+        const rightLeft = spineLeft + sw;
+        const rightW = Math.max(0, vw - rightLeft);
+        return { vw, sw, spineLeft, rightLeft, rightW };
+      }
+
+      function applySplitSpineLayout() {
+        const geom = getSpineLayoutGeometry();
+        if (geom.spineLeft === canvasLayoutCache.lastSpineLeft && geom.vw === canvasLayoutCache.lastVw) {
+          return geom;
+        }
+        canvasLayoutCache.lastSpineLeft = geom.spineLeft;
+        canvasLayoutCache.lastVw = geom.vw;
+        const spineEl = $('canvas-spine');
+        const leftField = $('canvas-field-left');
+        const rightField = $('canvas-field-right');
+        if (spineEl) {
+          spineEl.style.left = `${geom.spineLeft}px`;
+          spineEl.style.borderLeftWidth = geom.spineLeft <= 0 ? '0px' : '1px';
+          spineEl.style.borderRightWidth = geom.rightW <= 0 ? '0px' : '1px';
+        }
+        if (leftField) {
+          leftField.style.left = '0px';
+          leftField.style.width = `${Math.max(0, geom.spineLeft)}px`;
+        }
+        if (rightField) {
+          rightField.style.left = `${geom.rightLeft}px`;
+          rightField.style.width = `${geom.rightW}px`;
+        }
+        return geom;
+      }
+
+      function render2DFieldPool(side, fieldW, fieldH, offsetX, offsetY) {
+        const worldEl = $(side === 'left' ? 'canvas-world-left' : 'canvas-world-right');
+        const store = canvas2D.fields[side];
+        if (!worldEl || !canvas2D.items.length || !canvas2D.tileW || !canvas2D.tileH || fieldW <= 2) {
+          if (store) {
+            store.pool.forEach((node) => { node.style.display = 'none'; store.freePool.push(node); });
+            store.pool.clear();
+          }
           return;
         }
-        const H = model.H;
-        const p = ((offsetPx % H) + H) % H;
-        const copiesBefore = Math.max(1, Math.ceil(viewportH / H));
-        const viewTop = copiesBefore * H + p;
-        stripEl.style.transform = `translate3d(0, ${-viewTop.toFixed(2)}px, 0)`;
 
-        const minY = viewTop - viewportH;
-        const maxY = viewTop + viewportH * 2;
-        const startCopy = Math.max(0, Math.floor(minY / H));
-        const endCopy = Math.floor(maxY / H);
+        const tW = canvas2D.tileW;
+        const tH = canvas2D.tileH;
+        const pX = ((offsetX % tW) + tW) % tW;
+        const pY = ((offsetY % tH) + tH) % tH;
+        worldEl.style.transform = `translate3d(${-Math.round(pX)}px, ${-Math.round(pY)}px, 0)`;
+
+        // Expand overscan to 55% of viewport size so fast inertial flings never flash blank edges
+        const padX = Math.max(180, Math.round(canvasLayoutCache.vw * 0.55));
+        const padY = Math.max(220, Math.round(fieldH * 0.55));
+        const minX = pX - padX;
+        const maxX = pX + fieldW + padX;
+        const minY = pY - padY;
+        const maxY = pY + fieldH + padY;
+
+        const startTX = Math.floor(minX / tW);
+        const endTX = Math.floor(maxX / tW);
+        const startTY = Math.floor(minY / tH);
+        const endTY = Math.floor(maxY / tH);
 
         const needed = [];
-        let cardBudget = 90;
-        for (let c = startCopy; c <= endCopy && cardBudget > 0; c++) {
-          const base = c * H;
-          for (let r = 0; r < model.rows.length && cardBudget > 0; r++) {
-            const row = model.rows[r];
-            const y0 = base + row.y;
-            const y1 = y0 + row.h;
-            if (y1 < minY || y0 > maxY) continue;
-            const cardsInRow = row.type === 'hero' ? 1 : (row.items[1] ? 2 : 1);
-            if (cardBudget - cardsInRow < 0) break;
-            cardBudget -= cardsInRow;
-            needed.push({ key: `${c}:${r}`, row, y: y0 });
+        const maxCards = fieldW > 420 ? 180 : 120;
+        for (let ty = startTY; ty <= endTY && needed.length < maxCards; ty++) {
+          const baseY = ty * tH;
+          for (let tx = startTX; tx <= endTX && needed.length < maxCards; tx++) {
+            const baseX = tx * tW;
+            for (let i = 0; i < canvas2D.items.length && needed.length < maxCards; i++) {
+              const it = canvas2D.items[i];
+              const x0 = baseX + it.x;
+              const y0 = baseY + it.y;
+              if (x0 + it.w < minX || x0 > maxX || y0 + it.h < minY || y0 > maxY) continue;
+              needed.push({ key: `${tx}:${ty}:${i}`, item: it, x: x0, y: y0 });
+            }
           }
         }
 
         const neededSet = new Set(needed.map((n) => n.key));
-        for (const [key, node] of model.pool.entries()) {
+        for (const [key, node] of store.pool.entries()) {
           if (!neededSet.has(key)) {
             node.style.display = 'none';
-            model.pool.delete(key);
-            model.freePool.push(node);
+            store.pool.delete(key);
+            store.freePool.push(node);
           }
         }
 
-        for (const item of needed) {
-          let rowEl = model.pool.get(item.key);
-          if (!rowEl) {
-            rowEl = model.freePool.pop() || createCanvasRowNode();
-            if (!rowEl.parentNode) stripEl.appendChild(rowEl);
-            rowEl.style.display = 'flex';
-            rowEl.style.height = `${item.row.h}px`;
-            if (item.row.type === 'hero') {
-              rowEl._slot1.style.display = 'none';
-              rowEl._card0.style.visibility = 'visible';
-              populateCanvasCardNode(rowEl._card0, item.row.items[0]);
-            } else {
-              rowEl._slot1.style.display = 'block';
-              rowEl._card0.style.visibility = 'visible';
-              populateCanvasCardNode(rowEl._card0, item.row.items[0]);
-              if (item.row.items[1]) {
-                rowEl._card1.style.visibility = 'visible';
-                populateCanvasCardNode(rowEl._card1, item.row.items[1]);
-              } else {
-                rowEl._card1.style.visibility = 'hidden';
-                rowEl._card1._canvasCard = null;
-              }
-            }
-            model.pool.set(item.key, rowEl);
+        for (const n of needed) {
+          let wrap = store.pool.get(n.key);
+          if (!wrap) {
+            wrap = store.freePool.pop() || createCanvasCardWrap();
+            if (!wrap.parentNode) worldEl.appendChild(wrap);
+            wrap.style.display = 'block';
+            populateCanvasCardWrap(wrap, n.item);
+            store.pool.set(n.key, wrap);
           }
-          rowEl.style.transform = `translate3d(0, ${item.y.toFixed(1)}px, 0)`;
+          wrap.style.transform = `translate3d(${Math.round(n.x)}px, ${Math.round(n.y)}px, 0)`;
         }
       }
+
+      function updateSpineDynamicGlow() {}
 
       function paintCanvasFrame() {
         const canvasEl = $('lib-canvas');
         if (!canvasEl || canvasEl.classList.contains('hidden')) return;
-        const viewportH = canvasEl.clientHeight || window.innerHeight || 700;
-        const pos = canvasScroll.pos;
-        canvasPosByTab[state.libTab || 'songs'] = pos;
-        renderCanvasFieldWindow('left', pos, viewportH);
-        const Hr = canvasModel.right.H;
-        const rightOffset = Hr > 0 ? (Hr - ((((pos * 0.8) % Hr) + Hr) % Hr)) : 0;
-        renderCanvasFieldWindow('right', rightOffset, viewportH);
+        if (!canvas2D.items.length || !canvas2D.tileW || !canvas2D.tileH) return;
+
+        const winW = window.innerWidth || 390;
+        const winH = window.innerHeight || 700;
+        if (!canvasLayoutCache.vw || !canvasLayoutCache.vh || winW !== canvasLayoutCache.lastWinW || winH !== canvasLayoutCache.lastWinH) {
+          refreshCanvasViewportMetrics();
+        }
+        const vh = canvasLayoutCache.vh || winH;
+        const tab = state.libTab || 'songs';
+        canvasPosByTab[tab] = { x: canvasScroll.posX, y: canvasScroll.posY, spineX: canvasScroll.spineOffsetX };
+
+        const geom = applySplitSpineLayout();
+        // Independent left & right clipped worlds so the spine NEVER slices the same card across both sides
+        render2DFieldPool('left', geom.spineLeft, vh, canvasScroll.posX, canvasScroll.posY);
+        const rOffX = canvasScroll.posX + canvas2D.tileW * 0.5;
+        const rOffY = canvasScroll.posY + canvas2D.tileH * 0.5;
+        render2DFieldPool('right', geom.rightW, vh, rOffX, rOffY);
+        updateSpineDynamicGlow(geom, false);
       }
 
       function syncCanvasSpineUI() {
@@ -7155,6 +7739,13 @@
           btn.classList.toggle('is-active', btn.dataset.canvasTab === state.libTab);
         });
         syncCanvasNowPlaying();
+      }
+
+      function updateCanvasTransportProgress(pct) {
+        const ring = $('canvas-transport-progress-ring');
+        if (!ring) return;
+        const clamped = Math.max(0, Math.min(100, Number(pct) || 0));
+        ring.setAttribute('stroke-dashoffset', (100 - clamped).toFixed(2));
       }
 
       function syncCanvasNowPlaying() {
@@ -7166,14 +7757,23 @@
           if (coverImg.getAttribute('src') !== nextSrc) coverImg.setAttribute('src', nextSrc);
           coverImg.classList.toggle('opacity-45', !disp);
         }
+        const isPlayingNow = Boolean(state.isPlaying);
         const npBtn = $('btn-canvas-np');
-        if (npBtn) npBtn.classList.toggle('is-playing', Boolean(state.currentTrackId && state.isPlaying));
+        if (npBtn) npBtn.classList.toggle('is-playing', Boolean(state.currentTrackId && isPlayingNow));
+        const cPlayIcon = $('canvas-play-icon');
+        const cPauseIcon = $('canvas-pause-icon');
+        if (cPlayIcon && cPauseIcon) {
+          cPlayIcon.classList.toggle('hidden', isPlayingNow);
+          cPauseIcon.classList.toggle('hidden', !isPlayingNow);
+        }
+        const curT = audio?.currentTime || 0;
+        const durT = audio?.duration || 0;
+        updateCanvasTransportProgress(durT > 0 ? (curT / durT) * 100 : 0);
         ['left', 'right'].forEach((side) => {
-          canvasModel[side].pool.forEach((rowEl) => {
-            [rowEl._card0, rowEl._card1].forEach((cardEl) => {
-              if (!cardEl || !cardEl._canvasCard) return;
-              cardEl.classList.toggle('canvas-card-playing', isCanvasCardPlaying(cardEl._canvasCard));
-            });
+          canvas2D.fields[side].pool.forEach((wrap) => {
+            const cardEl = wrap._cardEl;
+            if (!cardEl || !cardEl._canvasCard) return;
+            cardEl.classList.toggle('canvas-card-playing', isCanvasCardPlaying(cardEl._canvasCard));
           });
         });
       }
@@ -7181,41 +7781,807 @@
       async function playCanvasCardDirect(card) {
         if (!card || !card.trackIds || !card.trackIds.length) return;
         try { if (navigator.vibrate) navigator.vibrate(10); } catch {}
-        state.queue = [...card.trackIds];
-        await loadTrack(card.trackIds[0], true);
+        if (card.kind === 'song') {
+          state.queue = getSortedTracks().map((t) => t.id);
+          await loadTrack(card.trackId, true);
+        } else {
+          state.queue = [...card.trackIds];
+          await loadTrack(card.trackIds[0], true);
+        }
         showToast(`正在播放：${card.title}`);
       }
 
-      function openCanvasCardDetail(card) {
-        if (!card) return;
-        if (card.kind === 'album') {
-          openGroupDetail('album', card.name);
-        } else if (card.kind === 'artist') {
-          openGroupDetail('artist', card.name);
-        } else if (card.kind === 'playlist' && card.playlistId) {
-          openPlaylistDetail(card.playlistId);
+      // Spine Honeycomb Iridescent ♪ Dot-Matrix (Top-to-Bottom Flow, matches EQ Studio)
+      let spineDotRaf = 0;
+      let spineDotPhase = 0;
+      let spineDotLastTs = 0;
+
+      function stopSpineDotLoop() {
+        if (spineDotRaf) {
+          cancelAnimationFrame(spineDotRaf);
+          spineDotRaf = 0;
         }
+        spineDotLastTs = 0;
+      }
+
+      function drawSpineHexagon(ctx, cx, cy, r) {
+        ctx.beginPath();
+        for (let i = 0; i < 6; i++) {
+          const angle = (Math.PI / 3) * i - Math.PI / 2; // pointy-top honeycomb hexagon
+          const vx = cx + r * Math.cos(angle);
+          const vy = cy + r * Math.sin(angle);
+          if (i === 0) ctx.moveTo(vx, vy);
+          else ctx.lineTo(vx, vy);
+        }
+        ctx.closePath();
+      }
+
+      function drawSpineNote(ctx, cx, cy, r, color) {
+        ctx.save();
+        ctx.fillStyle = color;
+        ctx.strokeStyle = color;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        // Tilted oval notehead
+        ctx.beginPath();
+        ctx.ellipse(cx - r * 0.13, cy + r * 0.22, r * 0.22, r * 0.15, -0.42, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Stem + curved eighth-note flag
+        const stemX = cx + r * 0.04;
+        const stemTopY = cy - r * 0.34;
+        ctx.lineWidth = Math.max(0.95, r * 0.135);
+        ctx.beginPath();
+        ctx.moveTo(stemX, cy + r * 0.18);
+        ctx.lineTo(stemX, stemTopY);
+        ctx.quadraticCurveTo(cx + r * 0.36, cy - r * 0.24, cx + r * 0.24, cy + r * 0.02);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function drawSpineDotFrame(ts) {
+        const canvasEl = $('lib-canvas');
+        const spineEl = $('canvas-spine');
+        const dotCanvas = $('canvas-spine-dots');
+        if (!canvasEl || canvasEl.classList.contains('hidden') || !dotCanvas) {
+          stopSpineDotLoop();
+          return;
+        }
+        if (!spineDotLastTs) spineDotLastTs = ts;
+        const dt = Math.min(50, Math.max(1, ts - spineDotLastTs)) / 1000;
+        spineDotLastTs = ts;
+        spineDotPhase += dt;
+
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const cssW = dotCanvas.clientWidth || 56;
+        const cssH = dotCanvas.clientHeight || 680;
+        const pxW = Math.max(1, Math.round(cssW * dpr));
+        const pxH = Math.max(1, Math.round(cssH * dpr));
+        if (dotCanvas.width !== pxW || dotCanvas.height !== pxH) {
+          dotCanvas.width = pxW;
+          dotCanvas.height = pxH;
+        }
+        const ctx = dotCanvas.getContext('2d');
+        if (ctx) {
+          ctx.clearRect(0, 0, pxW, pxH);
+
+          // Full-bleed symmetric honeycomb (even=5, odd=6 edge-to-edge) tapering cleanly 4 -> 3 -> 2 -> 1 below "歌手"
+          const artistsBtn = spineEl ? spineEl.querySelector('[data-canvas-tab="artists"]') : null;
+          const shoulderCssY = artistsBtn
+            ? (artistsBtn.offsetTop + artistsBtn.offsetHeight + 4)
+            : (cssH * 0.38);
+          const shoulderPxY = Math.max(1, Math.min(pxH, Math.round(shoulderCssY * dpr)));
+
+          const centerX = pxW * 0.5;
+          const hexW = pxW / 5.0; // exact full-bleed width: 5 centered hexes on even rows, 6 interlocking hexes on odd rows
+          const hexR = hexW / Math.sqrt(3);
+          const rowStep = hexR * 1.5;
+          const baseDrawR = hexR * 0.78; // crisp dark gap at rest, leaving headroom for wave enlargement
+
+          // Ensure shoulderRow is EVEN (5 full hexes) so the 4 taper rows step cleanly: 4 (odd) -> 3 (even) -> 2 (odd) -> 1 (even)
+          let shoulderRow = Math.round((shoulderPxY - hexR * 0.7) / rowStep);
+          if ((shoulderRow & 1) !== 0) shoulderRow += 1;
+          const maxRow = shoulderRow + 4;
+          const totalActivePxY = Math.max(1, Math.min(pxH, (maxRow + 1) * rowStep + hexR));
+
+          // Smooth top-to-bottom flowing current waves across the active upper zone
+          const sweepY = ((spineDotPhase * 0.42) % 1.52) - 0.26;
+          const sweepY2 = (((spineDotPhase * 0.42) + 0.76) % 1.52) - 0.26;
+
+          const baseCells = [];
+          const liftedCells = [];
+
+          for (let r = 0; r <= maxRow; r++) {
+            const cy = r * rowStep + hexR * 0.7;
+            if (cy + hexR > pxH) break;
+            const ny = Math.max(0, Math.min(1, cy / totalActivePxY));
+            const isOdd = ((r & 1) !== 0);
+
+            // Above shoulder: even rows = 5, odd rows = 6 (fills both side edges completely with zero missing column!)
+            // Below shoulder: +1 -> 4, +2 -> 3, +3 -> 2, +4 -> 1 (clean symmetric inverted triangle)
+            let count = isOdd ? 6 : 5;
+            if (r > shoulderRow) {
+              count = 5 - (r - shoulderRow); // 4, 3, 2, 1
+            }
+
+            const d1 = (ny - sweepY) / 0.16;
+            const d2 = (ny - sweepY2) / 0.20;
+            const flowLift = Math.min(1, Math.exp(-0.5 * d1 * d1) + 0.45 * Math.exp(-0.5 * d2 * d2));
+
+            // Center `count` hexagons strictly symmetrically around centerX
+            const halfSpan = (count - 1) * 0.5;
+            for (let i = 0; i < count; i++) {
+              const cx = centerX + (i - halfSpan) * hexW;
+              const cell = { cx, cy, ny, symDx: Math.abs(cx - centerX) / Math.max(1, pxW * 0.5), flowLift };
+              if (flowLift > 0.22) liftedCells.push(cell);
+              else baseCells.push(cell);
+            }
+          }
+
+          const renderCell = (cell) => {
+            const { cx, cy, ny, symDx, flowLift } = cell;
+            // Wave-swept hexagons slightly scale up (up to +22%) while preserving clean separation
+            const drawR = baseDrawR * (1 + flowLift * 0.22);
+
+            // Restrained lower-brightness sky blue at rest, shifting to symmetric cyan-iridescent (青彩色) when swept
+            const cyanShimmer = Math.sin(symDx * 4.8 + ny * 4.4 + spineDotPhase * 2.8) * 12;
+            const hue = 200 - flowLift * 24 + flowLift * cyanShimmer;
+            const sat = 82 + flowLift * 10;
+            const light = 42 + flowLift * 14;
+            const fillAlpha = Math.min(0.62, 0.25 + flowLift * 0.35);
+
+            drawSpineHexagon(ctx, cx, cy, drawR);
+            ctx.fillStyle = `hsla(${hue.toFixed(1)}, ${sat.toFixed(0)}%, ${light.toFixed(1)}%, ${fillAlpha.toFixed(3)})`;
+            ctx.fill();
+
+            ctx.strokeStyle = flowLift > 0.18
+              ? `rgba(165, 243, 252, ${(0.12 + flowLift * 0.26).toFixed(3)})`
+              : 'rgba(125, 211, 252, 0.10)';
+            ctx.lineWidth = Math.max(0.6, (0.60 + flowLift * 0.28) * dpr);
+            ctx.stroke();
+
+            // Subtle interior musical note scaling smoothly with the hexagon
+            const noteAlpha = Math.min(0.68, 0.20 + flowLift * 0.44);
+            drawSpineNote(ctx, cx, cy, drawR, `rgba(255, 255, 255, ${noteAlpha.toFixed(3)})`);
+          };
+
+          for (let i = 0; i < baseCells.length; i++) renderCell(baseCells[i]);
+          for (let i = 0; i < liftedCells.length; i++) renderCell(liftedCells[i]);
+        }
+        spineDotRaf = requestAnimationFrame(drawSpineDotFrame);
+      }
+      function startSpineDotLoop() {
+        if (spineDotRaf) return;
+        spineDotLastTs = 0;
+        spineDotRaf = requestAnimationFrame(drawSpineDotFrame);
+      }
+
+      function bindCanvasPopupZipperRail(rowSelector) {
+        const rail = $('cpop-zipper-rail');
+        const list = $('cpop-zipper-list');
+        const spine = $('cpop-zipper-spine');
+        const teeth = $('cpop-zipper-teeth');
+        const knob = $('cpop-zipper-knob');
+        if (!rail || !list || !spine || !teeth || !knob) return;
+
+        const drawZipperWave = (activeFrac, bulgeStrength) => {
+          const H = 240;
+          const baseX = 30;
+          const activeY = 8 + Math.max(0, Math.min(1, activeFrac)) * (H - 16);
+          const pts = [];
+          const steps = 48;
+          for (let i = 0; i <= steps; i++) {
+            const y = 8 + (i / steps) * (H - 16);
+            const dy = (y - activeY) / 34;
+            const bulge = bulgeStrength * Math.exp(-0.5 * dy * dy);
+            const x = baseX - bulge;
+            pts.push(`${i === 0 ? 'M' : 'L'} ${x.toFixed(2)} ${y.toFixed(2)}`);
+          }
+          const d = pts.join(' ');
+          spine.setAttribute('d', d);
+          teeth.setAttribute('d', d);
+          knob.setAttribute('cx', (baseX - bulgeStrength).toFixed(2));
+          knob.setAttribute('cy', activeY.toFixed(2));
+          knob.setAttribute('r', bulgeStrength > 1 ? '5.6' : '3.6');
+          knob.setAttribute('opacity', bulgeStrength > 1 ? '1' : '0.75');
+        };
+
+        const syncFromScroll = () => {
+          const maxScroll = Math.max(1, list.scrollHeight - list.clientHeight);
+          const frac = Math.max(0, Math.min(1, list.scrollTop / maxScroll));
+          drawZipperWave(frac, 0);
+        };
+        syncFromScroll();
+
+        let zipperActive = false;
+        let lastFocusedRow = null;
+        const clearFocused = () => {
+          if (lastFocusedRow) {
+            lastFocusedRow.classList.remove('queue-row-zipper-focus');
+            lastFocusedRow = null;
+          }
+        };
+
+        const scrubAtClientY = (clientY) => {
+          const rect = rail.getBoundingClientRect();
+          if (!rect.height) return;
+          const frac = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
+          drawZipperWave(frac, 22.5);
+          const maxScroll = Math.max(0, list.scrollHeight - list.clientHeight);
+          list.scrollTop = frac * maxScroll;
+
+          const rows = list.querySelectorAll(rowSelector);
+          if (rows.length) {
+            const idx = Math.min(rows.length - 1, Math.max(0, Math.round(frac * (rows.length - 1))));
+            const targetRow = rows[idx];
+            if (targetRow !== lastFocusedRow) {
+              clearFocused();
+              targetRow.classList.add('queue-row-zipper-focus');
+              lastFocusedRow = targetRow;
+            }
+          }
+        };
+
+        on(rail, 'pointerdown', (e) => {
+          zipperActive = true;
+          try { rail.setPointerCapture(e.pointerId); } catch {}
+          scrubAtClientY(e.clientY);
+        });
+        on(rail, 'pointermove', (e) => {
+          if (!zipperActive) return;
+          scrubAtClientY(e.clientY);
+        });
+        const endZipper = () => {
+          if (!zipperActive) return;
+          zipperActive = false;
+          clearFocused();
+          syncFromScroll();
+        };
+        on(rail, 'pointerup', endZipper);
+        on(rail, 'pointercancel', endZipper);
+        on(list, 'scroll', () => {
+          if (!zipperActive) syncFromScroll();
+        }, { passive: true });
+      }
+
+      // Unified Floating Popup Sheet for ALL Canvas Secondary Views
+      function openCanvasPopupSheet(mode, payload = null) {
+        const headerEl = $('canvas-subview-header');
+        const bodyEl = $('canvas-subview-body');
+        if (!headerEl || !bodyEl) return;
+
+        const closeBtnHtml = `<button class="btn-close-sheets px-3 py-1.5 rounded-full bg-white/10 text-xs text-white/80 shrink-0">关闭</button>`;
+
+        const renderTrackRows = (tracks, queueIds) => {
+          if (!tracks.length) {
+            return `<div class="text-center text-xs text-white/45 py-10">暂无歌曲</div>`;
+          }
+          return tracks.map((t, idx) => {
+            const isCur = t.id === state.currentTrackId;
+            return `
+              <div data-popup-track-id="${t.id}" class="canvas-popup-track flex items-center gap-3 p-2 rounded-2xl ${isCur ? 'bg-sky-500/18 ring-1 ring-sky-400/50' : 'bg-white/6 hover:bg-white/12'} cursor-pointer transition active:scale-[0.99]">
+                <span class="w-5 text-center text-[11px] font-semibold ${isCur ? 'text-sky-300' : 'text-white/40'} tabular-nums shrink-0">${idx + 1}</span>
+                <img src="${t.cover || DEFAULT_APP_COVER}" alt="" class="w-10 h-10 rounded-xl object-cover bg-white/10 shrink-0" />
+                <div class="min-w-0 flex-1">
+                  <div class="text-sm font-semibold truncate ${isCur ? 'text-sky-200' : 'text-white'}">${escapeHtml(t.title)}</div>
+                  <div class="text-[11px] text-white/55 truncate">${escapeHtml(t.artist)}</div>
+                </div>
+                ${t.duration ? `<span class="text-[11px] text-white/40 tabular-nums shrink-0">${formatTime(t.duration)}</span>` : ''}
+              </div>`;
+          }).join('');
+        };
+
+        const bindTrackRows = (queueIds) => {
+          bodyEl.querySelectorAll('.canvas-popup-track').forEach((row) => {
+            on(row, 'click', async () => {
+              const tid = row.dataset.popupTrackId;
+              if (!tid) return;
+              state.queue = [...queueIds];
+              await loadTrack(tid, true);
+              closeAllBottomSheets();
+            });
+          });
+        };
+
+        if (mode === 'album' || mode === 'artist') {
+          const isAlbum = mode === 'album';
+          const name = String(payload || '');
+          const matched = state.tracks
+            .map(getTrackDisplay)
+            .filter((t) => (isAlbum ? (t.album || '未知专辑') === name : (t.artist || '未知歌手') === name));
+          const cover = matched[0]?.cover || DEFAULT_APP_COVER;
+          const favList = isAlbum ? state.favoriteAlbums : state.favoriteArtists;
+          const isFav = (favList || []).includes(name);
+          const ids = matched.map((t) => t.id);
+
+          headerEl.innerHTML = `
+            <div class="flex items-center gap-3 min-w-0 flex-1">
+              <img src="${cover}" alt="" class="w-12 h-12 ${isAlbum ? 'rounded-2xl' : 'rounded-full'} object-cover border border-white/15 shrink-0" />
+              <div class="min-w-0 flex-1">
+                <h3 class="text-sm font-bold text-white truncate">${escapeHtml(name)}</h3>
+                <p class="text-[11px] text-white/55 truncate">${isAlbum ? escapeHtml(matched[0]?.artist || '未知歌手') : '歌手'} · ${matched.length} 首</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <button id="btn-cpop-fav" class="w-8 h-8 rounded-full flex items-center justify-center ${isFav ? 'bg-amber-400/20 text-amber-300' : 'bg-white/10 text-white/65'}" title="收藏">${buildStarIconSvg(isFav)}</button>
+              <button id="btn-cpop-playall" class="px-3 py-1.5 rounded-full bg-sky-500/25 text-xs font-semibold text-sky-200">播放</button>
+              <button id="btn-cpop-full" class="px-2.5 py-1.5 rounded-full bg-white/10 text-xs text-white/75">详情</button>
+              ${closeBtnHtml}
+            </div>`;
+          bodyEl.innerHTML = renderTrackRows(matched, ids);
+          bindTrackRows(ids);
+          on('btn-cpop-playall', async () => {
+            if (!ids.length) return;
+            state.queue = [...ids];
+            await loadTrack(ids[0], true);
+            closeAllBottomSheets();
+          });
+          on('btn-cpop-fav', async () => {
+            await toggleGroupFavorite(mode, name);
+            openCanvasPopupSheet(mode, name);
+          });
+          on('btn-cpop-full', () => {
+            closeAllBottomSheets();
+            openGroupDetail(mode, name);
+          });
+        } else if (mode === 'playlist-detail') {
+          const pl = state.playlists.find((p) => p.id === payload);
+          if (!pl) return;
+          const trackMap = new Map(state.tracks.map((t) => [t.id, getTrackDisplay(t)]));
+          const tracks = (pl.trackIds || []).map((id) => trackMap.get(id)).filter(Boolean);
+          const ids = tracks.map((t) => t.id);
+          const cover = getCanvasPlaylistCover(pl);
+
+          headerEl.innerHTML = `
+            <div class="flex items-center gap-2.5 min-w-0 flex-1">
+              <button id="btn-cpop-back-pl" class="w-8 h-8 rounded-full bg-white/10 text-white/80 flex items-center justify-center shrink-0" title="返回歌单">←</button>
+              <img src="${cover}" alt="" class="w-11 h-11 rounded-2xl object-cover border border-white/15 shrink-0" />
+              <div class="min-w-0 flex-1">
+                <h3 class="text-sm font-bold text-white truncate">${escapeHtml(pl.name)}</h3>
+                <p class="text-[11px] text-white/55">歌单 · ${tracks.length} 首</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <button id="btn-cpop-pl-playall" class="px-3 py-1.5 rounded-full bg-sky-500/25 text-xs font-semibold text-sky-200">播放</button>
+              ${closeBtnHtml}
+            </div>`;
+          bodyEl.innerHTML = `
+            <div class="relative flex items-stretch gap-1 h-[48vh] max-h-[420px]">
+              <div id="cpop-zipper-list" class="flex-1 overflow-y-auto no-scrollbar space-y-2 pr-1">${renderTrackRows(tracks, ids)}</div>
+              <div id="cpop-zipper-rail" class="w-9 shrink-0 relative touch-none select-none cursor-ns-resize flex items-center justify-center my-1" aria-label="快速滑动歌单曲目">
+                <svg class="w-full h-full overflow-visible pointer-events-none" viewBox="0 0 38 240" preserveAspectRatio="none">
+                  <path id="cpop-zipper-teeth" d="" fill="none" stroke="rgba(255,255,255,0.34)" stroke-width="4" stroke-dasharray="2.2 5.2" stroke-linecap="round" />
+                  <path id="cpop-zipper-spine" d="M 30 8 L 30 232" fill="none" stroke="rgba(186,230,253,0.78)" stroke-width="2.2" stroke-linecap="round" />
+                  <circle id="cpop-zipper-knob" cx="30" cy="120" r="4" fill="#ffffff" opacity="0.8" />
+                </svg>
+              </div>
+            </div>`;
+          bindTrackRows(ids);
+          bindCanvasPopupZipperRail('.canvas-popup-track');
+          on('btn-cpop-back-pl', () => openCanvasPopupSheet('playlists'));
+          on('btn-cpop-pl-playall', async () => {
+            if (!ids.length) return;
+            state.queue = [...ids];
+            await loadTrack(ids[0], true);
+            closeAllBottomSheets();
+          });
+        } else if (mode === 'playlists') {
+          headerEl.innerHTML = `
+            <div>
+              <h3 class="text-base font-bold text-white">我的歌单</h3>
+              <p class="text-[11px] text-white/50">共 ${state.playlists.length} 个歌单</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="btn-cpop-new-pl" class="px-3 py-1.5 rounded-full bg-sky-500/25 text-xs font-semibold text-sky-200">+ 新建</button>
+              ${closeBtnHtml}
+            </div>`;
+          if (!state.playlists.length) {
+            bodyEl.innerHTML = `<div class="text-center text-xs text-white/45 py-10">还没有歌单，点右上角「+ 新建」创建一个吧</div>`;
+          } else {
+            const plRowsHtml = state.playlists.map((pl) => {
+              const cover = getCanvasPlaylistCover(pl);
+              const cnt = (pl.trackIds || []).filter((id) => state.tracks.some((t) => t.id === id)).length;
+              return `
+                <div data-cpop-pl="${pl.id}" class="cpop-pl-row flex items-center gap-3 p-2.5 rounded-2xl bg-white/8 hover:bg-white/14 cursor-pointer transition active:scale-[0.99]">
+                  <img src="${cover}" alt="" class="w-12 h-12 rounded-2xl object-cover bg-white/10 shrink-0" />
+                  <div class="min-w-0 flex-1">
+                    <div class="text-sm font-semibold text-white truncate">${escapeHtml(pl.name)}</div>
+                    <div class="text-[11px] text-white/55 mt-0.5">${cnt} 首歌曲</div>
+                  </div>
+                  <span class="text-white/40 text-xs pr-1">›</span>
+                </div>`;
+            }).join('');
+            bodyEl.innerHTML = `
+              <div class="relative flex items-stretch gap-1 h-[48vh] max-h-[420px]">
+                <div id="cpop-zipper-list" class="flex-1 overflow-y-auto no-scrollbar space-y-2 pr-1">${plRowsHtml}</div>
+                <div id="cpop-zipper-rail" class="w-9 shrink-0 relative touch-none select-none cursor-ns-resize flex items-center justify-center my-1" aria-label="快速滑动歌单列表">
+                  <svg class="w-full h-full overflow-visible pointer-events-none" viewBox="0 0 38 240" preserveAspectRatio="none">
+                    <path id="cpop-zipper-teeth" d="" fill="none" stroke="rgba(255,255,255,0.34)" stroke-width="4" stroke-dasharray="2.2 5.2" stroke-linecap="round" />
+                    <path id="cpop-zipper-spine" d="M 30 8 L 30 232" fill="none" stroke="rgba(186,230,253,0.78)" stroke-width="2.2" stroke-linecap="round" />
+                    <circle id="cpop-zipper-knob" cx="30" cy="120" r="4" fill="#ffffff" opacity="0.8" />
+                  </svg>
+                </div>
+              </div>`;
+            bodyEl.querySelectorAll('.cpop-pl-row').forEach((row) => {
+              on(row, 'click', () => openCanvasPopupSheet('playlist-detail', row.dataset.cpopPl));
+            });
+            bindCanvasPopupZipperRail('.cpop-pl-row');
+          }
+          on('btn-cpop-new-pl', () => {
+            closeAllBottomSheets();
+            openPlaylistNameModal('create', null);
+          });
+        } else if (mode === 'stats') {
+          const totalSecs = Math.max(0, Number(state.stats?.totalSeconds || 0));
+          const totalMins = Math.floor(totalSecs / 60);
+          const hours = Math.floor(totalMins / 60);
+          const remMins = totalMins % 60;
+          const totalPlays = Object.values(state.stats?.trackPlays || {}).reduce((a, b) => a + (Number(b) || 0), 0);
+          const totalTracks = state.tracks.length;
+          const heardCount = state.tracks.filter((t) => (Number(state.stats?.trackPlays?.[t.id]) || 0) > 0).length;
+          const heardPct = totalTracks > 0 ? Math.round((heardCount / totalTracks) * 100) : 0;
+
+          headerEl.innerHTML = `
+            <div>
+              <h3 class="text-base font-bold text-white">听歌足迹</h3>
+              <p class="text-[11px] text-white/50">聆听概览</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="btn-cpop-full-stats" class="px-3 py-1.5 rounded-full bg-white/10 text-xs text-sky-200">完整足迹</button>
+              ${closeBtnHtml}
+            </div>`;
+          bodyEl.innerHTML = `
+            <div class="grid grid-cols-12 gap-2.5 items-stretch pb-1">
+              <div class="col-span-7 liquid-panel rounded-3xl p-4 flex flex-col justify-between min-h-[146px]">
+                <div class="text-[11px] font-medium text-white/55">累计聆听时长</div>
+                <div class="my-1">
+                  <div class="flex items-baseline gap-1.5 flex-wrap">
+                    <span class="stat-aurora-num font-extrabold tracking-tight tabular-nums leading-none" style="font-size:44px;">${totalMins}</span>
+                    <span class="text-xs font-semibold text-white/65">分钟</span>
+                  </div>
+                </div>
+                <div class="text-[11px] text-white/50 tabular-nums truncate">约 ${hours} 小时 ${remMins} 分</div>
+              </div>
+              <div class="col-span-5 flex flex-col gap-2.5">
+                <div class="liquid-panel rounded-3xl p-3.5 flex-1 flex flex-col justify-between">
+                  <div class="text-[11px] text-white/55">累计听歌次数</div>
+                  <div class="flex items-baseline gap-1 mt-1">
+                    <span class="stat-aurora-num font-extrabold tabular-nums leading-tight" style="font-size:22px;">${totalPlays}</span>
+                    <span class="text-[11px] text-white/55">次</span>
+                  </div>
+                </div>
+                <div class="liquid-panel rounded-3xl p-3.5 flex-1 flex flex-col justify-between">
+                  <div class="flex items-center justify-between gap-1">
+                    <span class="text-[11px] text-white/55">已听曲目</span>
+                    <span class="text-[10px] text-white/45 tabular-nums">${heardPct}%</span>
+                  </div>
+                  <div class="stat-aurora-num text-base font-extrabold tabular-nums leading-tight mt-0.5 truncate">${heardCount}/${totalTracks}</div>
+                  <div class="w-full h-1.5 rounded-full bg-white/10 overflow-hidden mt-1.5">
+                    <div class="h-full rounded-full bg-gradient-to-r from-sky-300 via-indigo-300 to-pink-300 transition-all duration-500" style="width:${heardPct}%;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>`;
+          on('btn-cpop-full-stats', () => {
+            closeAllBottomSheets();
+            switchView('stats');
+          });
+        } else if (mode === 'diy') {
+          headerEl.innerHTML = `
+            <div>
+              <h3 class="text-base font-bold text-white">快捷设置</h3>
+              <p class="text-[11px] text-white/50">FENG MUSIC 画布模式快捷控制</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="btn-cpop-full-diy" class="px-3 py-1.5 rounded-full bg-white/10 text-xs text-sky-200">全部设置</button>
+              ${closeBtnHtml}
+            </div>`;
+          bodyEl.innerHTML = `
+            <button id="btn-cpop-eq" class="w-full py-3 px-4 rounded-2xl bg-white/8 hover:bg-white/14 flex items-center justify-between text-left transition">
+              <div>
+                <div class="text-sm font-medium text-white">FENG EQ STUDIO</div>
+                <div class="text-[11px] text-white/50">专业 5 段蜂窝点阵均衡器与官方调音曲线</div>
+              </div>
+              <span class="text-xs text-sky-300">打开 ›</span>
+            </button>
+            <button id="btn-cpop-import" class="w-full py-3 px-4 rounded-2xl bg-white/8 hover:bg-white/14 flex items-center justify-between text-left transition">
+              <div>
+                <div class="text-sm font-medium text-white">导入 / 关联本地音乐</div>
+                <div class="text-[11px] text-white/50">批量添加音频文件或关联本地文件夹</div>
+              </div>
+              <span class="text-xs text-sky-300">添加 ›</span>
+            </button>
+            <button id="btn-cpop-np-set" class="w-full py-3 px-4 rounded-2xl bg-white/8 hover:bg-white/14 flex items-center justify-between text-left transition">
+              <div>
+                <div class="text-sm font-medium text-white">播放设置</div>
+                <div class="text-[11px] text-white/50">定时关闭、倍速、歌词特效、灵动岛/画中画歌词</div>
+              </div>
+              <span class="text-xs text-sky-300">设置 ›</span>
+            </button>`;
+          on('btn-cpop-eq', () => {
+            closeAllBottomSheets(true);
+            const modal = $('eq-fullscreen-modal');
+            if (modal) {
+              modal.classList.remove('translate-y-full');
+              applyAudioFxUI();
+              startEqCurveLoop();
+              syncNativeDockState();
+            }
+          });
+          on('btn-cpop-import', () => {
+            closeAllBottomSheets();
+            openAddMusicSheet();
+          });
+          on('btn-cpop-np-set', () => {
+            closeAllBottomSheets();
+            openBottomSheet('sheet-np-settings');
+          });
+          on('btn-cpop-full-diy', () => {
+            closeAllBottomSheets();
+            switchView('diy');
+          });
+        }
+
+        headerEl.querySelectorAll('.btn-close-sheets').forEach((b) => on(b, 'click', closeAllBottomSheets));
+        stopSpineDotLoop();
+        openBottomSheet('sheet-canvas-subview');
+      }
+
+      const canvasSearchState = {
+        open: false,
+        query: '',
+        matches: [],
+        index: 0,
+        locatedKey: null,
+        panRafId: 0,
+        debounceTimer: null
+      };
+
+      function getCanvasSearchTabConfig() {
+        const tab = state.libTab || 'songs';
+        if (tab === 'albums') return { kind: 'album', placeholder: '在专辑画布中定位专辑...' };
+        if (tab === 'artists') return { kind: 'artist', placeholder: '在歌手画布中定位歌手...' };
+        return { kind: 'song', placeholder: '在歌曲画布中定位歌曲...' };
+      }
+
+      function refreshCanvasLocatedHighlight() {
+        ['left', 'right'].forEach((side) => {
+          const store = canvas2D.fields[side];
+          if (!store) return;
+          store.pool.forEach((wrap) => {
+            const cardEl = wrap._cardEl;
+            const card = cardEl?._canvasCard;
+            if (!cardEl || !card) return;
+            cardEl.classList.toggle('canvas-card-located', Boolean(canvasSearchState.locatedKey && card.key === canvasSearchState.locatedKey));
+          });
+        });
+      }
+
+      function stopCanvasSearchPan() {
+        if (canvasSearchState.panRafId) {
+          cancelAnimationFrame(canvasSearchState.panRafId);
+          canvasSearchState.panRafId = 0;
+        }
+      }
+
+      function panCanvasToItem(item) {
+        if (!item || !canvas2D.tileW || !canvas2D.tileH) return;
+        stopCanvasInertia();
+        stopCanvasSearchPan();
+
+        const canvasEl = $('lib-canvas');
+        const vh = canvasEl?.clientHeight || window.innerHeight || 700;
+        const geom = getSpineLayoutGeometry();
+        // Center the target card in the wider visible field beside the spine, accounting for right-field independent offset
+        const useRight = geom.rightW >= geom.spineLeft;
+        const focusLocalX = useRight ? (geom.rightW * 0.5) : (geom.spineLeft * 0.5);
+        const focusScreenY = vh * 0.43;
+
+        const cardCenterX = item.x + item.w * 0.5;
+        const cardCenterY = item.y + item.h * 0.5;
+        const tW = canvas2D.tileW;
+        const tH = canvas2D.tileH;
+
+        const fieldShiftX = useRight ? (tW * 0.5) : 0;
+        const fieldShiftY = useRight ? (tH * 0.5) : 0;
+        const desiredModX = ((cardCenterX - focusLocalX - fieldShiftX) % tW + tW) % tW;
+        const desiredModY = ((cardCenterY - focusScreenY - fieldShiftY) % tH + tH) % tH;
+        const curModX = ((canvasScroll.posX % tW) + tW) % tW;
+        const curModY = ((canvasScroll.posY % tH) + tH) % tH;
+
+        let dx = desiredModX - curModX;
+        if (dx > tW * 0.5) dx -= tW;
+        if (dx < -tW * 0.5) dx += tW;
+
+        let dy = desiredModY - curModY;
+        if (dy > tH * 0.5) dy -= tH;
+        if (dy < -tH * 0.5) dy += tH;
+
+        const startX = canvasScroll.posX;
+        const startY = canvasScroll.posY;
+        const duration = 380;
+        const startTs = performance.now();
+
+        const step = (now) => {
+          const p = Math.min(1, (now - startTs) / duration);
+          const ease = 1 - Math.pow(1 - p, 3);
+          canvasScroll.posX = startX + dx * ease;
+          canvasScroll.posY = startY + dy * ease;
+          paintCanvasFrame();
+          refreshCanvasLocatedHighlight();
+          if (p < 1) {
+            canvasSearchState.panRafId = requestAnimationFrame(step);
+          } else {
+            canvasSearchState.panRafId = 0;
+          }
+        };
+        canvasSearchState.panRafId = requestAnimationFrame(step);
+      }
+
+      function runCanvasScopedSearch(rawQuery, shouldPan = true) {
+        const q = String(rawQuery || '').trim().toLowerCase();
+        canvasSearchState.query = q;
+        const statusEl = $('canvas-search-status');
+        const nextBtn = $('btn-canvas-search-next');
+
+        if (!q) {
+          canvasSearchState.matches = [];
+          canvasSearchState.index = 0;
+          canvasSearchState.locatedKey = null;
+          if (statusEl) { statusEl.textContent = ''; statusEl.classList.add('hidden'); }
+          if (nextBtn) nextBtn.classList.add('hidden');
+          refreshCanvasLocatedHighlight();
+          return;
+        }
+
+        // Strict per-tab isolation: songs tab ONLY searches song cards, albums ONLY album cards, artists ONLY artist cards
+        const { kind } = getCanvasSearchTabConfig();
+        const seenKeys = new Set();
+        const matches = [];
+        for (let i = 0; i < canvas2D.items.length; i++) {
+          const it = canvas2D.items[i];
+          const card = it.card;
+          if (!card || card.kind !== kind) continue;
+          if (seenKeys.has(card.key)) continue;
+          const titleStr = String(card.title || '').toLowerCase();
+          const nameStr = String(card.name || '').toLowerCase();
+          if (titleStr.includes(q) || nameStr.includes(q)) {
+            seenKeys.add(card.key);
+            matches.push(it);
+          }
+        }
+
+        canvasSearchState.matches = matches;
+        canvasSearchState.index = 0;
+
+        if (!matches.length) {
+          canvasSearchState.locatedKey = null;
+          if (statusEl) {
+            statusEl.textContent = '无匹配';
+            statusEl.classList.remove('hidden');
+          }
+          if (nextBtn) nextBtn.classList.add('hidden');
+          refreshCanvasLocatedHighlight();
+          return;
+        }
+
+        const target = matches[0];
+        canvasSearchState.locatedKey = target.card.key;
+        if (statusEl) {
+          statusEl.textContent = `1/${matches.length}`;
+          statusEl.classList.remove('hidden');
+        }
+        if (nextBtn) nextBtn.classList.toggle('hidden', matches.length <= 1);
+        refreshCanvasLocatedHighlight();
+        if (shouldPan) panCanvasToItem(target);
+      }
+
+      function stepCanvasSearchMatch(delta = 1) {
+        const list = canvasSearchState.matches;
+        if (!list.length) return;
+        canvasSearchState.index = (canvasSearchState.index + delta + list.length) % list.length;
+        const target = list[canvasSearchState.index];
+        canvasSearchState.locatedKey = target.card.key;
+        const statusEl = $('canvas-search-status');
+        if (statusEl) statusEl.textContent = `${canvasSearchState.index + 1}/${list.length}`;
+        refreshCanvasLocatedHighlight();
+        panCanvasToItem(target);
+      }
+
+      function syncCanvasSearchPlaceholder() {
+        const input = $('canvas-search-input');
+        if (!input) return;
+        const { placeholder } = getCanvasSearchTabConfig();
+        input.placeholder = placeholder;
+        if (canvasSearchState.open && input.value.trim()) {
+          runCanvasScopedSearch(input.value, false);
+        } else {
+          canvasSearchState.locatedKey = null;
+          refreshCanvasLocatedHighlight();
+        }
+      }
+
+      function openCanvasSearchCapsule() {
+        const cap = $('canvas-search-capsule');
+        const input = $('canvas-search-input');
+        if (!cap || !input) return;
+        canvasSearchState.open = true;
+        syncCanvasSearchPlaceholder();
+        cap.classList.add('is-open');
+        setTimeout(() => { try { input.focus(); } catch {} }, 60);
+      }
+
+      function closeCanvasSearchCapsule() {
+        const cap = $('canvas-search-capsule');
+        const input = $('canvas-search-input');
+        const statusEl = $('canvas-search-status');
+        const nextBtn = $('btn-canvas-search-next');
+        stopCanvasSearchPan();
+        canvasSearchState.open = false;
+        canvasSearchState.query = '';
+        canvasSearchState.matches = [];
+        canvasSearchState.index = 0;
+        canvasSearchState.locatedKey = null;
+        if (cap) cap.classList.remove('is-open');
+        if (input) { input.value = ''; try { input.blur(); } catch {} }
+        if (statusEl) { statusEl.textContent = ''; statusEl.classList.add('hidden'); }
+        if (nextBtn) nextBtn.classList.add('hidden');
+        refreshCanvasLocatedHighlight();
+      }
+
+      function toggleCanvasSearchCapsule() {
+        if (canvasSearchState.open) closeCanvasSearchCapsule();
+        else openCanvasSearchCapsule();
+      }
+
+      function openCanvasCardDetailWithFlip(cardEl, card) {
+        if (!card || canvasScroll.flipping) return;
+        stopCanvasInertia();
+        canvasScroll.flipping = true;
+        const wrap = cardEl?._canvasWrap;
+        if (wrap) wrap.classList.add('is-flipping');
+        if (cardEl) cardEl.classList.add('is-flipping');
+        setTimeout(async () => {
+          if (card.kind === 'song' && card.trackId) {
+            state.queue = getSortedTracks().map((t) => t.id);
+            await loadTrack(card.trackId, true);
+            openNowPlaying();
+            setNowPlayingTab('lyrics');
+          } else if (card.kind === 'album') {
+            openCanvasPopupSheet('album', card.name);
+          } else if (card.kind === 'artist') {
+            openCanvasPopupSheet('artist', card.name);
+          } else if (card.kind === 'playlist' && card.playlistId) {
+            openCanvasPopupSheet('playlist-detail', card.playlistId);
+          }
+          setTimeout(() => {
+            if (wrap) wrap.classList.remove('is-flipping');
+            if (cardEl) cardEl.classList.remove('is-flipping');
+            canvasScroll.flipping = false;
+          }, 120);
+        }, 260);
       }
 
       function stepCanvasInertia(ts) {
         if (!canvasScroll.lastFrameTs) canvasScroll.lastFrameTs = ts;
         const dt = Math.min(48, Math.max(1, ts - canvasScroll.lastFrameTs));
         canvasScroll.lastFrameTs = ts;
-        canvasScroll.pos += (canvasScroll.vel * dt) / 1000;
-        canvasScroll.vel *= Math.exp(-dt / 280);
+        const stepX = (canvasScroll.velX * dt) / 1000;
+        const stepY = (canvasScroll.velY * dt) / 1000;
+        canvasScroll.posX += stepX;
+        canvasScroll.posY += stepY;
+        canvasScroll.spineOffsetX -= stepX / 3;
+
+        const decay = Math.exp(-dt / 280);
+        canvasScroll.velX *= decay;
+        canvasScroll.velY *= decay;
         paintCanvasFrame();
-        if (Math.abs(canvasScroll.vel) < 40) {
+        if (Math.hypot(canvasScroll.velX, canvasScroll.velY) < 40) {
           stopCanvasInertia();
           return;
         }
         canvasScroll.rafId = requestAnimationFrame(stepCanvasInertia);
-      }
-
-      function collapseDockForCanvasScroll() {
-        if (!state.dockCollapsed && state.activeView === 'library' && state.libViewMode === 'canvas') {
-          state.dockCollapsed = true;
-          syncNativeDockState();
-        }
       }
 
       function bindCanvasEventsOnce() {
@@ -7230,94 +8596,122 @@
           }
         };
 
+        const beginPan = (clientX, clientY, target) => {
+          stopCanvasInertia();
+          stopCanvasSearchPan();
+          canvasScroll.dragging = true;
+          canvasScroll.startX = clientX;
+          canvasScroll.startY = clientY;
+          canvasScroll.lastX = clientX;
+          canvasScroll.lastY = clientY;
+          canvasScroll.totalDist = 0;
+          canvasScroll.scrubbed = false;
+          canvasScroll.longPressTriggered = false;
+          canvasScroll.samples = [{ x: clientX, y: clientY, ts: performance.now() }];
+          const cardEl = target && target.closest ? target.closest('.canvas-card') : null;
+          canvasScroll.longPressCard = cardEl && cardEl._canvasCard ? cardEl._canvasCard : null;
+          clearLongPress();
+          if (canvasScroll.longPressCard) {
+            const targetCard = canvasScroll.longPressCard;
+            canvasScroll.longPressTimer = setTimeout(() => {
+              canvasScroll.longPressTimer = null;
+              if (canvasScroll.dragging && !canvasScroll.scrubbed && canvasScroll.totalDist <= 8) {
+                canvasScroll.longPressTriggered = true;
+                canvasScroll.scrubbed = true;
+                if (targetCard.kind === 'album' || targetCard.kind === 'artist') {
+                  try { if (navigator.vibrate) navigator.vibrate(14); } catch {}
+                  openCanvasPopupSheet(targetCard.kind, targetCard.name);
+                } else {
+                  playCanvasCardDirect(targetCard);
+                }
+              }
+            }, 450);
+          }
+        };
+
+        const movePan = (clientX, clientY) => {
+          if (!canvasScroll.dragging) return;
+          const dxTotal = clientX - canvasScroll.startX;
+          const dyTotal = clientY - canvasScroll.startY;
+          canvasScroll.totalDist = Math.max(canvasScroll.totalDist, Math.hypot(dxTotal, dyTotal));
+          if (canvasScroll.totalDist > 8) {
+            canvasScroll.scrubbed = true;
+            clearLongPress();
+          }
+          const dx = clientX - canvasScroll.lastX;
+          const dy = clientY - canvasScroll.lastY;
+          canvasScroll.lastX = clientX;
+          canvasScroll.lastY = clientY;
+
+          canvasScroll.posX -= dx;
+          canvasScroll.posY -= dy;
+          canvasScroll.spineOffsetX += dx / 3;
+
+          const now = performance.now();
+          canvasScroll.samples.push({ x: clientX, y: clientY, ts: now });
+          while (canvasScroll.samples.length > 2 && now - canvasScroll.samples[0].ts > 80) {
+            canvasScroll.samples.shift();
+          }
+          paintCanvasFrame();
+        };
+
+        const endPan = () => {
+          clearLongPress();
+          if (!canvasScroll.dragging) return;
+          canvasScroll.dragging = false;
+          if (canvasScroll.scrubbed && canvasScroll.samples.length >= 2) {
+            const first = canvasScroll.samples[0];
+            const last = canvasScroll.samples[canvasScroll.samples.length - 1];
+            const dt = Math.max(8, last.ts - first.ts);
+            const rawVx = (-(last.x - first.x) / dt) * 1000;
+            const rawVy = (-(last.y - first.y) / dt) * 1000;
+            const speed = Math.hypot(rawVx, rawVy);
+            if (speed >= 40) {
+              const scale = speed > 4000 ? 4000 / speed : 1;
+              canvasScroll.velX = rawVx * scale;
+              canvasScroll.velY = rawVy * scale;
+              canvasScroll.lastFrameTs = 0;
+              canvasScroll.rafId = requestAnimationFrame(stepCanvasInertia);
+            }
+          }
+          setTimeout(() => { canvasScroll.scrubbed = false; }, 60);
+        };
+
         fields.forEach((field) => {
           field.addEventListener('touchstart', (e) => {
             if (e.touches.length !== 1) return;
-            stopCanvasInertia();
             const t = e.touches[0];
-            canvasScroll.dragging = true;
-            canvasScroll.lockedAxis = null;
-            canvasScroll.startX = t.clientX;
-            canvasScroll.startY = t.clientY;
-            canvasScroll.lastY = t.clientY;
-            canvasScroll.totalDist = 0;
-            canvasScroll.scrubbed = false;
-            canvasScroll.longPressTriggered = false;
-            canvasScroll.samples = [{ y: t.clientY, ts: performance.now() }];
-            const cardEl = e.target.closest('.canvas-card');
-            canvasScroll.longPressCard = cardEl && cardEl._canvasCard ? cardEl._canvasCard : null;
-            clearLongPress();
-            if (canvasScroll.longPressCard) {
-              const targetCard = canvasScroll.longPressCard;
-              canvasScroll.longPressTimer = setTimeout(() => {
-                canvasScroll.longPressTimer = null;
-                if (canvasScroll.dragging && !canvasScroll.scrubbed && canvasScroll.totalDist <= 8) {
-                  canvasScroll.longPressTriggered = true;
-                  canvasScroll.scrubbed = true;
-                  playCanvasCardDirect(targetCard);
-                }
-              }, 450);
-            }
+            beginPan(t.clientX, t.clientY, e.target);
           }, { passive: true });
 
           field.addEventListener('touchmove', (e) => {
             if (!canvasScroll.dragging || e.touches.length !== 1) return;
-            const t = e.touches[0];
-            const dx = t.clientX - canvasScroll.startX;
-            const dyTotal = t.clientY - canvasScroll.startY;
-            canvasScroll.totalDist = Math.max(canvasScroll.totalDist, Math.hypot(dx, dyTotal));
-            if (canvasScroll.totalDist > 8) {
-              canvasScroll.scrubbed = true;
-              clearLongPress();
-            }
-            if (!canvasScroll.lockedAxis && canvasScroll.totalDist > 6) {
-              canvasScroll.lockedAxis = Math.abs(dx) > Math.abs(dyTotal) ? 'x' : 'y';
-            }
-            if (canvasScroll.lockedAxis === 'x') return;
             if (e.cancelable) e.preventDefault();
-            const dy = t.clientY - canvasScroll.lastY;
-            canvasScroll.lastY = t.clientY;
-            canvasScroll.pos -= dy;
-            if (Math.abs(dyTotal) > 10) collapseDockForCanvasScroll();
-            const now = performance.now();
-            canvasScroll.samples.push({ y: t.clientY, ts: now });
-            while (canvasScroll.samples.length > 2 && now - canvasScroll.samples[0].ts > 80) {
-              canvasScroll.samples.shift();
-            }
-            paintCanvasFrame();
+            const t = e.touches[0];
+            movePan(t.clientX, t.clientY);
           }, { passive: false });
 
-          const endTouch = () => {
-            clearLongPress();
-            if (!canvasScroll.dragging) return;
-            canvasScroll.dragging = false;
-            const wasScrubbed = canvasScroll.scrubbed;
-            const axis = canvasScroll.lockedAxis;
-            if (axis !== 'x' && wasScrubbed && canvasScroll.samples.length >= 2) {
-              const first = canvasScroll.samples[0];
-              const last = canvasScroll.samples[canvasScroll.samples.length - 1];
-              const dt = Math.max(8, last.ts - first.ts);
-              const rawVel = (-(last.y - first.y) / dt) * 1000;
-              const absV = Math.abs(rawVel);
-              if (absV >= 40) {
-                canvasScroll.vel = Math.sign(rawVel) * Math.min(4000, absV);
-                canvasScroll.lastFrameTs = 0;
-                canvasScroll.rafId = requestAnimationFrame(stepCanvasInertia);
-              }
-            }
-            setTimeout(() => { canvasScroll.scrubbed = false; }, 60);
-          };
+          field.addEventListener('touchend', endPan, { passive: true });
+          field.addEventListener('touchcancel', endPan, { passive: true });
 
-          field.addEventListener('touchend', endTouch, { passive: true });
-          field.addEventListener('touchcancel', endTouch, { passive: true });
+          field.addEventListener('mousedown', (e) => {
+            if (e.button !== 0) return;
+            beginPan(e.clientX, e.clientY, e.target);
+          });
 
           field.addEventListener('wheel', (e) => {
             e.preventDefault();
             stopCanvasInertia();
-            canvasScroll.pos += e.deltaY;
-            collapseDockForCanvasScroll();
+            stopCanvasSearchPan();
+            canvasScroll.posX += e.deltaX;
+            canvasScroll.posY += e.deltaY;
+            canvasScroll.spineOffsetX -= e.deltaX / 3;
             paintCanvasFrame();
           }, { passive: false });
+
+          field.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+          });
 
           field.addEventListener('click', (e) => {
             if (canvasScroll.scrubbed || canvasScroll.longPressTriggered) {
@@ -7327,15 +8721,24 @@
             }
             const cardEl = e.target.closest('.canvas-card');
             if (cardEl && cardEl._canvasCard) {
-              openCanvasCardDetail(cardEl._canvasCard);
+              openCanvasCardDetailWithFlip(cardEl, cardEl._canvasCard);
             }
           });
+        });
+
+        window.addEventListener('mousemove', (e) => {
+          if (!canvasScroll.dragging) return;
+          movePan(e.clientX, e.clientY);
+        });
+        window.addEventListener('mouseup', () => {
+          if (canvasScroll.dragging) endPan();
         });
 
         document.querySelectorAll('[data-canvas-tab]').forEach((btn) => {
           on(btn, 'click', (e) => {
             e.stopPropagation();
             setLibraryTab(btn.dataset.canvasTab);
+            syncCanvasSearchPlaceholder();
           });
         });
         on('btn-canvas-fortune', (e) => {
@@ -7345,25 +8748,63 @@
         });
         on('btn-canvas-playlists', (e) => {
           e.stopPropagation();
-          switchView('playlists');
+          openCanvasPopupSheet('playlists');
         });
         on('btn-canvas-stats', (e) => {
           e.stopPropagation();
-          switchView('stats');
+          openCanvasPopupSheet('stats');
         });
         on('btn-canvas-diy', (e) => {
           e.stopPropagation();
-          switchView('diy');
+          openCanvasPopupSheet('diy');
         });
         on('btn-canvas-search', (e) => {
           e.stopPropagation();
-          const searchBtn = $('btn-open-search');
-          if (searchBtn) searchBtn.click();
+          toggleCanvasSearchCapsule();
         });
+        on('btn-canvas-search-close', (e) => {
+          e.stopPropagation();
+          closeCanvasSearchCapsule();
+        });
+        on('btn-canvas-search-next', (e) => {
+          e.stopPropagation();
+          stepCanvasSearchMatch(1);
+        });
+        const cSearchInput = $('canvas-search-input');
+        if (cSearchInput) {
+          cSearchInput.addEventListener('input', () => {
+            if (canvasSearchState.debounceTimer) clearTimeout(canvasSearchState.debounceTimer);
+            canvasSearchState.debounceTimer = setTimeout(() => {
+              runCanvasScopedSearch(cSearchInput.value, true);
+            }, 120);
+          });
+          cSearchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              if (canvasSearchState.matches.length > 1) stepCanvasSearchMatch(1);
+              else runCanvasScopedSearch(cSearchInput.value, true);
+            } else if (e.key === 'Escape') {
+              e.preventDefault();
+              closeCanvasSearchCapsule();
+            }
+          });
+        }
         on('btn-canvas-sort', (e) => {
           e.stopPropagation();
           const sortBtn = $('btn-lib-sort');
           if (sortBtn) sortBtn.click();
+        });
+        on('btn-canvas-prev', (e) => {
+          e.stopPropagation();
+          playPrev();
+        });
+        on('btn-canvas-playpause', (e) => {
+          e.stopPropagation();
+          togglePlayPause();
+        });
+        on('btn-canvas-next', (e) => {
+          e.stopPropagation();
+          playNext(true);
         });
         on('btn-canvas-np', (e) => {
           e.stopPropagation();
@@ -7372,6 +8813,7 @@
         });
         on('btn-canvas-exit', async (e) => {
           e.stopPropagation();
+          closeCanvasSearchCapsule();
           state.libViewMode = 'list';
           state.dockCollapsed = false;
           await saveAppState();
@@ -7379,67 +8821,78 @@
           showToast('已切换回列表视图');
         });
 
-        window.addEventListener('resize', () => {
+        const handleCanvasViewportChange = () => {
+          refreshCanvasViewportMetrics();
           if (state.activeView === 'library' && state.libViewMode === 'canvas') {
             renderCanvas();
           }
+        };
+        window.addEventListener('resize', handleCanvasViewportChange);
+        window.addEventListener('orientationchange', () => {
+          setTimeout(handleCanvasViewportChange, 120);
+          setTimeout(handleCanvasViewportChange, 320);
         });
+        if (window.visualViewport) {
+          window.visualViewport.addEventListener('resize', handleCanvasViewportChange);
+        }
+        const libCanvasEl = $('lib-canvas');
+        if (libCanvasEl && typeof ResizeObserver !== 'undefined') {
+          const ro = new ResizeObserver(() => {
+            if (state.activeView === 'library' && state.libViewMode === 'canvas' && !libCanvasEl.classList.contains('hidden')) {
+              handleCanvasViewportChange();
+            }
+          });
+          ro.observe(libCanvasEl);
+        }
       }
 
       function renderCanvas() {
         const canvasEl = $('lib-canvas');
-        if (!canvasEl) return;
+        const wl = $('canvas-world-left');
+        const wr = $('canvas-world-right');
+        if (!canvasEl || !wl || !wr) return;
         bindCanvasEventsOnce();
         syncCanvasSpineUI();
 
         const tab = state.libTab || 'songs';
         const emptyOverlay = $('canvas-empty-overlay');
-        const allCards = buildCanvasBaseCards(tab);
-        if (!allCards.length) {
-          ['left', 'right'].forEach((side) => {
-            const strip = $(side === 'left' ? 'canvas-field-left' : 'canvas-field-right')?.querySelector('.canvas-strip');
-            if (strip) strip.innerHTML = '';
-            canvasModel[side].rows = [];
-            canvasModel[side].H = 0;
-            canvasModel[side].pool.clear();
-            canvasModel[side].freePool = [];
+        const baseCards = buildCanvasBaseCards(tab);
+        if (!baseCards.length) {
+          wl.innerHTML = '';
+          wr.innerHTML = '';
+          canvas2D.items = [];
+          canvas2D.tileW = 0;
+          canvas2D.tileH = 0;
+          ['left', 'right'].forEach((s) => {
+            canvas2D.fields[s].pool.clear();
+            canvas2D.fields[s].freePool = [];
           });
           if (emptyOverlay) emptyOverlay.classList.remove('hidden');
           return;
         }
         if (emptyOverlay) emptyOverlay.classList.add('hidden');
 
-        const leftRaw = [];
-        const rightRaw = [];
-        allCards.forEach((card, i) => {
-          if (i % 2 === 0) leftRaw.push(card);
-          else rightRaw.push(card);
-        });
-        const leftCards = interleavePlaylistsIntoField(leftRaw, tab);
-        const rightCards = interleavePlaylistsIntoField(rightRaw.length ? rightRaw : leftRaw, tab);
-
-        const spineW = window.innerWidth < 380 ? 48 : 56;
-        const leftEl = $('canvas-field-left');
-        const rightEl = $('canvas-field-right');
-        const fallbackFieldW = Math.max(120, Math.floor(((window.innerWidth || 390) - spineW) / 2));
-        const leftW = leftEl?.clientWidth || fallbackFieldW;
-        const rightW = rightEl?.clientWidth || fallbackFieldW;
-
-        ['left', 'right'].forEach((side) => {
-          const strip = $(side === 'left' ? 'canvas-field-left' : 'canvas-field-right')?.querySelector('.canvas-strip');
-          if (strip) strip.innerHTML = '';
-          canvasModel[side].pool.clear();
-          canvasModel[side].freePool = [];
+        const mixedCards = mixPlaylistsIntoCards(baseCards, tab);
+        wl.innerHTML = '';
+        wr.innerHTML = '';
+        ['left', 'right'].forEach((s) => {
+          canvas2D.fields[s].pool.clear();
+          canvas2D.fields[s].freePool = [];
         });
 
-        const builtL = buildFieldRowModel(leftCards, leftW);
-        const builtR = buildFieldRowModel(rightCards, rightW);
-        Object.assign(canvasModel.left, builtL);
-        Object.assign(canvasModel.right, builtR);
+        const built = build2DBentoTile(mixedCards);
+        canvas2D.items = built.items;
+        canvas2D.tileW = built.tileW;
+        canvas2D.tileH = built.tileH;
 
-        const savedPos = canvasPosByTab[tab] || 0;
-        canvasScroll.pos = builtL.H > 0 ? (((savedPos % builtL.H) + builtL.H) % builtL.H) : 0;
+        const saved = canvasPosByTab[tab] || { x: 0, y: 0, spineX: 0 };
+        canvasScroll.posX = built.tileW > 0 ? (((saved.x % built.tileW) + built.tileW) % built.tileW) : 0;
+        canvasScroll.posY = built.tileH > 0 ? (((saved.y % built.tileH) + built.tileH) % built.tileH) : 0;
+        // Keep canvasScroll.spineOffsetX unified across all 3 library tabs
+        const geom = applySplitSpineLayout();
         paintCanvasFrame();
+        updateSpineDynamicGlow(geom, true);
+        startSpineDotLoop();
       }
 
       function mbEnqueue(taskFn) {
@@ -10080,7 +11533,7 @@
         const cellW = plotW / (cols - 0.5);
         const cellH = plotH / (rows - 1);
         const maxDotR = Math.min(cellW, cellH / 0.866) * 0.46;
-        const sweepPos = ((eqHoloPhase * 0.16) % 1.50) - 0.25;
+        const sweepPos = ((eqHoloPhase * 0.26) % 1.50) - 0.25;
 
         for (let r = 0; r < rows; r++) {
           const ny = r / (rows - 1);
@@ -11213,7 +12666,7 @@
       // =========================================================================
       function closeAllBottomSheets(skipDockSync = false) {
         modalBackdrop.classList.add('opacity-0', 'pointer-events-none');
-        ['sheet-np-settings', 'sheet-track-actions', 'sheet-queue', 'sheet-pick-playlist', 'sheet-playlist-layout', 'sheet-add-music-ios', 'sheet-add-music-android', 'sheet-sort-menu'].forEach((id) => {
+        ['sheet-np-settings', 'sheet-track-actions', 'sheet-queue', 'sheet-pick-playlist', 'sheet-playlist-layout', 'sheet-add-music-ios', 'sheet-add-music-android', 'sheet-sort-menu', 'sheet-canvas-subview'].forEach((id) => {
           const el = $(id);
           if (el) {
             el.classList.add('translate-y-[115%]');
@@ -11234,6 +12687,9 @@
           if (el) el.classList.add('hidden');
         });
         resetDeleteConfirm();
+        if (state.activeView === 'library' && state.libViewMode === 'canvas' && typeof startSpineDotLoop === 'function') {
+          startSpineDotLoop();
+        }
         if (skipDockSync !== true) {
           state.dockCollapsed = false;
           syncNativeDockState();
@@ -11381,6 +12837,7 @@
       }
 
       function renderQueue() {
+        if (typeof syncNativeNextUp === 'function') syncNativeNextUp();
         const validQueue = state.queue.map((id) => state.tracks.find((t) => t.id === id)).filter(Boolean).map(getTrackDisplay);
         $('queue-count-label').textContent = `共 ${validQueue.length} 首`;
         const container = $('queue-list-container');
@@ -13224,6 +14681,7 @@
         }
 
         const setProgressVisual = (pct, secText = null) => {
+        updateCanvasTransportProgress(pct);
           const clamped = Math.max(0, Math.min(100, pct));
           const miniFill = $('mini-progress-fill');
           const miniGlow = $('mini-progress-glow');
@@ -14388,6 +15846,12 @@
           document.documentElement.style.setProperty('--app-full-height', `${physicalH}px`);
         } else {
           document.documentElement.style.setProperty('--app-full-height', `${window.innerHeight}px`);
+        }
+        if (typeof refreshCanvasViewportMetrics === 'function') {
+          refreshCanvasViewportMetrics();
+          if (state.activeView === 'library' && state.libViewMode === 'canvas' && typeof paintCanvasFrame === 'function') {
+            paintCanvasFrame();
+          }
         }
       }
 
