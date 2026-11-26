@@ -76,8 +76,8 @@ jobs:
           BUNDLE_ID: ${{ inputs.bundle_id || 'com.feng.music' }}
           BUILD_NUM: ${{ github.run_number }}
         run: |
-          # 0. Stamp Android app versionName "1.0.8" and versionCode
-          sed -i 's/versionName "[^"]*"/versionName "1.0.8"/' android/app/build.gradle
+          # 0. Stamp Android app versionName "1.0.9" and versionCode
+          sed -i 's/versionName "[^"]*"/versionName "1.0.9"/' android/app/build.gradle
           sed -i "s/versionCode [0-9][0-9]*/versionCode ${BUILD_NUM}/" android/app/build.gradle
 
           # 1. Add androidx.documentfile and androidx.core dependencies to android/app/build.gradle
@@ -488,6 +488,26 @@ jobs:
               }
 
               private class FengFolderJsBridge {
+                  @JavascriptInterface
+                  public void setStatusBarHidden(boolean hidden) {
+                      runOnUiThread(() -> {
+                          try {
+                              WindowInsetsControllerCompat ic =
+                                  WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+                              if (ic != null) {
+                                  if (hidden) {
+                                      ic.setSystemBarsBehavior(
+                                          WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                                      );
+                                      ic.hide(WindowInsetsCompat.Type.statusBars());
+                                  } else {
+                                      ic.show(WindowInsetsCompat.Type.statusBars());
+                                  }
+                              }
+                          } catch (Exception ignored) {}
+                      });
+                  }
+
                   @JavascriptInterface
                   public void postFolderMessage(String jsonStr) {
                       if (jsonStr == null || jsonStr.isEmpty()) return;
@@ -2189,11 +2209,15 @@ jobs:
       - name: Stamp Build Version
         run: |
           PLIST="ios/App/App/Info.plist"
-          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0.8" "$PLIST" || /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string 1.0.8" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0.9" "$PLIST" || /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string 1.0.9" "$PLIST"
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${{ github.run_number }}" "$PLIST" || /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string ${{ github.run_number }}" "$PLIST"
 
       - name: Enable Native iOS AVPlayer, Lock Screen Controls, UITabBar Liquid Glass Dock & Security-Scoped Bookmarks
         run: |
+          if [ -f "ios/App/App/Base.lproj/Main.storyboard" ]; then
+            sed -i '' 's/customClass="CAPBridgeViewController"/customClass="FengBridgeViewController"/g; s/customModule="Capacitor"/customModule="App"/g' ios/App/App/Base.lproj/Main.storyboard
+            grep -n "FengBridgeViewController" ios/App/App/Base.lproj/Main.storyboard || true
+          fi
           cat << 'EOF' > ios/App/App/AppDelegate.swift
           import UIKit
           import Capacitor
@@ -4445,6 +4469,13 @@ jobs:
                       let hidden = (body["hidden"] as? Bool) ?? isTabBarHidden
                       let collapsed = (body["collapsed"] as? Bool) ?? isTabBarCollapsed
                       setDockVisibility(hidden: hidden, collapsed: collapsed)
+                      if let hideStatusBar = body["hideStatusBar"] as? Bool {
+                          DispatchQueue.main.async {
+                              if let fengVC = self.findBridgeViewController(in: self.webView?.window?.rootViewController) as? FengBridgeViewController {
+                                  fengVC.setFengStatusBarVisible(!hideStatusBar)
+                              }
+                          }
+                      }
                       return
                   }
 
@@ -4551,6 +4582,29 @@ jobs:
           }
 
           @UIApplicationMain
+          @objc(FengBridgeViewController)
+          class FengBridgeViewController: CAPBridgeViewController {
+              private var fengStatusBarHidden: Bool = false
+
+              override var prefersStatusBarHidden: Bool {
+                  return fengStatusBarHidden
+              }
+
+              override var preferredStatusBarUpdateAnimation: UIStatusBarAnimation {
+                  return .fade
+              }
+
+              func setFengStatusBarVisible(_ visible: Bool) {
+                  let nextHidden = !visible
+                  if fengStatusBarHidden != nextHidden {
+                      fengStatusBarHidden = nextHidden
+                      UIView.animate(withDuration: 0.22) {
+                          self.setNeedsStatusBarAppearanceUpdate()
+                      }
+                  }
+              }
+          }
+
           class AppDelegate: UIResponder, UIApplicationDelegate {
 
               var window: UIWindow?
@@ -4663,7 +4717,7 @@ jobs:
             <key>CFBundlePackageType</key>
             <string>XPC!</string>
             <key>CFBundleShortVersionString</key>
-            <string>1.0.8</string>
+            <string>1.0.9</string>
             <key>CFBundleVersion</key>
             <string>${BUILD_NUM}</string>
             <key>FengAppGroup</key>
