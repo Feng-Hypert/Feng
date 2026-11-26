@@ -1253,6 +1253,14 @@
     html.canvas-immersive #bottom-tab-dock {
       display: none !important;
     }
+    html.multiselect-active #mini-player-wrapper,
+    html.multiselect-active #bottom-dock-scrim,
+    html.multiselect-active #bottom-tab-dock {
+      opacity: 0 !important;
+      transform: translateY(120%) !important;
+      pointer-events: none !important;
+      transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease;
+    }
     #lib-canvas {
       padding-top: 0;
       background: #000000;
@@ -1624,23 +1632,51 @@
       transform: scaleX(0.2);
       pointer-events: none;
     }
+    #btn-canvas-fold-spine svg {
+      filter: drop-shadow(0 0 7px rgba(56, 189, 248, 0.72));
+      transition: transform 0.2s ease, filter 0.2s ease;
+    }
+    #btn-canvas-fold-spine:hover svg {
+      transform: scale(1.12);
+      filter: drop-shadow(0 0 11px rgba(125, 211, 252, 0.95));
+    }
+    #btn-canvas-fold-spine.is-dropping svg {
+      animation: canvasStarFoldDrop 0.36s cubic-bezier(0.32, 0.04, 0.48, 1) forwards;
+    }
+    @keyframes canvasStarFoldDrop {
+      0% {
+        transform: translateY(0) scale(1) rotate(0deg);
+        opacity: 1;
+        filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.8));
+      }
+      38% {
+        transform: translateY(6px) scale(1.48) rotate(135deg);
+        opacity: 1;
+        filter: drop-shadow(0 0 16px rgba(125, 211, 252, 1));
+      }
+      100% {
+        transform: translateY(82px) scale(1.68) rotate(360deg);
+        opacity: 0;
+        filter: drop-shadow(0 0 22px rgba(45, 212, 191, 0.95));
+      }
+    }
     #canvas-spine {
       transition: opacity 0.24s ease, transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
     }
     #btn-canvas-unfold-spine {
       position: absolute;
-      left: max(10px, var(--safe-left));
+      left: max(12px, var(--safe-left));
       top: 50%;
-      transform: translateY(-50%) translateX(-16px);
+      transform: translateY(-50%) scale(0.75);
       z-index: 30;
-      width: 32px;
-      height: 58px;
+      width: 40px;
+      height: 40px;
       border-radius: 9999px;
       background: rgba(8, 12, 20, 0.84);
-      backdrop-filter: blur(18px) saturate(150%);
-      -webkit-backdrop-filter: blur(18px) saturate(150%);
-      border: 1px solid rgba(125, 211, 252, 0.35);
-      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+      backdrop-filter: blur(18px) saturate(155%);
+      -webkit-backdrop-filter: blur(18px) saturate(155%);
+      border: 1px solid rgba(125, 211, 252, 0.38);
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.58), 0 0 16px rgba(56, 189, 248, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.18);
       color: #7dd3fc;
       display: flex;
       align-items: center;
@@ -1651,9 +1687,10 @@
     }
     #btn-canvas-unfold-spine.is-visible {
       opacity: 1;
-      transform: translateY(-50%) translateX(0);
+      transform: translateY(-50%) scale(1);
       pointer-events: auto;
     }
+
     #canvas-playlist-banner {
       position: absolute;
       top: 12px;
@@ -1832,7 +1869,6 @@
       #btn-canvas-fold-spine {
         width: 22px !important;
         height: 22px !important;
-        margin-top: 2px !important;
       }
       #canvas-spine-transport {
         width: 30px !important;
@@ -2007,12 +2043,23 @@
             <span>歌</span><span>手</span>
           </button>
 
-          <!-- Fold Spine Button placed at the inverted-triangle apex -->
-          <button id="btn-canvas-fold-spine" class="mt-2 w-7 h-7 rounded-full bg-black/75 border border-sky-300/40 text-sky-200 hover:bg-sky-400/20 flex items-center justify-center shrink-0 transition active:scale-90 shadow-lg" title="折叠竖脊进入纯海报墙" aria-label="折叠竖脊">
-            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path stroke-linecap="round" stroke-linejoin="round" d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/></svg>
+          <div class="flex-1 min-h-[4px]"></div>
+
+          <!-- Fold Spine Button (Pure Gemini-style 4-point star centered in the middle of the spine, no circle) -->
+          <button id="btn-canvas-fold-spine" class="w-8 h-8 bg-transparent border-0 flex items-center justify-center shrink-0 overflow-visible cursor-pointer" title="折叠竖脊进入纯海报墙" aria-label="折叠竖脊">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
+              <defs>
+                <linearGradient id="canvasStarFoldGrad" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#e0f2fe" />
+                  <stop offset="50%" stop-color="#38bdf8" />
+                  <stop offset="100%" stop-color="#2dd4bf" />
+                </linearGradient>
+              </defs>
+              <path d="M12 2C12 8.2 15.8 12 22 12C15.8 12 12 15.8 12 22C12 15.8 8.2 12 2 12C8.2 12 12 8.2 12 2Z" fill="url(#canvasStarFoldGrad)" />
+            </svg>
           </button>
 
-          <div class="flex-1 min-h-[6px]"></div>
+          <div class="flex-1 min-h-[4px]"></div>
 
           <div id="canvas-spine-transport" class="relative w-[36px] h-[96px] rounded-full bg-white/[0.08] py-1 flex flex-col items-center justify-between shrink-0" aria-label="快捷播放控制">
             <svg id="canvas-transport-progress-svg" class="pointer-events-none absolute inset-0 w-full h-full overflow-visible" viewBox="0 0 36 96" aria-hidden="true">
@@ -2056,7 +2103,16 @@
           </button>
         </div>
         <button id="btn-canvas-unfold-spine" title="展开控制竖脊" aria-label="展开控制竖脊">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5-5 5M6 7l5 5-5 5"/></svg>
+          <svg class="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
+            <defs>
+              <linearGradient id="canvasStarUnfoldGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#ffffff" />
+                <stop offset="48%" stop-color="#38bdf8" />
+                <stop offset="100%" stop-color="#2dd4bf" />
+              </linearGradient>
+            </defs>
+            <path d="M12 2C12 8.2 15.8 12 22 12C15.8 12 12 15.8 12 22C12 15.8 8.2 12 2 12C8.2 12 12 8.2 12 2Z" fill="url(#canvasStarUnfoldGrad)" />
+          </svg>
         </button>
         <div id="canvas-playlist-banner" class="hidden" aria-label="当前歌单画布">
           <span id="canvas-playlist-banner-title" class="text-xs font-semibold text-white truncate"></span>
@@ -2081,7 +2137,17 @@
     </section>
 
     <!-- ==================== VIEW 4: GROUP DETAIL (专辑 CD 盒 / 歌手详情) ==================== -->
-    <section id="view-group-detail" class="app-view hidden flex-1 flex flex-col overflow-hidden">
+    <section id="view-group-detail" class="app-view relative hidden flex-1 flex flex-col overflow-hidden">
+      <div class="collapsible-compact-bar px-4 sm:px-6 items-center justify-between shrink-0" style="padding-top: calc(var(--safe-top) + 10px);">
+        <button id="btn-group-back-compact" class="liquid-pill w-9 h-9 rounded-full text-white flex items-center justify-center shrink-0" title="返回" aria-label="返回">
+          <svg class="w-4 h-4 text-white/90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+        </button>
+        <span id="group-detail-title-compact" class="text-sm font-bold tracking-tight text-white truncate max-w-[58vw]">详情</span>
+        <button id="btn-group-scroll-top" class="liquid-pill w-9 h-9 rounded-full text-white flex items-center justify-center shrink-0" title="返回顶部" aria-label="返回顶部">
+          <svg class="w-4 h-4 text-white/90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 19V5m0 0l-6 6m6-6l6 6" /></svg>
+        </button>
+      </div>
+      <div class="collapsible-expanded-area shrink-0">
       <header class="px-4 sm:px-6 pb-2.5 flex items-center justify-between gap-3 shrink-0" style="padding-top: calc(var(--safe-top) + 12px);">
         <div class="flex items-center gap-3 min-w-0">
           <button id="btn-group-back" class="w-10 h-10 rounded-full liquid-pill flex items-center justify-center text-white shrink-0" aria-label="返回">
@@ -2097,6 +2163,7 @@
           播放全部
         </button>
       </header>
+      </div>
       <div id="group-detail-scroll" class="flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 space-y-4">
         <div id="album-jewel-hero" class="hidden pt-2 pb-1 space-y-5"></div>
         <div id="group-detail-list" class="space-y-2"></div>
@@ -2236,7 +2303,17 @@
     </section>
 
     <!-- ==================== VIEW 7: DEDICATED FULL-SCREEN SEARCH ==================== -->
-    <section id="view-search" class="app-view hidden flex-1 flex flex-col overflow-hidden">
+    <section id="view-search" class="app-view relative hidden flex-1 flex flex-col overflow-hidden">
+      <div class="collapsible-compact-bar px-4 sm:px-6 items-center justify-between shrink-0" style="padding-top: calc(var(--safe-top) + 10px);">
+        <button id="btn-search-back-compact" class="liquid-pill w-9 h-9 rounded-full text-white flex items-center justify-center shrink-0" title="返回" aria-label="返回">
+          <svg class="w-4 h-4 text-white/90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+        </button>
+        <span id="search-compact-title" class="text-sm font-bold tracking-tight text-white truncate max-w-[56vw]">搜索</span>
+        <button id="btn-search-scroll-top" class="liquid-pill w-9 h-9 rounded-full text-white flex items-center justify-center shrink-0" title="返回顶部" aria-label="返回顶部">
+          <svg class="w-4 h-4 text-white/90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 19V5m0 0l-6 6m6-6l6 6" /></svg>
+        </button>
+      </div>
+      <div class="collapsible-expanded-area shrink-0">
       <header class="px-4 sm:px-6 pb-3 flex items-center gap-2.5 shrink-0" style="padding-top: calc(var(--safe-top) + 12px);">
         <button id="btn-search-back" class="w-10 h-10 rounded-2xl liquid-pill flex items-center justify-center text-white shrink-0">
           <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
@@ -2247,6 +2324,7 @@
           <button id="btn-search-clear" class="hidden text-xs text-white/65 hover:text-white px-1.5">清除</button>
         </div>
       </header>
+      </div>
       <div id="search-results-container" class="flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 space-y-5"></div>
     </section>
 
@@ -6407,7 +6485,9 @@
           !state.multiSelectMode &&
           !state.libCustomEditing;
         document.documentElement.classList.toggle('canvas-immersive', canvasImmersive);
-        const hidden = npOpen || eqOpen || backdropOpen || !isMainTab || canvasImmersive;
+        const anyMultiSelect = Boolean(state.multiSelectMode || state.plMultiSelectMode);
+        document.documentElement.classList.toggle('multiselect-active', anyMultiSelect);
+        const hidden = npOpen || eqOpen || backdropOpen || !isMainTab || canvasImmersive || anyMultiSelect;
         // Whenever returning from any modal/overlay/detail view to a main tab, always expand Dock cleanly
         if (lastDockWasHidden && !hidden) {
           state.dockCollapsed = false;
@@ -6847,6 +6927,7 @@
           $('artists-grid').classList.toggle('hidden', state.libTab !== 'artists');
         }
         state.multiSelectMode = true;
+        syncNativeDockState();
         state.selectedTrackIds.clear();
         state.selectedGroupKeys.clear();
         if (initialTrackId && state.libTab === 'songs') state.selectedTrackIds.add(initialTrackId);
@@ -6856,6 +6937,7 @@
 
       function exitMultiSelectMode(shouldRender = true) {
         state.multiSelectMode = false;
+        syncNativeDockState();
         state.selectedTrackIds.clear();
         state.selectedGroupKeys.clear();
         state.msDeleteConfirm = false;
@@ -8041,11 +8123,13 @@
 
           // Full-bleed symmetric honeycomb (even=5, odd=6 edge-to-edge) tapering cleanly 4 -> 3 -> 2 -> 1 behind the fold button
           const artistsBtn = spineEl ? spineEl.querySelector('[data-canvas-tab="artists"]') : null;
+          const foldEl = $('btn-canvas-fold-spine');
           const transportEl = $('canvas-spine-transport');
           const rawShoulderCssY = artistsBtn
             ? (artistsBtn.offsetTop + artistsBtn.offsetHeight + 2)
             : (cssH * 0.34);
-          const maxTipCssY = transportEl ? Math.max(40, transportEl.offsetTop - 4) : (cssH * 0.52);
+          const lowerBoundEl = foldEl || transportEl;
+          const maxTipCssY = lowerBoundEl ? Math.max(40, lowerBoundEl.offsetTop - 4) : (cssH * 0.50);
           const shoulderPxY = Math.max(1, Math.min(pxH, Math.round(rawShoulderCssY * dpr)));
           const maxTipPxY = Math.max(shoulderPxY, Math.round(maxTipCssY * dpr));
 
@@ -8940,10 +9024,16 @@
         });
         on('btn-canvas-fold-spine', (e) => {
           e.stopPropagation();
-          state.canvasSpineCollapsed = true;
-          stopSpineDotLoop();
-          canvasLayoutCache.lastSpineLeft = -1;
-          paintCanvasFrame();
+          const foldBtn = $('btn-canvas-fold-spine');
+          if (foldBtn && foldBtn.classList.contains('is-dropping')) return;
+          if (foldBtn) foldBtn.classList.add('is-dropping');
+          setTimeout(() => {
+            state.canvasSpineCollapsed = true;
+            stopSpineDotLoop();
+            canvasLayoutCache.lastSpineLeft = -1;
+            paintCanvasFrame();
+            if (foldBtn) foldBtn.classList.remove('is-dropping');
+          }, 310);
         });
         on('btn-canvas-unfold-spine', (e) => {
           e.stopPropagation();
@@ -9654,6 +9744,12 @@
         if (headerPlayBtn) headerPlayBtn.classList.toggle('hidden', true);
 
         $('group-detail-title').textContent = name;
+        const compactGrpTitle = $('group-detail-title-compact');
+        if (compactGrpTitle) compactGrpTitle.textContent = name;
+        const grpView = $('view-group-detail');
+        const grpScroll = $('group-detail-scroll');
+        if (grpView) grpView.classList.remove('is-scrolled');
+        if (grpScroll) grpScroll.scrollTop = 0;
         $('group-detail-subtitle').textContent = `${isAlbum ? '专辑' : '歌手'} · 共 ${matched.length} 首歌曲`;
 
         if (isAlbum && hero) {
@@ -11100,12 +11196,14 @@
           return;
         }
         state.plMultiSelectMode = true;
+        syncNativeDockState();
         state.plSelectedTrackIds.clear();
         openPlaylistDetail(state.activePlaylistId);
       }
 
       function exitPlaylistMultiSelectMode(shouldRender = true) {
         state.plMultiSelectMode = false;
+        syncNativeDockState();
         state.plSelectedTrackIds.clear();
         syncPlaylistMultiSelectBar(0);
         if (shouldRender && state.activePlaylistId) {
@@ -14248,6 +14346,55 @@
             });
           }, { passive: true });
         });
+          const grpScrollEl = $('group-detail-scroll');
+          const grpViewEl = $('view-group-detail');
+          if (grpScrollEl && grpViewEl) {
+            let grpTicking = false;
+            grpScrollEl.addEventListener('scroll', () => {
+              if (grpTicking) return;
+              grpTicking = true;
+              requestAnimationFrame(() => {
+                grpTicking = false;
+                const st = grpScrollEl.scrollTop;
+                if (st > 44) grpViewEl.classList.add('is-scrolled');
+                else if (st < 18) grpViewEl.classList.remove('is-scrolled');
+              });
+            }, { passive: true });
+          }
+          on('btn-group-back-compact', () => $('btn-group-back')?.click());
+          on('btn-group-scroll-top', () => {
+            const el = $('group-detail-scroll');
+            if (el) el.scrollTo({ top: 0, behavior: 'smooth' });
+          });
+
+          const searchScrollEl = $('search-results-container');
+          const searchViewEl = $('view-search');
+          if (searchScrollEl && searchViewEl) {
+            let srchTicking = false;
+            searchScrollEl.addEventListener('scroll', () => {
+              if (srchTicking) return;
+              srchTicking = true;
+              requestAnimationFrame(() => {
+                srchTicking = false;
+                const st = searchScrollEl.scrollTop;
+                if (st > 44) searchViewEl.classList.add('is-scrolled');
+                else if (st < 18) searchViewEl.classList.remove('is-scrolled');
+              });
+            }, { passive: true });
+          }
+          on('btn-search-back-compact', () => $('btn-search-back')?.click());
+          on('btn-search-scroll-top', () => {
+            const el = $('search-results-container');
+            if (el) el.scrollTo({ top: 0, behavior: 'smooth' });
+          });
+          on('search-input', 'input', () => {
+            const lbl = $('search-compact-title');
+            const val = ($('search-input')?.value || '').trim();
+            if (lbl) lbl.textContent = val ? `搜索 · ${val}` : '搜索';
+          });
+          on('search-input', 'focus', () => {
+            $('view-search')?.classList.remove('is-scrolled');
+          });
 
         // Library Filter Tabs (全部 | 专辑 | 歌手) & Header Multi-Select
         document.querySelectorAll('.lib-tab-btn').forEach((btn) => {
@@ -16233,7 +16380,13 @@
           applyDiySettings();
           updatePlayModeButton();
           state.queue = getSortedTracks().map((t) => t.id);
-          renderLibrary();
+          setLibraryTab(state.libTab || 'songs');
+          if (state.libViewMode === 'canvas') {
+            requestAnimationFrame(() => {
+              refreshCanvasViewportMetrics();
+              paintCanvasFrame();
+            });
+          }
 
           if (savedState?.lastTrackId && state.tracks.some((t) => t.id === savedState.lastTrackId)) {
             await loadTrack(savedState.lastTrackId, false, savedState.lastTime || 0);
@@ -16243,7 +16396,7 @@
         } catch {
           applyDiySettings();
           updatePlayModeButton();
-          renderLibrary();
+          setLibraryTab(state.libTab || 'songs');
         }
       }
 
