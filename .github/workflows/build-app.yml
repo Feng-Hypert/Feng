@@ -4246,7 +4246,7 @@ jobs:
                   beginEndedBackgroundTask()
                   if let next = nextUpPayload,
                      let nextTid = next["trackId"] as? String, !nextTid.isEmpty,
-                     let nextUrlStr = next["url"] as? String, !nextUrlStr.isEmpty {
+                     let nextUrlStr = next["url"] as? String, !nextUrlStr.isEmpty, URL(string: nextUrlStr) != nil {
                       let forTid = (next["forTrackId"] as? String) ?? ""
                       let contextMatches = forTid.isEmpty || currentTrackId.isEmpty || forTid == currentTrackId
                       if contextMatches {
@@ -4581,7 +4581,6 @@ jobs:
               }
           }
 
-          @UIApplicationMain
           @objc(FengBridgeViewController)
           class FengBridgeViewController: CAPBridgeViewController {
               private var fengStatusBarHidden: Bool = false
@@ -4605,6 +4604,7 @@ jobs:
               }
           }
 
+          @UIApplicationMain
           class AppDelegate: UIResponder, UIApplicationDelegate {
 
               var window: UIWindow?
