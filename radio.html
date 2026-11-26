@@ -46,15 +46,21 @@
       display: none !important;
     }
 
-    /* §11 Android fast-scroll flicker fix: pause backdrop-filter while actively scrolling */
-    body.is-native-android.is-scrolling .liquid-panel,
-    body.is-native-android.is-scrolling .liquid-pill,
-    body.is-native-android.is-scrolling .liquid-dock,
-    body.is-native-android.is-scrolling .liquid-sheet,
+    /* §11 Android fast-scroll flicker fix: only pause backdrop-filter on scrolling list cards, NEVER on fixed Dock/Mini-Player */
     body.is-native-android.is-scrolling .song-card-glass,
     body.is-native-android.is-scrolling .clear-liquid-card {
       backdrop-filter: none !important;
       -webkit-backdrop-filter: none !important;
+    }
+    /* Android WebView stable GPU-promoted frosted backing for bottom Dock & Mini-Player (prevents scroll flicker & transparency drop) */
+    body.is-native-android #bottom-tab-dock > .liquid-dock,
+    body.is-native-android #mini-player-bar {
+      background: linear-gradient(180deg, rgba(22, 28, 42, 0.84) 0%, rgba(12, 16, 25, 0.90) 100%) !important;
+      backdrop-filter: blur(20px) saturate(150%) !important;
+      -webkit-backdrop-filter: blur(20px) saturate(150%) !important;
+      transform: translateZ(0);
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
     }
 
     /* Collapsed & Hidden Bottom Bar Layout */
@@ -2121,6 +2127,15 @@
           </button>
         </div>
       </div>
+      <div id="row-np-island-lyrics" class="flex items-center justify-between gap-2 px-3 py-2.5 mt-1.5 rounded-2xl bg-white/8 border border-white/10">
+        <div class="min-w-0">
+          <div class="text-xs text-white/90 font-medium">灵动岛 / 锁屏实时歌词</div>
+          <div class="text-[10px] text-white/50 truncate">将系统自带播放岛的歌名实时替换为当前歌词</div>
+        </div>
+        <button id="btn-np-island-lyrics" class="w-10 h-5 rounded-full bg-sky-500 p-0.5 transition-colors flex items-center justify-end shrink-0" aria-label="开关灵动岛实时歌词">
+          <span class="w-4 h-4 rounded-full bg-white shadow"></span>
+        </button>
+      </div>
       <div id="row-np-pip-lyrics" class="flex items-center justify-between gap-2 px-3 py-2.5 mt-1.5 rounded-2xl bg-white/8 border border-white/10">
         <div class="min-w-0">
           <div class="text-xs text-white/90 font-medium">桌面悬浮歌词（画中画）</div>
@@ -3005,7 +3020,8 @@
             loudnessGain: state.audioFx?.loudnessEnabled && Number.isFinite(audioFxRuntime?.loudnessGain) ? audioFxRuntime.loudnessGain : 1,
             lyrics: (state.parsedLyrics || []).map((item) => ({ t: Number(item.time) || 0, text: String(item.text || '') })),
             lyricOffset: Number(state.lyricOffsets[state.currentTrackId] || 0),
-            pipLyricsEnabled: Boolean(state.diy?.pipLyrics)
+            pipLyricsEnabled: Boolean(state.diy?.pipLyrics),
+            islandLyricsEnabled: state.diy?.islandLyrics !== false
           });
         },
         async play() {
@@ -4623,6 +4639,18 @@
           l3dBtn.classList.toggle('bg-white/15', !spatial3dOn);
           l3dBtn.classList.toggle('justify-start', !spatial3dOn);
         }
+        const islandRow = $('row-np-island-lyrics');
+        if (islandRow) {
+          islandRow.classList.toggle('hidden', !hasNativeAudioBridge());
+        }
+        const islandBtn = $('btn-np-island-lyrics');
+        if (islandBtn) {
+          const onIsland = state.diy.islandLyrics !== false;
+          islandBtn.classList.toggle('bg-sky-500', onIsland);
+          islandBtn.classList.toggle('justify-end', onIsland);
+          islandBtn.classList.toggle('bg-white/15', !onIsland);
+          islandBtn.classList.toggle('justify-start', !onIsland);
+        }
         const pipRow = $('row-np-pip-lyrics');
         if (pipRow) {
           pipRow.classList.toggle('hidden', !hasNativeAudioBridge());
@@ -5909,54 +5937,165 @@
         syncMultiSelectBar();
         syncSortButtonsUI();
         const isReordering = state.libCustomEditing && state.sortMode === 'custom' && !state.multiSelectMode;
-        container.innerHTML = tracks
+        const gripSvg = `<svg class="w-4 h-4 text-sky-300/80 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M5 9h14M5 15h14"/></svg>`;
+        container.innerHTML = (isReordering
+          ? `<div class="text-[11px] text-sky-200/80 px-2 pb-1 flex items-center justify-between"><span>长按任意歌曲卡片即可拖动排序</span><span class="text-white/45">松手自动保存</span></div>`
+          : '') + tracks
           .map((t, idx) => {
             if (!isReordering) return buildSongRowHtml(t, idx + 1, '', state.multiSelectMode);
-            const reorderControls = `
-              <button data-lib-move-up="${t.id}" ${idx === 0 ? 'disabled' : ''} class="btn-lib-move-up w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-25 flex items-center justify-center text-white text-xs" title="上移">↑</button>
-              <button data-lib-move-down="${t.id}" ${idx === tracks.length - 1 ? 'disabled' : ''} class="btn-lib-move-down w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-25 flex items-center justify-center text-white text-xs" title="下移">↓</button>`;
             return `
-              <div data-track-id="${t.id}" class="song-row song-card-glass rounded-2xl p-2.5 flex items-center justify-between gap-3 transition">
-                <div class="flex items-center gap-3 min-w-0 flex-1">
-                  <span class="w-5 text-center text-[11px] font-semibold text-white/45 tabular-nums shrink-0">${idx + 1}</span>
+              <div data-track-id="${t.id}" class="song-row song-card-glass rounded-2xl p-2.5 flex items-center justify-between gap-3 transition select-none cursor-grab active:cursor-grabbing">
+                <div class="flex items-center gap-3 min-w-0 flex-1 pointer-events-none">
+                  <span class="reorder-idx w-5 text-center text-[11px] font-semibold text-white/45 tabular-nums shrink-0">${idx + 1}</span>
                   <img src="${t.cover}" alt="" class="w-11 h-11 rounded-xl object-cover bg-white/10 shrink-0" />
                   <div class="min-w-0 flex-1">
                     <div class="text-sm font-semibold text-white truncate">${escapeHtml(t.title)}</div>
                     <div class="text-xs text-white/55 truncate mt-0.5">${escapeHtml(t.artist)}</div>
                   </div>
                 </div>
-                <div class="flex items-center gap-1.5 shrink-0">${reorderControls}</div>
+                <div class="flex items-center justify-center w-8 h-8 rounded-full bg-white/8 pointer-events-none shrink-0">${gripSvg}</div>
               </div>`;
           })
           .join('');
         if (isReordering) {
-          container.querySelectorAll('.btn-lib-move-up').forEach((btn) => {
-            on(btn, 'click', async (e) => {
-              e.stopPropagation();
-              const order = ensureCustomTrackOrder();
-              const i = order.indexOf(btn.dataset.libMoveUp);
-              if (i > 0) {
-                [order[i - 1], order[i]] = [order[i], order[i - 1]];
-                await saveAppState();
-                renderLibrary();
-              }
-            });
-          });
-          container.querySelectorAll('.btn-lib-move-down').forEach((btn) => {
-            on(btn, 'click', async (e) => {
-              e.stopPropagation();
-              const order = ensureCustomTrackOrder();
-              const i = order.indexOf(btn.dataset.libMoveDown);
-              if (i >= 0 && i < order.length - 1) {
-                [order[i], order[i + 1]] = [order[i + 1], order[i]];
-                await saveAppState();
-                renderLibrary();
-              }
-            });
+          attachLongPressDragReorder({
+            container,
+            itemSelector: '.song-row[data-track-id]',
+            getId: (el) => el.dataset.trackId,
+            onCommit: async (newIds) => {
+              state.customTrackOrder = newIds;
+              await saveAppState();
+              renderLibrary();
+            }
           });
         } else {
           attachSongRowListeners(container, state.multiSelectMode);
         }
+      }
+
+      function attachLongPressDragReorder({ container, itemSelector, getId, onCommit }) {
+        if (!container) return;
+        let holdTimer = null;
+        let draggingEl = null;
+        let startX = 0;
+        let startY = 0;
+        let lastX = 0;
+        let lastY = 0;
+        let moved = false;
+        let autoScrollRaf = null;
+
+        const stopAutoScroll = () => {
+          if (autoScrollRaf) {
+            cancelAnimationFrame(autoScrollRaf);
+            autoScrollRaf = null;
+          }
+        };
+
+        const runAutoScroll = () => {
+          if (!draggingEl) {
+            autoScrollRaf = null;
+            return;
+          }
+          const vh = window.innerHeight || document.documentElement.clientHeight;
+          const edge = 90;
+          let step = 0;
+          if (lastY < edge) step = -Math.max(4, Math.round(((edge - lastY) / edge) * 14));
+          else if (lastY > vh - edge) step = Math.max(4, Math.round(((lastY - (vh - edge)) / edge) * 14));
+          if (step !== 0) window.scrollBy(0, step);
+          autoScrollRaf = requestAnimationFrame(runAutoScroll);
+        };
+
+        const updateOrderIndices = () => {
+          container.querySelectorAll(itemSelector).forEach((el, idx) => {
+            const idxBadge = el.querySelector('.reorder-idx');
+            if (idxBadge) idxBadge.textContent = String(idx + 1);
+          });
+        };
+
+        const swapAtPoint = (x, y) => {
+          if (!draggingEl) return;
+          draggingEl.style.pointerEvents = 'none';
+          const hit = document.elementFromPoint(x, y)?.closest(itemSelector);
+          draggingEl.style.pointerEvents = '';
+          if (!hit || hit === draggingEl || !container.contains(hit)) return;
+          const items = [...container.querySelectorAll(itemSelector)];
+          const dragIdx = items.indexOf(draggingEl);
+          const hitIdx = items.indexOf(hit);
+          if (dragIdx === -1 || hitIdx === -1) return;
+          if (dragIdx < hitIdx) {
+            hit.after(draggingEl);
+          } else {
+            hit.before(draggingEl);
+          }
+          updateOrderIndices();
+        };
+
+        const cleanup = async (commit) => {
+          if (holdTimer) {
+            clearTimeout(holdTimer);
+            holdTimer = null;
+          }
+          stopAutoScroll();
+          if (draggingEl) {
+            const el = draggingEl;
+            draggingEl = null;
+            el.style.transform = '';
+            el.style.zIndex = '';
+            el.style.boxShadow = '';
+            el.style.opacity = '';
+            el.style.touchAction = '';
+            el.classList.remove('ring-2', 'ring-sky-400/80');
+            if (commit) {
+              const newIds = [...container.querySelectorAll(itemSelector)].map(getId).filter(Boolean);
+              await onCommit(newIds);
+            }
+          }
+        };
+
+        container.querySelectorAll(itemSelector).forEach((card) => {
+          card.style.touchAction = 'pan-y';
+          card.addEventListener('contextmenu', (e) => e.preventDefault());
+          card.addEventListener('pointerdown', (e) => {
+            if (e.button !== 0 && e.pointerType === 'mouse') return;
+            if (e.target.closest('button')) return;
+            startX = lastX = e.clientX;
+            startY = lastY = e.clientY;
+            moved = false;
+            if (holdTimer) clearTimeout(holdTimer);
+            holdTimer = setTimeout(() => {
+              holdTimer = null;
+              draggingEl = card;
+              card.style.touchAction = 'none';
+              card.style.zIndex = '40';
+              card.style.opacity = '0.96';
+              card.style.transform = 'scale(1.03)';
+              card.style.boxShadow = '0 14px 36px rgba(56, 189, 248, 0.28)';
+              card.classList.add('ring-2', 'ring-sky-400/80');
+              try { if (navigator.vibrate) navigator.vibrate(14); } catch {}
+              try { card.setPointerCapture(e.pointerId); } catch {}
+              if (!autoScrollRaf) autoScrollRaf = requestAnimationFrame(runAutoScroll);
+            }, 220);
+          });
+          card.addEventListener('pointermove', (e) => {
+            lastX = e.clientX;
+            lastY = e.clientY;
+            if (!draggingEl) {
+              if (holdTimer && (Math.abs(e.clientX - startX) > 10 || Math.abs(e.clientY - startY) > 10)) {
+                clearTimeout(holdTimer);
+                holdTimer = null;
+              }
+              return;
+            }
+            e.preventDefault();
+            moved = true;
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            draggingEl.style.transform = `translate3d(${Math.round(dx * 0.28)}px, ${Math.round(dy * 0.16)}px, 0) scale(1.03)`;
+            swapAtPoint(e.clientX, e.clientY);
+          }, { passive: false });
+          card.addEventListener('pointerup', () => cleanup(Boolean(draggingEl && moved)));
+          card.addEventListener('pointercancel', () => cleanup(false));
+        });
       }
 
       function compareAlphaAZ(a, b) {
@@ -6097,9 +6236,8 @@
                 </div>
                 ${
                   isCustom
-                    ? `<div class="flex items-center gap-1 shrink-0">
-                        <button data-group-move-up="${escapeHtml(alb.name)}" class="btn-album-move-up w-7 h-7 rounded-full bg-white/12 hover:bg-white/25 text-white text-xs flex items-center justify-center ${idx === 0 ? 'opacity-30 pointer-events-none' : ''}">↑</button>
-                        <button data-group-move-down="${escapeHtml(alb.name)}" class="btn-album-move-down w-7 h-7 rounded-full bg-white/12 hover:bg-white/25 text-white text-xs flex items-center justify-center ${idx === albums.length - 1 ? 'opacity-30 pointer-events-none' : ''}">↓</button>
+                    ? `<div class="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center shrink-0 pointer-events-none" title="长按拖动排序">
+                        <svg class="w-3.5 h-3.5 text-sky-300/85" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M5 9h14M5 15h14"/></svg>
                       </div>`
                     : !isMs
                       ? `<button data-fav-album="${escapeHtml(alb.name)}" class="btn-fav-album w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition active:scale-90 ${isFav ? 'text-amber-300 bg-amber-400/15' : 'text-white/35 hover:text-white/75 hover:bg-white/10'}" title="${isFav ? '取消收藏' : '收藏专辑'}" aria-label="收藏专辑">${buildStarIconSvg(isFav)}</button>`
@@ -6134,18 +6272,19 @@
             toggleGroupFavorite('album', btn.dataset.favAlbum);
           });
         });
-        grid.querySelectorAll('.btn-album-move-up').forEach((btn) => {
-          on(btn, 'click', (e) => {
-            e.stopPropagation();
-            moveCustomGroupItem('album', btn.dataset.groupMoveUp, -1);
+        if (isCustom) {
+          showToast('长按任意专辑卡片即可拖动排序');
+          attachLongPressDragReorder({
+            container: grid,
+            itemSelector: '.album-card[data-album-name]',
+            getId: (el) => el.dataset.albumName,
+            onCommit: async (newOrder) => {
+              state.customAlbumOrder = newOrder;
+              await saveAppState();
+              renderAlbums();
+            }
           });
-        });
-        grid.querySelectorAll('.btn-album-move-down').forEach((btn) => {
-          on(btn, 'click', (e) => {
-            e.stopPropagation();
-            moveCustomGroupItem('album', btn.dataset.groupMoveDown, 1);
-          });
-        });
+        }
       }
 
       function renderArtists() {
@@ -6187,9 +6326,8 @@
               </div>
               ${
                 isCustom
-                  ? `<div class="flex items-center justify-center gap-2 pt-0.5">
-                      <button data-group-move-up="${escapeHtml(art.name)}" class="btn-artist-move-up w-7 h-7 rounded-full bg-white/12 hover:bg-white/25 text-white text-xs flex items-center justify-center ${idx === 0 ? 'opacity-30 pointer-events-none' : ''}">↑</button>
-                      <button data-group-move-down="${escapeHtml(art.name)}" class="btn-artist-move-down w-7 h-7 rounded-full bg-white/12 hover:bg-white/25 text-white text-xs flex items-center justify-center ${idx === artists.length - 1 ? 'opacity-30 pointer-events-none' : ''}">↓</button>
+                  ? `<div class="flex items-center justify-center pt-0.5 pointer-events-none">
+                      <span class="px-2.5 py-0.5 rounded-full bg-white/10 text-[10px] text-sky-200/85">长按拖动</span>
                     </div>`
                   : ''
               }
@@ -6221,18 +6359,19 @@
             toggleGroupFavorite('artist', btn.dataset.favArtist);
           });
         });
-        grid.querySelectorAll('.btn-artist-move-up').forEach((btn) => {
-          on(btn, 'click', (e) => {
-            e.stopPropagation();
-            moveCustomGroupItem('artist', btn.dataset.groupMoveUp, -1);
+        if (isCustom) {
+          showToast('长按任意歌手卡片即可拖动排序');
+          attachLongPressDragReorder({
+            container: grid,
+            itemSelector: '.artist-card[data-artist-name]',
+            getId: (el) => el.dataset.artistName,
+            onCommit: async (newOrder) => {
+              state.customArtistOrder = newOrder;
+              await saveAppState();
+              renderArtists();
+            }
           });
-        });
-        grid.querySelectorAll('.btn-artist-move-down').forEach((btn) => {
-          on(btn, 'click', (e) => {
-            e.stopPropagation();
-            moveCustomGroupItem('artist', btn.dataset.groupMoveDown, 1);
-          });
-        });
+        }
       }
 
       // =========================================================================
@@ -11860,6 +11999,22 @@
           syncActiveLyric(true);
           await saveAppState();
           showToast(state.diy.lyric3d ? '已开启立体歌词效果' : '已关闭立体歌词效果');
+        });
+        on('btn-np-island-lyrics', async () => {
+          if (!hasNativeAudioBridge()) {
+            showToast('灵动岛实时歌词仅支持 iOS 客户端');
+            return;
+          }
+          state.diy.islandLyrics = state.diy.islandLyrics === false;
+          applyLyricStyleUI();
+          await saveAppState();
+          try {
+            window.webkit.messageHandlers.fengAudio.postMessage({
+              action: 'setIslandLyrics',
+              enabled: state.diy.islandLyrics !== false
+            });
+          } catch {}
+          showToast(state.diy.islandLyrics !== false ? '已开启系统灵动岛实时歌词' : '已关闭系统灵动岛实时歌词');
         });
         on('btn-np-pip-lyrics', async () => {
           if (!hasNativeAudioBridge()) {
