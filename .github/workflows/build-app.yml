@@ -2823,6 +2823,9 @@ jobs:
               private var pendingWidgetReloadWork: DispatchWorkItem? = nil
               private var pendingEndedWidgetSyncWork: DispatchWorkItem? = nil
               private var idleReleaseWork: DispatchWorkItem? = nil
+              private var currentTrackId: String = ""
+              private var nextUpPayload: [String: Any]? = nil
+              private var endedBgTask: UIBackgroundTaskIdentifier = .invalid
 
               @available(iOS 15.0, *)
               private var pipManager: FengPiPLyricsManager {
@@ -4194,6 +4197,216 @@ jobs:
                   return nil
               }
 
+              private func beginEndedBackgroundTask() {
+                  if endedBgTask != .invalid {
+                      UIApplication.shared.endBackgroundTask(endedBgTask)
+                      endedBgTask = .invalid
+                  }
+                  endedBgTask = UIApplication.shared.beginBackgroundTask(withName: "FengTrackEndAdvance") { [weak self] in
+                      guard let self = self else { return }
+                      if self.endedBgTask != .invalid {
+                          UIApplication.shared.endBackgroundTask(self.endedBgTask)
+                          self.endedBgTask = .invalid
+                      }
+                  }
+              }
+
+              private func endEndedBackgroundTask() {
+                  if endedBgTask != .invalid {
+                      UIApplication.shared.endBackgroundTask(endedBgTask)
+                      endedBgTask = .invalid
+                  }
+              }
+
+              private func handleNativePlaybackEnded() {
+                  beginEndedBackgroundTask()
+                  if let next = nextUpPayload,
+                     let nextTid = next["trackId"] as? String, !nextTid.isEmpty,
+                     let nextUrlStr = next["url"] as? String, !nextUrlStr.isEmpty {
+                      let forTid = (next["forTrackId"] as? String) ?? ""
+                      let contextMatches = forTid.isEmpty || currentTrackId.isEmpty || forTid == currentTrackId
+                      if contextMatches {
+                          // Preserve nextUpPayload for single-track repeat (forTid == nextTid); consume for sequential/shuffle
+                          if forTid != nextTid {
+                              nextUpPayload = nil
+                          }
+                          loadTrackFromPayload(next, isAutoAdvance: true)
+                          DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+                              self?.endEndedBackgroundTask()
+                          }
+                          return
+                      }
+                  }
+                  // Fallback when queue ended or no valid nextUp is pre-armed
+                  updateNowPlayingMetadataOnly()
+                  sendEvent("ended", extra: [:])
+                  pendingEndedWidgetSyncWork?.cancel()
+                  let work = DispatchWorkItem { [weak self] in
+                      guard let self = self else { return }
+                      let playingNow = self.useEnginePlayer ? self.enginePlayer.isPlaying : ((self.player?.rate ?? 0) > 0)
+                      if !playingNow {
+                          self.syncWidgetState(saveCover: false)
+                      }
+                      self.endEndedBackgroundTask()
+                  }
+                  pendingEndedWidgetSyncWork = work
+                  DispatchQueue.main.asyncAfter(deadline: .now() + 3.0, execute: work)
+              }
+
+              private func loadTrackFromPayload(_ body: [String: Any], isAutoAdvance: Bool) {
+                  guard let urlStr = body["url"] as? String,
+                        let url = URL(string: urlStr) else { return }
+                  pendingEndedWidgetSyncWork?.cancel()
+                  pendingEndedWidgetSyncWork = nil
+                  cleanupPlayer()
+                  let incomingTid = (body["trackId"] as? String) ?? ""
+                  currentTrackId = incomingTid
+                  if !isAutoAdvance,
+                     let pendingNext = nextUpPayload,
+                     let pendingFor = pendingNext["forTrackId"] as? String,
+                     !pendingFor.isEmpty, pendingFor != incomingTid {
+                      nextUpPayload = nil
+                  }
+                  currentTitle = (body["title"] as? String) ?? "FENG MUSIC"
+                  currentArtist = (body["artist"] as? String) ?? ""
+                  currentAlbum = (body["album"] as? String) ?? ""
+                  currentRate = Float((body["rate"] as? Double) ?? 1.0)
+                  pendingResumeTime = isAutoAdvance ? 0 : ((body["resumeTime"] as? Double) ?? 0)
+                  currentDuration = (body["duration"] as? Double) ?? 0
+                  didSendMeta = false
+                  didSendError = false
+                  currentArtwork = decodeArtwork(from: (body["cover"] as? String) ?? "")
+
+                  if let eqOn = body["eqEnabled"] as? Bool { fxEqEnabled = eqOn }
+                  if let gains = body["eqGains"] as? [NSNumber], gains.count == 5 {
+                      fxEqGains = gains.map { $0.floatValue }
+                  }
+                  if let lg = body["loudnessGain"] as? Double { fxLoudnessGain = Float(lg) }
+                  currentLyricLine = ""
+                  nativeLyrics = []
+                  activeNativeLyricIdx = -1
+                  try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [])
+                  try? AVAudioSession.sharedInstance().setActive(true)
+
+                  let incomingLyrics = body["lyrics"] as? [[String: Any]]
+                  let incomingOffset = body["lyricOffset"] as? Double
+                  if let islandPref = body["islandLyricsEnabled"] as? Bool {
+                      islandLyricsEnabled = islandPref
+                  }
+                  if let pipPref = body["pipLyricsEnabled"] as? Bool {
+                      if #available(iOS 15.0, *) {
+                          pipManager.setEnabled(pipPref, startNow: false, window: self.webView?.window)
+                      }
+                  }
+                  let autoPlay = isAutoAdvance ? true : ((body["autoPlay"] as? Bool) ?? false)
+                  enginePlayer.onTimeUpdate = { [weak self] cur, dur in
+                      guard let self = self, self.useEnginePlayer else { return }
+                      self.updateNativeLyricForTime(cur, force: false)
+                      self.sendEvent("timeupdate", extra: ["currentTime": cur, "duration": dur])
+                  }
+                  enginePlayer.onEnded = { [weak self] in
+                      guard let self = self, self.useEnginePlayer else { return }
+                      self.handleNativePlaybackEnded()
+                  }
+                  if enginePlayer.load(url: url, resumeTime: pendingResumeTime, rate: currentRate, autoPlay: autoPlay) {
+                      useEnginePlayer = true
+                      currentDuration = enginePlayer.duration
+                      didSendMeta = true
+                      enginePlayer.applyFx(
+                          eqEnabled: fxEqEnabled,
+                          eqGains: fxEqGains,
+                          loudnessGain: fxLoudnessGain,
+                          fadeFactor: fxFadeFactor,
+                          rampSec: 0.04
+                      )
+                      if let rawLyrics = incomingLyrics, !rawLyrics.isEmpty {
+                          setNativeLyrics(from: rawLyrics, offset: incomingOffset)
+                      } else {
+                          syncPiPLyrics()
+                      }
+                      if isAutoAdvance {
+                          updateNowPlayingInfo(saveCoverToWidget: true)
+                          sendEvent("autoAdvanced", extra: ["trackId": incomingTid, "duration": currentDuration])
+                      } else {
+                          sendEvent("loadedmetadata", extra: ["duration": currentDuration])
+                          updateNowPlayingInfo(saveCoverToWidget: true)
+                          if autoPlay {
+                              sendEvent("play", extra: [:])
+                              sendEvent("playing", extra: [:])
+                          }
+                      }
+                      return
+                  }
+                  if let rawLyrics = incomingLyrics, !rawLyrics.isEmpty {
+                      setNativeLyrics(from: rawLyrics, offset: incomingOffset)
+                  } else {
+                      syncPiPLyrics()
+                  }
+
+                  let item = AVPlayerItem(url: url)
+                  let newPlayer = AVPlayer(playerItem: item)
+                  self.player = newPlayer
+
+                  endObserver = NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime, object: item, queue: .main) { [weak self] _ in
+                      guard let self = self else { return }
+                      self.handleNativePlaybackEnded()
+                  }
+
+                  failedObserver = NotificationCenter.default.addObserver(forName: .AVPlayerItemFailedToPlayToEndTime, object: item, queue: .main) { [weak self] note in
+                      guard let self = self, !self.didSendError else { return }
+                      self.didSendError = true
+                      let errMsg = (note.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? Error)?.localizedDescription ?? "音频播放失败"
+                      self.updateNowPlayingInfo()
+                      self.sendEvent("error", extra: ["message": errMsg])
+                  }
+
+                  timeObserver = newPlayer.addPeriodicTimeObserver(forInterval: CMTime(seconds: 0.25, preferredTimescale: 600), queue: .main) { [weak self] cmTime in
+                      guard let self = self else { return }
+                      if !self.didSendError && item.status == .failed {
+                          self.didSendError = true
+                          let errMsg = item.error?.localizedDescription ?? "无法解码该音频文件或授权已失效"
+                          self.updateNowPlayingInfo()
+                          self.sendEvent("error", extra: ["message": errMsg])
+                          return
+                      }
+                      if !self.didSendMeta && item.status == .readyToPlay {
+                          let dur = CMTimeGetSeconds(item.duration)
+                          if dur.isFinite && dur > 0 {
+                              self.didSendMeta = true
+                              self.currentDuration = dur
+                              if self.pendingResumeTime > 0 && self.pendingResumeTime < dur - 1 {
+                                  newPlayer.seek(to: CMTime(seconds: self.pendingResumeTime, preferredTimescale: 600)) { [weak self] _ in
+                                      DispatchQueue.main.async { self?.updateNowPlayingInfo() }
+                                  }
+                                  self.pendingResumeTime = 0
+                              } else {
+                                  self.updateNowPlayingInfo(saveCoverToWidget: true)
+                              }
+                              self.sendEvent("loadedmetadata", extra: ["duration": dur])
+                          }
+                      }
+                      let cur = CMTimeGetSeconds(cmTime)
+                      if cur.isFinite {
+                          self.updateNativeLyricForTime(cur, force: false)
+                          self.sendEvent("timeupdate", extra: ["currentTime": cur, "duration": self.currentDuration])
+                      }
+                  }
+
+                  if autoPlay {
+                      newPlayer.play()
+                      newPlayer.rate = currentRate
+                      updateNowPlayingInfo(saveCoverToWidget: true)
+                      if isAutoAdvance {
+                          sendEvent("autoAdvanced", extra: ["trackId": incomingTid, "duration": currentDuration])
+                      } else {
+                          sendEvent("play", extra: [:])
+                          sendEvent("playing", extra: [:])
+                      }
+                  } else {
+                      updateNowPlayingInfo(saveCoverToWidget: true)
+                  }
+              }
+
               func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
                   if message.name == "fengExport" {
                       if let body = message.body as? [String: Any],
@@ -4239,162 +4452,16 @@ jobs:
                         let body = message.body as? [String: Any],
                         let action = body["action"] as? String else { return }
 
-                  if action == "load" {
-                      guard let urlStr = body["url"] as? String,
-                            let url = URL(string: urlStr) else { return }
-                      pendingEndedWidgetSyncWork?.cancel()
-                      pendingEndedWidgetSyncWork = nil
-                      cleanupPlayer()
-                      currentTitle = (body["title"] as? String) ?? "FENG MUSIC"
-                      currentArtist = (body["artist"] as? String) ?? ""
-                      currentAlbum = (body["album"] as? String) ?? ""
-                      currentRate = Float((body["rate"] as? Double) ?? 1.0)
-                      pendingResumeTime = (body["resumeTime"] as? Double) ?? 0
-                      currentDuration = 0
-                      didSendMeta = false
-                      didSendError = false
-                      currentArtwork = decodeArtwork(from: (body["cover"] as? String) ?? "")
-
-                      if let eqOn = body["eqEnabled"] as? Bool { fxEqEnabled = eqOn }
-                      if let gains = body["eqGains"] as? [NSNumber], gains.count == 5 {
-                          fxEqGains = gains.map { $0.floatValue }
-                      }
-                      if let lg = body["loudnessGain"] as? Double { fxLoudnessGain = Float(lg) }
-                      currentLyricLine = ""
-                      nativeLyrics = []
-                      activeNativeLyricIdx = -1
-                      try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [])
-                      try? AVAudioSession.sharedInstance().setActive(true)
-
-                      let incomingLyrics = body["lyrics"] as? [[String: Any]]
-                      let incomingOffset = body["lyricOffset"] as? Double
-                      if let islandPref = body["islandLyricsEnabled"] as? Bool {
-                          islandLyricsEnabled = islandPref
-                      }
-                      let pipPref = (body["pipLyricsEnabled"] as? Bool) ?? false
-                      if #available(iOS 15.0, *) {
-                          pipManager.setEnabled(pipPref, startNow: false, window: self.webView?.window)
-                      }
-                      let autoPlay = (body["autoPlay"] as? Bool) ?? false
-                      enginePlayer.onTimeUpdate = { [weak self] cur, dur in
-                          guard let self = self, self.useEnginePlayer else { return }
-                          self.updateNativeLyricForTime(cur, force: false)
-                          self.sendEvent("timeupdate", extra: ["currentTime": cur, "duration": dur])
-                      }
-                      enginePlayer.onEnded = { [weak self] in
-                          guard let self = self, self.useEnginePlayer else { return }
-                          self.updateNowPlayingMetadataOnly()
-                          self.sendEvent("ended", extra: [:])
-                          self.pendingEndedWidgetSyncWork?.cancel()
-                          let work = DispatchWorkItem { [weak self] in
-                              guard let self = self else { return }
-                              let playingNow = self.useEnginePlayer ? self.enginePlayer.isPlaying : ((self.player?.rate ?? 0) > 0)
-                              if !playingNow {
-                                  self.syncWidgetState(saveCover: false)
-                              }
-                          }
-                          self.pendingEndedWidgetSyncWork = work
-                          DispatchQueue.main.asyncAfter(deadline: .now() + 3.0, execute: work)
-                      }
-                      if enginePlayer.load(url: url, resumeTime: pendingResumeTime, rate: currentRate, autoPlay: autoPlay) {
-                          useEnginePlayer = true
-                          currentDuration = enginePlayer.duration
-                          didSendMeta = true
-                          enginePlayer.applyFx(
-                              eqEnabled: fxEqEnabled,
-                              eqGains: fxEqGains,
-                              loudnessGain: fxLoudnessGain,
-                              fadeFactor: fxFadeFactor,
-                              rampSec: 0.04
-                          )
-                          if let rawLyrics = incomingLyrics, !rawLyrics.isEmpty {
-                              setNativeLyrics(from: rawLyrics, offset: incomingOffset)
-                          } else {
-                              syncPiPLyrics()
-                          }
-                          sendEvent("loadedmetadata", extra: ["duration": currentDuration])
-                          updateNowPlayingInfo(saveCoverToWidget: true)
-                          if autoPlay {
-                              sendEvent("play", extra: [:])
-                              sendEvent("playing", extra: [:])
-                          }
-                          return
-                      }
-                      if let rawLyrics = incomingLyrics, !rawLyrics.isEmpty {
-                          setNativeLyrics(from: rawLyrics, offset: incomingOffset)
+                  if action == "setNextUp" {
+                      if let tid = body["trackId"] as? String, !tid.isEmpty,
+                         let urlStr = body["url"] as? String, !urlStr.isEmpty {
+                          nextUpPayload = body
                       } else {
-                          syncPiPLyrics()
+                          nextUpPayload = nil
                       }
-
-                      let item = AVPlayerItem(url: url)
-                      let newPlayer = AVPlayer(playerItem: item)
-                      self.player = newPlayer
-
-                      endObserver = NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime, object: item, queue: .main) { [weak self] _ in
-                          guard let self = self else { return }
-                          self.updateNowPlayingMetadataOnly()
-                          self.sendEvent("ended", extra: [:])
-                          self.pendingEndedWidgetSyncWork?.cancel()
-                          let work = DispatchWorkItem { [weak self] in
-                              guard let self = self else { return }
-                              let playingNow = self.useEnginePlayer ? self.enginePlayer.isPlaying : ((self.player?.rate ?? 0) > 0)
-                              if !playingNow {
-                                  self.syncWidgetState(saveCover: false)
-                              }
-                          }
-                          self.pendingEndedWidgetSyncWork = work
-                          DispatchQueue.main.asyncAfter(deadline: .now() + 3.0, execute: work)
-                      }
-
-                      failedObserver = NotificationCenter.default.addObserver(forName: .AVPlayerItemFailedToPlayToEndTime, object: item, queue: .main) { [weak self] note in
-                          guard let self = self, !self.didSendError else { return }
-                          self.didSendError = true
-                          let errMsg = (note.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? Error)?.localizedDescription ?? "音频播放失败"
-                          self.updateNowPlayingInfo()
-                          self.sendEvent("error", extra: ["message": errMsg])
-                      }
-
-                      timeObserver = newPlayer.addPeriodicTimeObserver(forInterval: CMTime(seconds: 0.25, preferredTimescale: 600), queue: .main) { [weak self] cmTime in
-                          guard let self = self else { return }
-                          if !self.didSendError && item.status == .failed {
-                              self.didSendError = true
-                              let errMsg = item.error?.localizedDescription ?? "无法解码该音频文件或授权已失效"
-                              self.updateNowPlayingInfo()
-                              self.sendEvent("error", extra: ["message": errMsg])
-                              return
-                          }
-                          if !self.didSendMeta && item.status == .readyToPlay {
-                              let dur = CMTimeGetSeconds(item.duration)
-                              if dur.isFinite && dur > 0 {
-                                  self.didSendMeta = true
-                                  self.currentDuration = dur
-                                  if self.pendingResumeTime > 0 && self.pendingResumeTime < dur - 1 {
-                                      newPlayer.seek(to: CMTime(seconds: self.pendingResumeTime, preferredTimescale: 600)) { [weak self] _ in
-                                          DispatchQueue.main.async { self?.updateNowPlayingInfo() }
-                                      }
-                                      self.pendingResumeTime = 0
-                                  } else {
-                                      self.updateNowPlayingInfo(saveCoverToWidget: true)
-                                  }
-                                  self.sendEvent("loadedmetadata", extra: ["duration": dur])
-                              }
-                          }
-                          let cur = CMTimeGetSeconds(cmTime)
-                          if cur.isFinite {
-                              self.updateNativeLyricForTime(cur, force: false)
-                              self.sendEvent("timeupdate", extra: ["currentTime": cur, "duration": self.currentDuration])
-                          }
-                      }
-
-                      if autoPlay {
-                          newPlayer.play()
-                          newPlayer.rate = currentRate
-                          updateNowPlayingInfo(saveCoverToWidget: true)
-                          sendEvent("play", extra: [:])
-                          sendEvent("playing", extra: [:])
-                      } else {
-                          updateNowPlayingInfo(saveCoverToWidget: true)
-                      }
+                  } else if action == "load" {
+                      endEndedBackgroundTask()
+                      loadTrackFromPayload(body, isAutoAdvance: false)
                   } else if action == "play" {
                       if useEnginePlayer {
                           enginePlayer.play()
