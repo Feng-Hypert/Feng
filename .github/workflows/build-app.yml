@@ -1604,10 +1604,7 @@ jobs:
                       Canvas canvas = new Canvas(out);
                       RectF bounds = new RectF(0f, 0f, w, h);
 
-                      android.graphics.Path clip = new android.graphics.Path();
-                      clip.addRoundRect(bounds, radius, radius, android.graphics.Path.Direction.CW);
                       canvas.save();
-                      canvas.clipPath(clip);
 
                       if (hasLive && rawCover != null) {
                           Bitmap tiny = Bitmap.createScaledBitmap(rawCover, 14, 14, true);
@@ -1925,6 +1922,7 @@ jobs:
               android:id="@+id/widget_root"
               android:layout_width="match_parent"
               android:layout_height="match_parent"
+              android:clipToOutline="true"
               android:background="@drawable/feng_widget_bg">
 
               <ImageView
@@ -2711,6 +2709,9 @@ jobs:
                   timeTimer?.cancel()
                   timeTimer = nil
                   playerNode.pause()
+                  if isConfigured && engine.isRunning {
+                      engine.pause()
+                  }
               }
 
               func suspendEngine() {
@@ -3986,9 +3987,9 @@ jobs:
                   }
               }
 
-              private func triggerTargetedWidgetReloadNow() {
+              private func triggerTargetedWidgetReloadNow(isTrackChange: Bool = false) {
                   pendingWidgetReloadWork?.cancel()
-                  let work = DispatchWorkItem {
+                  let fireReload: () -> Void = {
                       var bgTask: UIBackgroundTaskIdentifier = .invalid
                       bgTask = UIApplication.shared.beginBackgroundTask(withName: "FengWidgetReload") {
                           if bgTask != .invalid {
@@ -3999,15 +4000,27 @@ jobs:
                       if #available(iOS 14.0, *) {
                           WidgetCenter.shared.reloadTimelines(ofKind: "FengNowPlayingWidget")
                       }
-                      DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                      if isTrackChange {
+                          DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                              if #available(iOS 14.0, *) {
+                                  WidgetCenter.shared.reloadTimelines(ofKind: "FengNowPlayingWidget")
+                              }
+                          }
+                      }
+                      DispatchQueue.main.asyncAfter(deadline: .now() + (isTrackChange ? 2.6 : 0.9)) {
                           if bgTask != .invalid {
                               UIApplication.shared.endBackgroundTask(bgTask)
                               bgTask = .invalid
                           }
                       }
                   }
-                  pendingWidgetReloadWork = work
-                  DispatchQueue.main.asyncAfter(deadline: .now() + 0.16, execute: work)
+                  if isTrackChange {
+                      fireReload()
+                  } else {
+                      let work = DispatchWorkItem(block: fireReload)
+                      pendingWidgetReloadWork = work
+                      DispatchQueue.main.asyncAfter(deadline: .now() + 0.14, execute: work)
+                  }
               }
 
               private func syncWidgetState(saveCover: Bool = false) {
@@ -4031,7 +4044,7 @@ jobs:
                   defaults.set(nowTs, forKey: "widget_updatedAt")
                   syncPiPLyrics()
                   if remaining > 0 {
-                      defaults.set(Date().timeIntervalSince1970 + remaining + 1.8, forKey: "widget_expectedEndAt")
+                      defaults.set(Date().timeIntervalSince1970 + remaining + 0.6, forKey: "widget_expectedEndAt")
                   } else {
                       defaults.removeObject(forKey: "widget_expectedEndAt")
                   }
@@ -4076,7 +4089,7 @@ jobs:
                   if saveCover || reloadSig != lastWidgetReloadSig || (nowReload - lastWidgetReloadAt) >= 4.0 {
                       lastWidgetReloadSig = reloadSig
                       lastWidgetReloadAt = nowReload
-                      triggerTargetedWidgetReloadNow()
+                      triggerTargetedWidgetReloadNow(isTrackChange: saveCover)
                   }
               }
 
@@ -4281,7 +4294,7 @@ jobs:
                               }
                           }
                           self.pendingEndedWidgetSyncWork = work
-                          DispatchQueue.main.asyncAfter(deadline: .now() + 1.1, execute: work)
+                          DispatchQueue.main.asyncAfter(deadline: .now() + 3.0, execute: work)
                       }
                       if enginePlayer.load(url: url, resumeTime: pendingResumeTime, rate: currentRate, autoPlay: autoPlay) {
                           useEnginePlayer = true
@@ -4330,7 +4343,7 @@ jobs:
                               }
                           }
                           self.pendingEndedWidgetSyncWork = work
-                          DispatchQueue.main.asyncAfter(deadline: .now() + 1.1, execute: work)
+                          DispatchQueue.main.asyncAfter(deadline: .now() + 3.0, execute: work)
                       }
 
                       failedObserver = NotificationCenter.default.addObserver(forName: .AVPlayerItemFailedToPlayToEndTime, object: item, queue: .main) { [weak self] note in
