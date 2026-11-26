@@ -928,6 +928,8 @@
       position: relative;
       overflow: hidden;
       border-radius: 1.5rem;
+      flex-shrink: 0;
+      min-height: max-content;
     }
     .pl-swipe-actions {
       position: absolute;
@@ -1617,6 +1619,67 @@
       box-shadow: 0 0 14px rgba(56, 189, 248, 0.55);
     }
 
+    #canvas-spine.is-collapsed {
+      opacity: 0;
+      transform: scaleX(0.2);
+      pointer-events: none;
+    }
+    #canvas-spine {
+      transition: opacity 0.24s ease, transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    #btn-canvas-unfold-spine {
+      position: absolute;
+      left: max(10px, var(--safe-left));
+      top: 50%;
+      transform: translateY(-50%) translateX(-16px);
+      z-index: 30;
+      width: 32px;
+      height: 58px;
+      border-radius: 9999px;
+      background: rgba(8, 12, 20, 0.84);
+      backdrop-filter: blur(18px) saturate(150%);
+      -webkit-backdrop-filter: blur(18px) saturate(150%);
+      border: 1px solid rgba(125, 211, 252, 0.35);
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+      color: #7dd3fc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.24s ease, transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    #btn-canvas-unfold-spine.is-visible {
+      opacity: 1;
+      transform: translateY(-50%) translateX(0);
+      pointer-events: auto;
+    }
+    #canvas-playlist-banner {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 28;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      max-width: min(280px, calc(100% - 96px));
+      padding: 6px 8px 6px 13px;
+      border-radius: 9999px;
+      background: rgba(8, 12, 20, 0.84);
+      backdrop-filter: blur(18px) saturate(150%);
+      -webkit-backdrop-filter: blur(18px) saturate(150%);
+      border: 1px solid rgba(125, 211, 252, 0.30);
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.52);
+    }
+    #canvas-playlist-banner.hidden {
+      display: none !important;
+    }
+    /* Hide top safe-area gap on canvas spine when mobile status bar is hidden */
+    html.canvas-immersive #canvas-spine {
+      padding-top: 10px;
+    }
+
     /* ==================== MOBILE LANDSCAPE MODE OPTIMIZATION ==================== */
     @media (max-height: 520px) and (orientation: landscape) {
       html.is-native-ios {
@@ -1628,25 +1691,84 @@
         padding-left: var(--safe-left);
         padding-right: var(--safe-right);
       }
-      /* Compact Dock & Mini-Player in Landscape */
+      /* Compact Dock & Un-clipped Mini-Player in Landscape */
       #bottom-tab-dock {
         bottom: calc(var(--safe-bottom) + 6px) !important;
         height: 54px !important;
       }
       #mini-player-wrapper {
-        bottom: calc(var(--safe-bottom) + 66px) !important;
+        bottom: calc(var(--safe-bottom) + 68px) !important;
       }
       #mini-player-bar {
-        height: 48px !important;
+        height: auto !important;
+        min-height: 52px !important;
       }
-      /* Bottom Sheets fit cleanly inside short landscape viewports */
+      #mini-player-bar > div {
+        padding: 6px 11px !important;
+      }
+      #mini-cover {
+        width: 38px !important;
+        height: 38px !important;
+        border-radius: 11px !important;
+      }
+      #btn-mini-play {
+        width: 36px !important;
+        height: 36px !important;
+      }
+      .pl-scroll-pad {
+        padding-bottom: 136px !important;
+      }
+      /* Bottom Sheets & Centered Modals fit cleanly inside short landscape viewports */
       .liquid-sheet {
-        max-height: 86vh !important;
+        max-height: 88vh !important;
         overflow-y: auto !important;
         padding: 14px 18px calc(var(--safe-bottom) + 14px) !important;
       }
       #sheet-canvas-subview {
         max-height: 86vh !important;
+      }
+      /* Daily Fortune Modal: Compact Landscape Fit (keeps all action buttons visible) */
+      #fortune-card-inner {
+        max-width: min(560px, 90vw) !important;
+        max-height: 88vh !important;
+        overflow-y: auto !important;
+        padding: 12px 16px !important;
+      }
+      #fortune-card-inner.space-y-3\.5 > :not([hidden]) ~ :not([hidden]) {
+        margin-top: 8px !important;
+      }
+      #fortune-card-inner > div:nth-child(2) {
+        height: 82px !important;
+        width: 96px !important;
+        padding-top: 0 !important;
+      }
+      #fortune-cover {
+        width: 78px !important;
+        height: 78px !important;
+        border-radius: 18px !important;
+      }
+      #fortune-album-disc {
+        width: 62px !important;
+        height: 62px !important;
+        top: 8px !important;
+      }
+      #fortune-lyric-quote {
+        font-size: 11.5px !important;
+        line-height: 1.4 !important;
+      }
+      #fortune-card-inner .bg-white\/7 {
+        padding: 8px 12px !important;
+      }
+      /* EQ Studio & Lyrics View compact landscape fit */
+      #eq-fullscreen-modal main,
+      #eq-fullscreen-modal > div {
+        overflow-y: auto !important;
+      }
+      #eq-curve-canvas {
+        max-height: 150px !important;
+      }
+      #np-panel-lyrics {
+        padding-bottom: calc(var(--safe-bottom) + 8px) !important;
       }
       /* Now Playing Cover View: 2-Column Horizontal Hi-Fi Layout */
       #now-playing-modal header {
@@ -1686,12 +1808,12 @@
       #np-panel-cover > div:last-child.space-y-4 > :not([hidden]) ~ :not([hidden]) {
         margin-top: 10px !important;
       }
-      /* Infinite Canvas Spine: Compact + Scrollable in Landscape */
+      /* Infinite Canvas Spine: Ultra-clean Non-Overlapping Landscape Fit */
       #canvas-spine {
-        width: 50px;
-        gap: 3px;
-        padding-top: calc(var(--safe-top) + 6px);
-        padding-bottom: calc(var(--safe-bottom) + 8px);
+        width: 46px;
+        gap: 2px;
+        padding-top: 6px;
+        padding-bottom: calc(var(--safe-bottom) + 6px);
         overflow-y: auto;
         scrollbar-width: none;
         -webkit-overflow-scrolling: touch;
@@ -1700,36 +1822,38 @@
       #canvas-spine::-webkit-scrollbar {
         display: none;
       }
-      .canvas-spine-heading {
-        font-size: 10px;
-        margin-bottom: 0;
-      }
       .canvas-spine-tab {
-        width: 30px;
-        padding: 4px 0;
-        font-size: 10px;
-        gap: 1px;
+        width: 28px;
+        padding: 3px 0;
+        font-size: 9.5px;
+        gap: 0px;
+        line-height: 1.08;
+      }
+      #btn-canvas-fold-spine {
+        width: 22px !important;
+        height: 22px !important;
+        margin-top: 2px !important;
       }
       #canvas-spine-transport {
-        width: 32px !important;
-        height: 76px !important;
+        width: 30px !important;
+        height: 66px !important;
         padding-top: 2px !important;
         padding-bottom: 2px !important;
       }
       #btn-canvas-prev,
       #btn-canvas-playpause,
       #btn-canvas-next {
-        width: 22px !important;
-        height: 22px !important;
+        width: 20px !important;
+        height: 20px !important;
       }
       .canvas-spine-icon-btn,
       #btn-canvas-np {
-        width: 28px !important;
-        height: 28px !important;
+        width: 26px !important;
+        height: 26px !important;
       }
       .canvas-spine-icon-btn svg {
-        width: 15px !important;
-        height: 15px !important;
+        width: 14px !important;
+        height: 14px !important;
       }
       #canvas-search-capsule {
         bottom: calc(var(--safe-bottom) + 10px);
@@ -1869,7 +1993,6 @@
         </div>
         <div id="canvas-spine" aria-label="画布控制中脊">
           <canvas id="canvas-spine-dots" aria-hidden="true"></canvas>
-          <div class="canvas-spine-heading">曲库</div>
           <button id="btn-canvas-fortune" class="canvas-spine-icon-btn text-rose-300" title="今日音乐签" aria-label="今日音乐签">
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
           </button>
@@ -1884,7 +2007,12 @@
             <span>歌</span><span>手</span>
           </button>
 
-          <div class="flex-1 min-h-[8px]"></div>
+          <!-- Fold Spine Button placed at the inverted-triangle apex -->
+          <button id="btn-canvas-fold-spine" class="mt-2 w-7 h-7 rounded-full bg-black/75 border border-sky-300/40 text-sky-200 hover:bg-sky-400/20 flex items-center justify-center shrink-0 transition active:scale-90 shadow-lg" title="折叠竖脊进入纯海报墙" aria-label="折叠竖脊">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path stroke-linecap="round" stroke-linejoin="round" d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/></svg>
+          </button>
+
+          <div class="flex-1 min-h-[6px]"></div>
 
           <div id="canvas-spine-transport" class="relative w-[36px] h-[96px] rounded-full bg-white/[0.08] py-1 flex flex-col items-center justify-between shrink-0" aria-label="快捷播放控制">
             <svg id="canvas-transport-progress-svg" class="pointer-events-none absolute inset-0 w-full h-full overflow-visible" viewBox="0 0 36 96" aria-hidden="true">
@@ -1911,28 +2039,28 @@
             </button>
           </div>
 
-          <div class="canvas-spine-section-tag">控制</div>
           <button id="btn-canvas-np" title="打开正在播放" aria-label="打开正在播放">
             <img id="canvas-np-cover" src="/icon-512.png" alt="" class="w-full h-full object-cover opacity-45" />
           </button>
           <button id="btn-canvas-search" class="canvas-spine-icon-btn canvas-spine-glow-ring" style="--rim-delay: 0s;" title="搜索" aria-label="搜索">
             <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><circle cx="11" cy="11" r="7"/><path stroke-linecap="round" d="M20 20l-3.5-3.5"/></svg>
           </button>
-          <button id="btn-canvas-sort" class="canvas-spine-icon-btn canvas-spine-glow-ring" style="--rim-delay: -0.8s;" title="排序与视图" aria-label="排序与视图">
-            <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
-          </button>
-          <button id="btn-canvas-playlists" class="canvas-spine-icon-btn canvas-spine-glow-ring" style="--rim-delay: -1.6s;" title="歌单" aria-label="歌单">
+          <button id="btn-canvas-playlists" class="canvas-spine-icon-btn canvas-spine-glow-ring" style="--rim-delay: -1.2s;" title="歌单" aria-label="歌单">
             <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h10M4 18h7m9-4v6m0 0l-2-2m2 2l2-2"/></svg>
           </button>
-          <button id="btn-canvas-stats" class="canvas-spine-icon-btn canvas-spine-glow-ring" style="--rim-delay: -2.4s;" title="听歌足迹" aria-label="听歌足迹">
-            <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 19V11m7 8V5m7 14v-6"/></svg>
-          </button>
-          <button id="btn-canvas-diy" class="canvas-spine-icon-btn canvas-spine-glow-ring" style="--rim-delay: -3.2s;" title="外观与设置" aria-label="外观与设置">
+          <button id="btn-canvas-diy" class="canvas-spine-icon-btn canvas-spine-glow-ring" style="--rim-delay: -2.4s;" title="外观与设置" aria-label="外观与设置">
             <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
-          <button id="btn-canvas-exit" class="canvas-spine-icon-btn canvas-spine-glow-ring text-sky-300" style="--rim-delay: -4.0s;" title="退出画布返回列表" aria-label="退出画布返回列表">
+          <button id="btn-canvas-exit" class="canvas-spine-icon-btn canvas-spine-glow-ring text-sky-300" style="--rim-delay: -3.6s;" title="退出画布返回列表" aria-label="退出画布返回列表">
             <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><path stroke-linecap="round" stroke-linejoin="round" d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
           </button>
+        </div>
+        <button id="btn-canvas-unfold-spine" title="展开控制竖脊" aria-label="展开控制竖脊">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5-5 5M6 7l5 5-5 5"/></svg>
+        </button>
+        <div id="canvas-playlist-banner" class="hidden" aria-label="当前歌单画布">
+          <span id="canvas-playlist-banner-title" class="text-xs font-semibold text-white truncate"></span>
+          <button id="btn-canvas-playlist-clear" class="w-5 h-5 rounded-full bg-white/12 hover:bg-white/24 flex items-center justify-center text-white/80 text-[11px] shrink-0 transition" title="返回全部曲库" aria-label="返回全部曲库">✕</button>
         </div>
         <div id="canvas-search-capsule" role="search" aria-label="画布定位搜索">
           <svg class="w-4 h-4 text-sky-300 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path stroke-linecap="round" d="M20 20l-3.5-3.5"/></svg>
@@ -2219,7 +2347,7 @@
         <div class="flex items-center gap-3">
           <div>
             <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-white">界面 DIY 设置</h1>
-            <p class="text-xs text-white/55">FENG MUSIC v1.0.8</p>
+            <p class="text-xs text-white/55">FENG MUSIC v1.0.9</p>
           </div>
         </div>
       </header>
@@ -6293,13 +6421,18 @@
         if (webDock) {
           webDock.classList.toggle('hidden', hasNativeDockBridge() || hidden);
         }
+        const hideStatusBar = Boolean(canvasImmersive && !npOpen && !eqOpen);
+        if (window.FengAndroidBridge && typeof window.FengAndroidBridge.setStatusBarHidden === 'function') {
+          try { window.FengAndroidBridge.setStatusBarHidden(hideStatusBar); } catch {}
+        }
         if (!hasNativeDockBridge()) return;
         try {
           window.webkit.messageHandlers.fengDock.postMessage({
             action: 'state',
             tab: state.activeView,
             hidden,
-            collapsed
+            collapsed,
+            hideStatusBar
           });
         } catch {}
       }
@@ -7377,9 +7510,38 @@
       }
 
       function buildCanvasBaseCards(tab) {
+        // When browsing a specific playlist on the canvas, lay out all of its tracks as poster cards
+        if (state.canvasPlaylistId) {
+          const pl = (state.playlists || []).find((p) => p.id === state.canvasPlaylistId);
+          if (pl) {
+            const trackMap = new Map(state.tracks.map((t) => [t.id, getTrackDisplay(t)]));
+            const plTracks = (pl.trackIds || []).map((id) => trackMap.get(id)).filter(Boolean);
+            return plTracks.map((t) => ({
+              kind: 'song',
+              key: `pl:${pl.id}:song:${t.id}`,
+              trackId: t.id,
+              playlistId: pl.id,
+              name: t.title,
+              title: t.title,
+              sub: t.artist || '未知歌手',
+              cover: t.cover || DEFAULT_APP_COVER,
+              isFav: false,
+              trackIds: [t.id]
+            }));
+          }
+          state.canvasPlaylistId = null;
+        }
+
+        // Follow list view sort mode, explicitly ignoring 'custom' (fall back to 'default')
+        const runWithoutCustomSort = (modeKey, fn) => {
+          const prev = state[modeKey];
+          if (prev === 'custom') state[modeKey] = 'default';
+          try { return fn(); } finally { state[modeKey] = prev; }
+        };
+
         const favAlbumSet = new Set(state.favoriteAlbums || []);
         if (tab === 'albums') {
-          return getSortedAlbums().map((alb) => ({
+          return runWithoutCustomSort('albumSortMode', () => getSortedAlbums()).map((alb) => ({
             kind: 'album',
             key: `album:${alb.name}`,
             name: alb.name,
@@ -7399,7 +7561,7 @@
             if (!artistAlbumCounts.has(art)) artistAlbumCounts.set(art, new Set());
             if (alb && alb !== '未知专辑') artistAlbumCounts.get(art).add(alb);
           });
-          return getSortedArtists().map((art) => {
+          return runWithoutCustomSort('artistSortMode', () => getSortedArtists()).map((art) => {
             const albCount = artistAlbumCounts.get(art.name)?.size || 0;
             return {
               kind: 'artist',
@@ -7414,7 +7576,7 @@
           });
         }
         // Songs tab: show actual individual SONGS (title + artist)
-        const sortedTracks = getSortedTracks();
+        const sortedTracks = runWithoutCustomSort('sortMode', () => getSortedTracks());
         return sortedTracks.map((t) => ({
           kind: 'song',
           key: `song:${t.id}`,
@@ -7606,29 +7768,40 @@
           refreshCanvasViewportMetrics();
         }
         const vw = canvasLayoutCache.vw;
+        if (state.canvasSpineCollapsed) {
+          return { vw, sw: 0, spineLeft: 0, rightLeft: 0, rightW: vw, collapsed: true };
+        }
         const sw = canvasLayoutCache.sw;
         const maxOff = Math.max(0, (vw - sw) * 0.5);
         canvasScroll.spineOffsetX = Math.max(-maxOff, Math.min(maxOff, canvasScroll.spineOffsetX));
         const spineLeft = Math.max(0, Math.min(vw - sw, Math.round((vw - sw) * 0.5 + canvasScroll.spineOffsetX)));
         const rightLeft = spineLeft + sw;
         const rightW = Math.max(0, vw - rightLeft);
-        return { vw, sw, spineLeft, rightLeft, rightW };
+        return { vw, sw, spineLeft, rightLeft, rightW, collapsed: false };
       }
 
       function applySplitSpineLayout() {
         const geom = getSpineLayoutGeometry();
-        if (geom.spineLeft === canvasLayoutCache.lastSpineLeft && geom.vw === canvasLayoutCache.lastVw) {
+        const stateKey = geom.collapsed ? -9999 : geom.spineLeft;
+        if (stateKey === canvasLayoutCache.lastSpineLeft && geom.vw === canvasLayoutCache.lastVw) {
           return geom;
         }
-        canvasLayoutCache.lastSpineLeft = geom.spineLeft;
+        canvasLayoutCache.lastSpineLeft = stateKey;
         canvasLayoutCache.lastVw = geom.vw;
         const spineEl = $('canvas-spine');
+        const unfoldBtn = $('btn-canvas-unfold-spine');
         const leftField = $('canvas-field-left');
         const rightField = $('canvas-field-right');
         if (spineEl) {
-          spineEl.style.left = `${geom.spineLeft}px`;
-          spineEl.style.borderLeftWidth = geom.spineLeft <= 0 ? '0px' : '1px';
-          spineEl.style.borderRightWidth = geom.rightW <= 0 ? '0px' : '1px';
+          spineEl.classList.toggle('is-collapsed', Boolean(geom.collapsed));
+          if (!geom.collapsed) {
+            spineEl.style.left = `${geom.spineLeft}px`;
+            spineEl.style.borderLeftWidth = geom.spineLeft <= 0 ? '0px' : '1px';
+            spineEl.style.borderRightWidth = geom.rightW <= 0 ? '0px' : '1px';
+          }
+        }
+        if (unfoldBtn) {
+          unfoldBtn.classList.toggle('is-visible', Boolean(geom.collapsed));
         }
         if (leftField) {
           leftField.style.left = '0px';
@@ -7866,12 +8039,15 @@
         if (ctx) {
           ctx.clearRect(0, 0, pxW, pxH);
 
-          // Full-bleed symmetric honeycomb (even=5, odd=6 edge-to-edge) tapering cleanly 4 -> 3 -> 2 -> 1 below "歌手"
+          // Full-bleed symmetric honeycomb (even=5, odd=6 edge-to-edge) tapering cleanly 4 -> 3 -> 2 -> 1 behind the fold button
           const artistsBtn = spineEl ? spineEl.querySelector('[data-canvas-tab="artists"]') : null;
-          const shoulderCssY = artistsBtn
-            ? (artistsBtn.offsetTop + artistsBtn.offsetHeight + 4)
-            : (cssH * 0.38);
-          const shoulderPxY = Math.max(1, Math.min(pxH, Math.round(shoulderCssY * dpr)));
+          const transportEl = $('canvas-spine-transport');
+          const rawShoulderCssY = artistsBtn
+            ? (artistsBtn.offsetTop + artistsBtn.offsetHeight + 2)
+            : (cssH * 0.34);
+          const maxTipCssY = transportEl ? Math.max(40, transportEl.offsetTop - 4) : (cssH * 0.52);
+          const shoulderPxY = Math.max(1, Math.min(pxH, Math.round(rawShoulderCssY * dpr)));
+          const maxTipPxY = Math.max(shoulderPxY, Math.round(maxTipCssY * dpr));
 
           const centerX = pxW * 0.5;
           const hexW = pxW / 5.0; // exact full-bleed width: 5 centered hexes on even rows, 6 interlocking hexes on odd rows
@@ -7894,7 +8070,7 @@
 
           for (let r = 0; r <= maxRow; r++) {
             const cy = r * rowStep + hexR * 0.7;
-            if (cy + hexR > pxH) break;
+            if (cy + hexR > Math.min(pxH, maxTipPxY)) break;
             const ny = Math.max(0, Math.min(1, cy / totalActivePxY));
             const isOdd = ((r & 1) !== 0);
 
@@ -8204,7 +8380,14 @@
                 </div>
               </div>`;
             bodyEl.querySelectorAll('.cpop-pl-row').forEach((row) => {
-              on(row, 'click', () => openCanvasPopupSheet('playlist-detail', row.dataset.cpopPl));
+              on(row, 'click', () => {
+                const plId = row.dataset.cpopPl;
+                if (!plId) return;
+                state.canvasPlaylistId = plId;
+                closeAllBottomSheets();
+                canvas2D.lastSig = '';
+                renderCanvas();
+              });
             });
             bindCanvasPopupZipperRail('.cpop-pl-row');
           }
@@ -8544,7 +8727,12 @@
         if (cardEl) cardEl.classList.add('is-flipping');
         setTimeout(async () => {
           if (card.kind === 'song' && card.trackId) {
-            state.queue = getSortedTracks().map((t) => t.id);
+            if (card.playlistId) {
+              const pl = (state.playlists || []).find((p) => p.id === card.playlistId);
+              state.queue = pl ? [...(pl.trackIds || [])] : getSortedTracks().map((t) => t.id);
+            } else {
+              state.queue = getSortedTracks().map((t) => t.id);
+            }
             await loadTrack(card.trackId, true);
             openNowPlaying();
             setNowPlayingTab('lyrics');
@@ -8553,7 +8741,9 @@
           } else if (card.kind === 'artist') {
             openCanvasPopupSheet('artist', card.name);
           } else if (card.kind === 'playlist' && card.playlistId) {
-            openCanvasPopupSheet('playlist-detail', card.playlistId);
+            state.canvasPlaylistId = card.playlistId;
+            canvas2D.lastSig = '';
+            renderCanvas();
           }
           setTimeout(() => {
             if (wrap) wrap.classList.remove('is-flipping');
@@ -8737,9 +8927,30 @@
         document.querySelectorAll('[data-canvas-tab]').forEach((btn) => {
           on(btn, 'click', (e) => {
             e.stopPropagation();
+            state.canvasPlaylistId = null;
             setLibraryTab(btn.dataset.canvasTab);
             syncCanvasSearchPlaceholder();
           });
+        });
+        on('btn-canvas-playlist-clear', (e) => {
+          e.stopPropagation();
+          state.canvasPlaylistId = null;
+          canvas2D.lastSig = '';
+          renderCanvas();
+        });
+        on('btn-canvas-fold-spine', (e) => {
+          e.stopPropagation();
+          state.canvasSpineCollapsed = true;
+          stopSpineDotLoop();
+          canvasLayoutCache.lastSpineLeft = -1;
+          paintCanvasFrame();
+        });
+        on('btn-canvas-unfold-spine', (e) => {
+          e.stopPropagation();
+          state.canvasSpineCollapsed = false;
+          canvasLayoutCache.lastSpineLeft = -1;
+          paintCanvasFrame();
+          startSpineDotLoop();
         });
         on('btn-canvas-fortune', (e) => {
           e.stopPropagation();
@@ -8749,10 +8960,6 @@
         on('btn-canvas-playlists', (e) => {
           e.stopPropagation();
           openCanvasPopupSheet('playlists');
-        });
-        on('btn-canvas-stats', (e) => {
-          e.stopPropagation();
-          openCanvasPopupSheet('stats');
         });
         on('btn-canvas-diy', (e) => {
           e.stopPropagation();
@@ -8789,11 +8996,7 @@
             }
           });
         }
-        on('btn-canvas-sort', (e) => {
-          e.stopPropagation();
-          const sortBtn = $('btn-lib-sort');
-          if (sortBtn) sortBtn.click();
-        });
+
         on('btn-canvas-prev', (e) => {
           e.stopPropagation();
           playPrev();
@@ -8814,6 +9017,8 @@
         on('btn-canvas-exit', async (e) => {
           e.stopPropagation();
           closeCanvasSearchCapsule();
+          state.canvasPlaylistId = null;
+          state.canvasSpineCollapsed = false;
           state.libViewMode = 'list';
           state.dockCollapsed = false;
           await saveAppState();
@@ -8855,9 +9060,18 @@
         syncCanvasSpineUI();
 
         const tab = state.libTab || 'songs';
+        const plBanner = $('canvas-playlist-banner');
+        const plBannerTitle = $('canvas-playlist-banner-title');
+        if (plBanner && plBannerTitle) {
+          const activePl = state.canvasPlaylistId ? (state.playlists || []).find((p) => p.id === state.canvasPlaylistId) : null;
+          plBanner.classList.toggle('hidden', !activePl);
+          if (activePl) plBannerTitle.textContent = `歌单 · ${activePl.name}`;
+        }
+
         const emptyOverlay = $('canvas-empty-overlay');
         const baseCards = buildCanvasBaseCards(tab);
         if (!baseCards.length) {
+          canvas2D.lastSig = '';
           wl.innerHTML = '';
           wr.innerHTML = '';
           canvas2D.items = [];
@@ -8872,7 +9086,18 @@
         }
         if (emptyOverlay) emptyOverlay.classList.add('hidden');
 
-        const mixedCards = mixPlaylistsIntoCards(baseCards, tab);
+        const mixedCards = state.canvasPlaylistId ? baseCards : mixPlaylistsIntoCards(baseCards, tab);
+        const unitBucket = window.innerWidth < 430 ? 92 : 108;
+        const nextSig = `${tab}|${state.canvasPlaylistId || ''}|${unitBucket}|${mixedCards.map((c) => c.key).join(',')}`;
+        if (canvas2D.lastSig === nextSig && canvas2D.items.length > 0) {
+          // Zero-flicker fast path: card wall unchanged (e.g. play/pause/next song) — update highlights & frame only
+          paintCanvasFrame();
+          syncCanvasNowPlaying();
+          if (!state.canvasSpineCollapsed) startSpineDotLoop();
+          return;
+        }
+        canvas2D.lastSig = nextSig;
+
         wl.innerHTML = '';
         wr.innerHTML = '';
         ['left', 'right'].forEach((s) => {
@@ -10003,7 +10228,9 @@
             ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4'
             : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5';
 
-        grid.className = `pl-scroll-pad flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 grid ${gridColsClass} content-start`;
+        grid.className = layout === 'list'
+          ? 'pl-scroll-pad flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 flex flex-col gap-2.5'
+          : `pl-scroll-pad flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 grid ${gridColsClass} content-start`;
 
         if (!state.playlists.length) {
           grid.innerHTML = `
@@ -14651,6 +14878,10 @@
         };
         syncMiniRimPath();
         window.addEventListener('resize', syncMiniRimPath);
+        window.addEventListener('orientationchange', () => {
+          setTimeout(syncMiniRimPath, 140);
+          setTimeout(syncMiniRimPath, 340);
+        });
         if (typeof ResizeObserver === 'function' && $('mini-player-bar')) {
           new ResizeObserver(syncMiniRimPath).observe($('mini-player-bar'));
         }
@@ -15384,7 +15615,7 @@
           };
           const backupObj = {
             app: 'FENG MUSIC',
-            version: '1.0.8',
+            version: '1.0.9',
             exportedAt: new Date().toISOString(),
             trackManifest,
             playlists: state.playlists,
