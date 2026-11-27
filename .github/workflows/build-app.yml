@@ -334,6 +334,8 @@ jobs:
 
               private volatile int lastInsetTopPx = 0;
               private volatile int lastInsetBottomPx = 0;
+              private volatile int lastInsetLeftPx = 0;
+              private volatile int lastInsetRightPx = 0;
 
               private int adjustBottomInsetDp(int bottomDp) {
                   if (Build.MANUFACTURER != null && "samsung".equalsIgnoreCase(Build.MANUFACTURER.trim())) {
@@ -347,11 +349,13 @@ jobs:
                       View decorView = getWindow().getDecorView();
                       WindowInsetsCompat rootInsets = ViewCompat.getRootWindowInsets(decorView);
                       if (rootInsets != null) {
-                          Insets bars = rootInsets.getInsets(WindowInsetsCompat.Type.systemBars());
+                          Insets bars = rootInsets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
                           float density = getResources().getDisplayMetrics().density;
                           if (density <= 0f) density = 1f;
                           lastInsetTopPx = Math.round(bars.top / density);
                           lastInsetBottomPx = adjustBottomInsetDp(Math.round(bars.bottom / density));
+                          lastInsetLeftPx = Math.round(bars.left / density);
+                          lastInsetRightPx = Math.round(bars.right / density);
                       }
                   } catch (Exception ignored) {}
               }
@@ -362,7 +366,9 @@ jobs:
                       refreshInsetsFromRoot();
                       final int top = lastInsetTopPx;
                       final int bottom = lastInsetBottomPx;
-                      final String js = "window.__fengSetSystemInsets && window.__fengSetSystemInsets(" + top + "," + bottom + ");";
+                      final int left = lastInsetLeftPx;
+                      final int right = lastInsetRightPx;
+                      final String js = "window.__fengSetSystemInsets && window.__fengSetSystemInsets(" + top + "," + bottom + "," + left + "," + right + ");";
                       try {
                           if (getBridge() != null && getBridge().getWebView() != null) {
                               getBridge().getWebView().evaluateJavascript(js, null);
@@ -4638,6 +4644,38 @@ jobs:
                   return .fade
               }
 
+              func pushFengSafeAreaInsetsToWeb() {
+                  DispatchQueue.main.async {
+                      let insets = self.view.safeAreaInsets
+                      let top = Int(round(max(0, insets.top)))
+                      let bottom = Int(round(max(0, insets.bottom)))
+                      let left = Int(round(max(0, insets.left)))
+                      let right = Int(round(max(0, insets.right)))
+                      let js = "window.__fengSetSystemInsets && window.__fengSetSystemInsets(\(top),\(bottom),\(left),\(right));"
+                      self.webView?.evaluateJavaScript(js, completionHandler: nil)
+                  }
+              }
+
+              override func viewDidAppear(_ animated: Bool) {
+                  super.viewDidAppear(animated)
+                  pushFengSafeAreaInsetsToWeb()
+                  DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
+                      self?.pushFengSafeAreaInsetsToWeb()
+                  }
+              }
+
+              override func viewSafeAreaInsetsDidChange() {
+                  super.viewSafeAreaInsetsDidChange()
+                  pushFengSafeAreaInsetsToWeb()
+              }
+
+              override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
+                  super.viewWillTransition(to: size, with: coordinator)
+                  coordinator.animate(alongsideTransition: nil) { [weak self] _ in
+                      self?.pushFengSafeAreaInsetsToWeb()
+                  }
+              }
+
               func setFengStatusBarVisible(_ visible: Bool) {
                   let nextHidden = !visible
                   if fengStatusBarHidden != nextHidden {
@@ -5117,16 +5155,6 @@ jobs:
                               )
                               .padding(3.5)
 
-                          // Corner specular star glints
-                          Circle()
-                              .fill(RadialGradient(colors: [Color.white.opacity(0.95), FengGlass.sky.opacity(0.30), .clear], center: .center, startRadius: 0, endRadius: 15))
-                              .frame(width: 26, height: 26)
-                              .position(x: geo.size.width - 13, y: 12)
-
-                          Circle()
-                              .fill(RadialGradient(colors: [Color.white.opacity(0.75), .clear], center: .center, startRadius: 0, endRadius: 13))
-                              .frame(width: 22, height: 22)
-                              .position(x: 15, y: 12)
                       }
                   }
               }
