@@ -1829,11 +1829,46 @@
         padding-left: max(16px, var(--safe-left)) !important;
         padding-right: max(16px, var(--safe-right)) !important;
       }
-      /* Right-Side Icon-Only Liquid Glass Dock in Landscape (snugger to the right edge so right side isn't empty) */
+      /* Dynamic Notch-Side Awareness (html.notch-left vs html.notch-right):
+         - When Dynamic Island is on the LEFT (notch-left), right edge is completely clear -> Dock hugs right edge snugly (~16px).
+         - When Dynamic Island is on the RIGHT (notch-right), Dock shifts inside var(--safe-right) so Dynamic Island NEVER covers it, while left edge stays tight (~18px). */
+      html.notch-right .app-view .collapsible-expanded-area,
+      html.notch-right .app-view .collapsible-compact-bar,
+      html.notch-right .app-view .editing-floating-bar,
+      html.notch-right .app-view > header,
+      html.notch-right #view-library > div:not(.collapsible-expanded-area):not(.collapsible-compact-bar):not(.editing-floating-bar):not(#library-canvas-stage),
+      html.notch-right #view-playlists > div:not(.collapsible-expanded-area):not(.collapsible-compact-bar),
+      html.notch-right #view-playlist-detail > div:not(.collapsible-expanded-area):not(.collapsible-compact-bar):not(.editing-floating-bar),
+      html.notch-right #view-group-detail > div:not(.collapsible-expanded-area):not(.collapsible-compact-bar),
+      html.notch-right #view-search > div:not(.collapsible-expanded-area):not(.collapsible-compact-bar),
+      html.notch-right #view-stats > div:not(.collapsible-expanded-area):not(.collapsible-compact-bar),
+      html.notch-right #view-diy > div:not(.collapsible-expanded-area):not(.collapsible-compact-bar) {
+        padding-left: 18px !important;
+      }
+      html.notch-left #view-playlist-detail > div:not(.collapsible-expanded-area):not(.collapsible-compact-bar):not(.editing-floating-bar),
+      html.notch-left #view-group-detail > div:not(.collapsible-expanded-area):not(.collapsible-compact-bar),
+      html.notch-left #view-search > div:not(.collapsible-expanded-area):not(.collapsible-compact-bar),
+      html.notch-left #view-playlist-detail .collapsible-expanded-area,
+      html.notch-left #view-playlist-detail .collapsible-compact-bar,
+      html.notch-left #view-playlist-detail .editing-floating-bar,
+      html.notch-left #view-group-detail .collapsible-expanded-area,
+      html.notch-left #view-group-detail .collapsible-compact-bar,
+      html.notch-left #view-search .collapsible-expanded-area,
+      html.notch-left #view-search .collapsible-compact-bar {
+        padding-right: 18px !important;
+      }
+      /* Right-Side Icon-Only Liquid Glass Dock in Landscape (safe fallback clears right notch; hugs right edge when notch is on left) */
       #bottom-tab-dock,
       html.dock-collapsed #bottom-tab-dock {
         left: auto !important;
-        right: max(10px, calc(var(--safe-right) * 0.35)) !important;
+        right: max(12px, var(--safe-right)) !important;
+      }
+      html.notch-left #bottom-tab-dock,
+      html.notch-left.dock-collapsed #bottom-tab-dock {
+        right: max(14px, calc(var(--safe-right) * 0.28)) !important;
+      }
+      #bottom-tab-dock,
+      html.dock-collapsed #bottom-tab-dock {
         top: 50% !important;
         bottom: auto !important;
         width: auto !important;
@@ -1891,7 +1926,7 @@
         color: #ffffff !important;
         box-shadow: 0 0 16px rgba(56, 189, 248, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.65) !important;
       }
-      /* Reserve right-side Dock clearance ONLY on the 4 main tabs (using padding-right so top fade masks STILL stretch 100% edge-to-edge!) */
+      /* Reserve right-side Dock clearance ONLY on the 4 main tabs (adapts to notch-left vs notch-right automatically!) */
       #view-library > div:not(.collapsible-expanded-area):not(.collapsible-compact-bar):not(.editing-floating-bar):not(#library-canvas-stage),
       #view-playlists > div:not(.collapsible-expanded-area):not(.collapsible-compact-bar),
       #view-stats > div:not(.collapsible-expanded-area):not(.collapsible-compact-bar),
@@ -1904,7 +1939,21 @@
       #view-stats .collapsible-compact-bar,
       #view-diy .collapsible-expanded-area,
       #view-diy .collapsible-compact-bar {
-        padding-right: calc(max(10px, var(--safe-right) * 0.35) + 64px) !important;
+        padding-right: calc(max(12px, var(--safe-right)) + 64px) !important;
+      }
+      html.notch-left #view-library > div:not(.collapsible-expanded-area):not(.collapsible-compact-bar):not(.editing-floating-bar):not(#library-canvas-stage),
+      html.notch-left #view-playlists > div:not(.collapsible-expanded-area):not(.collapsible-compact-bar),
+      html.notch-left #view-stats > div:not(.collapsible-expanded-area):not(.collapsible-compact-bar),
+      html.notch-left #view-diy > div:not(.collapsible-expanded-area):not(.collapsible-compact-bar),
+      html.notch-left #view-library .collapsible-expanded-area,
+      html.notch-left #view-library .collapsible-compact-bar,
+      html.notch-left #view-playlists .collapsible-expanded-area,
+      html.notch-left #view-playlists .collapsible-compact-bar,
+      html.notch-left #view-stats .collapsible-expanded-area,
+      html.notch-left #view-stats .collapsible-compact-bar,
+      html.notch-left #view-diy .collapsible-expanded-area,
+      html.notch-left #view-diy .collapsible-compact-bar {
+        padding-right: calc(max(14px, var(--safe-right) * 0.28) + 64px) !important;
       }
       html.multiselect-active #view-library > div:not(.collapsible-expanded-area):not(.collapsible-compact-bar):not(.editing-floating-bar):not(#library-canvas-stage) {
         padding-right: max(16px, var(--safe-right)) !important;
@@ -1913,7 +1962,15 @@
       #mini-player-wrapper {
         bottom: calc(var(--safe-bottom) + 10px) !important;
         padding-left: max(16px, var(--safe-left)) !important;
-        padding-right: calc(max(10px, var(--safe-right) * 0.35) + 64px) !important;
+        padding-right: calc(max(12px, var(--safe-right)) + 64px) !important;
+      }
+      html.notch-left #mini-player-wrapper {
+        padding-right: calc(max(14px, var(--safe-right) * 0.28) + 64px) !important;
+      }
+      html.notch-right #mini-player-wrapper {
+        padding-left: 18px !important;
+      }
+      #mini-player-wrapper {
         transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.24s ease !important;
       }
       html.dock-hidden #mini-player-wrapper {
@@ -4495,6 +4552,34 @@
         }
       };
 
+      function syncLandscapeNotchSide() {
+        const isLand = window.innerWidth > window.innerHeight && window.innerHeight <= 520;
+        let notchSide = '';
+        if (isLand) {
+          let angle = null;
+          if (typeof window.orientation === 'number') {
+            angle = ((window.orientation % 360) + 360) % 360;
+          } else if (screen.orientation && typeof screen.orientation.angle === 'number') {
+            angle = ((screen.orientation.angle % 360) + 360) % 360;
+          }
+          if (angle === 90) notchSide = 'left';
+          else if (angle === 270) notchSide = 'right';
+          else notchSide = 'right';
+        }
+        document.documentElement.classList.toggle('notch-left', notchSide === 'left');
+        document.documentElement.classList.toggle('notch-right', notchSide === 'right');
+      }
+      syncLandscapeNotchSide();
+      window.addEventListener('resize', syncLandscapeNotchSide, { passive: true });
+      window.addEventListener('orientationchange', () => {
+        syncLandscapeNotchSide();
+        setTimeout(syncLandscapeNotchSide, 120);
+        setTimeout(syncLandscapeNotchSide, 320);
+      }, { passive: true });
+      if (screen.orientation && typeof screen.orientation.addEventListener === 'function') {
+        try { screen.orientation.addEventListener('change', syncLandscapeNotchSide); } catch {}
+      }
+
       window.__fengSetSystemInsets = (top, bottom, left, right) => {
         if (Number.isFinite(top) && top >= 0) {
           document.documentElement.style.setProperty('--feng-inset-top', `${Math.round(top)}px`);
@@ -4508,6 +4593,7 @@
         if (Number.isFinite(right) && right >= 0) {
           document.documentElement.style.setProperty('--feng-inset-right', `${Math.round(right)}px`);
         }
+        syncLandscapeNotchSide();
       };
 
       let androidUnifiedScanTimer = null;
@@ -15481,10 +15567,15 @@
         enforceNativeBridgeVisibility();
         document.querySelectorAll('.dock-nav-btn').forEach((btn) => {
           on(btn, 'click', () => {
-            if (state.dockCollapsed) {
+            const isLandscapeSideDock = window.innerWidth > window.innerHeight && window.innerHeight <= 520;
+            if (state.dockCollapsed && !isLandscapeSideDock) {
               state.dockCollapsed = false;
               syncNativeDockState();
               return;
+            }
+            if (state.dockCollapsed && isLandscapeSideDock) {
+              state.dockCollapsed = false;
+              syncNativeDockState();
             }
             switchView(btn.dataset.nav);
           });
