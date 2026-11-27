@@ -43,7 +43,7 @@
 
 | 沉浸播放 | 锁屏歌词 |
 | :---: | :---: |
-| <img src="shots/now-playing.jpg" width="300"> | <img src="shots/lockscreen.jpg" width="300"> |
+| <img src="shots/now-playing.jpg" width="300"> | <img src="shots/image.png" width="300"> |
 | 封面流光背景、律动波纹 | 锁屏不解锁，也能看词 |
 
 | 无界海报画布 | EQ 点阵流光 |
