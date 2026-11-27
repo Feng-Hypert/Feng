@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="shots/banner-110.jpg" alt="FENG MUSIC v1.1.0" width="100%">
+
 <img src="shots/icon.png" width="110" alt="FENG MUSIC 图标">
 
 # FENG MUSIC
@@ -39,10 +41,6 @@
 
 ## 截图
 
-<img src="shots/hero.jpg" alt="FENG MUSIC 1.1.0 界面一览" width="100%">
-
-<p align="center">海报画布 · 沉浸播放 · EQ 点阵流光 · 专辑详情</p>
-
 | 沉浸播放 | 锁屏歌词 |
 | :---: | :---: |
 | <img src="shots/now-playing.jpg" width="300"> | <img src="shots/lockscreen.jpg" width="300"> |
@@ -70,7 +68,7 @@
 
 | 歌词分享海报 | 安卓小组件 |
 | :---: | :---: |
-| <img src="shots/share-poster.png" width="300"> | <img src="shots/android-widget.png" width="300"> |
+| <img src="shots/share-poster.jpg" width="300"> | <img src="shots/android-widget.jpg" width="300"> |
 | 喜欢的歌词，生成一张海报再分享 | 桌面看封面、进度，切歌 |
 
 <img src="shots/library-wide.jpg" alt="横屏曲库" width="100%">
