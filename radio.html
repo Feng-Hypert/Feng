@@ -3081,7 +3081,7 @@
         <div class="flex items-center gap-3">
           <div>
             <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-white">界面 DIY 设置</h1>
-            <p class="text-xs text-white/55">FENG MUSIC v1.0.9</p>
+            <p class="text-xs text-white/55">FENG MUSIC v1.1.0</p>
           </div>
         </div>
       </header>
@@ -4806,6 +4806,8 @@
           lyricStyle: 'focus', // 'focus' | 'karaoke' | 'neon' | 'bounce'
           lyricStagger: true,
           lyric3d: true,
+          islandLyrics: true,
+          pipLyrics: false,
           lyricFontSize: 21,
           glassAlpha: 11,
           songCardAlpha: 11,
@@ -4985,6 +4987,8 @@
             lyricStyle: state.diy.lyricStyle,
             lyricStagger: Boolean(state.diy.lyricStagger),
             lyric3d: Boolean(state.diy.lyric3d),
+            islandLyrics: state.diy.islandLyrics !== false,
+            pipLyrics: Boolean(state.diy.pipLyrics),
             landscapeStageLyrics: state.diy.landscapeStageLyrics !== false,
             orientationMode: state.diy.orientationMode || 'auto',
             lyricFontSize: state.diy.lyricFontSize,
@@ -6768,6 +6772,7 @@
 
       // §13 Android Home Screen Widget sync & command bridge (aligned with iOS widget)
       let lastAndroidWidgetSig = '';
+      let lastAndroidWidgetCoverKey = '';
       function syncAndroidWidgetState(force = false) {
         if (!hasAndroidFolderBridge()) return;
         const rawTrack = state.currentTrackId
@@ -6782,11 +6787,15 @@
         const duration = Number.isFinite(audio?.duration) && audio.duration > 0 ? audio.duration : (Number(disp?.duration) || 0);
         const rawCover = disp ? String(disp.cover || '') : '';
         const cover = rawCover.startsWith('data:image/') ? rawCover : null;
+        const coverSig = cover ? `${cover.length}:${cover.slice(0, 48)}:${cover.slice(-32)}` : '';
+        const coverKey = `${disp ? disp.id : ''}|${coverSig}`;
+        const coverChanged = force || coverKey !== lastAndroidWidgetCoverKey;
         const progressBucket = duration > 1 ? Math.floor(elapsed / 2) : 0;
-        const sig = `${disp ? disp.id : ''}|${title}|${artist}|${album}|${isPlaying ? 1 : 0}|${cover ? 1 : 0}|${progressBucket}`;
+        const sig = `${disp ? disp.id : ''}|${title}|${artist}|${album}|${isPlaying ? 1 : 0}|${coverSig}|${progressBucket}`;
         if (!force && sig === lastAndroidWidgetSig) return;
         lastAndroidWidgetSig = sig;
-        postFolderMessage({
+        if (coverChanged) lastAndroidWidgetCoverKey = coverKey;
+        const payload = {
           action: 'widgetSync',
           title,
           artist,
@@ -6794,8 +6803,10 @@
           isPlaying,
           elapsed,
           duration,
-          cover
-        });
+          coverChanged
+        };
+        if (coverChanged) payload.cover = cover;
+        postFolderMessage(payload);
       }
 
       window.__fengWidgetCommand = async (cmd) => {
@@ -6995,9 +7006,11 @@
         syncNativeNextUp();
       }
 
+      let loadSeq = 0;
       async function loadTrack(trackId, autoPlay = true, resumeTime = 0) {
         const rawTrack = state.tracks.find((t) => t.id === trackId);
         if (!rawTrack) return;
+        const mySeq = ++loadSeq;
 
         if (!state.queue.includes(trackId)) {
           state.queue = state.tracks.map((t) => t.id);
@@ -7031,20 +7044,26 @@
           if (/^https?:\/\//i.test(rawTrack.src)) nativeRawUrl = rawTrack.src;
         } else if (rawTrack.isNativeDoc && (rawTrack.nativeUri || rawTrack.nativePath)) {
           nativeRawUrl = await resolveNativeRawFileUri(rawTrack.nativePath, rawTrack.nativeUri || '');
+          if (mySeq !== loadSeq) return;
           playableUrl = nativeRawUrl ? window.Capacitor.convertFileSrc(nativeRawUrl) : '';
           if (!playableUrl && autoPlay) {
             showToast('未找到该音频文件，请重新选择文件夹授权');
             return;
           }
         } else {
-          if (state.activeObjectUrl) {
-            URL.revokeObjectURL(state.activeObjectUrl);
-            state.activeObjectUrl = null;
-          }
           const resolvedFile = await resolveTrackFile(rawTrack, autoPlay);
+          if (mySeq !== loadSeq) return;
           if (resolvedFile) {
-            state.activeObjectUrl = URL.createObjectURL(resolvedFile);
-            playableUrl = state.activeObjectUrl;
+            const nextObjectUrl = URL.createObjectURL(resolvedFile);
+            if (mySeq !== loadSeq) {
+              URL.revokeObjectURL(nextObjectUrl);
+              return;
+            }
+            if (state.activeObjectUrl) {
+              URL.revokeObjectURL(state.activeObjectUrl);
+            }
+            state.activeObjectUrl = nextObjectUrl;
+            playableUrl = nextObjectUrl;
           } else if (autoPlay) {
             state.pendingRelinkTrackId = rawTrack.id;
             state.isPlaying = false;
@@ -7055,7 +7074,9 @@
           }
         }
 
+        if (mySeq !== loadSeq) return;
         audio.onloadedmetadata = async () => {
+          if (mySeq !== loadSeq) return;
           audio.playbackRate = state.playbackRate || 1;
           $('np-time-duration').textContent = formatTime(audio.duration);
           if (!rawTrack.duration && Number.isFinite(audio.duration)) {
@@ -7119,6 +7140,7 @@
         if (autoPlay) {
           try {
             if (!useNativeBridge) await audio.play();
+            if (mySeq !== loadSeq) return;
             state.isPlaying = true;
             recordTrackPlay(track.id);
             if (!useNativeBridge && state.audioFx.fadeEnabled && state.audioFx.fadeSecs > 0) {
@@ -7128,6 +7150,7 @@
               applyMasterGain(fadeInDur);
             }
           } catch (err) {
+            if (mySeq !== loadSeq) return;
             state.isPlaying = false;
             const errName = err && err.name ? err.name : '';
             if (errName !== 'NotAllowedError' && errName !== 'AbortError') {
@@ -7137,6 +7160,7 @@
         } else {
           state.isPlaying = false;
         }
+        if (mySeq !== loadSeq) return;
 
         updatePlayStateUI();
         renderLibrary();
@@ -17114,7 +17138,7 @@
           };
           const backupObj = {
             app: 'FENG MUSIC',
-            version: '1.0.9',
+            version: '1.1.0',
             exportedAt: new Date().toISOString(),
             trackManifest,
             playlists: state.playlists,
