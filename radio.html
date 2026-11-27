@@ -28,10 +28,12 @@
       --lyric-font-px: 21px;
       --feng-inset-top: 0px;
       --feng-inset-bottom: 0px;
+      --feng-inset-left: 0px;
+      --feng-inset-right: 0px;
       --safe-top: max(env(safe-area-inset-top, 0px), var(--feng-inset-top, 0px));
       --safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--feng-inset-bottom, 0px));
-      --safe-left: env(safe-area-inset-left, 0px);
-      --safe-right: env(safe-area-inset-right, 0px);
+      --safe-left: max(env(safe-area-inset-left, 0px), var(--feng-inset-left, 0px));
+      --safe-right: max(env(safe-area-inset-right, 0px), var(--feng-inset-right, 0px));
       --native-dock-height: 78px;
       --app-full-height: 100lvh;
     }
@@ -731,7 +733,8 @@
       opacity: 1;
       transform: translateX(-50%) translateY(0);
     }
-    #np-progress-slider {
+    #np-progress-slider,
+    #stage-progress-slider {
       position: absolute;
       inset: 0;
       width: 100%;
@@ -1796,78 +1799,116 @@
     /* ==================== MOBILE LANDSCAPE MODE OPTIMIZATION ==================== */
     @media (max-height: 520px) and (orientation: landscape) {
       html.is-native-ios {
-        --safe-top: env(safe-area-inset-top, 0px);
+        --safe-top: max(env(safe-area-inset-top, 0px), var(--feng-inset-top, 0px));
       }
-      #app-shell,
+      #main-workspace,
       #now-playing-modal,
       #eq-fullscreen-modal {
         padding-left: var(--safe-left);
         padding-right: var(--safe-right);
       }
-      /* Global Right-Side Icon-Only Liquid Glass Dock in Landscape (iPhone Duo / VisionOS Style) */
-      #bottom-tab-dock {
+      html.canvas-immersive #main-workspace {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+      }
+      /* Right-Side Icon-Only Liquid Glass Dock in Landscape (4 Main Tabs Only) */
+      #bottom-tab-dock,
+      html.dock-collapsed #bottom-tab-dock {
         left: auto !important;
-        right: max(12px, var(--safe-right)) !important;
+        right: max(10px, var(--safe-right)) !important;
         top: 50% !important;
         bottom: auto !important;
         width: auto !important;
         height: auto !important;
         padding: 0 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        gap: 10px !important;
         transform: translateY(-50%) !important;
         z-index: 34 !important;
       }
-      #bottom-tab-dock-pill {
+      #bottom-tab-dock.hidden {
+        display: none !important;
+      }
+      #bottom-tab-dock-pill,
+      html.dock-collapsed #bottom-tab-dock > .liquid-dock {
         display: flex !important;
         flex-direction: column !important;
         align-items: center !important;
         gap: 6px !important;
-        width: 54px !important;
-        padding: 8px 6px !important;
+        width: 50px !important;
+        height: auto !important;
+        padding: 7px 5px !important;
         border-radius: 9999px !important;
-        background: linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.11) 50%, rgba(255, 255, 255, 0.16) 100%) !important;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.20) 0%, rgba(255, 255, 255, 0.10) 50%, rgba(255, 255, 255, 0.15) 100%) !important;
         backdrop-filter: blur(28px) saturate(190%) !important;
         -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
-        border: 1px solid rgba(255, 255, 255, 0.28) !important;
+        border: 1px solid rgba(255, 255, 255, 0.26) !important;
         box-shadow: 0 14px 36px rgba(0, 0, 0, 0.44), inset 0 1px 0 rgba(255, 255, 255, 0.42), inset 0 -1px 0 rgba(255, 255, 255, 0.12) !important;
       }
-      #bottom-tab-dock .dock-nav-btn {
-        width: 40px !important;
-        height: 40px !important;
+      /* Never hide the other 3 nav tabs in landscape when scrolled */
+      html.dock-collapsed #bottom-tab-dock .dock-nav-btn:not(.is-active-tab) {
+        display: flex !important;
+      }
+      #bottom-tab-dock .dock-nav-btn,
+      html.dock-collapsed #bottom-tab-dock .dock-nav-btn.is-active-tab {
+        width: 38px !important;
+        height: 38px !important;
         padding: 0 !important;
         border-radius: 9999px !important;
       }
-      #bottom-tab-dock .dock-nav-btn svg {
-        width: 19px !important;
-        height: 19px !important;
+      #bottom-tab-dock .dock-nav-btn svg,
+      html.dock-collapsed #bottom-tab-dock .dock-nav-btn.is-active-tab svg {
+        width: 18px !important;
+        height: 18px !important;
         margin-bottom: 0 !important;
       }
       #bottom-tab-dock .dock-nav-btn span {
         display: none !important;
       }
-      #bottom-tab-dock .dock-nav-btn.bg-white\/15 {
+      #bottom-tab-dock .dock-nav-btn.bg-white\/15,
+      html.dock-collapsed #bottom-tab-dock .dock-nav-btn.is-active-tab {
         background: radial-gradient(circle at 30% 25%, rgba(125, 211, 252, 0.96), rgba(56, 189, 248, 0.82)) !important;
         color: #ffffff !important;
         box-shadow: 0 0 16px rgba(56, 189, 248, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.65) !important;
       }
-      /* Reserve right-side clearance globally across all landscape views so cards & buttons never collide with right Dock */
+      /* Reserve right-side clearance ONLY on the 4 main tabs (and their absolute headers) so neither cards nor top-right icons ever touch the Dock */
       #view-library,
       #view-playlists,
-      #view-playlist-detail,
-      #view-group-detail,
-      #view-search,
       #view-stats,
       #view-diy {
-        padding-right: 68px !important;
+        padding-right: 66px !important;
       }
-      html.canvas-immersive #view-library {
+      #view-library .collapsible-expanded-area,
+      #view-library .collapsible-compact-bar,
+      #view-library .editing-floating-bar,
+      #view-playlists .collapsible-expanded-area,
+      #view-playlists .collapsible-compact-bar,
+      #view-stats .collapsible-expanded-area,
+      #view-stats .collapsible-compact-bar,
+      #view-diy .collapsible-expanded-area,
+      #view-diy .collapsible-compact-bar {
+        right: 66px !important;
+      }
+      html.canvas-immersive #view-library,
+      html.multiselect-active #view-library {
         padding-right: 0 !important;
       }
-      /* Bottom-centered compact Mini-Player at top of scroll; smoothly tucks into Right Dock when scrolled down */
+      html.canvas-immersive #view-library .collapsible-expanded-area,
+      html.canvas-immersive #view-library .collapsible-compact-bar,
+      html.multiselect-active #view-library .editing-floating-bar {
+        right: 0 !important;
+      }
+      /* Bottom-centered compact Mini-Player at top of scroll; smoothly hides when scrolled down */
       #mini-player-wrapper {
         bottom: calc(var(--safe-bottom) + 10px) !important;
         padding-left: max(16px, var(--safe-left)) !important;
-        padding-right: calc(max(12px, var(--safe-right)) + 72px) !important;
+        padding-right: calc(max(10px, var(--safe-right)) + 68px) !important;
         transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.24s ease !important;
+      }
+      html.dock-hidden #mini-player-wrapper {
+        padding-right: max(16px, var(--safe-right)) !important;
       }
       #mini-player-bar {
         height: auto !important;
@@ -1891,12 +1932,34 @@
         transform: translateY(110%) scale(0.84) !important;
         pointer-events: none !important;
       }
+      /* Redesigned Floating Circular Vinyl Orb above the Landscape Dock */
+      #dock-landscape-np {
+        pointer-events: auto;
+        width: 46px;
+        height: 46px;
+        border-radius: 9999px;
+        background: linear-gradient(155deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.08));
+        backdrop-filter: blur(24px) saturate(180%);
+        -webkit-backdrop-filter: blur(24px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.30);
+        box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.48);
+      }
+      #dock-landscape-np:active {
+        transform: scale(0.92);
+      }
       html.dock-collapsed #dock-landscape-np {
         display: flex !important;
-        animation: dockLandNpPop 0.28s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        animation: dockLandNpPop 0.30s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      }
+      #dock-land-np-cover.is-orb-spinning {
+        animation: dockOrbSpin 14s linear infinite;
+      }
+      @keyframes dockOrbSpin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
       }
       @keyframes dockLandNpPop {
-        0% { opacity: 0; transform: scale(0.55) translateY(-6px); }
+        0% { opacity: 0; transform: scale(0.6) translateY(8px); }
         100% { opacity: 1; transform: scale(1) translateY(0); }
       }
       .pl-scroll-pad,
@@ -1955,43 +2018,143 @@
       #np-panel-lyrics {
         padding-bottom: calc(var(--safe-bottom) + 8px) !important;
       }
-      /* Now Playing Cover View: 2-Column Horizontal Hi-Fi Layout */
+      /* Now Playing Cover View: Balanced 2-Column Horizontal Hi-Fi Stage */
       #now-playing-modal header {
-        padding-top: calc(var(--safe-top) + 6px) !important;
-        padding-bottom: 4px !important;
+        padding-top: calc(var(--safe-top) + 4px) !important;
+        padding-bottom: 2px !important;
+        padding-left: max(18px, var(--safe-left)) !important;
+        padding-right: max(18px, var(--safe-right)) !important;
+      }
+      #btn-np-collapse,
+      #btn-np-settings {
+        width: 36px !important;
+        height: 36px !important;
+      }
+      #btn-np-collapse svg,
+      #btn-np-settings svg {
+        width: 18px !important;
+        height: 18px !important;
+      }
+      #now-playing-modal header .np-tab-btn {
+        padding: 5px 15px !important;
+        font-size: 11.5px !important;
       }
       #np-panel-cover {
         flex-direction: row !important;
         align-items: center !important;
         justify-content: center !important;
-        gap: 24px !important;
-        max-width: min(760px, 94vw) !important;
-        padding-left: max(16px, var(--safe-left)) !important;
-        padding-right: max(16px, var(--safe-right)) !important;
-        padding-bottom: calc(var(--safe-bottom) + 10px) !important;
+        gap: clamp(26px, 4.4vw, 48px) !important;
+        max-width: min(840px, 94vw) !important;
+        padding-top: 2px !important;
+        padding-left: max(18px, var(--safe-left)) !important;
+        padding-right: max(18px, var(--safe-right)) !important;
+        padding-bottom: calc(var(--safe-bottom) + 12px) !important;
       }
       #np-cover-swipe-zone {
         flex: 0 0 auto !important;
         padding-top: 0 !important;
         padding-bottom: 0 !important;
+        justify-content: center !important;
       }
       #cover-style-rounded,
       #cover-style-vinyl,
       #cover-style-disc {
-        width: min(56vh, 220px) !important;
-        max-width: 220px !important;
+        width: min(62vh, 248px) !important;
+        max-width: 248px !important;
+      }
+      #np-cover-img-rounded,
+      #np-cover-glint {
+        border-radius: 26px !important;
       }
       #np-rhythm-waves {
-        margin-top: 8px !important;
+        margin-top: 10px !important;
         height: 16px !important;
+        max-width: min(62vh, 248px) !important;
       }
       #np-panel-cover > div:last-child {
         flex: 1 1 0% !important;
         min-width: 0 !important;
-        max-width: 380px !important;
+        max-width: 440px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+        gap: 11px !important;
       }
       #np-panel-cover > div:last-child.space-y-4 > :not([hidden]) ~ :not([hidden]) {
-        margin-top: 10px !important;
+        margin-top: 0 !important;
+      }
+      #np-title {
+        font-size: clamp(20px, 2.9vw, 26px) !important;
+        line-height: 1.18 !important;
+        letter-spacing: -0.015em !important;
+        text-shadow: 0 2px 14px rgba(0, 0, 0, 0.45);
+      }
+      #np-artist {
+        font-size: 13px !important;
+        color: rgba(255, 255, 255, 0.76) !important;
+        text-shadow: 0 1px 10px rgba(0, 0, 0, 0.42);
+      }
+      #btn-np-quick-playlist {
+        width: 36px !important;
+        height: 36px !important;
+      }
+      #btn-np-quick-playlist svg {
+        width: 18px !important;
+        height: 18px !important;
+      }
+      #np-time-current,
+      #np-time-duration {
+        font-size: 11px !important;
+        color: rgba(255, 255, 255, 0.76) !important;
+        text-shadow: 0 1px 8px rgba(0, 0, 0, 0.45);
+      }
+      #np-panel-cover > div:last-child > div:nth-child(3) {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+      }
+      #btn-np-play {
+        width: 52px !important;
+        height: 52px !important;
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.42) !important;
+      }
+      #btn-np-play svg {
+        width: 24px !important;
+        height: 24px !important;
+      }
+      #btn-np-prev,
+      #btn-np-next {
+        width: 42px !important;
+        height: 42px !important;
+      }
+      #btn-np-prev svg,
+      #btn-np-next svg {
+        width: 23px !important;
+        height: 23px !important;
+      }
+      #btn-np-mode,
+      #btn-np-queue {
+        width: 36px !important;
+        height: 36px !important;
+      }
+      #np-mini-lyric-box {
+        padding: 8px 14px !important;
+        border-radius: 16px !important;
+        text-align: left !important;
+        background: rgba(12, 16, 26, 0.36) !important;
+        border: 1px solid rgba(255, 255, 255, 0.14) !important;
+        backdrop-filter: blur(18px) saturate(150%) !important;
+        -webkit-backdrop-filter: blur(18px) saturate(150%) !important;
+        box-shadow: 0 8px 22px rgba(0, 0, 0, 0.24) !important;
+      }
+      #np-mini-lyric-1 {
+        font-size: 13px !important;
+        line-height: 1.35 !important;
+      }
+      #np-mini-lyric-2 {
+        font-size: 11.5px !important;
+        line-height: 1.35 !important;
+        color: rgba(255, 255, 255, 0.62) !important;
+        margin-top: 2px !important;
       }
       /* Infinite Canvas Spine: Ultra-clean Non-Overlapping Landscape Fit */
       #canvas-spine {
@@ -2212,28 +2375,28 @@
     }
     .stage-word {
       display: inline-block;
+      background: transparent;
       opacity: 0;
-      transform: translateY(18px) scale(0.86);
-      filter: blur(7px);
+      transform: translateY(18px) scale(0.88);
       animation:
-        stageWordPop 0.48s cubic-bezier(0.22, 1, 0.36, 1) var(--wd, 0ms) forwards,
-        stageWordFloat 3.4s ease-in-out calc(var(--wd, 0ms) + 480ms) infinite alternate;
-      will-change: transform, opacity, filter;
-      text-shadow: 0 6px 26px rgba(0, 0, 0, 0.46);
+        stageWordPop 0.46s cubic-bezier(0.22, 1, 0.36, 1) var(--wd, 0ms) forwards,
+        stageWordFloat 3.4s ease-in-out calc(var(--wd, 0ms) + 460ms) infinite alternate;
+      will-change: transform, opacity;
+      text-shadow: 0 6px 24px rgba(0, 0, 0, 0.42);
     }
     .stage-word-em {
       font-size: 1.18em;
       font-weight: 900;
       font-style: italic;
       animation:
-        stageWordPop 0.50s cubic-bezier(0.22, 1, 0.36, 1) var(--wd, 0ms) forwards,
-        stageWordFloatEm 3.0s ease-in-out calc(var(--wd, 0ms) + 500ms) infinite alternate;
-      text-shadow: 0 6px 30px rgba(0, 0, 0, 0.52), 0 0 24px var(--aurora-1, rgba(255, 255, 255, 0.50));
+        stageWordPop 0.48s cubic-bezier(0.22, 1, 0.36, 1) var(--wd, 0ms) forwards,
+        stageWordFloatEm 3.0s ease-in-out calc(var(--wd, 0ms) + 480ms) infinite alternate;
+      text-shadow: 0 6px 28px rgba(0, 0, 0, 0.48), 0 0 22px var(--aurora-1, rgba(255, 255, 255, 0.48));
     }
     @keyframes stageWordPop {
-      0% { opacity: 0; transform: translateY(18px) scale(0.86) rotate(-2deg); filter: blur(7px); }
-      65% { opacity: 1; transform: translateY(calc(var(--wy, 0px) - 2px)) scale(1.03) rotate(0.4deg); filter: blur(0); }
-      100% { opacity: 1; transform: translateY(var(--wy, 0px)) scale(1) rotate(0deg); filter: blur(0); }
+      0% { opacity: 0; transform: translateY(18px) scale(0.88) rotate(-2deg); }
+      65% { opacity: 1; transform: translateY(calc(var(--wy, 0px) - 2px)) scale(1.03) rotate(0.4deg); }
+      100% { opacity: 1; transform: translateY(var(--wy, 0px)) scale(1) rotate(0deg); }
     }
     @keyframes stageWordFloat {
       0% { transform: translateY(var(--wy, 0px)) scale(1) rotate(-0.6deg); }
@@ -2255,10 +2418,10 @@
       right: 0;
       bottom: 0;
       width: 100%;
-      height: 112px;
+      height: 172px;
       z-index: 1;
       pointer-events: none;
-      opacity: 0.94;
+      opacity: 0.98;
     }
     .stage-chrome-fade {
       transition: opacity 0.36s ease, transform 0.36s cubic-bezier(0.22, 1, 0.36, 1);
@@ -2292,7 +2455,7 @@
         font-size: clamp(26px, 5.2vw, 48px);
       }
       #np-stage-wave-canvas {
-        height: 68px;
+        height: 118px;
       }
     }
   </style>
@@ -3060,26 +3223,23 @@
          Hidden automatically when native iOS UITabBar Liquid Glass Dock is active
          ========================================================================= -->
     <nav id="bottom-tab-dock" class="fixed left-0 right-0 z-30 px-4 sm:px-6 pointer-events-none" style="bottom: calc(var(--safe-bottom) + 10px);" aria-label="主导航">
+      <!-- Landscape Floating Vinyl-Cover Orb (standalone above the intact 4-icon Dock when scrolled) -->
+      <div id="dock-landscape-np" class="hidden relative mx-auto rounded-full shrink-0 cursor-pointer items-center justify-center transition-transform duration-200" title="打开正在播放" aria-label="打开正在播放">
+        <svg class="pointer-events-none absolute -inset-[2px] w-[50px] h-[50px] -rotate-90 overflow-visible" viewBox="0 0 50 50" aria-hidden="true">
+          <defs>
+            <linearGradient id="dockLandNpGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" style="stop-color: var(--aurora-1, #38bdf8);" />
+              <stop offset="55%" style="stop-color: var(--aurora-2, #818cf8);" />
+              <stop offset="100%" style="stop-color: var(--aurora-3, #2dd4bf);" />
+            </linearGradient>
+          </defs>
+          <circle cx="25" cy="25" r="22" fill="none" stroke="rgba(255,255,255,0.16)" stroke-width="2" />
+          <circle id="dock-land-np-ring" cx="25" cy="25" r="22" fill="none" stroke="url(#dockLandNpGrad)" stroke-width="2.4" stroke-linecap="round" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100" style="filter: drop-shadow(0 0 4px var(--aurora-1, rgba(56,189,248,0.75))); transition: stroke-dashoffset 0.22s linear;" />
+        </svg>
+        <img id="dock-land-np-cover" src="/icon-512.png" alt="" class="w-9 h-9 rounded-full object-cover border border-white/25 bg-white/10 shadow-inner" />
+        <span class="pointer-events-none absolute w-2 h-2 rounded-full bg-black/55 border border-white/45 shadow-sm"></span>
+      </div>
       <div id="bottom-tab-dock-pill" class="liquid-dock pointer-events-auto max-w-md mx-auto rounded-full px-2 py-1.5 grid grid-cols-4 gap-1">
-        <!-- Landscape Scroll-Docked Circular Mini-Player (shown only in landscape when scrolled down) -->
-        <div id="dock-landscape-np" class="hidden relative w-10 h-10 mx-auto rounded-full shrink-0 cursor-pointer items-center justify-center transition-all duration-300" title="打开正在播放" aria-label="打开正在播放">
-          <svg class="pointer-events-none absolute -inset-[2px] w-[44px] h-[44px] -rotate-90 overflow-visible" viewBox="0 0 44 44" aria-hidden="true">
-            <defs>
-              <linearGradient id="dockLandNpGrad" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" style="stop-color: var(--aurora-1, #38bdf8);" />
-                <stop offset="55%" style="stop-color: var(--aurora-2, #818cf8);" />
-                <stop offset="100%" style="stop-color: var(--aurora-3, #2dd4bf);" />
-              </linearGradient>
-            </defs>
-            <circle cx="22" cy="22" r="20" fill="none" stroke="rgba(255,255,255,0.16)" stroke-width="1.8" />
-            <circle id="dock-land-np-ring" cx="22" cy="22" r="20" fill="none" stroke="url(#dockLandNpGrad)" stroke-width="2.2" stroke-linecap="round" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100" style="filter: drop-shadow(0 0 3px var(--aurora-1, rgba(56,189,248,0.7))); transition: stroke-dashoffset 0.22s linear;" />
-          </svg>
-          <img id="dock-land-np-cover" src="/icon-512.png" alt="" class="w-9 h-9 rounded-full object-cover border border-white/20 bg-white/10" />
-          <button id="btn-dock-land-play" class="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-black/80 border border-white/45 flex items-center justify-center text-white shadow" title="播放 / 暂停" aria-label="播放或暂停">
-            <svg id="dock-land-play-icon" class="w-2.5 h-2.5 translate-x-[0.5px]" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-            <svg id="dock-land-pause-icon" class="w-2.5 h-2.5 hidden" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>
-          </button>
-        </div>
         <button data-nav="library" class="dock-nav-btn flex flex-col items-center justify-center py-1 rounded-full text-white bg-white/15 transition">
           <svg class="w-4 h-4 mb-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z"/></svg>
           <span class="text-[10px] font-semibold leading-none">曲库</span>
@@ -3313,24 +3473,40 @@
         <div id="np-stage-lyric-text">FENG MUSIC</div>
       </div>
 
-      <!-- Bottom Minimal Outline Controls + List Switch (auto-hide after 3s idle) -->
-      <div class="stage-chrome-fade stage-bottom-bar relative z-10 w-full flex items-center justify-between pb-2">
-        <span class="w-10 shrink-0"></span>
-        <div class="flex items-center gap-4">
-          <button id="btn-stage-prev" class="w-9 h-9 rounded-full border border-white/45 hover:border-white bg-black/20 flex items-center justify-center text-white transition active:scale-90" aria-label="上一首">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
-          </button>
-          <button id="btn-stage-play" class="w-11 h-11 rounded-full border-[1.5px] border-white/80 hover:border-white bg-white/10 flex items-center justify-center text-white transition active:scale-90" aria-label="播放或暂停">
-            <svg id="stage-play-icon" class="w-5 h-5 translate-x-[0.5px]" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-            <svg id="stage-pause-icon" class="w-5 h-5 hidden" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>
-          </button>
-          <button id="btn-stage-next" class="w-9 h-9 rounded-full border border-white/45 hover:border-white bg-black/20 flex items-center justify-center text-white transition active:scale-90" aria-label="下一首">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M16 6h2v12h-2zM6 18l8.5-6L6 6z"/></svg>
+      <!-- Bottom Minimal Outline Controls + Draggable Progress Bar + List Switch (auto-hide after 3s idle) -->
+      <div class="stage-chrome-fade stage-bottom-bar relative z-10 w-full flex flex-col items-center gap-2 pb-1">
+        <div class="w-full flex items-center justify-between">
+          <span class="w-10 shrink-0"></span>
+          <div class="flex items-center gap-4">
+            <button id="btn-stage-prev" class="w-9 h-9 rounded-full border border-white/45 hover:border-white bg-black/20 flex items-center justify-center text-white transition active:scale-90" aria-label="上一首">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
+            </button>
+            <button id="btn-stage-play" class="w-11 h-11 rounded-full border-[1.5px] border-white/80 hover:border-white bg-white/10 flex items-center justify-center text-white transition active:scale-90" aria-label="播放或暂停">
+              <svg id="stage-play-icon" class="w-5 h-5 translate-x-[0.5px]" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+              <svg id="stage-pause-icon" class="w-5 h-5 hidden" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>
+            </button>
+            <button id="btn-stage-next" class="w-9 h-9 rounded-full border border-white/45 hover:border-white bg-black/20 flex items-center justify-center text-white transition active:scale-90" aria-label="下一首">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M16 6h2v12h-2zM6 18l8.5-6L6 6z"/></svg>
+            </button>
+          </div>
+          <button id="btn-stage-to-list" class="w-10 h-10 rounded-xl bg-white/12 hover:bg-white/22 border border-white/18 flex items-center justify-center text-white/85 shrink-0 transition active:scale-90" title="切回滚动歌词列表" aria-label="切回滚动歌词列表">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><path stroke-linecap="round" d="M4 7h16M4 12h16M4 17h10"/></svg>
           </button>
         </div>
-        <button id="btn-stage-to-list" class="w-10 h-10 rounded-xl bg-white/12 hover:bg-white/22 border border-white/18 flex items-center justify-center text-white/85 shrink-0 transition active:scale-90" title="切回滚动歌词列表" aria-label="切回滚动歌词列表">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><path stroke-linecap="round" d="M4 7h16M4 12h16M4 17h10"/></svg>
-        </button>
+
+        <!-- Draggable Stage Playback Progress Bar -->
+        <div class="w-full max-w-[440px] flex items-center gap-2.5 px-1">
+          <span id="stage-time-current" class="text-[11px] font-medium text-white/75 tabular-nums w-9 text-right shrink-0 drop-shadow">00:00</span>
+          <div id="stage-progress-wrap" class="np-progress-wrap flex-1">
+            <div class="np-progress-rail">
+              <div id="stage-progress-fill" class="np-progress-fill"></div>
+              <div id="stage-progress-thumb" class="np-progress-thumb"></div>
+            </div>
+            <div id="stage-seek-tooltip" class="np-seek-tooltip">00:00</div>
+            <input id="stage-progress-slider" type="range" min="0" max="1000" value="0" aria-label="巨幕播放进度" />
+          </div>
+          <span id="stage-time-duration" class="text-[11px] font-medium text-white/60 tabular-nums w-9 text-left shrink-0 drop-shadow">00:00</span>
+        </div>
       </div>
 
       <!-- Bottom Edge Real-Time Smooth Spectrum Hill Waveform -->
@@ -4277,12 +4453,18 @@
         }
       };
 
-      window.__fengSetSystemInsets = (top, bottom) => {
+      window.__fengSetSystemInsets = (top, bottom, left, right) => {
         if (Number.isFinite(top) && top >= 0) {
           document.documentElement.style.setProperty('--feng-inset-top', `${Math.round(top)}px`);
         }
         if (Number.isFinite(bottom) && bottom >= 0) {
           document.documentElement.style.setProperty('--feng-inset-bottom', `${Math.round(bottom)}px`);
+        }
+        if (Number.isFinite(left) && left >= 0) {
+          document.documentElement.style.setProperty('--feng-inset-left', `${Math.round(left)}px`);
+        }
+        if (Number.isFinite(right) && right >= 0) {
+          document.documentElement.style.setProperty('--feng-inset-right', `${Math.round(right)}px`);
         }
       };
 
@@ -7021,13 +7203,13 @@
         const isLandscapeSideDock = window.innerWidth > window.innerHeight && window.innerHeight <= 520;
         const anyMultiSelect = Boolean(state.multiSelectMode || state.plMultiSelectMode);
         document.documentElement.classList.toggle('multiselect-active', anyMultiSelect);
-        const hidden = npOpen || eqOpen || backdropOpen || (!isMainTab && !isLandscapeSideDock) || canvasImmersive || anyMultiSelect;
+        const hidden = npOpen || eqOpen || backdropOpen || !isMainTab || canvasImmersive || anyMultiSelect;
         // Whenever returning from any modal/overlay/detail view to a main tab, always expand Dock cleanly
         if (lastDockWasHidden && !hidden) {
           state.dockCollapsed = false;
         }
         lastDockWasHidden = hidden;
-        const canCollapse = (isMainTab || isLandscapeSideDock) && !hidden && !state.multiSelectMode && !state.libCustomEditing;
+        const canCollapse = isMainTab && !hidden && !state.multiSelectMode && !state.libCustomEditing;
         const collapsed = Boolean(state.dockCollapsed && canCollapse);
         document.documentElement.classList.toggle('dock-hidden', hidden);
         document.documentElement.classList.toggle('dock-collapsed', collapsed);
@@ -13716,6 +13898,7 @@
           const curRaw = state.currentTrackId ? state.tracks.find((t) => t.id === state.currentTrackId) : null;
           const nextSrc = curRaw ? getTrackDisplay(curRaw).cover : DEFAULT_APP_COVER;
           if (dockCover.getAttribute('src') !== nextSrc) dockCover.setAttribute('src', nextSrc);
+          dockCover.classList.toggle('is-orb-spinning', Boolean(playing));
         }
       }
 
@@ -13892,10 +14075,13 @@
                 analyser.getByteFrequencyData(freqData);
               }
 
-              // Slow, silky breathing envelope (zero jitter)
+              // Slow, silky breathing envelope (zero jitter, clearly visible above Home Indicator)
               const beatPulse = playing
-                ? (0.78 + 0.24 * Math.pow(0.5 + 0.5 * Math.sin(stageWavePhase * 1.1), 2))
-                : 0.25;
+                ? (0.86 + 0.26 * Math.pow(0.5 + 0.5 * Math.sin(stageWavePhase * 1.05), 2))
+                : 0.34;
+              const safeBottomPx = parseFloat(rootStyle.getPropertyValue('--feng-inset-bottom')) || 0;
+              const baseFloor = Math.min(h * 0.24, Math.max(18 * dpr, (safeBottomPx * 0.65 + 12) * dpr));
+              const usableH = Math.max(24 * dpr, h - baseFloor);
 
               const xs = new Array(pts + 1);
               const ysBack = new Array(pts + 1);
@@ -13904,63 +14090,62 @@
 
               for (let i = 0; i <= pts; i++) {
                 const t = i / pts;
-                const env = Math.pow(Math.sin(t * Math.PI), 0.82);
+                const env = 0.28 + 0.72 * Math.pow(Math.sin(t * Math.PI), 0.78);
                 let targetFront = 0;
                 let targetBack = 0;
                 if (freqData && freqData.length) {
                   const symT = 1 - Math.abs(t * 2 - 1);
                   const bin = Math.min(freqData.length - 1, Math.floor((1 - symT * 0.85) * Math.min(freqData.length, 48)));
-                  targetFront = (freqData[bin] / 255) * 0.84;
-                  targetBack = (freqData[Math.max(0, bin - 4)] / 255) * 0.72;
+                  targetFront = 0.20 + (freqData[bin] / 255) * 0.78;
+                  targetBack = 0.24 + (freqData[Math.max(0, bin - 4)] / 255) * 0.74;
                 } else {
-                  const w1 = Math.sin(t * 6.2 + stageWavePhase * 0.95);
-                  const w2 = Math.sin(t * 10.5 - stageWavePhase * 1.15);
-                  const w3 = Math.cos(t * 15.0 + stageWavePhase * 0.70);
-                  const w4 = Math.sin(t * 4.4 - stageWavePhase * 0.55);
-                  targetFront = (0.36 * (0.5 + 0.5 * w1) + 0.30 * (0.5 + 0.5 * w2) + 0.16 * (0.5 + 0.5 * w3)) * beatPulse;
-                  targetBack = (0.48 * (0.5 + 0.5 * w4) + 0.30 * (0.5 + 0.5 * w1)) * beatPulse;
+                  const w1 = Math.sin(t * 6.0 + stageWavePhase * 0.85);
+                  const w2 = Math.sin(t * 10.2 - stageWavePhase * 1.05);
+                  const w3 = Math.cos(t * 14.4 + stageWavePhase * 0.65);
+                  const w4 = Math.sin(t * 4.2 - stageWavePhase * 0.50);
+                  targetFront = (0.22 + 0.36 * (0.5 + 0.5 * w1) + 0.28 * (0.5 + 0.5 * w2) + 0.14 * (0.5 + 0.5 * w3)) * beatPulse;
+                  targetBack = (0.28 + 0.44 * (0.5 + 0.5 * w4) + 0.28 * (0.5 + 0.5 * w1)) * beatPulse;
                 }
 
                 // Gentle fluid damping for slow, unhurried silk ripples
-                const kFront = targetFront > stageWaveSmooth[i] ? 0.12 : 0.05;
+                const kFront = targetFront > stageWaveSmooth[i] ? 0.11 : 0.048;
                 stageWaveSmooth[i] += (targetFront - stageWaveSmooth[i]) * kFront;
-                const kBack = targetBack > stageWaveSmoothBack[i] ? 0.08 : 0.04;
+                const kBack = targetBack > stageWaveSmoothBack[i] ? 0.08 : 0.038;
                 stageWaveSmoothBack[i] += (targetBack - stageWaveSmoothBack[i]) * kBack;
 
-                const liftBack = Math.max(3 * dpr, env * stageWaveSmoothBack[i] * ampScale * h * 0.92);
-                const liftMid = Math.max(2.5 * dpr, env * (stageWaveSmooth[i] * 0.78 + stageWaveSmoothBack[i] * 0.26) * ampScale * h * 0.76);
-                const liftFront = Math.max(2 * dpr, env * stageWaveSmooth[i] * ampScale * h * 0.62);
+                const liftBack = baseFloor + env * stageWaveSmoothBack[i] * ampScale * usableH * 0.92;
+                const liftMid = baseFloor * 0.78 + env * (stageWaveSmooth[i] * 0.74 + stageWaveSmoothBack[i] * 0.26) * ampScale * usableH * 0.72;
+                const liftFront = baseFloor * 0.55 + env * stageWaveSmooth[i] * ampScale * usableH * 0.54;
 
                 xs[i] = t * w;
-                ysBack[i] = h - liftBack;
-                ysMid[i] = h - liftMid;
-                ysFront[i] = h - liftFront;
+                ysBack[i] = Math.max(6 * dpr, h - liftBack);
+                ysMid[i] = Math.max(10 * dpr, h - liftMid);
+                ysFront[i] = Math.max(14 * dpr, h - liftFront);
               }
 
-              // Layer 1 (Back): Deep translucent cover-aurora silk hill
+              // Layer 1 (Back): Translucent cover-aurora silk hill
               const backGrad = ctx.createLinearGradient(0, 0, w, h);
               backGrad.addColorStop(0, c2);
               backGrad.addColorStop(0.5, c1);
               backGrad.addColorStop(1, c3);
               ctx.save();
-              ctx.globalAlpha = 0.24;
-              drawSmoothWave(ctx, xs, ysBack, w, h, backGrad, null, 0);
+              ctx.globalAlpha = 0.40;
+              drawSmoothWave(ctx, xs, ysBack, w, h, backGrad, c1, Math.max(1.1, 1.2 * dpr), c1);
               ctx.restore();
 
               // Layer 2 (Mid): Luminous aurora-to-white silk crest
-              const midGrad = ctx.createLinearGradient(0, h * 0.12, 0, h);
-              midGrad.addColorStop(0, 'rgba(255, 255, 255, 0.34)');
-              midGrad.addColorStop(0.55, 'rgba(255, 255, 255, 0.12)');
-              midGrad.addColorStop(1, 'rgba(255, 255, 255, 0.01)');
-              drawSmoothWave(ctx, xs, ysMid, w, h, midGrad, c1, Math.max(1, 1.1 * dpr), c1);
+              const midGrad = ctx.createLinearGradient(0, h * 0.10, 0, h);
+              midGrad.addColorStop(0, 'rgba(255, 255, 255, 0.38)');
+              midGrad.addColorStop(0.55, 'rgba(255, 255, 255, 0.14)');
+              midGrad.addColorStop(1, 'rgba(255, 255, 255, 0.02)');
+              drawSmoothWave(ctx, xs, ysMid, w, h, midGrad, c1, Math.max(1.4, 1.5 * dpr), c1);
 
               // Layer 3 (Front): Pure silky specular white crest (no vertical bars)
-
-              const frontGrad = ctx.createLinearGradient(0, h * 0.25, 0, h);
-              frontGrad.addColorStop(0, 'rgba(255, 255, 255, 0.44)');
-              frontGrad.addColorStop(0.7, 'rgba(255, 255, 255, 0.14)');
-              frontGrad.addColorStop(1, 'rgba(255, 255, 255, 0.02)');
-              drawSmoothWave(ctx, xs, ysFront, w, h, frontGrad, 'rgba(255, 255, 255, 0.92)', Math.max(1.3, 1.6 * dpr), 'rgba(255, 255, 255, 0.72)');
+              const frontGrad = ctx.createLinearGradient(0, h * 0.22, 0, h);
+              frontGrad.addColorStop(0, 'rgba(255, 255, 255, 0.52)');
+              frontGrad.addColorStop(0.68, 'rgba(255, 255, 255, 0.18)');
+              frontGrad.addColorStop(1, 'rgba(255, 255, 255, 0.03)');
+              drawSmoothWave(ctx, xs, ysFront, w, h, frontGrad, 'rgba(255, 255, 255, 0.96)', Math.max(1.8, 2.0 * dpr), 'rgba(255, 255, 255, 0.85)');
             }
           }
           stageWaveRaf = requestAnimationFrame(draw);
@@ -16099,23 +16284,36 @@
           $('np-progress-thumb').style.left = `${clamped}%`;
           $('np-seek-tooltip').style.left = `${clamped}%`;
           if (secText !== null) $('np-seek-tooltip').textContent = secText;
+          const stFill = $('stage-progress-fill');
+          const stThumb = $('stage-progress-thumb');
+          const stTip = $('stage-seek-tooltip');
+          if (stFill) stFill.style.width = `${clamped}%`;
+          if (stThumb) stThumb.style.left = `${clamped}%`;
+          if (stTip) {
+            stTip.style.left = `${clamped}%`;
+            if (secText !== null) stTip.textContent = secText;
+          }
         };
+        const stageProgressWrap = $('stage-progress-wrap');
+        const stageProgressSlider = $('stage-progress-slider');
         const beginSeek = () => {
           state.isSeeking = true;
-          progressWrap.classList.add('is-seeking');
+          if (progressWrap) progressWrap.classList.add('is-seeking');
+          if (stageProgressWrap) stageProgressWrap.classList.add('is-seeking');
+          if (typeof resetStageIdleTimer === 'function') resetStageIdleTimer();
         };
         const endSeek = () => {
           state.isSeeking = false;
-          progressWrap.classList.remove('is-seeking');
+          if (progressWrap) progressWrap.classList.remove('is-seeking');
+          if (stageProgressWrap) stageProgressWrap.classList.remove('is-seeking');
+          if (typeof resetStageIdleTimer === 'function') resetStageIdleTimer();
         };
-
-        on(progressSlider, 'pointerdown', beginSeek);
-        on(progressSlider, 'touchstart', beginSeek, { passive: true });
-        on(progressSlider, 'pointerup', endSeek);
-        on(progressSlider, 'touchend', endSeek);
-        on(progressSlider, 'change', endSeek);
-        on(progressSlider, 'input', (e) => {
-          const pct = Number(e.target.value) / 1000;
+        const handleSeekInput = (e) => {
+          if (typeof resetStageIdleTimer === 'function') resetStageIdleTimer();
+          const rawVal = Number(e.target.value);
+          const pct = rawVal / 1000;
+          if (progressSlider && e.target !== progressSlider) progressSlider.value = rawVal;
+          if (stageProgressSlider && e.target !== stageProgressSlider) stageProgressSlider.value = rawVal;
           if (!Number.isFinite(audio.duration) || audio.duration <= 0) {
             setProgressVisual(pct * 100, '00:00');
             return;
@@ -16123,9 +16321,22 @@
           const targetSec = pct * audio.duration;
           const formatted = formatTime(targetSec);
           $('np-time-current').textContent = formatted;
+          const stCur = $('stage-time-current');
+          if (stCur) stCur.textContent = formatted;
           setProgressVisual(pct * 100, formatted);
           audio.currentTime = targetSec;
           syncActiveLyric(true);
+        };
+
+        [progressSlider, stageProgressSlider].forEach((sl) => {
+          if (!sl) return;
+          on(sl, 'pointerdown', beginSeek);
+          on(sl, 'touchstart', beginSeek, { passive: true });
+          on(sl, 'pointerup', endSeek);
+          on(sl, 'touchend', endSeek);
+          on(sl, 'pointercancel', endSeek);
+          on(sl, 'change', endSeek);
+          on(sl, 'input', handleSeekInput);
         });
 
         let lastStatTick = 0;
@@ -16133,15 +16344,23 @@
         audio.addEventListener('timeupdate', () => {
           const cur = audio.currentTime || 0;
           const dur = audio.duration || 0;
+          const stDur = $('stage-time-duration');
+          if (stDur) stDur.textContent = dur > 0 ? formatTime(dur) : ($('np-time-duration')?.textContent || '00:00');
           if (!state.isSeeking) {
-            $('np-time-current').textContent = formatTime(cur);
+            const curFmt = formatTime(cur);
+            $('np-time-current').textContent = curFmt;
+            const stCur = $('stage-time-current');
+            if (stCur) stCur.textContent = curFmt;
             if (dur > 0) {
               const pct = (cur / dur) * 100;
-              setProgressVisual(pct, formatTime(cur));
-              $('np-progress-slider').value = Math.round(pct * 10);
+              const sliderVal = Math.round(pct * 10);
+              setProgressVisual(pct, curFmt);
+              $('np-progress-slider').value = sliderVal;
+              if (stageProgressSlider) stageProgressSlider.value = sliderVal;
             } else {
               setProgressVisual(0, '00:00');
               $('np-progress-slider').value = 0;
+              if (stageProgressSlider) stageProgressSlider.value = 0;
             }
           }
           syncActiveLyric(false);
