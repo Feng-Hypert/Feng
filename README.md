@@ -1,20 +1,18 @@
 <div align="center">
 
-<img src="shots/banner.jpg" alt="FENG MUSIC" width="100%">
-
 <img src="shots/icon.png" width="110" alt="FENG MUSIC 图标">
 
 # FENG MUSIC
 
 **为 iPhone 打造的免费本地音乐播放器**
 
-免费，无广告 —— 让音乐爱好者能更好地聆听音乐
+免费，不打扰 —— 把你下载好的音乐，认真地播出来
 
 </div>
 
 ## 为什么做这个
 
-在 App Store 和 各类软件源 里找了很久，也没找到一个**好用又免费**的本地音乐播放器：要么收费订阅，要么广告满天飞，要么连歌词和封面都读不全。
+在 App Store 里找了很久，也没找到一个**好用又免费**的本地音乐播放器：要么收费订阅，要么广告满天飞，要么连歌词和封面都读不全。
 
 找不到，那就自己做一个。FENG MUSIC 只做一件事：**把本地音乐的核心体验做到位**——导入、整理、歌词、播放，一个都不能将就；不做会员，不塞广告，不上传你的任何数据。
 
@@ -41,34 +39,43 @@
 
 ## 截图
 
-| 沉浸播放 | 滚动歌词 × 夜樱特效 |
-| :---: | :---: |
-| <img src="shots/player.jpg" width="300"> | <img src="shots/lyrics.jpg" width="300"> |
-| 封面流光背景、律动波纹、双语歌词条 | 同步滚动歌词，樱花瓣在屏幕里飘 |
+<img src="shots/hero.jpg" alt="FENG MUSIC 1.1.0 界面一览" width="100%">
 
-| 我的曲库 | 专辑 |
-| :---: | :---: |
-| <img src="shots/library.jpg" width="300"> | <img src="shots/albums.jpg" width="300"> |
-| 封面、歌手、专辑自动归类 | 网格浏览，一目了然 |
+<p align="center">海报画布 · 沉浸播放 · EQ 点阵流光 · 专辑详情</p>
 
-| 歌手 | 今日音乐签 |
+| 沉浸播放 | 锁屏歌词 |
 | :---: | :---: |
-| <img src="shots/artists.jpg" width="300"> | <img src="shots/daily-sign.jpg" width="300"> |
-| 按人找歌不费劲 | 每日一签，从你的曲库里抽一首给你 |
-
-| 白噪音空间 | 听歌足迹 |
-| :---: | :---: |
-| <img src="shots/whitenoise.jpg" width="300"> | <img src="shots/footprint.jpg" width="300"> |
-| 12 种自然声景自由叠加混音 | 次数、时长与单曲循环榜 TOP 20 |
+| <img src="shots/now-playing.jpg" width="300"> | <img src="shots/lockscreen.jpg" width="300"> |
+| 封面流光背景、律动波纹 | 锁屏不解锁，也能看词 |
 
 | 无界海报画布 | EQ 点阵流光 |
 | :---: | :---: |
 | <img src="shots/canvas.jpg" width="300"> | <img src="shots/eq.jpg" width="300"> |
 | 整个曲库，一面无限滑动的海报墙 | 点阵跟着频谱呼吸 |
 
-| 歌词分享海报 | |
+| 专辑详情 | 歌手 |
 | :---: | :---: |
-| <img src="shots/poster.jpg" width="300"> | 喜欢的歌词，生成一张海报再分享 |
+| <img src="shots/album-detail.jpg" width="300"> | <img src="shots/artist.jpg" width="300"> |
+| CD 盒主视觉，资料来自 MusicBrainz | 歌手简介与照片自动补全 |
+
+| 歌单 | 今日音乐签 |
+| :---: | :---: |
+| <img src="shots/playlists.jpg" width="300"> | <img src="shots/fortune.jpg" width="300"> |
+| 歌单封面与排序 | 每日一签，从你的曲库里抽一首给你 |
+
+| 听歌足迹 | 白噪音空间 |
+| :---: | :---: |
+| <img src="shots/stats.jpg" width="300"> | <img src="shots/white-noise.jpg" width="300"> |
+| 时长、次数与单曲循环榜 | 12 种自然声景自由叠加混音 |
+
+| 歌词分享海报 | 安卓小组件 |
+| :---: | :---: |
+| <img src="shots/share-poster.png" width="300"> | <img src="shots/android-widget.png" width="300"> |
+| 喜欢的歌词，生成一张海报再分享 | 桌面看封面、进度，切歌 |
+
+<img src="shots/library-wide.jpg" alt="横屏曲库" width="100%">
+
+<p align="center">横屏曲库：侧边 Dock + 巨幕舞台歌词</p>
 
 ## 安装（iPhone）
 
