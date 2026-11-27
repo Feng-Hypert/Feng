@@ -58,7 +58,7 @@
 
 | 歌单 | 今日音乐签 |
 | :---: | :---: |
-| <img src="shots/playlists.jpg" width="300"> | <img src="shots/fortune.jpg" width="300"> |
+| <img src="shots/playlists.jpg" width="300"> | <img src="shots/fortune.png" width="300"> |
 | 歌单封面与排序 | 每日一签，从你的曲库里抽一首给你 |
 
 | 听歌足迹 | 白噪音空间 |
@@ -68,7 +68,7 @@
 
 | 歌词分享海报 | 安卓小组件 |
 | :---: | :---: |
-| <img src="shots/share-poster.jpg" width="300"> | <img src="shots/android-widget.jpg" width="300"> |
+| <img src="shots/share-poster.png" width="300"> | <img src="shots/android-widget.png" width="300"> |
 | 喜欢的歌词，生成一张海报再分享 | 桌面看封面、进度，切歌 |
 
 <img src="shots/library-wide.jpg" alt="横屏曲库" width="100%">
