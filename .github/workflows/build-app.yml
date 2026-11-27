@@ -1584,23 +1584,24 @@ jobs:
 
               private static Bitmap renderCoverWithPeekingVinyl(Context context, Bitmap rawCover, boolean isPlaying) {
                   try {
-                      int w = 310;
-                      int h = 240;
-                      int coverSize = 224;
+                      int w = 368;
+                      int h = 308;
+                      int coverSize = 294;
                       int topY = (h - coverSize) / 2;
-                      float cornerR = 54f;
+                      float cornerR = 66f;
 
                       Bitmap out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
                       Canvas canvas = new Canvas(out);
                       Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
 
-                      float vinylR = 102f;
-                      float vinylCx = isPlaying ? 198f : 158f;
+                      // Subtle dark vinyl disc peeking smoothly from right edge of cover (matches iOS 1:1)
+                      float vinylR = 124f;
+                      float vinylCx = isPlaying ? 236f : 210f;
                       float vinylCy = h * 0.5f;
 
                       p.setShader(new RadialGradient(
                           vinylCx, vinylCy, vinylR,
-                          new int[]{Color.parseColor("#2A2F3A"), Color.parseColor("#111319"), Color.parseColor("#08090D")},
+                          new int[]{Color.argb(235, 36, 44, 56), Color.argb(242, 18, 22, 30), Color.argb(245, 10, 12, 18)},
                           new float[]{0.15f, 0.65f, 1.0f},
                           Shader.TileMode.CLAMP
                       ));
@@ -1609,20 +1610,20 @@ jobs:
 
                       Paint groove = new Paint(Paint.ANTI_ALIAS_FLAG);
                       groove.setStyle(Paint.Style.STROKE);
-                      groove.setStrokeWidth(1.2f);
-                      groove.setColor(Color.argb(36, 255, 255, 255));
-                      for (float r = 46f; r <= 94f; r += 9f) {
+                      groove.setStrokeWidth(1.4f);
+                      groove.setColor(Color.argb(34, 255, 255, 255));
+                      for (float r = 64f; r <= 116f; r += 11f) {
                           canvas.drawCircle(vinylCx, vinylCy, r, groove);
                       }
 
                       Paint hub = new Paint(Paint.ANTI_ALIAS_FLAG);
                       hub.setColor(isPlaying ? Color.parseColor("#42E6D9") : Color.parseColor("#47C7FF"));
-                      canvas.drawCircle(vinylCx, vinylCy, 26f, hub);
+                      canvas.drawCircle(vinylCx, vinylCy, 28f, hub);
                       hub.setColor(Color.parseColor("#0B0E16"));
-                      canvas.drawCircle(vinylCx, vinylCy, 9f, hub);
+                      canvas.drawCircle(vinylCx, vinylCy, 10f, hub);
 
                       groove.setStrokeWidth(2.0f);
-                      groove.setColor(Color.argb(72, 255, 255, 255));
+                      groove.setColor(Color.argb(58, 255, 255, 255));
                       canvas.drawCircle(vinylCx, vinylCy, vinylR - 1f, groove);
 
                       RectF coverRect = new RectF(4f, topY, 4f + coverSize, topY + coverSize);
@@ -1634,7 +1635,7 @@ jobs:
                           Bitmap scaled = Bitmap.createScaledBitmap(sq, coverSize, coverSize, true);
                           if (sq != rawCover) sq.recycle();
 
-                          Paint coverPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                          Paint coverPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
                           BitmapShader shader = new BitmapShader(scaled, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
                           android.graphics.Matrix mat = new android.graphics.Matrix();
                           mat.setTranslate(coverRect.left, coverRect.top);
@@ -1653,7 +1654,7 @@ jobs:
                       rim.setStrokeWidth(2.6f);
                       rim.setShader(new LinearGradient(
                           coverRect.left, coverRect.top, coverRect.right, coverRect.bottom,
-                          new int[]{Color.argb(210, 255, 255, 255), Color.argb(55, 255, 255, 255), Color.argb(130, 255, 255, 255)},
+                          new int[]{Color.argb(195, 255, 255, 255), Color.argb(65, 255, 255, 255), Color.argb(125, 255, 255, 255)},
                           new float[]{0f, 0.5f, 1f},
                           Shader.TileMode.CLAMP
                       ));
@@ -1666,61 +1667,82 @@ jobs:
 
               private static Bitmap renderAdaptiveLiquidBackground(Context context, Bitmap rawCover, boolean hasLive) {
                   try {
-                      int w = 520;
-                      int h = 240;
-                      float radius = 52f;
+                      // 1:1 iOS Translucent Smoked Liquid Glass surface + chromatic ice-cyan specular rim (no muddy opaque cover stretch)
+                      int w = 720;
+                      int h = 340;
+                      float radius = 64f;
                       Bitmap out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
                       Canvas canvas = new Canvas(out);
                       RectF bounds = new RectF(0f, 0f, w, h);
 
+                      android.graphics.Path clipPath = new android.graphics.Path();
+                      clipPath.addRoundRect(bounds, radius, radius, android.graphics.Path.Direction.CW);
                       canvas.save();
+                      canvas.clipPath(clipPath);
 
-                      if (hasLive && rawCover != null) {
-                          Bitmap tiny = Bitmap.createScaledBitmap(rawCover, 14, 14, true);
-                          Bitmap soft = Bitmap.createScaledBitmap(tiny, w, h, true);
-                          tiny.recycle();
-                          canvas.drawBitmap(soft, 0f, 0f, new Paint(Paint.FILTER_BITMAP_FLAG));
-                          soft.recycle();
+                      // Translucent smoked sapphire-slate glass body (~72% alpha so home wallpaper softly bleeds through like iOS)
+                      Paint glassBody = new Paint(Paint.ANTI_ALIAS_FLAG);
+                      glassBody.setShader(new LinearGradient(
+                          0f, 0f, w, h,
+                          new int[]{
+                              Color.argb(168, 36, 48, 56),
+                              Color.argb(188, 22, 32, 38),
+                              Color.argb(202, 16, 24, 30)
+                          },
+                          new float[]{0f, 0.52f, 1f},
+                          Shader.TileMode.CLAMP
+                      ));
+                      canvas.drawRect(bounds, glassBody);
 
-                          Paint scrim = new Paint(Paint.ANTI_ALIAS_FLAG);
-                          scrim.setShader(new LinearGradient(
-                              0f, 0f, w, h,
-                              new int[]{Color.argb(150, 10, 16, 28), Color.argb(185, 8, 13, 24)},
-                              null,
-                              Shader.TileMode.CLAMP
-                          ));
-                          canvas.drawRect(bounds, scrim);
-                      } else {
-                          Paint idleBg = new Paint(Paint.ANTI_ALIAS_FLAG);
-                          idleBg.setShader(new LinearGradient(
-                              0f, 0f, w, h,
-                              new int[]{Color.parseColor("#0B1626"), Color.parseColor("#13263E"), Color.parseColor("#0A1220")},
-                              new float[]{0f, 0.52f, 1f},
-                              Shader.TileMode.CLAMP
-                          ));
-                          canvas.drawRect(bounds, idleBg);
-                      }
+                      // Subtle top-left glass specular sheen
+                      Paint topSheen = new Paint(Paint.ANTI_ALIAS_FLAG);
+                      topSheen.setShader(new LinearGradient(
+                          0f, 0f, 0f, h * 0.42f,
+                          new int[]{Color.argb(38, 255, 255, 255), Color.argb(8, 255, 255, 255), Color.argb(0, 255, 255, 255)},
+                          new float[]{0f, 0.45f, 1f},
+                          Shader.TileMode.CLAMP
+                      ));
+                      canvas.drawRect(bounds, topSheen);
 
-                      Paint sheen = new Paint(Paint.ANTI_ALIAS_FLAG);
-                      sheen.setShader(new RadialGradient(
-                          w * 0.22f, h * 0.10f, w * 0.65f,
-                          new int[]{Color.argb(42, 255, 255, 255), Color.argb(0, 255, 255, 255)},
+                      // Subtle bottom chromatic refraction bounce
+                      Paint bottomGlow = new Paint(Paint.ANTI_ALIAS_FLAG);
+                      bottomGlow.setShader(new LinearGradient(
+                          0f, h * 0.72f, 0f, h,
+                          new int[]{Color.argb(0, 110, 220, 255), Color.argb(30, 125, 224, 255)},
                           null,
                           Shader.TileMode.CLAMP
                       ));
-                      canvas.drawRect(bounds, sheen);
+                      canvas.drawRect(bounds, bottomGlow);
                       canvas.restore();
 
-                      Paint border = new Paint(Paint.ANTI_ALIAS_FLAG);
-                      border.setStyle(Paint.Style.STROKE);
-                      border.setStrokeWidth(2.2f);
-                      border.setShader(new LinearGradient(
+                      // Outer chromatic liquid-glass rim (ice-cyan -> pure white -> sky-blue, matching iOS bezel 1:1)
+                      Paint outerRim = new Paint(Paint.ANTI_ALIAS_FLAG);
+                      outerRim.setStyle(Paint.Style.STROKE);
+                      outerRim.setStrokeWidth(5.2f);
+                      outerRim.setShader(new LinearGradient(
                           0f, 0f, w, h,
-                          new int[]{Color.argb(145, 255, 255, 255), Color.argb(38, 255, 255, 255), Color.argb(95, 255, 255, 255)},
+                          new int[]{
+                              Color.argb(230, 162, 238, 248),
+                              Color.argb(245, 255, 255, 255),
+                              Color.argb(150, 195, 232, 246),
+                              Color.argb(235, 130, 222, 255)
+                          },
+                          new float[]{0f, 0.28f, 0.68f, 1f},
+                          Shader.TileMode.CLAMP
+                      ));
+                      canvas.drawRoundRect(new RectF(2.6f, 2.6f, w - 2.6f, h - 2.6f), radius - 2f, radius - 2f, outerRim);
+
+                      // Inner subtle glass bevel hairline
+                      Paint innerRim = new Paint(Paint.ANTI_ALIAS_FLAG);
+                      innerRim.setStyle(Paint.Style.STROKE);
+                      innerRim.setStrokeWidth(1.6f);
+                      innerRim.setShader(new LinearGradient(
+                          0f, 0f, w, h,
+                          new int[]{Color.argb(95, 255, 255, 255), Color.argb(24, 255, 255, 255), Color.argb(65, 160, 232, 255)},
                           new float[]{0f, 0.5f, 1f},
                           Shader.TileMode.CLAMP
                       ));
-                      canvas.drawRoundRect(new RectF(1.2f, 1.2f, w - 1.2f, h - 1.2f), radius, radius, border);
+                      canvas.drawRoundRect(new RectF(7.5f, 7.5f, w - 7.5f, h - 7.5f), radius - 6f, radius - 6f, innerRim);
                       return out;
                   } catch (Exception ignored) {
                       return null;
@@ -1885,41 +1907,41 @@ jobs:
           <?xml version="1.0" encoding="utf-8"?>
           <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
               <solid android:color="#00000000" />
-              <corners android:radius="26dp" />
+              <corners android:radius="28dp" />
           </shape>
           XMLEOF
 
           cat << 'XMLEOF' > android/app/src/main/res/drawable/feng_widget_pill_bg.xml
           <?xml version="1.0" encoding="utf-8"?>
           <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-              <solid android:color="#29FFFFFF" />
+              <solid android:color="#22FFFFFF" />
               <corners android:radius="999dp" />
-              <stroke android:width="0.8dp" android:color="#66FFFFFF" />
+              <stroke android:width="0.9dp" android:color="#6EFFFFFF" />
           </shape>
           XMLEOF
 
           cat << 'XMLEOF' > android/app/src/main/res/drawable/feng_widget_dock_bg.xml
           <?xml version="1.0" encoding="utf-8"?>
           <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-              <gradient android:angle="315" android:startColor="#33FFFFFF" android:endColor="#3D000000" />
+              <gradient android:angle="315" android:startColor="#2AFFFFFF" android:endColor="#48000000" />
               <corners android:radius="999dp" />
-              <stroke android:width="1dp" android:color="#80FFFFFF" />
+              <stroke android:width="1.1dp" android:color="#7AFFFFFF" />
           </shape>
           XMLEOF
 
           cat << 'XMLEOF' > android/app/src/main/res/drawable/feng_widget_side_btn_bg.xml
           <?xml version="1.0" encoding="utf-8"?>
           <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
-              <solid android:color="#24FFFFFF" />
-              <stroke android:width="0.9dp" android:color="#73FFFFFF" />
+              <solid android:color="#1EFFFFFF" />
+              <stroke android:width="1dp" android:color="#6EFFFFFF" />
           </shape>
           XMLEOF
 
           cat << 'XMLEOF' > android/app/src/main/res/drawable/feng_widget_play_btn_bg.xml
           <?xml version="1.0" encoding="utf-8"?>
           <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
-              <gradient android:angle="315" android:startColor="#FFFFFFFF" android:centerColor="#FFB8E8FF" android:endColor="#FF47C7FF" />
-              <stroke android:width="1.2dp" android:color="#F2FFFFFF" />
+              <gradient android:angle="315" android:startColor="#FFE6F8FF" android:centerColor="#FF7FD9FF" android:endColor="#FF259CEB" />
+              <stroke android:width="1.6dp" android:color="#FFFFFFFF" />
           </shape>
           XMLEOF
 
@@ -1929,14 +1951,14 @@ jobs:
               <item android:id="@android:id/background">
                   <shape android:shape="rectangle">
                       <corners android:radius="999dp" />
-                      <solid android:color="#38FFFFFF" />
+                      <solid android:color="#2EFFFFFF" />
                   </shape>
               </item>
               <item android:id="@android:id/progress">
                   <clip>
                       <shape android:shape="rectangle">
                           <corners android:radius="999dp" />
-                          <gradient android:angle="0" android:startColor="#FF47C7FF" android:endColor="#FF42E6D9" />
+                          <solid android:color="#E8FFFFFF" />
                       </shape>
                   </clip>
               </item>
@@ -1960,28 +1982,28 @@ jobs:
           cat << 'XMLEOF' > android/app/src/main/res/drawable/ic_widget_play_dark.xml
           <?xml version="1.0" encoding="utf-8"?>
           <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
-              <path android:fillColor="#FF0F294D" android:pathData="M8.5,5.14v14l11,-7z" />
+              <path android:fillColor="#FF0A1D36" android:pathData="M8.5,5.14v14l11,-7z" />
           </vector>
           XMLEOF
 
           cat << 'XMLEOF' > android/app/src/main/res/drawable/ic_widget_pause_dark.xml
           <?xml version="1.0" encoding="utf-8"?>
           <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
-              <path android:fillColor="#FF0F294D" android:pathData="M6,5h4v14H6zM14,5h4v14h-4z" />
+              <path android:fillColor="#FF0A1D36" android:pathData="M6.5,5h3.8v14H6.5zM13.7,5h3.8v14h-3.8z" />
           </vector>
           XMLEOF
 
           cat << 'XMLEOF' > android/app/src/main/res/drawable/ic_widget_prev.xml
           <?xml version="1.0" encoding="utf-8"?>
           <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
-              <path android:fillColor="#EBFFFFFF" android:pathData="M6,6h2v12H6zM9.5,12l8.5,6V6z" />
+              <path android:fillColor="#F5FFFFFF" android:pathData="M11.5,6.8L3.5,12l8,5.2V6.8zM20.5,6.8L12.5,12l8,5.2V6.8z" />
           </vector>
           XMLEOF
 
           cat << 'XMLEOF' > android/app/src/main/res/drawable/ic_widget_next.xml
           <?xml version="1.0" encoding="utf-8"?>
           <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
-              <path android:fillColor="#EBFFFFFF" android:pathData="M16,6h2v12h-2zM6,18l8.5,-6L6,6z" />
+              <path android:fillColor="#F5FFFFFF" android:pathData="M3.5,6.8v10.4L11.5,12L3.5,6.8zM12.5,6.8v10.4L20.5,12L12.5,6.8z" />
           </vector>
           XMLEOF
 
@@ -2006,15 +2028,15 @@ jobs:
                   android:layout_height="match_parent"
                   android:gravity="center_vertical"
                   android:orientation="horizontal"
-                  android:paddingStart="12dp"
-                  android:paddingTop="10dp"
-                  android:paddingEnd="12dp"
-                  android:paddingBottom="10dp">
+                  android:paddingStart="14dp"
+                  android:paddingTop="12dp"
+                  android:paddingEnd="14dp"
+                  android:paddingBottom="12dp">
 
                   <ImageView
                       android:id="@+id/widget_cover_stage"
-                      android:layout_width="136dp"
-                      android:layout_height="106dp"
+                      android:layout_width="152dp"
+                      android:layout_height="128dp"
                       android:contentDescription="Album Cover and Vinyl"
                       android:scaleType="fitCenter" />
 
@@ -2039,39 +2061,40 @@ jobs:
                               android:layout_width="wrap_content"
                               android:layout_height="wrap_content"
                               android:background="@drawable/feng_widget_pill_bg"
-                              android:paddingStart="8dp"
-                              android:paddingTop="2dp"
-                              android:paddingEnd="8dp"
-                              android:paddingBottom="2dp"
-                              android:text="● LOSSLESS"
-                              android:textColor="#E642E6D9"
-                              android:textSize="9sp"
+                              android:letterSpacing="0.08"
+                              android:paddingStart="10dp"
+                              android:paddingTop="3dp"
+                              android:paddingEnd="10dp"
+                              android:paddingBottom="3dp"
+                              android:text="● PAUSED"
+                              android:textColor="#D9FFFFFF"
+                              android:textSize="10.5sp"
                               android:textStyle="bold" />
 
                           <TextView
                               android:id="@+id/widget_title"
                               android:layout_width="match_parent"
                               android:layout_height="wrap_content"
-                              android:layout_marginTop="4dp"
+                              android:layout_marginTop="5dp"
                               android:ellipsize="end"
                               android:gravity="end"
                               android:maxLines="1"
                               android:text="FENG MUSIC"
                               android:textColor="#FFFFFFFF"
-                              android:textSize="15sp"
+                              android:textSize="19sp"
                               android:textStyle="bold" />
 
                           <TextView
                               android:id="@+id/widget_artist"
                               android:layout_width="match_parent"
                               android:layout_height="wrap_content"
-                              android:layout_marginTop="1dp"
+                              android:layout_marginTop="2dp"
                               android:ellipsize="end"
                               android:gravity="end"
                               android:maxLines="1"
                               android:text=""
-                              android:textColor="#C2FFFFFF"
-                              android:textSize="11sp" />
+                              android:textColor="#C8FFFFFF"
+                              android:textSize="12.5sp" />
                       </LinearLayout>
 
                       <TextView
@@ -2085,15 +2108,15 @@ jobs:
                           android:maxLines="3"
                           android:text="All the promises I&#10;made at sunset were&#10;as real as any other"
                           android:textColor="#F2FFFFFF"
-                          android:textSize="11.5sp"
+                          android:textSize="12sp"
                           android:textStyle="italic" />
 
                       <LinearLayout
                           android:id="@+id/widget_progress_row"
                           android:layout_width="match_parent"
                           android:layout_height="wrap_content"
-                          android:layout_marginTop="5dp"
-                          android:layout_marginBottom="5dp"
+                          android:layout_marginTop="7dp"
+                          android:layout_marginBottom="8dp"
                           android:gravity="center_vertical"
                           android:orientation="horizontal"
                           android:visibility="gone">
@@ -2103,16 +2126,16 @@ jobs:
                               android:layout_width="wrap_content"
                               android:layout_height="wrap_content"
                               android:text="0:00"
-                              android:textColor="#C7FFFFFF"
-                              android:textSize="9sp" />
+                              android:textColor="#CCFFFFFF"
+                              android:textSize="11.5sp" />
 
                           <ProgressBar
                               android:id="@+id/widget_progress"
                               style="?android:attr/progressBarStyleHorizontal"
                               android:layout_width="0dp"
-                              android:layout_height="3.5dp"
-                              android:layout_marginStart="5dp"
-                              android:layout_marginEnd="5dp"
+                              android:layout_height="5.5dp"
+                              android:layout_marginStart="8dp"
+                              android:layout_marginEnd="8dp"
                               android:layout_weight="1"
                               android:max="1000"
                               android:progress="0"
@@ -2123,18 +2146,18 @@ jobs:
                               android:layout_width="wrap_content"
                               android:layout_height="wrap_content"
                               android:text="0:00"
-                              android:textColor="#B8FFFFFF"
-                              android:textSize="9sp" />
+                              android:textColor="#CCFFFFFF"
+                              android:textSize="11.5sp" />
                       </LinearLayout>
 
                       <ImageView
                           android:id="@+id/widget_idle_line"
                           android:layout_width="match_parent"
-                          android:layout_height="2.5dp"
+                          android:layout_height="4dp"
                           android:layout_marginTop="8dp"
                           android:layout_marginBottom="8dp"
                           android:contentDescription=""
-                          android:background="#38FFFFFF" />
+                          android:background="#2EFFFFFF" />
 
                       <LinearLayout
                           android:layout_width="wrap_content"
@@ -2142,40 +2165,40 @@ jobs:
                           android:background="@drawable/feng_widget_dock_bg"
                           android:gravity="center_vertical"
                           android:orientation="horizontal"
-                          android:paddingStart="7dp"
-                          android:paddingTop="4dp"
-                          android:paddingEnd="7dp"
-                          android:paddingBottom="4dp">
+                          android:paddingStart="8dp"
+                          android:paddingTop="5dp"
+                          android:paddingEnd="8dp"
+                          android:paddingBottom="5dp">
 
                           <ImageButton
                               android:id="@+id/widget_btn_prev"
-                              android:layout_width="30dp"
-                              android:layout_height="30dp"
+                              android:layout_width="38dp"
+                              android:layout_height="38dp"
                               android:background="@drawable/feng_widget_side_btn_bg"
                               android:contentDescription="Previous"
-                              android:padding="7dp"
+                              android:padding="9dp"
                               android:scaleType="fitCenter"
                               android:src="@drawable/ic_widget_prev" />
 
                           <ImageButton
                               android:id="@+id/widget_btn_toggle"
-                              android:layout_width="36dp"
-                              android:layout_height="36dp"
-                              android:layout_marginStart="8dp"
-                              android:layout_marginEnd="8dp"
+                              android:layout_width="46dp"
+                              android:layout_height="46dp"
+                              android:layout_marginStart="10dp"
+                              android:layout_marginEnd="10dp"
                               android:background="@drawable/feng_widget_play_btn_bg"
                               android:contentDescription="Play or Pause"
-                              android:padding="8dp"
+                              android:padding="10dp"
                               android:scaleType="fitCenter"
                               android:src="@drawable/ic_widget_play_dark" />
 
                           <ImageButton
                               android:id="@+id/widget_btn_next"
-                              android:layout_width="30dp"
-                              android:layout_height="30dp"
+                              android:layout_width="38dp"
+                              android:layout_height="38dp"
                               android:background="@drawable/feng_widget_side_btn_bg"
                               android:contentDescription="Next"
-                              android:padding="7dp"
+                              android:padding="9dp"
                               android:scaleType="fitCenter"
                               android:src="@drawable/ic_widget_next" />
                       </LinearLayout>
