@@ -1804,32 +1804,104 @@
         padding-left: var(--safe-left);
         padding-right: var(--safe-right);
       }
-      /* Compact Dock & Un-clipped Mini-Player in Landscape */
+      /* Global Right-Side Icon-Only Liquid Glass Dock in Landscape (iPhone Duo / VisionOS Style) */
       #bottom-tab-dock {
-        bottom: calc(var(--safe-bottom) + 6px) !important;
-        height: 54px !important;
+        left: auto !important;
+        right: max(12px, var(--safe-right)) !important;
+        top: 50% !important;
+        bottom: auto !important;
+        width: auto !important;
+        height: auto !important;
+        padding: 0 !important;
+        transform: translateY(-50%) !important;
+        z-index: 34 !important;
       }
+      #bottom-tab-dock-pill {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        gap: 6px !important;
+        width: 54px !important;
+        padding: 8px 6px !important;
+        border-radius: 9999px !important;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.11) 50%, rgba(255, 255, 255, 0.16) 100%) !important;
+        backdrop-filter: blur(28px) saturate(190%) !important;
+        -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
+        border: 1px solid rgba(255, 255, 255, 0.28) !important;
+        box-shadow: 0 14px 36px rgba(0, 0, 0, 0.44), inset 0 1px 0 rgba(255, 255, 255, 0.42), inset 0 -1px 0 rgba(255, 255, 255, 0.12) !important;
+      }
+      #bottom-tab-dock .dock-nav-btn {
+        width: 40px !important;
+        height: 40px !important;
+        padding: 0 !important;
+        border-radius: 9999px !important;
+      }
+      #bottom-tab-dock .dock-nav-btn svg {
+        width: 19px !important;
+        height: 19px !important;
+        margin-bottom: 0 !important;
+      }
+      #bottom-tab-dock .dock-nav-btn span {
+        display: none !important;
+      }
+      #bottom-tab-dock .dock-nav-btn.bg-white\/15 {
+        background: radial-gradient(circle at 30% 25%, rgba(125, 211, 252, 0.96), rgba(56, 189, 248, 0.82)) !important;
+        color: #ffffff !important;
+        box-shadow: 0 0 16px rgba(56, 189, 248, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.65) !important;
+      }
+      /* Reserve right-side clearance globally across all landscape views so cards & buttons never collide with right Dock */
+      #view-library,
+      #view-playlists,
+      #view-playlist-detail,
+      #view-group-detail,
+      #view-search,
+      #view-stats,
+      #view-diy {
+        padding-right: 68px !important;
+      }
+      html.canvas-immersive #view-library {
+        padding-right: 0 !important;
+      }
+      /* Bottom-centered compact Mini-Player at top of scroll; smoothly tucks into Right Dock when scrolled down */
       #mini-player-wrapper {
-        bottom: calc(var(--safe-bottom) + 68px) !important;
+        bottom: calc(var(--safe-bottom) + 10px) !important;
+        padding-left: max(16px, var(--safe-left)) !important;
+        padding-right: calc(max(12px, var(--safe-right)) + 72px) !important;
+        transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.24s ease !important;
       }
       #mini-player-bar {
         height: auto !important;
-        min-height: 52px !important;
+        min-height: 50px !important;
+        max-width: 390px !important;
       }
       #mini-player-bar > div {
-        padding: 6px 11px !important;
+        padding: 5px 10px !important;
       }
       #mini-cover {
-        width: 38px !important;
-        height: 38px !important;
-        border-radius: 11px !important;
-      }
-      #btn-mini-play {
         width: 36px !important;
         height: 36px !important;
+        border-radius: 10px !important;
       }
-      .pl-scroll-pad {
-        padding-bottom: 136px !important;
+      #btn-mini-play {
+        width: 34px !important;
+        height: 34px !important;
+      }
+      html.dock-collapsed #mini-player-wrapper {
+        opacity: 0 !important;
+        transform: translateY(110%) scale(0.84) !important;
+        pointer-events: none !important;
+      }
+      html.dock-collapsed #dock-landscape-np {
+        display: flex !important;
+        animation: dockLandNpPop 0.28s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      }
+      @keyframes dockLandNpPop {
+        0% { opacity: 0; transform: scale(0.55) translateY(-6px); }
+        100% { opacity: 1; transform: scale(1) translateY(0); }
+      }
+      .pl-scroll-pad,
+      .lib-scroll-pad {
+        padding-bottom: 92px !important;
       }
       /* Bottom Sheets & Centered Modals fit cleanly inside short landscape viewports */
       .liquid-sheet {
@@ -1973,7 +2045,7 @@
       }
     }
 
-    /* ==================== LANDSCAPE STAGE LYRICS (巨幕单句舞台 + 封面动态流光) ==================== */
+    /* ==================== UNIFIED PORTRAIT + LANDSCAPE SILK POSTAGE-STAMP STAGE LYRICS ==================== */
     #np-landscape-stage {
       position: absolute;
       inset: 0;
@@ -1983,8 +2055,8 @@
       justify-content: space-between;
       align-items: center;
       overflow: hidden;
-      background: #06080d;
-      padding: calc(var(--safe-top) + 10px) max(24px, var(--safe-right)) calc(var(--safe-bottom) + 14px) max(24px, var(--safe-left));
+      background: #07090f;
+      padding: calc(var(--safe-top) + 14px) max(22px, var(--safe-right)) calc(var(--safe-bottom) + 18px) max(22px, var(--safe-left));
       user-select: none;
       -webkit-user-select: none;
     }
@@ -2006,76 +2078,187 @@
     .stage-aurora-orb {
       position: absolute;
       border-radius: 9999px;
-      filter: blur(78px);
+      filter: blur(82px);
       will-change: transform;
       transition: background 1.2s ease;
     }
     .stage-orb-1 {
-      width: 68vw;
-      height: 68vw;
-      max-width: 560px;
-      max-height: 560px;
-      top: -28%;
-      left: -14%;
-      opacity: 0.56;
-      background: radial-gradient(circle, var(--aurora-1, #38bdf8) 0%, transparent 70%);
-      animation: stageOrbDrift1 14s ease-in-out infinite alternate;
+      width: 78vmax;
+      height: 56vmax;
+      top: -22%;
+      left: -18%;
+      opacity: 0.62;
+      background: radial-gradient(ellipse at center, var(--aurora-1, #38bdf8) 0%, transparent 68%);
+      animation: stageOrbDrift1 13s ease-in-out infinite alternate;
     }
     .stage-orb-2 {
-      width: 64vw;
-      height: 64vw;
-      max-width: 520px;
-      max-height: 520px;
-      bottom: -32%;
-      right: -12%;
-      opacity: 0.50;
-      background: radial-gradient(circle, var(--aurora-2, #818cf8) 0%, transparent 70%);
-      animation: stageOrbDrift2 17s ease-in-out infinite alternate;
+      width: 74vmax;
+      height: 54vmax;
+      bottom: -24%;
+      right: -16%;
+      opacity: 0.56;
+      background: radial-gradient(ellipse at center, var(--aurora-2, #818cf8) 0%, transparent 68%);
+      animation: stageOrbDrift2 16s ease-in-out infinite alternate;
     }
     .stage-orb-3 {
-      width: 56vw;
-      height: 56vw;
-      max-width: 460px;
-      max-height: 460px;
-      top: 18%;
-      left: 34%;
-      opacity: 0.42;
-      background: radial-gradient(circle, var(--aurora-3, #2dd4bf) 0%, transparent 72%);
+      width: 66vmax;
+      height: 44vmax;
+      top: 22%;
+      left: 22%;
+      opacity: 0.46;
+      background: radial-gradient(ellipse at center, var(--aurora-3, #2dd4bf) 0%, transparent 72%);
       animation: stageOrbDrift3 19s ease-in-out infinite alternate;
     }
+    /* Concept 2: Diagonal Tyndall Stage Light Beams + Depth-of-Field Bokeh & Stardust */
+    .stage-tyndall-beams {
+      position: absolute;
+      inset: -25%;
+      background:
+        linear-gradient(124deg,
+          transparent 12%,
+          rgba(255, 245, 232, 0.08) 21%,
+          transparent 29%,
+          rgba(255, 255, 255, 0.11) 40%,
+          transparent 49%,
+          rgba(255, 240, 224, 0.07) 61%,
+          transparent 70%,
+          rgba(255, 255, 255, 0.09) 79%,
+          transparent 89%
+        );
+      filter: blur(22px);
+      mix-blend-mode: screen;
+      animation: stageTyndallSway 14s ease-in-out infinite alternate;
+      pointer-events: none;
+    }
+    @keyframes stageTyndallSway {
+      0% { transform: translate3d(-3%, -2%, 0) rotate(-3deg) scale(1); opacity: 0.78; }
+      100% { transform: translate3d(4%, 3%, 0) rotate(3deg) scale(1.06); opacity: 1; }
+    }
+    #np-stage-bokeh-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      opacity: 0.94;
+    }
     @keyframes stageOrbDrift1 {
-      0% { transform: translate3d(0, 0, 0) scale(1); }
-      100% { transform: translate3d(10vw, 12vh, 0) scale(1.16); }
+      0% { transform: translate3d(0, 0, 0) scale(1) rotate(0deg); }
+      100% { transform: translate3d(10vw, 10vh, 0) scale(1.16) rotate(14deg); }
     }
     @keyframes stageOrbDrift2 {
-      0% { transform: translate3d(0, 0, 0) scale(1.06); }
-      100% { transform: translate3d(-12vw, -10vh, 0) scale(0.94); }
+      0% { transform: translate3d(0, 0, 0) scale(1.06) rotate(0deg); }
+      100% { transform: translate3d(-12vw, -10vh, 0) scale(0.94) rotate(-12deg); }
     }
     @keyframes stageOrbDrift3 {
       0% { transform: translate3d(-4vw, 4vh, 0) scale(0.95); }
       100% { transform: translate3d(8vw, -8vh, 0) scale(1.14); }
     }
+    @keyframes stageSilkFold {
+      0% { transform: rotate(-18deg) translate3d(-3%, -2%, 0) scale(1); }
+      100% { transform: rotate(-12deg) translate3d(4%, 3%, 0) scale(1.08); }
+    }
+    /* Perforated Postage-Stamp Album Cover + Translucent Circular Postmark */
+    .stage-stamp-wrap {
+      position: relative;
+      width: 78px;
+      height: 78px;
+      padding: 6px;
+      background:
+        radial-gradient(circle at 0 50%, transparent 3.2px, rgba(255, 255, 255, 0.94) 3.5px) left / 51% 11px repeat-y,
+        radial-gradient(circle at 100% 50%, transparent 3.2px, rgba(255, 255, 255, 0.94) 3.5px) right / 51% 11px repeat-y;
+      box-shadow: 0 10px 26px rgba(0, 0, 0, 0.42);
+      border-radius: 3px;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+    .stage-stamp-wrap:active {
+      transform: scale(0.93);
+    }
+    .stage-stamp-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      border-radius: 2px;
+    }
+    .stage-postmark {
+      position: absolute;
+      left: -18px;
+      bottom: -14px;
+      width: 44px;
+      height: 44px;
+      pointer-events: none;
+      opacity: 0.42;
+      transform: rotate(-14deg);
+    }
+    /* Kinetic Staggered Word-by-Word Typography */
     #np-stage-lyric-text {
       position: relative;
       z-index: 2;
-      max-width: min(86vw, 760px);
+      max-width: min(88vw, 760px);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      justify-content: center;
+      column-gap: 0.26em;
+      row-gap: 0.14em;
       text-align: center;
-      font-weight: 900;
-      font-style: italic;
-      font-size: clamp(28px, 5.6vw, 54px);
+      font-weight: 800;
+      font-size: clamp(28px, 7.6vw, 48px);
       line-height: 1.18;
       letter-spacing: -0.02em;
       color: #ffffff;
-      text-wrap: balance;
-      word-break: break-word;
-      text-shadow: 0 8px 32px rgba(0, 0, 0, 0.56), 0 0 26px rgba(255, 255, 255, 0.16);
     }
-    #np-stage-lyric-text.is-pop {
-      animation: stageLyricPop 0.42s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    .stage-word {
+      display: inline-block;
+      opacity: 0;
+      transform: translateY(18px) scale(0.86);
+      filter: blur(7px);
+      animation:
+        stageWordPop 0.48s cubic-bezier(0.22, 1, 0.36, 1) var(--wd, 0ms) forwards,
+        stageWordFloat 3.4s ease-in-out calc(var(--wd, 0ms) + 480ms) infinite alternate;
+      will-change: transform, opacity, filter;
+      text-shadow: 0 6px 26px rgba(0, 0, 0, 0.46);
     }
-    @keyframes stageLyricPop {
-      0% { opacity: 0; transform: translateY(14px) scale(0.92); filter: blur(6px); }
-      100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+    .stage-word-em {
+      font-size: 1.18em;
+      font-weight: 900;
+      font-style: italic;
+      animation:
+        stageWordPop 0.50s cubic-bezier(0.22, 1, 0.36, 1) var(--wd, 0ms) forwards,
+        stageWordFloatEm 3.0s ease-in-out calc(var(--wd, 0ms) + 500ms) infinite alternate;
+      text-shadow: 0 6px 30px rgba(0, 0, 0, 0.52), 0 0 24px var(--aurora-1, rgba(255, 255, 255, 0.50));
+    }
+    @keyframes stageWordPop {
+      0% { opacity: 0; transform: translateY(18px) scale(0.86) rotate(-2deg); filter: blur(7px); }
+      65% { opacity: 1; transform: translateY(calc(var(--wy, 0px) - 2px)) scale(1.03) rotate(0.4deg); filter: blur(0); }
+      100% { opacity: 1; transform: translateY(var(--wy, 0px)) scale(1) rotate(0deg); filter: blur(0); }
+    }
+    @keyframes stageWordFloat {
+      0% { transform: translateY(var(--wy, 0px)) scale(1) rotate(-0.6deg); }
+      100% { transform: translateY(calc(var(--wy, 0px) - 5px)) scale(1.02) rotate(0.7deg); }
+    }
+    @keyframes stageWordFloatEm {
+      0% {
+        transform: translateY(var(--wy, 0px)) scale(1) rotate(-0.7deg);
+        text-shadow: 0 6px 28px rgba(0, 0, 0, 0.50), 0 0 18px var(--aurora-1, rgba(56, 189, 248, 0.45));
+      }
+      100% {
+        transform: translateY(calc(var(--wy, 0px) - 6px)) scale(1.045) rotate(0.8deg);
+        text-shadow: 0 8px 34px rgba(0, 0, 0, 0.55), 0 0 32px var(--aurora-1, rgba(56, 189, 248, 0.85)), 0 0 14px rgba(255, 255, 255, 0.55);
+      }
+    }
+    #np-stage-wave-canvas {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      height: 112px;
+      z-index: 1;
+      pointer-events: none;
+      opacity: 0.94;
     }
     .stage-chrome-fade {
       transition: opacity 0.36s ease, transform 0.36s cubic-bezier(0.22, 1, 0.36, 1);
@@ -2088,11 +2271,28 @@
       transform: translateY(10px);
     }
     #btn-lyrics-to-stage {
-      display: none;
+      display: inline-flex;
     }
     @media (max-height: 520px) and (orientation: landscape) {
-      #btn-lyrics-to-stage.is-stage-enabled {
-        display: inline-flex;
+      #np-landscape-stage {
+        padding: calc(var(--safe-top) + 8px) max(24px, var(--safe-right)) calc(var(--safe-bottom) + 10px) max(24px, var(--safe-left));
+      }
+      .stage-stamp-wrap {
+        width: 52px;
+        height: 52px;
+        padding: 4px;
+      }
+      .stage-postmark {
+        width: 32px;
+        height: 32px;
+        left: -12px;
+        bottom: -10px;
+      }
+      #np-stage-lyric-text {
+        font-size: clamp(26px, 5.2vw, 48px);
+      }
+      #np-stage-wave-canvas {
+        height: 68px;
       }
     }
   </style>
@@ -2860,7 +3060,26 @@
          Hidden automatically when native iOS UITabBar Liquid Glass Dock is active
          ========================================================================= -->
     <nav id="bottom-tab-dock" class="fixed left-0 right-0 z-30 px-4 sm:px-6 pointer-events-none" style="bottom: calc(var(--safe-bottom) + 10px);" aria-label="主导航">
-      <div class="liquid-dock pointer-events-auto max-w-md mx-auto rounded-full px-2 py-1.5 grid grid-cols-4 gap-1">
+      <div id="bottom-tab-dock-pill" class="liquid-dock pointer-events-auto max-w-md mx-auto rounded-full px-2 py-1.5 grid grid-cols-4 gap-1">
+        <!-- Landscape Scroll-Docked Circular Mini-Player (shown only in landscape when scrolled down) -->
+        <div id="dock-landscape-np" class="hidden relative w-10 h-10 mx-auto rounded-full shrink-0 cursor-pointer items-center justify-center transition-all duration-300" title="打开正在播放" aria-label="打开正在播放">
+          <svg class="pointer-events-none absolute -inset-[2px] w-[44px] h-[44px] -rotate-90 overflow-visible" viewBox="0 0 44 44" aria-hidden="true">
+            <defs>
+              <linearGradient id="dockLandNpGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" style="stop-color: var(--aurora-1, #38bdf8);" />
+                <stop offset="55%" style="stop-color: var(--aurora-2, #818cf8);" />
+                <stop offset="100%" style="stop-color: var(--aurora-3, #2dd4bf);" />
+              </linearGradient>
+            </defs>
+            <circle cx="22" cy="22" r="20" fill="none" stroke="rgba(255,255,255,0.16)" stroke-width="1.8" />
+            <circle id="dock-land-np-ring" cx="22" cy="22" r="20" fill="none" stroke="url(#dockLandNpGrad)" stroke-width="2.2" stroke-linecap="round" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100" style="filter: drop-shadow(0 0 3px var(--aurora-1, rgba(56,189,248,0.7))); transition: stroke-dashoffset 0.22s linear;" />
+          </svg>
+          <img id="dock-land-np-cover" src="/icon-512.png" alt="" class="w-9 h-9 rounded-full object-cover border border-white/20 bg-white/10" />
+          <button id="btn-dock-land-play" class="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-black/80 border border-white/45 flex items-center justify-center text-white shadow" title="播放 / 暂停" aria-label="播放或暂停">
+            <svg id="dock-land-play-icon" class="w-2.5 h-2.5 translate-x-[0.5px]" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            <svg id="dock-land-pause-icon" class="w-2.5 h-2.5 hidden" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>
+          </button>
+        </div>
         <button data-nav="library" class="dock-nav-btn flex flex-col items-center justify-center py-1 rounded-full text-white bg-white/15 transition">
           <svg class="w-4 h-4 mb-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z"/></svg>
           <span class="text-[10px] font-semibold leading-none">曲库</span>
@@ -3036,7 +3255,14 @@
     <!-- ==================== TAB 2: PERSONALIZED LYRICS VIEW (歌词) ==================== -->
     <div id="np-panel-lyrics" class="hidden relative z-10 flex-1 flex flex-col overflow-hidden max-w-2xl w-full mx-auto" style="padding-bottom: calc(var(--safe-bottom) + 16px);">
       <div class="px-5 py-2 flex items-center justify-end gap-2 shrink-0">
-        <button id="btn-lyrics-to-stage" class="liquid-pill px-3 py-1.5 rounded-full text-xs font-semibold text-sky-200 items-center gap-1 whitespace-nowrap">✦ 巨幕舞台</button>
+        <button id="btn-lyrics-to-stage" class="liquid-pill w-8 h-8 rounded-full text-sky-200 items-center justify-center shrink-0 transition active:scale-90" title="邮票巨幕舞台" aria-label="邮票巨幕舞台">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 5.5a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 0 3 0h1a1.5 1.5 0 0 0 3 0h1a1.5 1.5 0 0 0 3 0h1A1.5 1.5 0 0 1 20 5.5v1a1.5 1.5 0 0 0 0 3v1a1.5 1.5 0 0 0 0 3v1a1.5 1.5 0 0 0 0 3v1a1.5 1.5 0 0 1-1.5 1.5h-1a1.5 1.5 0 0 0-3 0h-1a1.5 1.5 0 0 0-3 0h-1a1.5 1.5 0 0 0-3 0h-1A1.5 1.5 0 0 1 4 18.5v-1a1.5 1.5 0 0 0 0-3v-1a1.5 1.5 0 0 0 0-3v-1a1.5 1.5 0 0 0 0-3z"/>
+            <path d="M10.5 14.5v-4.2l4-1v3.7" stroke-width="1.6"/>
+            <circle cx="9.2" cy="14.7" r="1.2" fill="currentColor" stroke="none"/>
+            <circle cx="13.2" cy="13.7" r="1.2" fill="currentColor" stroke="none"/>
+          </svg>
+        </button>
         <button id="btn-lyric-style-cycle" class="liquid-pill px-3 py-1.5 rounded-full text-xs font-medium text-amber-200 whitespace-nowrap">✨ 景深聚焦</button>
         <button id="btn-lyric-poster" class="liquid-pill px-3 py-1.5 rounded-full text-xs font-semibold text-sky-200 flex items-center gap-1 whitespace-nowrap">
           <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
@@ -3047,37 +3273,49 @@
       <div id="lyrics-scroll-container" class="flex-1 overflow-y-auto no-scrollbar px-6 py-[35vh] space-y-5"></div>
     </div>
 
-    <!-- ==================== LANDSCAPE STAGE LYRICS OVERLAY (横屏巨幕单句舞台) ==================== -->
-    <div id="np-landscape-stage" aria-label="横屏巨幕歌词舞台">
+    <!-- ==================== UNIFIED SILK POSTAGE-STAMP STAGE LYRICS (竖屏/横屏通用巨幕舞台) ==================== -->
+    <div id="np-landscape-stage" aria-label="丝绸邮票巨幕歌词舞台">
       <div class="stage-aurora-layer" aria-hidden="true">
         <div class="stage-aurora-orb stage-orb-1"></div>
         <div class="stage-aurora-orb stage-orb-2"></div>
         <div class="stage-aurora-orb stage-orb-3"></div>
-        <div class="absolute inset-0 bg-gradient-to-b from-black/32 via-black/18 to-black/48"></div>
+        <div class="stage-tyndall-beams"></div>
+        <canvas id="np-stage-bokeh-canvas" aria-hidden="true"></canvas>
+        <div class="absolute inset-0 bg-gradient-to-b from-black/26 via-black/14 to-black/46"></div>
       </div>
 
-      <!-- Top minimal bar -->
-      <div class="stage-chrome-fade relative z-10 w-full flex items-center justify-between gap-4">
-        <button id="btn-stage-collapse" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 flex items-center justify-center text-white/90 shrink-0 transition active:scale-90" aria-label="收起播放页">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-        </button>
-        <div class="min-w-0 text-center">
-          <div id="np-stage-title" class="text-sm font-bold text-white/95 truncate">FENG MUSIC</div>
-          <div id="np-stage-artist" class="text-[11px] text-white/55 truncate mt-0.5"></div>
+      <!-- Top Postcard Row: Left Title/Artist + Collapse | Right Perforated Postage-Stamp Cover + Postmark -->
+      <div class="relative z-10 w-full flex items-start justify-between gap-4 pt-1">
+        <div class="min-w-0 flex-1 space-y-1">
+          <div class="stage-chrome-fade flex items-center gap-2 mb-1">
+            <button id="btn-stage-collapse" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 flex items-center justify-center text-white/90 shrink-0 transition active:scale-90" aria-label="收起播放页">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            <button id="btn-stage-settings" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 flex items-center justify-center text-white/90 shrink-0 transition active:scale-90" aria-label="播放设置">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          <div id="np-stage-title" class="text-xl sm:text-2xl font-bold tracking-tight text-white/95 truncate">FENG MUSIC</div>
+          <div id="np-stage-artist" class="text-xs sm:text-sm text-white/55 truncate"></div>
         </div>
-        <button id="btn-stage-settings" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 flex items-center justify-center text-white/90 shrink-0 transition active:scale-90" aria-label="播放设置">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
-        </button>
+        <div id="btn-stage-to-cover" class="stage-stamp-wrap shrink-0" title="切换封面页" aria-label="切换封面页">
+          <img id="np-stage-stamp-cover" src="/icon-512.png" alt="" />
+          <svg class="stage-postmark" viewBox="0 0 64 64" fill="none" stroke="rgba(255,255,255,0.85)" aria-hidden="true">
+            <circle cx="32" cy="32" r="24" stroke-width="1.4" stroke-dasharray="3 2" />
+            <circle cx="32" cy="32" r="16" stroke-width="1.1" />
+            <path d="M12 32h40M18 24h28M18 40h28" stroke-width="0.9" opacity="0.65" />
+          </svg>
+        </div>
       </div>
 
-      <!-- Center Giant Kinetic Single-Line Lyric -->
-      <div class="relative z-10 flex-1 flex items-center justify-center w-full px-4">
+      <!-- Center Kinetic Word-by-Word Typography (Current Line Only) -->
+      <div class="relative z-10 flex-1 flex flex-col items-center justify-center w-full px-3">
         <div id="np-stage-lyric-text">FENG MUSIC</div>
       </div>
 
-      <!-- Bottom Minimal Outline Controls + Bottom-Right List Switch -->
-      <div class="stage-chrome-fade stage-bottom-bar relative z-10 w-full flex items-center justify-between">
-        <button id="btn-stage-to-cover" class="px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 text-[11px] font-medium text-white/80 transition active:scale-95">封面</button>
+      <!-- Bottom Minimal Outline Controls + List Switch (auto-hide after 3s idle) -->
+      <div class="stage-chrome-fade stage-bottom-bar relative z-10 w-full flex items-center justify-between pb-2">
+        <span class="w-10 shrink-0"></span>
         <div class="flex items-center gap-4">
           <button id="btn-stage-prev" class="w-9 h-9 rounded-full border border-white/45 hover:border-white bg-black/20 flex items-center justify-center text-white transition active:scale-90" aria-label="上一首">
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
@@ -3090,8 +3328,13 @@
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M16 6h2v12h-2zM6 18l8.5-6L6 6z"/></svg>
           </button>
         </div>
-        <button id="btn-stage-to-list" class="px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 text-[11px] font-medium text-white/80 transition active:scale-95" title="切换传统滚动歌词">列表</button>
+        <button id="btn-stage-to-list" class="w-10 h-10 rounded-xl bg-white/12 hover:bg-white/22 border border-white/18 flex items-center justify-center text-white/85 shrink-0 transition active:scale-90" title="切回滚动歌词列表" aria-label="切回滚动歌词列表">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><path stroke-linecap="round" d="M4 7h16M4 12h16M4 17h10"/></svg>
+        </button>
       </div>
+
+      <!-- Bottom Edge Real-Time Smooth Spectrum Hill Waveform -->
+      <canvas id="np-stage-wave-canvas" aria-hidden="true"></canvas>
     </div>
   </div>
 
@@ -6775,21 +7018,24 @@
           !state.multiSelectMode &&
           !state.libCustomEditing;
         document.documentElement.classList.toggle('canvas-immersive', canvasImmersive);
+        const isLandscapeSideDock = window.innerWidth > window.innerHeight && window.innerHeight <= 520;
         const anyMultiSelect = Boolean(state.multiSelectMode || state.plMultiSelectMode);
         document.documentElement.classList.toggle('multiselect-active', anyMultiSelect);
-        const hidden = npOpen || eqOpen || backdropOpen || !isMainTab || canvasImmersive || anyMultiSelect;
+        const hidden = npOpen || eqOpen || backdropOpen || (!isMainTab && !isLandscapeSideDock) || canvasImmersive || anyMultiSelect;
         // Whenever returning from any modal/overlay/detail view to a main tab, always expand Dock cleanly
         if (lastDockWasHidden && !hidden) {
           state.dockCollapsed = false;
         }
         lastDockWasHidden = hidden;
-        const canCollapse = isMainTab && !hidden && !state.multiSelectMode && !state.libCustomEditing;
+        const canCollapse = (isMainTab || isLandscapeSideDock) && !hidden && !state.multiSelectMode && !state.libCustomEditing;
         const collapsed = Boolean(state.dockCollapsed && canCollapse);
         document.documentElement.classList.toggle('dock-hidden', hidden);
         document.documentElement.classList.toggle('dock-collapsed', collapsed);
         const webDock = $('bottom-tab-dock');
         if (webDock) {
-          webDock.classList.toggle('hidden', hasNativeDockBridge() || hidden);
+          // In mobile landscape, show right-side icon-only liquid glass Dock globally (even on iOS); in portrait, defer to native iOS UITabBar
+          const hideWebDock = hidden || (hasNativeDockBridge() && !isLandscapeSideDock);
+          webDock.classList.toggle('hidden', hideWebDock);
         }
         const hideStatusBar = Boolean(canvasImmersive && !npOpen && !eqOpen);
         if (window.FengAndroidBridge && typeof window.FengAndroidBridge.setStatusBarHidden === 'function') {
@@ -6800,7 +7046,7 @@
           window.webkit.messageHandlers.fengDock.postMessage({
             action: 'state',
             tab: state.activeView,
-            hidden,
+            hidden: hidden || isLandscapeSideDock,
             collapsed,
             hideStatusBar
           });
@@ -8287,10 +8533,12 @@
       }
 
       function updateCanvasTransportProgress(pct) {
-        const ring = $('canvas-transport-progress-ring');
-        if (!ring) return;
         const clamped = Math.max(0, Math.min(100, Number(pct) || 0));
-        ring.setAttribute('stroke-dashoffset', (100 - clamped).toFixed(2));
+        const dashOffset = (100 - clamped).toFixed(2);
+        const ring = $('canvas-transport-progress-ring');
+        if (ring) ring.setAttribute('stroke-dashoffset', dashOffset);
+        const dockRing = $('dock-land-np-ring');
+        if (dockRing) dockRing.setAttribute('stroke-dashoffset', dashOffset);
       }
 
       function syncCanvasNowPlaying() {
@@ -13426,6 +13674,7 @@
       function closeNowPlaying() {
         nowPlayingModal.classList.add('translate-y-full');
         state.stageLyricsForceList = false;
+        state.stageLyricsManualOpen = false;
         syncLandscapeStageMode();
         state.dockCollapsed = false;
         syncNativeDockState();
@@ -13449,24 +13698,311 @@
       }
 
       function syncLandscapeStagePlayIcon() {
+        const playing = Boolean(state.isPlaying);
         const pIcon = $('stage-play-icon');
         const paIcon = $('stage-pause-icon');
-        if (!pIcon || !paIcon) return;
-        const playing = Boolean(state.isPlaying);
-        pIcon.classList.toggle('hidden', playing);
-        paIcon.classList.toggle('hidden', !playing);
+        if (pIcon && paIcon) {
+          pIcon.classList.toggle('hidden', playing);
+          paIcon.classList.toggle('hidden', !playing);
+        }
+        const dpIcon = $('dock-land-play-icon');
+        const dpaIcon = $('dock-land-pause-icon');
+        if (dpIcon && dpaIcon) {
+          dpIcon.classList.toggle('hidden', playing);
+          dpaIcon.classList.toggle('hidden', !playing);
+        }
+        const dockCover = $('dock-land-np-cover');
+        if (dockCover) {
+          const curRaw = state.currentTrackId ? state.tracks.find((t) => t.id === state.currentTrackId) : null;
+          const nextSrc = curRaw ? getTrackDisplay(curRaw).cover : DEFAULT_APP_COVER;
+          if (dockCover.getAttribute('src') !== nextSrc) dockCover.setAttribute('src', nextSrc);
+        }
+      }
+
+      let stageWaveRaf = 0;
+      let stageWavePhase = 0;
+      const stageWaveSmooth = new Float32Array(64);
+      const stageWaveSmoothBack = new Float32Array(64);
+      // Pre-seeded deterministic Bokeh orbs (3 depth planes) + twinkling floating stardust motes
+      const stageBokehOrbs = Array.from({ length: 15 }, (_, i) => ({
+        x: ((i * 0.237 + 0.08) % 0.92) + 0.04,
+        y: (i * 0.173 + 0.05) % 1.0,
+        r: i < 5 ? (22 + (i % 4) * 9) : (i < 11 ? (10 + (i % 5) * 4) : (5 + (i % 3) * 2.5)),
+        speed: i < 5 ? 0.00018 : (i < 11 ? 0.00032 : 0.00048),
+        swayAmp: 0.012 + (i % 4) * 0.006,
+        swayFreq: 0.45 + (i % 5) * 0.14,
+        phase: i * 1.37,
+        alpha: i < 5 ? 0.18 : (i < 11 ? 0.30 : 0.42),
+        tintIdx: i % 4 // 0: warm-white, 1: aurora-1, 2: aurora-2, 3: aurora-3
+      }));
+      const stageStardust = Array.from({ length: 44 }, (_, i) => ({
+        x: ((i * 0.193 + 0.03) % 0.96) + 0.02,
+        y: (i * 0.131 + 0.07) % 1.0,
+        r: 0.9 + (i % 4) * 0.55,
+        speed: 0.00028 + (i % 5) * 0.00011,
+        twinkleFreq: 1.2 + (i % 7) * 0.35,
+        phase: i * 2.11
+      }));
+
+      function drawStageBokehAndStardust(playing, c1, c2, c3) {
+        const bcv = $('np-stage-bokeh-canvas');
+        if (!bcv) return;
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const bw = Math.max(1, Math.round((bcv.clientWidth || window.innerWidth) * dpr));
+        const bh = Math.max(1, Math.round((bcv.clientHeight || window.innerHeight) * dpr));
+        if (bcv.width !== bw || bcv.height !== bh) {
+          bcv.width = bw;
+          bcv.height = bh;
+        }
+        const bctx = bcv.getContext('2d');
+        if (!bctx) return;
+        bctx.clearRect(0, 0, bw, bh);
+
+        const speedMul = playing ? 1 : 0.25;
+        const t = stageWavePhase;
+        const palette = ['#fff7eb', c1, c2, c3];
+
+        // 1. Depth-of-field Bokeh orbs rising gently with soft radial glow
+        for (let i = 0; i < stageBokehOrbs.length; i++) {
+          const o = stageBokehOrbs[i];
+          o.y -= o.speed * speedMul;
+          if (o.y < -0.12) {
+            o.y = 1.12;
+            o.x = ((o.x + 0.37) % 0.90) + 0.05;
+          }
+          const ox = (o.x + Math.sin(t * o.swayFreq + o.phase) * o.swayAmp) * bw;
+          const oy = o.y * bh;
+          const rad = o.r * dpr;
+          const breathe = 0.72 + 0.28 * Math.sin(t * 0.8 + o.phase);
+          const col = palette[o.tintIdx] || '#fff7eb';
+
+          const g = bctx.createRadialGradient(ox, oy, 0, ox, oy, rad);
+          g.addColorStop(0, col);
+          g.addColorStop(0.52, col);
+          g.addColorStop(1, 'rgba(255, 255, 255, 0)');
+
+          bctx.save();
+          bctx.globalCompositeOperation = 'screen';
+          bctx.globalAlpha = o.alpha * breathe;
+          bctx.fillStyle = g;
+          bctx.beginPath();
+          bctx.arc(ox, oy, rad, 0, Math.PI * 2);
+          bctx.fill();
+          bctx.restore();
+        }
+
+        // 2. Fine shimmering stardust motes floating upward through the Tyndall beams
+        bctx.save();
+        bctx.globalCompositeOperation = 'screen';
+        for (let i = 0; i < stageStardust.length; i++) {
+          const s = stageStardust[i];
+          s.y -= s.speed * speedMul;
+          if (s.y < -0.04) {
+            s.y = 1.04;
+            s.x = ((s.x + 0.29) % 0.94) + 0.03;
+          }
+          const sx = (s.x + Math.sin(t * 0.55 + s.phase) * 0.008) * bw;
+          const sy = s.y * bh;
+          const tw = 0.22 + 0.78 * Math.pow(0.5 + 0.5 * Math.sin(t * s.twinkleFreq + s.phase), 2);
+          bctx.globalAlpha = 0.58 * tw;
+          bctx.fillStyle = i % 3 === 0 ? c1 : '#fffaf0';
+          bctx.beginPath();
+          bctx.arc(sx, sy, s.r * dpr, 0, Math.PI * 2);
+          bctx.fill();
+        }
+        bctx.restore();
+      }
+
+      function stopStageWaveLoop() {
+        if (stageWaveRaf) {
+          cancelAnimationFrame(stageWaveRaf);
+          stageWaveRaf = 0;
+        }
+      }
+
+      function startStageWaveLoop() {
+        if (stageWaveRaf) return;
+        const drawSmoothWave = (ctx, xs, ys, w, h, fillStyle, strokeStyle, strokeWidth, glowColor = null) => {
+          const n = xs.length - 1;
+          ctx.beginPath();
+          ctx.moveTo(0, h);
+          ctx.lineTo(xs[0], ys[0]);
+          for (let i = 0; i < n; i++) {
+            const mx = (xs[i] + xs[i + 1]) * 0.5;
+            const my = (ys[i] + ys[i + 1]) * 0.5;
+            ctx.quadraticCurveTo(xs[i], ys[i], mx, my);
+          }
+          ctx.lineTo(w, ys[n]);
+          ctx.lineTo(w, h);
+          ctx.closePath();
+          ctx.fillStyle = fillStyle;
+          ctx.fill();
+
+          if (strokeStyle) {
+            ctx.save();
+            if (glowColor) {
+              ctx.shadowColor = glowColor;
+              ctx.shadowBlur = 10;
+            }
+            ctx.beginPath();
+            ctx.moveTo(xs[0], ys[0]);
+            for (let i = 0; i < n; i++) {
+              const mx = (xs[i] + xs[i + 1]) * 0.5;
+              const my = (ys[i] + ys[i + 1]) * 0.5;
+              ctx.quadraticCurveTo(xs[i], ys[i], mx, my);
+            }
+            ctx.strokeStyle = strokeStyle;
+            ctx.lineWidth = strokeWidth;
+            ctx.stroke();
+            ctx.restore();
+          }
+        };
+
+        const draw = () => {
+          if (!document.documentElement.classList.contains('np-stage-active')) {
+            stopStageWaveLoop();
+            return;
+          }
+          const cv = $('np-stage-wave-canvas');
+          if (cv) {
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+            const w = Math.max(1, Math.round((cv.clientWidth || window.innerWidth) * dpr));
+            const h = Math.max(1, Math.round((cv.clientHeight || 96) * dpr));
+            if (cv.width !== w || cv.height !== h) {
+              cv.width = w;
+              cv.height = h;
+            }
+            const ctx = cv.getContext('2d');
+            if (ctx) {
+              ctx.clearRect(0, 0, w, h);
+              const playing = Boolean(state.isPlaying);
+              stageWavePhase += playing ? 0.036 : 0.008;
+              const ampScale = playing ? 1 : 0.14;
+
+              const rootStyle = getComputedStyle(document.documentElement);
+              const c1 = (rootStyle.getPropertyValue('--aurora-1') || '#38bdf8').trim();
+              const c2 = (rootStyle.getPropertyValue('--aurora-2') || '#818cf8').trim();
+              const c3 = (rootStyle.getPropertyValue('--aurora-3') || '#2dd4bf').trim();
+              drawStageBokehAndStardust(playing, c1, c2, c3);
+
+              const pts = 60;
+              let freqData = null;
+              if (typeof analyser !== 'undefined' && analyser && playing && !hasNativeAudioBridge()) {
+                freqData = new Uint8Array(analyser.frequencyBinCount);
+                analyser.getByteFrequencyData(freqData);
+              }
+
+              // Slow, silky breathing envelope (zero jitter)
+              const beatPulse = playing
+                ? (0.78 + 0.24 * Math.pow(0.5 + 0.5 * Math.sin(stageWavePhase * 1.1), 2))
+                : 0.25;
+
+              const xs = new Array(pts + 1);
+              const ysBack = new Array(pts + 1);
+              const ysMid = new Array(pts + 1);
+              const ysFront = new Array(pts + 1);
+
+              for (let i = 0; i <= pts; i++) {
+                const t = i / pts;
+                const env = Math.pow(Math.sin(t * Math.PI), 0.82);
+                let targetFront = 0;
+                let targetBack = 0;
+                if (freqData && freqData.length) {
+                  const symT = 1 - Math.abs(t * 2 - 1);
+                  const bin = Math.min(freqData.length - 1, Math.floor((1 - symT * 0.85) * Math.min(freqData.length, 48)));
+                  targetFront = (freqData[bin] / 255) * 0.84;
+                  targetBack = (freqData[Math.max(0, bin - 4)] / 255) * 0.72;
+                } else {
+                  const w1 = Math.sin(t * 6.2 + stageWavePhase * 0.95);
+                  const w2 = Math.sin(t * 10.5 - stageWavePhase * 1.15);
+                  const w3 = Math.cos(t * 15.0 + stageWavePhase * 0.70);
+                  const w4 = Math.sin(t * 4.4 - stageWavePhase * 0.55);
+                  targetFront = (0.36 * (0.5 + 0.5 * w1) + 0.30 * (0.5 + 0.5 * w2) + 0.16 * (0.5 + 0.5 * w3)) * beatPulse;
+                  targetBack = (0.48 * (0.5 + 0.5 * w4) + 0.30 * (0.5 + 0.5 * w1)) * beatPulse;
+                }
+
+                // Gentle fluid damping for slow, unhurried silk ripples
+                const kFront = targetFront > stageWaveSmooth[i] ? 0.12 : 0.05;
+                stageWaveSmooth[i] += (targetFront - stageWaveSmooth[i]) * kFront;
+                const kBack = targetBack > stageWaveSmoothBack[i] ? 0.08 : 0.04;
+                stageWaveSmoothBack[i] += (targetBack - stageWaveSmoothBack[i]) * kBack;
+
+                const liftBack = Math.max(3 * dpr, env * stageWaveSmoothBack[i] * ampScale * h * 0.92);
+                const liftMid = Math.max(2.5 * dpr, env * (stageWaveSmooth[i] * 0.78 + stageWaveSmoothBack[i] * 0.26) * ampScale * h * 0.76);
+                const liftFront = Math.max(2 * dpr, env * stageWaveSmooth[i] * ampScale * h * 0.62);
+
+                xs[i] = t * w;
+                ysBack[i] = h - liftBack;
+                ysMid[i] = h - liftMid;
+                ysFront[i] = h - liftFront;
+              }
+
+              // Layer 1 (Back): Deep translucent cover-aurora silk hill
+              const backGrad = ctx.createLinearGradient(0, 0, w, h);
+              backGrad.addColorStop(0, c2);
+              backGrad.addColorStop(0.5, c1);
+              backGrad.addColorStop(1, c3);
+              ctx.save();
+              ctx.globalAlpha = 0.24;
+              drawSmoothWave(ctx, xs, ysBack, w, h, backGrad, null, 0);
+              ctx.restore();
+
+              // Layer 2 (Mid): Luminous aurora-to-white silk crest
+              const midGrad = ctx.createLinearGradient(0, h * 0.12, 0, h);
+              midGrad.addColorStop(0, 'rgba(255, 255, 255, 0.34)');
+              midGrad.addColorStop(0.55, 'rgba(255, 255, 255, 0.12)');
+              midGrad.addColorStop(1, 'rgba(255, 255, 255, 0.01)');
+              drawSmoothWave(ctx, xs, ysMid, w, h, midGrad, c1, Math.max(1, 1.1 * dpr), c1);
+
+              // Layer 3 (Front): Pure silky specular white crest (no vertical bars)
+
+              const frontGrad = ctx.createLinearGradient(0, h * 0.25, 0, h);
+              frontGrad.addColorStop(0, 'rgba(255, 255, 255, 0.44)');
+              frontGrad.addColorStop(0.7, 'rgba(255, 255, 255, 0.14)');
+              frontGrad.addColorStop(1, 'rgba(255, 255, 255, 0.02)');
+              drawSmoothWave(ctx, xs, ysFront, w, h, frontGrad, 'rgba(255, 255, 255, 0.92)', Math.max(1.3, 1.6 * dpr), 'rgba(255, 255, 255, 0.72)');
+            }
+          }
+          stageWaveRaf = requestAnimationFrame(draw);
+        };
+        stageWaveRaf = requestAnimationFrame(draw);
+      }
+
+      function tokenizeStageLyric(text) {
+        const clean = String(text || '').trim();
+        if (!clean) return [];
+        if (/\s+/.test(clean)) {
+          return clean.split(/\s+/).filter(Boolean);
+        }
+        // CJK / no-space line: chunk gracefully into rhythmic 2-3 char phrases
+        const chars = Array.from(clean);
+        if (chars.length <= 4) return [clean];
+        const chunks = [];
+        let i = 0;
+        while (i < chars.length) {
+          const rem = chars.length - i;
+          const take = rem === 4 ? 2 : (rem <= 3 ? rem : (chunks.length % 2 === 0 ? 2 : 3));
+          chunks.push(chars.slice(i, i + take).join(''));
+          i += take;
+        }
+        return chunks;
       }
 
       function updateLandscapeStageLyric(forceText = null) {
         const lineEl = $('np-stage-lyric-text');
         const titleEl = $('np-stage-title');
         const artistEl = $('np-stage-artist');
+        const stampImg = $('np-stage-stamp-cover');
         if (!lineEl) return;
 
         const curRaw = state.currentTrackId ? state.tracks.find((t) => t.id === state.currentTrackId) : null;
         const disp = curRaw ? getTrackDisplay(curRaw) : null;
         if (titleEl) titleEl.textContent = disp?.title || 'FENG MUSIC';
         if (artistEl) artistEl.textContent = disp ? `${disp.artist}${disp.album ? ' · ' + disp.album : ''}` : '';
+        if (stampImg) {
+          const nextCover = disp?.cover || DEFAULT_APP_COVER;
+          if (stampImg.getAttribute('src') !== nextCover) stampImg.setAttribute('src', nextCover);
+        }
 
         let nextText = forceText;
         if (nextText === null) {
@@ -13478,29 +14014,39 @@
           }
         }
         nextText = String(nextText || '').trim() || (disp?.title || 'FENG MUSIC');
+
         if (nextText !== lastStageLyricText) {
           lastStageLyricText = nextText;
-          lineEl.textContent = nextText;
-          lineEl.classList.remove('is-pop');
-          void lineEl.offsetWidth;
-          lineEl.classList.add('is-pop');
+          const tokens = tokenizeStageLyric(nextText);
+          const lastIdx = tokens.length - 1;
+          lineEl.innerHTML = tokens.map((tok, idx) => {
+            const isEm = idx === lastIdx || (tokens.length >= 4 && idx === Math.floor(tokens.length * 0.6));
+            const delay = Math.min(480, idx * 75);
+            const wy = (idx % 2 === 0 ? -2 : 3);
+            return `<span class="stage-word${isEm ? ' stage-word-em' : ''}" style="--wd:${delay}ms;--wy:${wy}px;">${escapeHtml(tok)}</span>`;
+          }).join('');
         }
       }
 
       function syncLandscapeStageMode() {
         const npOpen = Boolean(nowPlayingModal && !nowPlayingModal.classList.contains('translate-y-full'));
         const isMobileLand = window.innerWidth > window.innerHeight && window.innerHeight <= 520;
-        const enabled = state.diy.landscapeStageLyrics !== false;
-        const active = Boolean(npOpen && currentNpTabName === 'lyrics' && isMobileLand && enabled && !state.stageLyricsForceList);
+        const autoLand = isMobileLand && state.diy.landscapeStageLyrics !== false && !state.stageLyricsForceList;
+        const manualPortrait = Boolean(state.stageLyricsManualOpen && !state.stageLyricsForceList);
+        const active = Boolean(npOpen && currentNpTabName === 'lyrics' && (autoLand || manualPortrait));
         const wasActive = document.documentElement.classList.contains('np-stage-active');
         document.documentElement.classList.toggle('np-stage-active', active);
         if (active) {
           updateLandscapeStageLyric();
           syncLandscapeStagePlayIcon();
+          startStageWaveLoop();
           if (!wasActive) resetStageIdleTimer();
-        } else if (stageLyricsIdleTimer) {
-          clearTimeout(stageLyricsIdleTimer);
-          stageLyricsIdleTimer = null;
+        } else {
+          stopStageWaveLoop();
+          if (stageLyricsIdleTimer) {
+            clearTimeout(stageLyricsIdleTimer);
+            stageLyricsIdleTimer = null;
+          }
         }
       }
 
@@ -16525,6 +17071,15 @@
           await saveAppState();
           showToast(state.diy.landscapeStageLyrics ? '已开启横屏巨幕单句歌词' : '已关闭横屏巨幕单句歌词');
         });
+        on('dock-landscape-np', (e) => {
+          e.stopPropagation();
+          if (state.currentTrackId) openNowPlaying();
+          else showToast('当前暂无正在播放的歌曲');
+        });
+        on('btn-dock-land-play', (e) => {
+          e.stopPropagation();
+          togglePlayPause();
+        });
         on('btn-stage-collapse', (e) => {
           e.stopPropagation();
           closeNowPlaying();
@@ -16540,11 +17095,13 @@
         });
         on('btn-stage-to-list', (e) => {
           e.stopPropagation();
+          state.stageLyricsManualOpen = false;
           state.stageLyricsForceList = true;
           syncLandscapeStageMode();
         });
         on('btn-lyrics-to-stage', (e) => {
           e.stopPropagation();
+          state.stageLyricsManualOpen = true;
           state.stageLyricsForceList = false;
           syncLandscapeStageMode();
         });
@@ -16791,6 +17348,7 @@
         }
         if (typeof applyDiySettings === 'function') applyDiySettings();
         if (typeof syncLandscapeStageMode === 'function') syncLandscapeStageMode();
+        if (typeof syncNativeDockState === 'function') syncNativeDockState();
         if (typeof refreshCanvasViewportMetrics === 'function') {
           refreshCanvasViewportMetrics();
           if (state.activeView === 'library' && state.libViewMode === 'canvas' && typeof paintCanvasFrame === 'function') {
