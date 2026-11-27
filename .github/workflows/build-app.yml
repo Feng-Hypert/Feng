@@ -117,6 +117,7 @@ jobs:
           import android.content.Intent;
           import android.content.SharedPreferences;
           import android.content.UriPermission;
+          import android.content.pm.ActivityInfo;
           import android.content.pm.PackageManager;
           import android.database.Cursor;
           import android.graphics.Bitmap;
@@ -488,6 +489,21 @@ jobs:
               }
 
               private class FengFolderJsBridge {
+                  @JavascriptInterface
+                  public void setOrientationMode(String mode) {
+                      runOnUiThread(() -> {
+                          try {
+                              if ("portrait".equals(mode)) {
+                                  setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+                              } else if ("landscape".equals(mode)) {
+                                  setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
+                              } else {
+                                  setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+                              }
+                          } catch (Exception ignored) {}
+                      });
+                  }
+
                   @JavascriptInterface
                   public void setStatusBarHidden(boolean hidden) {
                       runOnUiThread(() -> {
@@ -4463,6 +4479,35 @@ jobs:
                   }
 
                   if message.name == "fengDock", let body = message.body as? [String: Any] {
+                      if let action = body["action"] as? String, action == "setOrientation",
+                         let mode = body["mode"] as? String {
+                          DispatchQueue.main.async {
+                              let mask: UIInterfaceOrientationMask
+                              let targetOrient: UIInterfaceOrientation?
+                              if mode == "portrait" {
+                                  mask = .portrait
+                                  targetOrient = .portrait
+                              } else if mode == "landscape" {
+                                  mask = .landscape
+                                  targetOrient = .landscapeRight
+                              } else {
+                                  mask = .allButUpsideDown
+                                  targetOrient = nil
+                              }
+                              AppDelegate.orientationLock = mask
+                              if let scene = self.webView?.window?.windowScene {
+                                  if #available(iOS 16.0, *) {
+                                      let prefs = UIWindowScene.GeometryPreferences.iOS(interfaceOrientations: mask)
+                                      scene.requestGeometryUpdate(prefs) { _ in }
+                                      self.webView?.window?.rootViewController?.setNeedsUpdateOfSupportedInterfaceOrientations()
+                                  } else if let orient = targetOrient {
+                                      UIDevice.current.setValue(orient.rawValue, forKey: "orientation")
+                                      UIViewController.attemptRotationToDeviceOrientation()
+                                  }
+                              }
+                          }
+                          return
+                      }
                       if let tab = body["tab"] as? String {
                           DispatchQueue.main.async { self.selectNativeTab(tab) }
                       }
@@ -4607,7 +4652,13 @@ jobs:
           @UIApplicationMain
           class AppDelegate: UIResponder, UIApplicationDelegate {
 
+              static var orientationLock: UIInterfaceOrientationMask = .allButUpsideDown
+
               var window: UIWindow?
+
+              func application(_ application: UIApplication, supportedInterfaceOrientationsFor window: UIWindow?) -> UIInterfaceOrientationMask {
+                  return AppDelegate.orientationLock
+              }
 
               func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
                   FengRemoteMediaBridge.shared.configureAudioAndCommands()
