@@ -1801,21 +1801,39 @@
       html.is-native-ios {
         --safe-top: max(env(safe-area-inset-top, 0px), var(--feng-inset-top, 0px));
       }
-      #main-workspace,
-      #now-playing-modal,
-      #eq-fullscreen-modal {
+      /* Keep #main-workspace & #eq-fullscreen-modal full-bleed so top scroll-fade masks & full-width scroll margins stretch 100% edge-to-edge with zero vertical seams */
+      #now-playing-modal {
         padding-left: var(--safe-left);
         padding-right: var(--safe-right);
       }
-      html.canvas-immersive #main-workspace {
-        padding-left: 0 !important;
-        padding-right: 0 !important;
+      #eq-fullscreen-modal header,
+      #eq-scroll-viewport {
+        padding-left: max(18px, var(--safe-left)) !important;
+        padding-right: max(18px, var(--safe-right)) !important;
       }
-      /* Right-Side Icon-Only Liquid Glass Dock in Landscape (4 Main Tabs Only) */
+      /* Safe-area horizontal padding inside every landscape view's headers & scroll containers (edge-to-edge masks stay seamless!) */
+      .app-view .collapsible-expanded-area,
+      .app-view .collapsible-compact-bar,
+      .app-view .editing-floating-bar,
+      .app-view > header {
+        padding-left: max(16px, var(--safe-left)) !important;
+        padding-right: max(16px, var(--safe-right)) !important;
+      }
+      #view-library > div:not(.collapsible-expanded-area):not(.collapsible-compact-bar):not(.editing-floating-bar):not(#library-canvas-stage),
+      #view-playlists > div:not(.collapsible-expanded-area):not(.collapsible-compact-bar),
+      #view-playlist-detail > div:not(.collapsible-expanded-area):not(.collapsible-compact-bar):not(.editing-floating-bar),
+      #view-group-detail > div:not(.collapsible-expanded-area):not(.collapsible-compact-bar),
+      #view-search > div:not(.collapsible-expanded-area):not(.collapsible-compact-bar),
+      #view-stats > div:not(.collapsible-expanded-area):not(.collapsible-compact-bar),
+      #view-diy > div:not(.collapsible-expanded-area):not(.collapsible-compact-bar) {
+        padding-left: max(16px, var(--safe-left)) !important;
+        padding-right: max(16px, var(--safe-right)) !important;
+      }
+      /* Right-Side Icon-Only Liquid Glass Dock in Landscape (snugger to the right edge so right side isn't empty) */
       #bottom-tab-dock,
       html.dock-collapsed #bottom-tab-dock {
         left: auto !important;
-        right: max(10px, var(--safe-right)) !important;
+        right: max(10px, calc(var(--safe-right) * 0.35)) !important;
         top: 50% !important;
         bottom: auto !important;
         width: auto !important;
@@ -1873,38 +1891,29 @@
         color: #ffffff !important;
         box-shadow: 0 0 16px rgba(56, 189, 248, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.65) !important;
       }
-      /* Reserve right-side clearance ONLY on the 4 main tabs (and their absolute headers) so neither cards nor top-right icons ever touch the Dock */
-      #view-library,
-      #view-playlists,
-      #view-stats,
-      #view-diy {
-        padding-right: 66px !important;
-      }
+      /* Reserve right-side Dock clearance ONLY on the 4 main tabs (using padding-right so top fade masks STILL stretch 100% edge-to-edge!) */
+      #view-library > div:not(.collapsible-expanded-area):not(.collapsible-compact-bar):not(.editing-floating-bar):not(#library-canvas-stage),
+      #view-playlists > div:not(.collapsible-expanded-area):not(.collapsible-compact-bar),
+      #view-stats > div:not(.collapsible-expanded-area):not(.collapsible-compact-bar),
+      #view-diy > div:not(.collapsible-expanded-area):not(.collapsible-compact-bar),
       #view-library .collapsible-expanded-area,
       #view-library .collapsible-compact-bar,
-      #view-library .editing-floating-bar,
       #view-playlists .collapsible-expanded-area,
       #view-playlists .collapsible-compact-bar,
       #view-stats .collapsible-expanded-area,
       #view-stats .collapsible-compact-bar,
       #view-diy .collapsible-expanded-area,
       #view-diy .collapsible-compact-bar {
-        right: 66px !important;
+        padding-right: calc(max(10px, var(--safe-right) * 0.35) + 64px) !important;
       }
-      html.canvas-immersive #view-library,
-      html.multiselect-active #view-library {
-        padding-right: 0 !important;
-      }
-      html.canvas-immersive #view-library .collapsible-expanded-area,
-      html.canvas-immersive #view-library .collapsible-compact-bar,
-      html.multiselect-active #view-library .editing-floating-bar {
-        right: 0 !important;
+      html.multiselect-active #view-library > div:not(.collapsible-expanded-area):not(.collapsible-compact-bar):not(.editing-floating-bar):not(#library-canvas-stage) {
+        padding-right: max(16px, var(--safe-right)) !important;
       }
       /* Bottom-centered compact Mini-Player at top of scroll; smoothly hides when scrolled down */
       #mini-player-wrapper {
         bottom: calc(var(--safe-bottom) + 10px) !important;
         padding-left: max(16px, var(--safe-left)) !important;
-        padding-right: calc(max(10px, var(--safe-right)) + 68px) !important;
+        padding-right: calc(max(10px, var(--safe-right) * 0.35) + 64px) !important;
         transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.24s ease !important;
       }
       html.dock-hidden #mini-player-wrapper {
@@ -1975,45 +1984,70 @@
       #sheet-canvas-subview {
         max-height: 86vh !important;
       }
-      /* Daily Fortune Modal: Compact Landscape Fit (keeps all action buttons visible) */
+      /* Daily Fortune Modal: Balanced 2-Column Horizontal Postcard (all content & buttons 100% visible) */
+      #modal-fortune {
+        padding: calc(var(--safe-top) + 8px) max(16px, var(--safe-right)) calc(var(--safe-bottom) + 8px) max(16px, var(--safe-left)) !important;
+      }
+      #modal-fortune .fortune-card-stage {
+        max-width: min(650px, 92vw) !important;
+      }
       #fortune-card-inner {
-        max-width: min(560px, 90vw) !important;
-        max-height: 88vh !important;
+        max-height: 92vh !important;
         overflow-y: auto !important;
-        padding: 12px 16px !important;
+        padding: 14px 18px !important;
+        border-radius: 24px !important;
       }
       #fortune-card-inner.space-y-3\.5 > :not([hidden]) ~ :not([hidden]) {
-        margin-top: 8px !important;
+        margin-top: 10px !important;
       }
-      #fortune-card-inner > div:nth-child(2) {
-        height: 82px !important;
-        width: 96px !important;
+      #fortune-body-layout {
+        display: grid !important;
+        grid-template-columns: 162px 1fr !important;
+        gap: 18px !important;
+        align-items: center !important;
+      }
+      #fortune-body-layout.space-y-3\.5 > :not([hidden]) ~ :not([hidden]) {
+        margin-top: 0 !important;
+      }
+      #fortune-visual-col {
+        text-align: center !important;
+      }
+      #fortune-visual-col .fortune-cover-stage {
+        width: 124px !important;
+        height: 116px !important;
         padding-top: 0 !important;
       }
       #fortune-cover {
-        width: 78px !important;
-        height: 78px !important;
-        border-radius: 18px !important;
+        width: 112px !important;
+        height: 112px !important;
+        border-radius: 22px !important;
       }
       #fortune-album-disc {
-        width: 62px !important;
-        height: 62px !important;
-        top: 8px !important;
+        width: 88px !important;
+        height: 88px !important;
+        top: 12px !important;
+      }
+      #fortune-detail-col {
+        min-width: 0 !important;
+        text-align: left !important;
+      }
+      #fortune-detail-col.space-y-3 > :not([hidden]) ~ :not([hidden]) {
+        margin-top: 9px !important;
       }
       #fortune-lyric-quote {
-        font-size: 11.5px !important;
-        line-height: 1.4 !important;
+        font-size: 12px !important;
+        line-height: 1.45 !important;
       }
       #fortune-card-inner .bg-white\/7 {
-        padding: 8px 12px !important;
+        padding: 10px 13px !important;
       }
-      /* EQ Studio & Lyrics View compact landscape fit */
-      #eq-fullscreen-modal main,
-      #eq-fullscreen-modal > div {
-        overflow-y: auto !important;
+      /* EQ Studio: preserve 1:1 round dot-matrix aspect ratio & full-width scroll viewport */
+      #eq-fullscreen-modal header {
+        padding-top: calc(var(--safe-top) + 6px) !important;
+        padding-bottom: 6px !important;
       }
-      #eq-curve-canvas {
-        max-height: 150px !important;
+      #eq-scroll-viewport {
+        padding-bottom: calc(var(--safe-bottom) + 28px) !important;
       }
       #np-panel-lyrics {
         padding-bottom: calc(var(--safe-bottom) + 8px) !important;
@@ -3958,48 +3992,54 @@
           <button id="btn-fortune-close" class="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-xs text-white/75">✕</button>
         </div>
 
-        <!-- Cover & Track / Album / Artist Visual -->
-        <div class="relative w-36 h-32 mx-auto pt-1 flex items-center justify-center">
-          <div id="fortune-album-disc" class="hidden absolute right-1 top-3 w-24 h-24 rounded-full border border-white/25 shadow-xl pointer-events-none" style="background: conic-gradient(from 30deg, rgba(255,255,255,0.45), rgba(56,189,248,0.35), rgba(167,139,250,0.35), rgba(251,191,36,0.30), rgba(255,255,255,0.45));">
-            <div class="absolute inset-[36%] rounded-full bg-[#0c1018] border border-white/35"></div>
-          </div>
-          <img id="fortune-cover" src="" alt="" class="relative z-10 w-32 h-32 rounded-3xl object-cover shadow-2xl border border-white/20 transition-all duration-300" />
-        </div>
-        <div class="space-y-0.5">
-          <h3 id="fortune-title" class="text-base font-bold text-white truncate px-2">歌曲名</h3>
-          <p id="fortune-artist" class="text-xs text-white/55 truncate px-4">歌手</p>
-        </div>
-
-        <!-- Song Lyric Excerpt Quote -->
-        <div class="bg-white/7 rounded-2xl p-3.5 border border-white/12 space-y-1.5">
-          <p id="fortune-lyric-quote" class="text-xs sm:text-[13px] text-white/95 font-medium leading-relaxed whitespace-pre-line">
-            “旋律响起的那一刻，所有未说出口的心事都有了回音。”
-          </p>
-        </div>
-
-        <!-- Lucky Color & Toggleable White Noise Pairing -->
-        <div class="grid grid-cols-2 gap-2 text-left">
-          <div class="rounded-2xl bg-white/6 border border-white/10 px-3 py-2 flex items-center gap-2.5">
-            <span id="fortune-color-dot" class="w-5 h-5 rounded-full shrink-0 border border-white/30 shadow-inner" style="background:#38bdf8;"></span>
-            <div class="min-w-0">
-              <div class="text-[10px] text-white/45">今日灵感色</div>
-              <div id="fortune-color-name" class="text-xs font-semibold text-white truncate">晴空冰蓝</div>
+        <div id="fortune-body-layout" class="space-y-3.5">
+          <div id="fortune-visual-col" class="space-y-2.5">
+            <!-- Cover & Track / Album / Artist Visual -->
+            <div class="fortune-cover-stage relative w-36 h-32 mx-auto pt-1 flex items-center justify-center">
+              <div id="fortune-album-disc" class="hidden absolute right-1 top-3 w-24 h-24 rounded-full border border-white/25 shadow-xl pointer-events-none" style="background: conic-gradient(from 30deg, rgba(255,255,255,0.45), rgba(56,189,248,0.35), rgba(167,139,250,0.35), rgba(251,191,36,0.30), rgba(255,255,255,0.45));">
+                <div class="absolute inset-[36%] rounded-full bg-[#0c1018] border border-white/35"></div>
+              </div>
+              <img id="fortune-cover" src="" alt="" class="relative z-10 w-32 h-32 rounded-3xl object-cover shadow-2xl border border-white/20 transition-all duration-300" />
+            </div>
+            <div class="space-y-0.5">
+              <h3 id="fortune-title" class="text-base font-bold text-white truncate px-2">歌曲名</h3>
+              <p id="fortune-artist" class="text-xs text-white/55 truncate px-4">歌手</p>
             </div>
           </div>
-          <button id="btn-fortune-whitenoise" class="rounded-2xl bg-teal-500/15 hover:bg-teal-500/25 border border-teal-400/25 px-3 py-2 flex items-center gap-2 text-left transition active:scale-95">
-            <span id="fortune-wn-icon" class="text-base shrink-0">🌧️</span>
-            <div class="min-w-0">
-              <div id="fortune-wn-status" class="text-[10px] text-teal-200/75">点击叠加白噪音</div>
-              <div id="fortune-wn-name" class="text-xs font-semibold text-teal-100 truncate">窗边细雨</div>
-            </div>
-          </button>
-        </div>
 
-        <!-- Action Buttons -->
-        <div class="flex gap-2 pt-0.5">
-          <button id="btn-fortune-redraw" class="px-3.5 py-2.5 rounded-2xl bg-white/10 hover:bg-white/15 text-xs font-medium text-white/85 shrink-0">重抽</button>
-          <button id="btn-fortune-add-pl" class="px-3.5 py-2.5 rounded-2xl bg-white/10 hover:bg-white/15 text-xs font-medium text-sky-200 shrink-0">+ 歌单</button>
-          <button id="btn-fortune-play" class="flex-1 py-2.5 rounded-2xl bg-white text-zinc-950 text-xs font-semibold shadow-lg active:scale-95 transition">立即聆听</button>
+          <div id="fortune-detail-col" class="space-y-3">
+            <!-- Song Lyric Excerpt Quote -->
+            <div class="bg-white/7 rounded-2xl p-3.5 border border-white/12 space-y-1.5">
+              <p id="fortune-lyric-quote" class="text-xs sm:text-[13px] text-white/95 font-medium leading-relaxed whitespace-pre-line">
+                “旋律响起的那一刻，所有未说出口的心事都有了回音。”
+              </p>
+            </div>
+
+            <!-- Lucky Color & Toggleable White Noise Pairing -->
+            <div class="grid grid-cols-2 gap-2 text-left">
+              <div class="rounded-2xl bg-white/6 border border-white/10 px-3 py-2 flex items-center gap-2.5">
+                <span id="fortune-color-dot" class="w-5 h-5 rounded-full shrink-0 border border-white/30 shadow-inner" style="background:#38bdf8;"></span>
+                <div class="min-w-0">
+                  <div class="text-[10px] text-white/45">今日灵感色</div>
+                  <div id="fortune-color-name" class="text-xs font-semibold text-white truncate">晴空冰蓝</div>
+                </div>
+              </div>
+              <button id="btn-fortune-whitenoise" class="rounded-2xl bg-teal-500/15 hover:bg-teal-500/25 border border-teal-400/25 px-3 py-2 flex items-center gap-2 text-left transition active:scale-95">
+                <span id="fortune-wn-icon" class="text-base shrink-0">🌧️</span>
+                <div class="min-w-0">
+                  <div id="fortune-wn-status" class="text-[10px] text-teal-200/75">点击叠加白噪音</div>
+                  <div id="fortune-wn-name" class="text-xs font-semibold text-teal-100 truncate">窗边细雨</div>
+                </div>
+              </button>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex gap-2 pt-0.5">
+              <button id="btn-fortune-redraw" class="px-3.5 py-2.5 rounded-2xl bg-white/10 hover:bg-white/15 text-xs font-medium text-white/85 shrink-0">重抽</button>
+              <button id="btn-fortune-add-pl" class="px-3.5 py-2.5 rounded-2xl bg-white/10 hover:bg-white/15 text-xs font-medium text-sky-200 shrink-0">+ 歌单</button>
+              <button id="btn-fortune-play" class="flex-1 py-2.5 rounded-2xl bg-white text-zinc-950 text-xs font-semibold shadow-lg active:scale-95 transition">立即聆听</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -4211,7 +4251,8 @@
       </div>
     </header>
 
-    <div class="relative z-10 flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-16 space-y-4 max-w-xl w-full mx-auto">
+    <div id="eq-scroll-viewport" class="relative z-10 flex-1 overflow-y-auto no-scrollbar w-full px-4 sm:px-6 pb-16" style="-webkit-overflow-scrolling: touch;">
+      <div class="max-w-xl w-full mx-auto space-y-4">
       <!-- Apple Cash–Inspired Obsidian Holographic Dot-Matrix Analyzer Card -->
       <div class="eq-obsidian-card rounded-[28px] p-4 space-y-2.5">
         <div class="flex items-center justify-between gap-2">
@@ -4372,6 +4413,7 @@
           </div>
         </div>
       </div>
+          </div>
     </div>
   </div>
 
@@ -12624,8 +12666,8 @@
         const canvas = $('eq-curve-canvas');
         if (!canvas) return;
         const parent = canvas.parentElement;
-        const cssW = parent ? parent.clientWidth : canvas.clientWidth;
-        const cssH = parent ? parent.clientHeight : canvas.clientHeight;
+        const cssW = canvas.clientWidth || (parent ? parent.clientWidth : 0);
+        const cssH = canvas.clientHeight || (parent ? parent.clientHeight : 0);
         if (!cssW || !cssH) return;
         const dpr = Math.min(window.devicePixelRatio || 1, 2);
         const w = Math.round(cssW * dpr);
