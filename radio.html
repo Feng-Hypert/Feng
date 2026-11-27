@@ -902,6 +902,9 @@
     .pl-detail-scroll-pad {
       padding-top: calc(var(--safe-top) + 128px);
     }
+    .detail-scroll-pad {
+      padding-top: calc(var(--safe-top) + 68px);
+    }
     /* Dedicated Editing Mode Bar (Multi-Select / Custom Reorder) — replaces normal header cleanly with zero overlap */
     .editing-floating-bar {
       position: absolute;
@@ -1690,6 +1693,79 @@
       transform: translateY(-50%) scale(1);
       pointer-events: auto;
     }
+    #btn-canvas-unfold-spine.is-unfolding {
+      pointer-events: none;
+      animation: canvasStarUnfoldDash 0.38s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    @keyframes canvasStarUnfoldDash {
+      0% {
+        transform: translateY(-50%) translateX(0) scale(1) rotate(0deg);
+        opacity: 1;
+        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.58), 0 0 16px rgba(56, 189, 248, 0.25);
+      }
+      44% {
+        transform: translateY(-50%) translateX(26px) scale(1.38) rotate(135deg);
+        opacity: 1;
+        box-shadow: 0 0 28px rgba(56, 189, 248, 0.92), 0 0 12px rgba(224, 242, 254, 0.85), inset 0 0 10px rgba(125, 211, 252, 0.65);
+      }
+      100% {
+        transform: translateY(-50%) translateX(-44px) scale(0.52) rotate(-45deg);
+        opacity: 0;
+        box-shadow: 0 0 36px rgba(56, 189, 248, 0.15);
+      }
+    }
+    #canvas-edge-tech-flash {
+      position: absolute;
+      inset: 0;
+      z-index: 36;
+      pointer-events: none;
+      opacity: 0;
+      box-shadow:
+        inset 0 0 0 2px rgba(125, 211, 252, 0.92),
+        inset 0 0 22px rgba(56, 189, 248, 0.72),
+        inset 0 0 58px rgba(14, 165, 233, 0.36);
+      overflow: hidden;
+    }
+    #canvas-edge-tech-flash::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      padding: 2.5px;
+      background: conic-gradient(
+        from 0deg,
+        rgba(56, 189, 248, 0.15) 0deg,
+        rgba(56, 189, 248, 0.95) 60deg,
+        rgba(224, 242, 254, 1) 88deg,
+        rgba(34, 211, 238, 0.92) 118deg,
+        rgba(56, 189, 248, 0.12) 175deg,
+        rgba(56, 189, 248, 0.90) 245deg,
+        rgba(224, 242, 254, 0.98) 272deg,
+        rgba(56, 189, 248, 0.15) 360deg
+      );
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask-composite: exclude;
+      opacity: 0;
+    }
+    #canvas-edge-tech-flash.is-flashing {
+      animation: canvasEdgeTechPulse 0.58s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    #canvas-edge-tech-flash.is-flashing::before {
+      opacity: 1;
+      animation: canvasEdgeTechScan 0.58s linear forwards;
+    }
+    @keyframes canvasEdgeTechPulse {
+      0% { opacity: 0; }
+      22% { opacity: 1; }
+      62% { opacity: 0.72; }
+      100% { opacity: 0; }
+    }
+    @keyframes canvasEdgeTechScan {
+      0% { filter: hue-rotate(0deg) brightness(1.1); }
+      50% { filter: hue-rotate(-14deg) brightness(1.35); }
+      100% { filter: hue-rotate(0deg) brightness(1); }
+    }
 
     #canvas-playlist-banner {
       position: absolute;
@@ -1896,6 +1972,129 @@
         padding: 6px 10px 6px 12px;
       }
     }
+
+    /* ==================== LANDSCAPE STAGE LYRICS (巨幕单句舞台 + 封面动态流光) ==================== */
+    #np-landscape-stage {
+      position: absolute;
+      inset: 0;
+      z-index: 26;
+      display: none;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      overflow: hidden;
+      background: #06080d;
+      padding: calc(var(--safe-top) + 10px) max(24px, var(--safe-right)) calc(var(--safe-bottom) + 14px) max(24px, var(--safe-left));
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    html.np-stage-active #np-landscape-stage {
+      display: flex;
+    }
+    html.np-stage-active #now-playing-modal > header,
+    html.np-stage-active #np-panel-lyrics {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .stage-aurora-layer {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .stage-aurora-orb {
+      position: absolute;
+      border-radius: 9999px;
+      filter: blur(78px);
+      will-change: transform;
+      transition: background 1.2s ease;
+    }
+    .stage-orb-1 {
+      width: 68vw;
+      height: 68vw;
+      max-width: 560px;
+      max-height: 560px;
+      top: -28%;
+      left: -14%;
+      opacity: 0.56;
+      background: radial-gradient(circle, var(--aurora-1, #38bdf8) 0%, transparent 70%);
+      animation: stageOrbDrift1 14s ease-in-out infinite alternate;
+    }
+    .stage-orb-2 {
+      width: 64vw;
+      height: 64vw;
+      max-width: 520px;
+      max-height: 520px;
+      bottom: -32%;
+      right: -12%;
+      opacity: 0.50;
+      background: radial-gradient(circle, var(--aurora-2, #818cf8) 0%, transparent 70%);
+      animation: stageOrbDrift2 17s ease-in-out infinite alternate;
+    }
+    .stage-orb-3 {
+      width: 56vw;
+      height: 56vw;
+      max-width: 460px;
+      max-height: 460px;
+      top: 18%;
+      left: 34%;
+      opacity: 0.42;
+      background: radial-gradient(circle, var(--aurora-3, #2dd4bf) 0%, transparent 72%);
+      animation: stageOrbDrift3 19s ease-in-out infinite alternate;
+    }
+    @keyframes stageOrbDrift1 {
+      0% { transform: translate3d(0, 0, 0) scale(1); }
+      100% { transform: translate3d(10vw, 12vh, 0) scale(1.16); }
+    }
+    @keyframes stageOrbDrift2 {
+      0% { transform: translate3d(0, 0, 0) scale(1.06); }
+      100% { transform: translate3d(-12vw, -10vh, 0) scale(0.94); }
+    }
+    @keyframes stageOrbDrift3 {
+      0% { transform: translate3d(-4vw, 4vh, 0) scale(0.95); }
+      100% { transform: translate3d(8vw, -8vh, 0) scale(1.14); }
+    }
+    #np-stage-lyric-text {
+      position: relative;
+      z-index: 2;
+      max-width: min(86vw, 760px);
+      text-align: center;
+      font-weight: 900;
+      font-style: italic;
+      font-size: clamp(28px, 5.6vw, 54px);
+      line-height: 1.18;
+      letter-spacing: -0.02em;
+      color: #ffffff;
+      text-wrap: balance;
+      word-break: break-word;
+      text-shadow: 0 8px 32px rgba(0, 0, 0, 0.56), 0 0 26px rgba(255, 255, 255, 0.16);
+    }
+    #np-stage-lyric-text.is-pop {
+      animation: stageLyricPop 0.42s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    @keyframes stageLyricPop {
+      0% { opacity: 0; transform: translateY(14px) scale(0.92); filter: blur(6px); }
+      100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+    }
+    .stage-chrome-fade {
+      transition: opacity 0.36s ease, transform 0.36s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    #np-landscape-stage.is-stage-idle .stage-chrome-fade {
+      opacity: 0;
+      pointer-events: none;
+    }
+    #np-landscape-stage.is-stage-idle .stage-bottom-bar {
+      transform: translateY(10px);
+    }
+    #btn-lyrics-to-stage {
+      display: none;
+    }
+    @media (max-height: 520px) and (orientation: landscape) {
+      #btn-lyrics-to-stage.is-stage-enabled {
+        display: inline-flex;
+      }
+    }
   </style>
 </head>
 <body>
@@ -1904,7 +2103,9 @@
   <input id="file-import-input" type="file" accept=".mp3,.flac,.m4a,.wav,.ogg,.aac,.lrc,audio/*" multiple class="hidden" />
   <input id="relink-file-input" type="file" accept=".mp3,.flac,.m4a,.wav,.ogg,.aac,audio/*" multiple class="hidden" />
   <input id="bg-home-input" type="file" accept="image/*" class="hidden" />
+  <input id="bg-home-landscape-input" type="file" accept="image/*" class="hidden" />
   <input id="bg-player-input" type="file" accept="image/*" class="hidden" />
+  <input id="bg-player-landscape-input" type="file" accept="image/*" class="hidden" />
   <input id="track-cover-input" type="file" accept="image/*" class="hidden" />
   <input id="playlist-cover-input" type="file" accept="image/*" class="hidden" />
   <input id="backup-import-input" type="file" accept=".json,application/json" class="hidden" />
@@ -2114,6 +2315,7 @@
             <path d="M12 2C12 8.2 15.8 12 22 12C15.8 12 12 15.8 12 22C12 15.8 8.2 12 2 12C8.2 12 12 8.2 12 2Z" fill="url(#canvasStarUnfoldGrad)" />
           </svg>
         </button>
+        <div id="canvas-edge-tech-flash" aria-hidden="true"></div>
         <div id="canvas-playlist-banner" class="hidden" aria-label="当前歌单画布">
           <span id="canvas-playlist-banner-title" class="text-xs font-semibold text-white truncate"></span>
           <button id="btn-canvas-playlist-clear" class="w-5 h-5 rounded-full bg-white/12 hover:bg-white/24 flex items-center justify-center text-white/80 text-[11px] shrink-0 transition" title="返回全部曲库" aria-label="返回全部曲库">✕</button>
@@ -2164,7 +2366,7 @@
         </button>
       </header>
       </div>
-      <div id="group-detail-scroll" class="flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 space-y-4">
+      <div id="group-detail-scroll" class="detail-scroll-pad flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 space-y-4">
         <div id="album-jewel-hero" class="hidden pt-2 pb-1 space-y-5"></div>
         <div id="group-detail-list" class="space-y-2"></div>
       </div>
@@ -2325,7 +2527,7 @@
         </div>
       </header>
       </div>
-      <div id="search-results-container" class="flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 space-y-5"></div>
+      <div id="search-results-container" class="detail-scroll-pad flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 space-y-5"></div>
     </section>
 
     <!-- ==================== VIEW 8: LISTENING STATS (听歌足迹 + 周报/月报) ==================== -->
@@ -2432,15 +2634,33 @@
       </div>
 
       <div id="diy-scroll-container" class="pl-scroll-pad flex-1 overflow-y-auto no-scrollbar px-4 sm:px-6 pb-48 space-y-4">
+        <!-- 0. App Screen Orientation Mode (Auto / Portrait Lock / Landscape Lock) -->
+        <div class="liquid-panel rounded-3xl p-4 space-y-3">
+          <div>
+            <h2 class="text-sm font-semibold text-white">屏幕显示方向</h2>
+            <p class="text-xs text-white/50">手动锁定竖屏或横屏后，不受手机系统自动旋转影响</p>
+          </div>
+          <div class="grid grid-cols-3 gap-2">
+            <button data-orient-mode="auto" class="diy-orient-btn py-2 px-2 rounded-xl text-xs font-medium bg-white/20 text-white border border-white/25 transition">自动识别</button>
+            <button data-orient-mode="portrait" class="diy-orient-btn py-2 px-2 rounded-xl text-xs font-medium bg-white/8 text-white/70 border border-transparent transition">锁定竖屏</button>
+            <button data-orient-mode="landscape" class="diy-orient-btn py-2 px-2 rounded-xl text-xs font-medium bg-white/8 text-white/70 border border-transparent transition">锁定横屏</button>
+          </div>
+        </div>
+
         <!-- 1. Home Background Wallpaper -->
         <div class="liquid-panel rounded-3xl p-4 space-y-3.5">
           <div>
             <h2 class="text-sm font-semibold text-white">主页背景壁纸</h2>
             <p class="text-xs text-white/50">默认随当前封面生成动态流光，也可上传相册图片离线保存</p>
           </div>
-          <div class="flex items-center gap-2">
-            <button id="btn-diy-home-upload" class="liquid-pill px-3.5 py-2 rounded-xl text-xs font-medium text-white">上传主页图片</button>
-            <button id="btn-diy-home-reset" class="px-3.5 py-2 rounded-xl bg-white/8 hover:bg-white/15 text-xs text-white/75">恢复默认流光</button>
+          <div class="flex flex-wrap items-center gap-2">
+            <button id="btn-diy-home-upload" class="liquid-pill px-3.5 py-2 rounded-xl text-xs font-medium text-white">上传竖屏图片</button>
+            <button id="btn-diy-home-reset" class="px-3 py-2 rounded-xl bg-white/8 hover:bg-white/15 text-xs text-white/75">恢复默认流光</button>
+          </div>
+          <div class="flex flex-wrap items-center gap-2 pt-0.5">
+            <button id="btn-diy-home-land-upload" class="liquid-pill px-3.5 py-2 rounded-xl text-xs font-medium text-sky-200">上传横屏壁纸</button>
+            <button id="btn-diy-home-land-reset" class="px-3 py-2 rounded-xl bg-white/8 hover:bg-white/15 text-xs text-white/75">清除横屏</button>
+            <span id="diy-home-land-status" class="text-[11px] text-white/45">未设置（默认沿用竖屏）</span>
           </div>
           <div class="space-y-1.5 pt-1">
             <div class="flex justify-between text-xs text-white/70">
@@ -2470,9 +2690,14 @@
             <button data-player-bg="oled" class="diy-player-bg-btn py-2 px-2 rounded-xl text-xs font-medium bg-white/8 text-white/70 border border-transparent">纯净深邃黑</button>
           </div>
           <div class="space-y-3 pt-1">
-            <div class="flex items-center gap-2">
-              <button id="btn-diy-player-upload" class="liquid-pill px-3.5 py-2 rounded-xl text-xs font-medium text-white">上传播放页图片</button>
-              <button id="btn-diy-player-reset" class="px-3.5 py-2 rounded-xl bg-white/8 hover:bg-white/15 text-xs text-white/75">清除图片</button>
+            <div class="flex flex-wrap items-center gap-2">
+              <button id="btn-diy-player-upload" class="liquid-pill px-3.5 py-2 rounded-xl text-xs font-medium text-white">上传竖屏图片</button>
+              <button id="btn-diy-player-reset" class="px-3 py-2 rounded-xl bg-white/8 hover:bg-white/15 text-xs text-white/75">清除图片</button>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <button id="btn-diy-player-land-upload" class="liquid-pill px-3.5 py-2 rounded-xl text-xs font-medium text-sky-200">上传横屏壁纸</button>
+              <button id="btn-diy-player-land-reset" class="px-3 py-2 rounded-xl bg-white/8 hover:bg-white/15 text-xs text-white/75">清除横屏</button>
+              <span id="diy-player-land-status" class="text-[11px] text-white/45">未设置（默认沿用竖屏）</span>
             </div>
             <div class="space-y-1.5">
               <div class="flex justify-between text-xs text-white/70">
@@ -2811,6 +3036,7 @@
     <!-- ==================== TAB 2: PERSONALIZED LYRICS VIEW (歌词) ==================== -->
     <div id="np-panel-lyrics" class="hidden relative z-10 flex-1 flex flex-col overflow-hidden max-w-2xl w-full mx-auto" style="padding-bottom: calc(var(--safe-bottom) + 16px);">
       <div class="px-5 py-2 flex items-center justify-end gap-2 shrink-0">
+        <button id="btn-lyrics-to-stage" class="liquid-pill px-3 py-1.5 rounded-full text-xs font-semibold text-sky-200 items-center gap-1 whitespace-nowrap">✦ 巨幕舞台</button>
         <button id="btn-lyric-style-cycle" class="liquid-pill px-3 py-1.5 rounded-full text-xs font-medium text-amber-200 whitespace-nowrap">✨ 景深聚焦</button>
         <button id="btn-lyric-poster" class="liquid-pill px-3 py-1.5 rounded-full text-xs font-semibold text-sky-200 flex items-center gap-1 whitespace-nowrap">
           <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
@@ -2819,6 +3045,53 @@
       </div>
 
       <div id="lyrics-scroll-container" class="flex-1 overflow-y-auto no-scrollbar px-6 py-[35vh] space-y-5"></div>
+    </div>
+
+    <!-- ==================== LANDSCAPE STAGE LYRICS OVERLAY (横屏巨幕单句舞台) ==================== -->
+    <div id="np-landscape-stage" aria-label="横屏巨幕歌词舞台">
+      <div class="stage-aurora-layer" aria-hidden="true">
+        <div class="stage-aurora-orb stage-orb-1"></div>
+        <div class="stage-aurora-orb stage-orb-2"></div>
+        <div class="stage-aurora-orb stage-orb-3"></div>
+        <div class="absolute inset-0 bg-gradient-to-b from-black/32 via-black/18 to-black/48"></div>
+      </div>
+
+      <!-- Top minimal bar -->
+      <div class="stage-chrome-fade relative z-10 w-full flex items-center justify-between gap-4">
+        <button id="btn-stage-collapse" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 flex items-center justify-center text-white/90 shrink-0 transition active:scale-90" aria-label="收起播放页">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div class="min-w-0 text-center">
+          <div id="np-stage-title" class="text-sm font-bold text-white/95 truncate">FENG MUSIC</div>
+          <div id="np-stage-artist" class="text-[11px] text-white/55 truncate mt-0.5"></div>
+        </div>
+        <button id="btn-stage-settings" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 flex items-center justify-center text-white/90 shrink-0 transition active:scale-90" aria-label="播放设置">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+
+      <!-- Center Giant Kinetic Single-Line Lyric -->
+      <div class="relative z-10 flex-1 flex items-center justify-center w-full px-4">
+        <div id="np-stage-lyric-text">FENG MUSIC</div>
+      </div>
+
+      <!-- Bottom Minimal Outline Controls + Bottom-Right List Switch -->
+      <div class="stage-chrome-fade stage-bottom-bar relative z-10 w-full flex items-center justify-between">
+        <button id="btn-stage-to-cover" class="px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 text-[11px] font-medium text-white/80 transition active:scale-95">封面</button>
+        <div class="flex items-center gap-4">
+          <button id="btn-stage-prev" class="w-9 h-9 rounded-full border border-white/45 hover:border-white bg-black/20 flex items-center justify-center text-white transition active:scale-90" aria-label="上一首">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
+          </button>
+          <button id="btn-stage-play" class="w-11 h-11 rounded-full border-[1.5px] border-white/80 hover:border-white bg-white/10 flex items-center justify-center text-white transition active:scale-90" aria-label="播放或暂停">
+            <svg id="stage-play-icon" class="w-5 h-5 translate-x-[0.5px]" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            <svg id="stage-pause-icon" class="w-5 h-5 hidden" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>
+          </button>
+          <button id="btn-stage-next" class="w-9 h-9 rounded-full border border-white/45 hover:border-white bg-black/20 flex items-center justify-center text-white transition active:scale-90" aria-label="下一首">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M16 6h2v12h-2zM6 18l8.5-6L6 6z"/></svg>
+          </button>
+        </div>
+        <button id="btn-stage-to-list" class="px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 text-[11px] font-medium text-white/80 transition active:scale-95" title="切换传统滚动歌词">列表</button>
+      </div>
     </div>
   </div>
 
@@ -2938,6 +3211,15 @@
             <span class="w-4 h-4 rounded-full bg-white shadow"></span>
           </button>
         </div>
+      </div>
+      <div id="row-np-stage-lyrics" class="flex items-center justify-between gap-2 px-3 py-2.5 mt-1.5 rounded-2xl bg-white/8 border border-white/10">
+        <div class="min-w-0">
+          <div class="text-xs text-white/90 font-medium">横屏巨幕单句歌词</div>
+          <div class="text-[10px] text-white/50 truncate">横屏歌词页自动切换大字舞台与封面动态流光</div>
+        </div>
+        <button id="btn-np-stage-lyrics" class="w-10 h-5 rounded-full bg-sky-500 p-0.5 transition-colors flex items-center justify-end shrink-0" aria-label="开关横屏巨幕单句歌词">
+          <span class="w-4 h-4 rounded-full bg-white shadow"></span>
+        </button>
       </div>
       <div id="row-np-island-lyrics" class="flex items-center justify-between gap-2 px-3 py-2.5 mt-1.5 rounded-2xl bg-white/8 border border-white/10">
         <div class="min-w-0">
@@ -3955,10 +4237,14 @@
         isSeeking: false,
         diy: {
           homeBgUrl: '',
+          homeBgLandscapeUrl: '',
           homeDim: 45,
           homeBlur: 0,
           playerBgMode: 'aurora', // 'aurora' | 'custom' | 'oled'
           playerBgUrl: '',
+          playerBgLandscapeUrl: '',
+          landscapeStageLyrics: true,
+          orientationMode: 'auto', // 'auto' | 'portrait' | 'landscape'
           playerDim: 45,
           playerBlur: 8,
           coverStyle: 'rounded', // 'rounded' | 'vinyl' | 'disc'
@@ -4146,6 +4432,8 @@
             lyricStyle: state.diy.lyricStyle,
             lyricStagger: Boolean(state.diy.lyricStagger),
             lyric3d: Boolean(state.diy.lyric3d),
+            landscapeStageLyrics: state.diy.landscapeStageLyrics !== false,
+            orientationMode: state.diy.orientationMode || 'auto',
             lyricFontSize: state.diy.lyricFontSize,
             glassAlpha: state.diy.glassAlpha,
             songCardAlpha: state.diy.songCardAlpha,
@@ -5606,6 +5894,7 @@
         if (activeIdx === state.activeLyricIdx && !forceScroll) return;
         const prevIdx = state.activeLyricIdx;
         state.activeLyricIdx = activeIdx;
+        if (typeof updateLandscapeStageLyric === 'function') updateLandscapeStageLyric();
 
         const curLine = activeIdx >= 0 ? state.parsedLyrics[activeIdx].text : state.parsedLyrics[0]?.text || '';
         const nextLine =
@@ -5814,6 +6103,7 @@
         }
         syncAndroidWidgetState();
         if (typeof syncCanvasNowPlaying === 'function') syncCanvasNowPlaying();
+        if (typeof syncLandscapeStagePlayIcon === 'function') syncLandscapeStagePlayIcon();
 
         const roundedImg = $('np-cover-img-rounded');
         roundedImg.classList.toggle('cover-playing', activeVisual);
@@ -8139,11 +8429,16 @@
           const rowStep = hexR * 1.5;
           const baseDrawR = hexR * 0.78; // crisp dark gap at rest, leaving headroom for wave enlargement
 
-          // Ensure shoulderRow is EVEN (5 full hexes) so the 4 taper rows step cleanly: 4 (odd) -> 3 (even) -> 2 (odd) -> 1 (even)
-          let shoulderRow = Math.round((shoulderPxY - hexR * 0.7) / rowStep);
-          if ((shoulderRow & 1) !== 0) shoulderRow += 1;
+          // Ensure shoulderRow is EVEN (5 full hexes) and leaves room for all 4 taper rows (4 -> 3 -> 2 -> 1) above the centered star
+          const maxAllowedTipY = Math.min(pxH, maxTipPxY);
+          const maxRowBySpace = Math.max(4, Math.floor((maxAllowedTipY - hexR * 1.7) / rowStep));
+          let shoulderRow = Math.min(
+            Math.round((shoulderPxY - hexR * 0.7) / rowStep),
+            Math.max(0, maxRowBySpace - 4)
+          );
+          if ((shoulderRow & 1) !== 0) shoulderRow = Math.max(0, shoulderRow - 1);
           const maxRow = shoulderRow + 4;
-          const totalActivePxY = Math.max(1, Math.min(pxH, (maxRow + 1) * rowStep + hexR));
+          const totalActivePxY = Math.max(1, Math.min(maxAllowedTipY, (maxRow + 1) * rowStep + hexR));
 
           // Smooth top-to-bottom flowing current waves across the active upper zone
           const sweepY = ((spineDotPhase * 0.42) % 1.52) - 0.26;
@@ -8452,17 +8747,19 @@
                   <span class="text-white/40 text-xs pr-1">›</span>
                 </div>`;
             }).join('');
-            bodyEl.innerHTML = `
-              <div class="relative flex items-stretch gap-1 h-[48vh] max-h-[420px]">
-                <div id="cpop-zipper-list" class="flex-1 overflow-y-auto no-scrollbar space-y-2 pr-1">${plRowsHtml}</div>
-                <div id="cpop-zipper-rail" class="w-9 shrink-0 relative touch-none select-none cursor-ns-resize flex items-center justify-center my-1" aria-label="快速滑动歌单列表">
-                  <svg class="w-full h-full overflow-visible pointer-events-none" viewBox="0 0 38 240" preserveAspectRatio="none">
-                    <path id="cpop-zipper-teeth" d="" fill="none" stroke="rgba(255,255,255,0.34)" stroke-width="4" stroke-dasharray="2.2 5.2" stroke-linecap="round" />
-                    <path id="cpop-zipper-spine" d="M 30 8 L 30 232" fill="none" stroke="rgba(186,230,253,0.78)" stroke-width="2.2" stroke-linecap="round" />
-                    <circle id="cpop-zipper-knob" cx="30" cy="120" r="4" fill="#ffffff" opacity="0.8" />
-                  </svg>
-                </div>
-              </div>`;
+            const needsZipper = state.playlists.length >= 5;
+            bodyEl.innerHTML = needsZipper
+              ? `<div class="relative flex items-stretch gap-1 max-h-[52vh]">
+                  <div id="cpop-zipper-list" class="flex-1 overflow-y-auto no-scrollbar space-y-2 pr-1">${plRowsHtml}</div>
+                  <div id="cpop-zipper-rail" class="w-9 shrink-0 relative touch-none select-none cursor-ns-resize flex items-center justify-center my-1" aria-label="快速滑动歌单列表">
+                    <svg class="w-full h-full overflow-visible pointer-events-none" viewBox="0 0 38 240" preserveAspectRatio="none">
+                      <path id="cpop-zipper-teeth" d="" fill="none" stroke="rgba(255,255,255,0.34)" stroke-width="4" stroke-dasharray="2.2 5.2" stroke-linecap="round" />
+                      <path id="cpop-zipper-spine" d="M 30 8 L 30 232" fill="none" stroke="rgba(186,230,253,0.78)" stroke-width="2.2" stroke-linecap="round" />
+                      <circle id="cpop-zipper-knob" cx="30" cy="120" r="4" fill="#ffffff" opacity="0.8" />
+                    </svg>
+                  </div>
+                </div>`
+              : `<div class="space-y-2 pb-1">${plRowsHtml}</div>`;
             bodyEl.querySelectorAll('.cpop-pl-row').forEach((row) => {
               on(row, 'click', () => {
                 const plId = row.dataset.cpopPl;
@@ -9037,10 +9334,27 @@
         });
         on('btn-canvas-unfold-spine', (e) => {
           e.stopPropagation();
-          state.canvasSpineCollapsed = false;
-          canvasLayoutCache.lastSpineLeft = -1;
-          paintCanvasFrame();
-          startSpineDotLoop();
+          const unfoldBtn = $('btn-canvas-unfold-spine');
+          const edgeFlash = $('canvas-edge-tech-flash');
+          if (unfoldBtn && unfoldBtn.classList.contains('is-unfolding')) return;
+          if (unfoldBtn) unfoldBtn.classList.add('is-unfolding');
+          setTimeout(() => {
+            if (edgeFlash) {
+              edgeFlash.classList.remove('is-flashing');
+              void edgeFlash.offsetWidth;
+              edgeFlash.classList.add('is-flashing');
+            }
+          }, 130);
+          setTimeout(() => {
+            state.canvasSpineCollapsed = false;
+            canvasLayoutCache.lastSpineLeft = -1;
+            paintCanvasFrame();
+            startSpineDotLoop();
+            if (unfoldBtn) unfoldBtn.classList.remove('is-unfolding');
+          }, 340);
+          setTimeout(() => {
+            if (edgeFlash) edgeFlash.classList.remove('is-flashing');
+          }, 760);
         });
         on('btn-canvas-fortune', (e) => {
           e.stopPropagation();
@@ -11338,32 +11652,95 @@
       // =========================================================================
       // DIY APPEARANCE ENGINE
       // =========================================================================
+      let lastAppliedOrientMode = null;
+      function applyNativeOrientationMode(mode, force = false) {
+        const m = (mode === 'portrait' || mode === 'landscape') ? mode : 'auto';
+        if (!force && lastAppliedOrientMode === m) return;
+        lastAppliedOrientMode = m;
+        if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.fengDock) {
+          try {
+            window.webkit.messageHandlers.fengDock.postMessage({ action: 'setOrientation', mode: m });
+          } catch {}
+        }
+        if (window.FengAndroidBridge && typeof window.FengAndroidBridge.setOrientationMode === 'function') {
+          try {
+            window.FengAndroidBridge.setOrientationMode(m);
+          } catch {}
+        }
+        if (screen && screen.orientation) {
+          try {
+            if (m === 'auto' && typeof screen.orientation.unlock === 'function') {
+              screen.orientation.unlock();
+            } else if (typeof screen.orientation.lock === 'function') {
+              screen.orientation.lock(m).catch(() => {});
+            }
+          } catch {}
+        }
+      }
+
       function applyDiySettings() {
         const d = state.diy;
+        const orientMode = d.orientationMode || 'auto';
+        document.querySelectorAll('.diy-orient-btn').forEach((btn) => {
+          const active = btn.dataset.orientMode === orientMode;
+          btn.classList.toggle('bg-white/20', active);
+          btn.classList.toggle('text-white', active);
+          btn.classList.toggle('border-white/25', active);
+          btn.classList.toggle('bg-white/8', !active);
+          btn.classList.toggle('text-white/70', !active);
+          btn.classList.toggle('border-transparent', !active);
+        });
+        applyNativeOrientationMode(orientMode, false);
 
-        // Home Wallpaper
-        const homeHasCustom = Boolean(d.homeBgUrl);
+        const isLandNow = window.innerWidth > window.innerHeight;
+
+        // Home Wallpaper (supports dedicated landscape wallpaper with portrait fallback)
+        const effectiveHomeBg = (isLandNow && d.homeBgLandscapeUrl) ? d.homeBgLandscapeUrl : d.homeBgUrl;
+        const homeHasCustom = Boolean(effectiveHomeBg);
         $('home-aurora-layer').classList.toggle('hidden', homeHasCustom);
         $('home-custom-bg-layer').classList.toggle('hidden', !homeHasCustom);
         if (homeHasCustom) {
-          $('home-custom-bg-img').src = d.homeBgUrl;
+          $('home-custom-bg-img').src = effectiveHomeBg;
           $('home-custom-bg-img').style.filter = `blur(${d.homeBlur}px)`;
           $('home-custom-bg-dim').style.backgroundColor = `rgba(0, 0, 0, ${d.homeDim / 100})`;
+        }
+        const homeLandStatus = $('diy-home-land-status');
+        if (homeLandStatus) {
+          homeLandStatus.textContent = d.homeBgLandscapeUrl ? '已设置横屏专属壁纸' : '未设置（默认沿用竖屏）';
+          homeLandStatus.className = d.homeBgLandscapeUrl ? 'text-[11px] text-sky-300' : 'text-[11px] text-white/45';
         }
         $('diy-home-dim').value = d.homeDim;
         $('diy-home-dim-val').textContent = `${d.homeDim}%`;
         $('diy-home-blur').value = d.homeBlur;
         $('diy-home-blur-val').textContent = `${d.homeBlur}px`;
 
-        // Player Background Mode
+        // Player Background Mode (supports dedicated landscape wallpaper with portrait fallback)
+        const effectivePlayerBg = (isLandNow && d.playerBgLandscapeUrl) ? d.playerBgLandscapeUrl : d.playerBgUrl;
         const showPlayerAurora = d.playerBgMode === 'aurora';
-        const showPlayerCustom = d.playerBgMode === 'custom' && Boolean(d.playerBgUrl);
+        const showPlayerCustom = d.playerBgMode === 'custom' && Boolean(effectivePlayerBg);
         $('player-aurora-layer').classList.toggle('hidden', !showPlayerAurora);
         $('player-custom-bg-layer').classList.toggle('hidden', !showPlayerCustom);
         if (showPlayerCustom) {
-          $('player-custom-bg-img').src = d.playerBgUrl;
+          $('player-custom-bg-img').src = effectivePlayerBg;
           $('player-custom-bg-img').style.filter = `blur(${d.playerBlur}px)`;
           $('player-custom-bg-dim').style.backgroundColor = `rgba(0, 0, 0, ${d.playerDim / 100})`;
+        }
+        const playerLandStatus = $('diy-player-land-status');
+        if (playerLandStatus) {
+          playerLandStatus.textContent = d.playerBgLandscapeUrl ? '已设置横屏专属壁纸' : '未设置（默认沿用竖屏）';
+          playerLandStatus.className = d.playerBgLandscapeUrl ? 'text-[11px] text-sky-300' : 'text-[11px] text-white/45';
+        }
+        const stageToggleBtn = $('btn-np-stage-lyrics');
+        if (stageToggleBtn) {
+          const onStage = d.landscapeStageLyrics !== false;
+          stageToggleBtn.classList.toggle('bg-sky-500', onStage);
+          stageToggleBtn.classList.toggle('bg-white/15', !onStage);
+          stageToggleBtn.classList.toggle('justify-end', onStage);
+          stageToggleBtn.classList.toggle('justify-start', !onStage);
+        }
+        const toStageBtn = $('btn-lyrics-to-stage');
+        if (toStageBtn) {
+          toStageBtn.classList.toggle('is-stage-enabled', d.landscapeStageLyrics !== false);
         }
         document.querySelectorAll('.diy-player-bg-btn').forEach((btn) => {
           const active = btn.dataset.playerBg === d.playerBgMode;
@@ -13048,11 +13425,87 @@
 
       function closeNowPlaying() {
         nowPlayingModal.classList.add('translate-y-full');
+        state.stageLyricsForceList = false;
+        syncLandscapeStageMode();
         state.dockCollapsed = false;
         syncNativeDockState();
       }
 
+      let stageLyricsIdleTimer = null;
+      let lastStageLyricText = '';
+      let currentNpTabName = 'cover';
+
+      function resetStageIdleTimer() {
+        const stage = $('np-landscape-stage');
+        if (!stage) return;
+        stage.classList.remove('is-stage-idle');
+        if (stageLyricsIdleTimer) clearTimeout(stageLyricsIdleTimer);
+        if (!document.documentElement.classList.contains('np-stage-active')) return;
+        stageLyricsIdleTimer = setTimeout(() => {
+          if (document.documentElement.classList.contains('np-stage-active')) {
+            stage.classList.add('is-stage-idle');
+          }
+        }, 3000);
+      }
+
+      function syncLandscapeStagePlayIcon() {
+        const pIcon = $('stage-play-icon');
+        const paIcon = $('stage-pause-icon');
+        if (!pIcon || !paIcon) return;
+        const playing = Boolean(state.isPlaying);
+        pIcon.classList.toggle('hidden', playing);
+        paIcon.classList.toggle('hidden', !playing);
+      }
+
+      function updateLandscapeStageLyric(forceText = null) {
+        const lineEl = $('np-stage-lyric-text');
+        const titleEl = $('np-stage-title');
+        const artistEl = $('np-stage-artist');
+        if (!lineEl) return;
+
+        const curRaw = state.currentTrackId ? state.tracks.find((t) => t.id === state.currentTrackId) : null;
+        const disp = curRaw ? getTrackDisplay(curRaw) : null;
+        if (titleEl) titleEl.textContent = disp?.title || 'FENG MUSIC';
+        if (artistEl) artistEl.textContent = disp ? `${disp.artist}${disp.album ? ' · ' + disp.album : ''}` : '';
+
+        let nextText = forceText;
+        if (nextText === null) {
+          if (state.parsedLyrics && state.parsedLyrics.length) {
+            const idx = state.activeLyricIdx >= 0 ? state.activeLyricIdx : 0;
+            nextText = state.parsedLyrics[idx]?.text || disp?.title || 'FENG MUSIC';
+          } else {
+            nextText = disp?.title || '♪ 纯音乐 / 暂无歌词';
+          }
+        }
+        nextText = String(nextText || '').trim() || (disp?.title || 'FENG MUSIC');
+        if (nextText !== lastStageLyricText) {
+          lastStageLyricText = nextText;
+          lineEl.textContent = nextText;
+          lineEl.classList.remove('is-pop');
+          void lineEl.offsetWidth;
+          lineEl.classList.add('is-pop');
+        }
+      }
+
+      function syncLandscapeStageMode() {
+        const npOpen = Boolean(nowPlayingModal && !nowPlayingModal.classList.contains('translate-y-full'));
+        const isMobileLand = window.innerWidth > window.innerHeight && window.innerHeight <= 520;
+        const enabled = state.diy.landscapeStageLyrics !== false;
+        const active = Boolean(npOpen && currentNpTabName === 'lyrics' && isMobileLand && enabled && !state.stageLyricsForceList);
+        const wasActive = document.documentElement.classList.contains('np-stage-active');
+        document.documentElement.classList.toggle('np-stage-active', active);
+        if (active) {
+          updateLandscapeStageLyric();
+          syncLandscapeStagePlayIcon();
+          if (!wasActive) resetStageIdleTimer();
+        } else if (stageLyricsIdleTimer) {
+          clearTimeout(stageLyricsIdleTimer);
+          stageLyricsIdleTimer = null;
+        }
+      }
+
       function setNowPlayingTab(tabName) {
+        currentNpTabName = tabName;
         document.querySelectorAll('.np-tab-btn').forEach((btn) => {
           const active = btn.dataset.npTab === tabName;
           btn.classList.toggle('bg-white', active);
@@ -13065,6 +13518,7 @@
         if (tabName === 'lyrics') {
           syncActiveLyric(true);
         }
+        syncLandscapeStageMode();
       }
 
       let queueZipperBound = false;
@@ -15941,6 +16395,19 @@
           e.target.value = '';
         });
 
+        // Screen Orientation Lock Controls (Auto / Portrait / Landscape)
+        document.querySelectorAll('.diy-orient-btn').forEach((btn) => {
+          on(btn, 'click', async () => {
+            const mode = btn.dataset.orientMode || 'auto';
+            state.diy.orientationMode = mode;
+            applyNativeOrientationMode(mode, true);
+            applyDiySettings();
+            await saveAppState();
+            const label = mode === 'portrait' ? '已锁定竖屏模式' : mode === 'landscape' ? '已锁定横屏模式' : '已切换为自动识别方向';
+            showToast(label);
+          });
+        });
+
         // UI DIY Settings Controls
         on('btn-diy-home-upload', () => $('bg-home-input').click());
         on('bg-home-input', 'change', (e) => {
@@ -15961,6 +16428,26 @@
           await dbDelete('kv', 'homeBgDataUrl');
           applyDiySettings();
           showToast('已恢复默认动态流光背景');
+        });
+        on('btn-diy-home-land-upload', () => $('bg-home-landscape-input').click());
+        on('bg-home-landscape-input', 'change', (e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = async () => {
+            state.diy.homeBgLandscapeUrl = reader.result;
+            await dbPut('kv', { key: 'homeBgLandscapeDataUrl', value: reader.result });
+            applyDiySettings();
+            showToast('横屏主页壁纸已更新');
+          };
+          reader.readAsDataURL(file);
+          e.target.value = '';
+        });
+        on('btn-diy-home-land-reset', async () => {
+          state.diy.homeBgLandscapeUrl = '';
+          await dbDelete('kv', 'homeBgLandscapeDataUrl');
+          applyDiySettings();
+          showToast('已清除横屏主页壁纸');
         });
         on('diy-home-dim', 'input', (e) => {
           state.diy.homeDim = Number(e.target.value);
@@ -15998,12 +16485,89 @@
         });
         on('btn-diy-player-reset', async () => {
           state.diy.playerBgUrl = '';
-          if (state.diy.playerBgMode === 'custom') state.diy.playerBgMode = 'aurora';
+          if (!state.diy.playerBgLandscapeUrl && state.diy.playerBgMode === 'custom') state.diy.playerBgMode = 'aurora';
           await dbDelete('kv', 'playerBgDataUrl');
           await saveAppState();
           applyDiySettings();
-          showToast('已清除播放页自定义图片');
+          showToast('已清除播放页竖屏图片');
         });
+        on('btn-diy-player-land-upload', () => $('bg-player-landscape-input').click());
+        on('bg-player-landscape-input', 'change', (e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = async () => {
+            state.diy.playerBgLandscapeUrl = reader.result;
+            state.diy.playerBgMode = 'custom';
+            await dbPut('kv', { key: 'playerBgLandscapeDataUrl', value: reader.result });
+            await saveAppState();
+            applyDiySettings();
+            showToast('横屏播放页壁纸已更新');
+          };
+          reader.readAsDataURL(file);
+          e.target.value = '';
+        });
+        on('btn-diy-player-land-reset', async () => {
+          state.diy.playerBgLandscapeUrl = '';
+          if (!state.diy.playerBgUrl && state.diy.playerBgMode === 'custom') state.diy.playerBgMode = 'aurora';
+          await dbDelete('kv', 'playerBgLandscapeDataUrl');
+          await saveAppState();
+          applyDiySettings();
+          showToast('已清除横屏播放页壁纸');
+        });
+
+        // Landscape Stage Lyrics controls & settings toggle
+        on('btn-np-stage-lyrics', async () => {
+          state.diy.landscapeStageLyrics = !(state.diy.landscapeStageLyrics !== false);
+          state.stageLyricsForceList = false;
+          applyDiySettings();
+          syncLandscapeStageMode();
+          await saveAppState();
+          showToast(state.diy.landscapeStageLyrics ? '已开启横屏巨幕单句歌词' : '已关闭横屏巨幕单句歌词');
+        });
+        on('btn-stage-collapse', (e) => {
+          e.stopPropagation();
+          closeNowPlaying();
+        });
+        on('btn-stage-settings', (e) => {
+          e.stopPropagation();
+          resetStageIdleTimer();
+          openBottomSheet('sheet-np-settings');
+        });
+        on('btn-stage-to-cover', (e) => {
+          e.stopPropagation();
+          setNowPlayingTab('cover');
+        });
+        on('btn-stage-to-list', (e) => {
+          e.stopPropagation();
+          state.stageLyricsForceList = true;
+          syncLandscapeStageMode();
+        });
+        on('btn-lyrics-to-stage', (e) => {
+          e.stopPropagation();
+          state.stageLyricsForceList = false;
+          syncLandscapeStageMode();
+        });
+        on('btn-stage-prev', (e) => {
+          e.stopPropagation();
+          resetStageIdleTimer();
+          playPrev();
+        });
+        on('btn-stage-play', (e) => {
+          e.stopPropagation();
+          resetStageIdleTimer();
+          togglePlayPause();
+        });
+        on('btn-stage-next', (e) => {
+          e.stopPropagation();
+          resetStageIdleTimer();
+          playNext(true);
+        });
+        const stageEl = $('np-landscape-stage');
+        if (stageEl) {
+          stageEl.addEventListener('pointerdown', () => resetStageIdleTimer(), { passive: true });
+          stageEl.addEventListener('pointermove', () => resetStageIdleTimer(), { passive: true });
+        }
         on('diy-player-dim', 'input', (e) => {
           state.diy.playerDim = Number(e.target.value);
           applyDiySettings();
@@ -16225,6 +16789,8 @@
         } else {
           document.documentElement.style.setProperty('--app-full-height', `${window.innerHeight}px`);
         }
+        if (typeof applyDiySettings === 'function') applyDiySettings();
+        if (typeof syncLandscapeStageMode === 'function') syncLandscapeStageMode();
         if (typeof refreshCanvasViewportMetrics === 'function') {
           refreshCanvasViewportMetrics();
           if (state.activeView === 'library' && state.libViewMode === 'canvas' && typeof paintCanvasFrame === 'function') {
@@ -16301,8 +16867,12 @@
 
           const homeBgItem = kvAll.find((item) => item.key === 'homeBgDataUrl');
           if (homeBgItem?.value) state.diy.homeBgUrl = homeBgItem.value;
+          const homeBgLandItem = kvAll.find((item) => item.key === 'homeBgLandscapeDataUrl');
+          if (homeBgLandItem?.value) state.diy.homeBgLandscapeUrl = homeBgLandItem.value;
           const playerBgItem = kvAll.find((item) => item.key === 'playerBgDataUrl');
           if (playerBgItem?.value) state.diy.playerBgUrl = playerBgItem.value;
+          const playerBgLandItem = kvAll.find((item) => item.key === 'playerBgLandscapeDataUrl');
+          if (playerBgLandItem?.value) state.diy.playerBgLandscapeUrl = playerBgLandItem.value;
 
           if (storedTracks.length) {
             storedTracks.sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
