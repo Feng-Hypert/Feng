@@ -4,7 +4,7 @@
 
 # FENG MUSIC
 
-**为 iPhone 打造的免费本地音乐播放器**
+**为 iPhone 与 Android 打造的免费本地音乐播放器**
 
 </div>
 
